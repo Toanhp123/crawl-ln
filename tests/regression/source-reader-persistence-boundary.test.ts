@@ -16,7 +16,7 @@ test('only source reader infrastructure queries source_reader tables', () => {
     if (!/source_reader_/.test(source)) continue;
     assert.match(
       file.replaceAll('\\', '/'),
-      /modules\/source-reader\/infrastructure\/sqlite\/|shared\/database\/sqlite\.ts$/,
+      /modules\/source-reader\/infrastructure\/(?:sqlite|cache)\/|shared\/database\/sqlite\.ts$/,
       file
     );
   }

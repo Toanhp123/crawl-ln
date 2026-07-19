@@ -1,0 +1,57 @@
+export type SourceReaderErrorCode =
+  | 'SOURCE_NOT_SUPPORTED'
+  | 'CAPABILITY_NOT_SUPPORTED'
+  | 'PLUGIN_UNAVAILABLE'
+  | 'PLUGIN_DISABLED'
+  | 'PLUGIN_QUARANTINED'
+  | 'PLUGIN_CONTRACT_INCOMPATIBLE'
+  | 'PLUGIN_PERMISSION_DENIED'
+  | 'PLUGIN_NETWORK_PERMISSION_DENIED'
+  | 'PLUGIN_RESULT_INVALID'
+  | 'PLUGIN_PACKAGE_INVALID'
+  | 'AUTHENTICATION_REQUIRED'
+  | 'AUTHENTICATION_FAILED'
+  | 'CREDENTIAL_NOT_CONFIGURED'
+  | 'CREDENTIAL_UNAVAILABLE'
+  | 'SESSION_EXPIRED'
+  | 'SESSION_NETWORK_MISMATCH'
+  | 'SESSION_UNAVAILABLE'
+  | 'AUTH_CHALLENGE_REQUIRED'
+  | 'AUTH_CHALLENGE_EXPIRED'
+  | 'NETWORK_ROUTE_REQUIRED'
+  | 'NETWORK_REGION_UNAVAILABLE'
+  | 'NETWORK_ROUTE_OFFLINE'
+  | 'NETWORK_ACCESS_BLOCKED'
+  | 'NETWORK_CREDENTIAL_UNAVAILABLE'
+  | 'SOURCE_REQUEST_TIMEOUT'
+  | 'SOURCE_RESPONSE_TOO_LARGE'
+  | 'SOURCE_RATE_LIMITED'
+  | 'SOURCE_TEMPORARILY_UNAVAILABLE'
+  | 'CURSOR_INVALID'
+  | 'CURSOR_INVALIDATED'
+  | 'SECRET_VAULT_UNAVAILABLE'
+  | 'SOURCE_READER_CANCELLED'
+  | 'SOURCE_READER_INTERNAL_ERROR';
+
+export interface SourceReaderErrorOptions {
+  retryable: boolean;
+  fallbackAllowed: boolean;
+  details?: Record<string, unknown>;
+  cause?: unknown;
+}
+
+export class SourceReaderError extends Error {
+  readonly code: SourceReaderErrorCode;
+  readonly retryable: boolean;
+  readonly fallbackAllowed: boolean;
+  readonly details?: Record<string, unknown>;
+
+  constructor(code: SourceReaderErrorCode, message: string, options: SourceReaderErrorOptions) {
+    super(message, { cause: options.cause });
+    this.name = 'SourceReaderError';
+    this.code = code;
+    this.retryable = options.retryable;
+    this.fallbackAllowed = options.fallbackAllowed;
+    this.details = options.details;
+  }
+}

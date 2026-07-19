@@ -1,5 +1,5 @@
 import { env } from '../../../../../../shared/config/env.js';
-import { sanitizeChapterText } from '../../../../../crawler/application/services/chapter-content-sanitizer.js';
+import { sanitizeChapterText } from '../../../../../../shared/text/chapter-content-sanitizer.js';
 import { SourceReaderError } from '../../../../domain/errors/source-reader.error.js';
 import type { SourceReaderPlugin } from '../../../../domain/plugin/source-plugin.js';
 import { novelCoolManifest } from './novelcool.manifest.js';
@@ -81,9 +81,8 @@ export const novelCoolPlugin: SourceReaderPlugin = {
       });
     }
 
-    const items = candidates.slice(0, limit);
     return {
-      data: { items, hasMore: candidates.length > items.length },
+      data: { items: candidates, hasMore: false },
       cacheHints: {
         scope: 'public',
         ttlMs: 5 * 60_000,

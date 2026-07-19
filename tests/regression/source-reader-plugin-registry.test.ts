@@ -60,7 +60,10 @@ test('registry composes one domain by capability and priority', async () => {
     url: 'https://example.test/chapter/1',
     capability: 'chapter-content'
   });
-  assert.deepEqual(content.map((candidate) => candidate.plugin.manifest.id), ['content']);
+  assert.deepEqual(
+    content.map((candidate) => candidate.plugin.manifest.id),
+    ['content']
+  );
 
   const excluded = await registry.listCandidates({
     url: 'https://example.test/account/profile',
@@ -75,8 +78,12 @@ test('registry normalizes hosts, supports wildcards, and rejects duplicate ids',
   const registry = new InMemoryPluginRegistry();
   registry.register(wildcard);
   assert.equal(
-    (await registry.listCandidates({ url: 'https://www.blog.example.test/book', capability: 'metadata' }))
-      .length,
+    (
+      await registry.listCandidates({
+        url: 'https://www.blog.example.test/book',
+        capability: 'metadata'
+      })
+    ).length,
     1
   );
   assert.throws(() => registry.register(wildcard), /Duplicate source plugin id/);

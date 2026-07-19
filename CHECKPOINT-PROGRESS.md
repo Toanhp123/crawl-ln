@@ -2,6 +2,7 @@
 
 **Checkpoint date:** 2026-07-20  
 **Branch:** `feat/source-reader`  
+**HEAD before checkpoint metadata commit:** `f061df0`  
 **Primary roadmap:** `docs/superpowers/plans/2026-07-19-source-reader-implementation-roadmap.md`
 
 ## Verified implementation position
@@ -10,57 +11,56 @@
 - Crawler Cutover Plan — Tasks 1–5: **complete**.
 - State/Security Plan — Tasks 1–6: **complete**.
 - External Plugins Plan — Tasks 1–5: **complete**.
-- Auth/Browser Plan — Tasks 1–2: **complete**.
-- Auth/Browser Plan — Task 3: **in progress in the working tree**.
-- Auth/Browser Plan — Tasks 4–5: **not started**.
-- HTTP/Observability/Finalization Plan — Tasks 1–6: **not started**.
+- Auth/Browser Plan — Tasks 1–5: **complete**.
+- HTTP/Observability/Finalization Plan — Task 1: **complete**.
+- HTTP/Observability/Finalization Plan — Tasks 2–6: **not started**.
 
-Completed roadmap tasks: **24/33**. Remaining completed-task count: **9 tasks**.
+Completed roadmap tasks: **28/33**. Remaining roadmap tasks: **5**.
 
-## Three-task checkpoint batch
+## Strict three-task checkpoint batch
 
-The three tasks completed since the previous ZIP are:
+Exactly three roadmap tasks were completed in this batch. No work was started on the fourth task.
 
-1. External Plugins Task 5 — capability health, circuit eligibility, integrity quarantine.
-2. Auth/Browser Task 1 — authentication contracts and standard strategies.
-3. Auth/Browser Task 2 — encrypted route-bound login sessions and host-only session attachment.
+1. Auth/Browser Task 4 — persisted resumable OTP/browser challenges, one-shot response, encrypted state, expiration/cancellation cleanup.
+2. Auth/Browser Task 5 — authenticated normal reads, stable missing-session error, host-only cookie/header attachment, approved browser context routing.
+3. HTTP/Observability/Finalization Task 1 — actor contract, role hierarchy, ownership authorization, and deployment-controlled role-header trust.
 
 Focused commits:
 
 ```text
-8e60c24 fix(source-reader): harden route-bound session lookup
-b62da5a feat(source-reader): persist route-bound login sessions
-e022ab5 feat(source-reader): add standard authentication strategies
-4f38a5c feat(source-reader): supervise external plugin health
+f061df0 feat(source-reader): authorize reader administration
+3682f18 feat(source-reader): read through authenticated browser contexts
+b95771e feat(source-reader): add resumable auth challenges
 ```
 
-## Verification evidence
+## Fresh verification evidence
 
-Fresh verification after Task 2 hardening:
+Verification performed after the third task and before packaging:
 
-- Shared build: PASS.
-- Session login + security repositories: **6/6 pass**.
-- Runtime-context regression: **4/4 pass**.
-- API TypeScript check: PASS.
+- Auth challenge, authenticated read, session login, and security repository integration tests: **12/12 pass**.
+- Authorization, maintenance, and runtime-context regression tests: **9/9 pass**.
+- API architecture check: **PASS**.
+- Shared + API TypeScript checks: **PASS**.
+- Changed-file Prettier check: **PASS**.
+- Git whitespace/diff check: **PASS**.
 
-## Current uncommitted Task 3 state
+## Security and behavior now locked
 
-Auth/Browser Task 3 has started and is intentionally preserved as working-tree state:
-
-- `playwright-core` dependency added.
-- Browser runtime port created.
-- Worker protocol, worker entry, and coordinator created.
-- Browser integration test created.
-
-The browser integration test currently skips when `CHROMIUM_PATH` is unavailable. Before committing Task 3, add deterministic non-browser unit coverage or run the integration test with a real Chromium executable, normalize the lockfile registry URL, run API/architecture checks, and verify worker cleanup and host restrictions.
+- Auth challenge state is encrypted and can be resumed only once.
+- Expired or cancelled browser challenges close the bound browser identity.
+- A source requiring authentication returns `AUTHENTICATION_REQUIRED` before plugin invocation when no active session exists.
+- Session cookies and headers are decrypted only inside the host HTTP adapter.
+- Required session/network-route mismatch remains `SESSION_NETWORK_MISMATCH`.
+- Browser-required reads open identity `userId + pluginId + sourceAccountId + networkRouteId` only when browser permission is approved.
+- Client-provided role headers are ignored unless `SOURCE_READER_TRUST_ROLE_HEADERS=true` is configured by the deployment.
 
 ## Exact continuation point
 
-Continue with:
+Continue with no preliminary feature work at:
 
 ```text
-docs/superpowers/plans/2026-07-19-source-reader-auth-browser.md
-Task 3: Add browser worker coordinator and restricted browser client
+docs/superpowers/plans/2026-07-19-source-reader-http-observability-finalization.md
+Task 2: Complete reader, plugin, credential, network, and challenge use cases
 ```
 
-The archive includes `.git/`, the complete working tree, and a binary-safe patch of all uncommitted Task 3 changes.
+The working tree must be clean before continuing. Apply the same rule requested by the user: after the next three completed roadmap tasks, stop immediately, update this checkpoint, and create a new ZIP before starting a fourth task.

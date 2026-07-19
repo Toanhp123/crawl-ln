@@ -25,7 +25,8 @@ export class InMemoryPluginRegistry implements PluginRegistryPort {
       plugin,
       trustLevel: options.trustLevel ?? 'built-in',
       executionMode: options.executionMode ?? plugin.manifest.runtime.preferredMode,
-      enabled: options.enabled ?? true
+      enabled: options.enabled ?? true,
+      ...(options.packagePath ? { packagePath: options.packagePath } : {})
     });
   }
 

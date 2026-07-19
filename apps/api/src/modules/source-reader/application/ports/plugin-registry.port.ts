@@ -10,6 +10,7 @@ export interface RegisteredPlugin {
   trustLevel: PluginTrustLevel;
   executionMode: PluginExecutionMode;
   enabled: boolean;
+  packagePath?: string;
 }
 
 export interface PluginCandidate extends RegisteredPlugin {

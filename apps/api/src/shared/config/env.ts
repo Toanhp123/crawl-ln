@@ -1,6 +1,12 @@
 import 'dotenv/config';
 import { resolve } from 'node:path';
 
+function boolEnv(name: string, fallback: boolean) {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return value === '1' || value.toLowerCase() === 'true';
+}
+
 function numberEnv(name: string, fallback: number) {
   const value = Number(process.env[name]);
   return Number.isFinite(value) && value > 0 ? value : fallback;
@@ -46,6 +52,15 @@ export const env = {
   sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500),
   sourceReaderMasterKey: optionalBase64Key('SOURCE_READER_MASTER_KEY'),
   sourceReaderBrowserExecutable: process.env.SOURCE_READER_BROWSER_EXECUTABLE || undefined,
+  sourceReaderDefaultRoles: jsonEnv<
+    Array<'reader' | 'source-manager' | 'source-admin' | 'system-admin'>
+  >('SOURCE_READER_DEFAULT_ROLES_JSON', [
+    'reader',
+    'source-manager',
+    'source-admin',
+    'system-admin'
+  ]),
+  sourceReaderTrustRoleHeaders: boolEnv('SOURCE_READER_TRUST_ROLE_HEADERS', false),
   sourceReaderPluginDir:
     process.env.SOURCE_READER_PLUGIN_DIR ??
     resolve(process.env.STORAGE_DIR ?? './storage', 'source-plugins'),

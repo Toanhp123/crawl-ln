@@ -1,0 +1,35 @@
+[
+  {
+    "id": "example-novel-site",
+    "name": "Example Novel Site",
+    "enabled": true,
+    "hosts": [
+      "example.com"
+    ],
+    "selectors": {
+      "title": "h1",
+      "author": ".author, [rel='author']",
+      "cover": ".cover img, img.cover",
+      "description": ".description, .summary",
+      "chapterLinks": ".chapter-list a, a[href*='chapter']",
+      "chapterTitle": "h1",
+      "chapterContent": "article, main, .chapter-content, #chapter-content",
+      "remove": [
+        ".ads",
+        ".comment",
+        ".breadcrumb"
+      ]
+    },
+    "http": {
+      "headers": {
+        "Accept-Language": "en-US,en;q=0.9"
+      },
+      "timeoutMs": 15000
+    },
+    "crawlPolicy": {
+      "respectRobotsTxt": true,
+      "crawlDelayMs": 1000,
+      "maxChaptersPerRun": 50
+    }
+  }
+]

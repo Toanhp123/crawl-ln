@@ -1,0 +1,38 @@
+:root {
+  --height-header: 3rem;
+  --height-bottom-nav: 3.5rem;
+  --height-control-sm: 2.5rem;
+  --height-control-md: 2.75rem;
+  --height-control-lg: 3rem;
+  --height-control-xl: 3.25rem;
+  --content-max: 72rem;
+  --app-mobile-max: 26.875rem;
+  --reader-max: 44rem;
+  --touch-target: 2.75rem;
+  --icon-sm: 1.25rem;
+  --icon-md: 1.5rem;
+  --icon-lg: 2rem;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --height-bottom-nav: 0rem;
+    --height-header: 3.5rem;
+  }
+}
+
+:root[data-density='compact'] {
+  --height-control-sm: 2.5rem;
+  --height-control-md: 2.75rem;
+  --height-control-lg: 3rem;
+  --height-control-xl: 3.25rem;
+  --touch-target: 2.75rem;
+}
+
+:root[data-density='comfortable'] {
+  --height-control-sm: 2.75rem;
+  --height-control-md: 3rem;
+  --height-control-lg: 3.25rem;
+  --height-control-xl: 3.5rem;
+  --touch-target: 3rem;
+}

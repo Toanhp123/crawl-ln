@@ -1,0 +1,121 @@
+:root,
+:root[data-theme='dark'] {
+  --color-bg: 225 17% 7%;
+  --color-bg-elevated: 224 16% 9%;
+  --color-surface: 223 15% 11%;
+  --color-surface-2: 222 14% 14%;
+  --color-surface-3: 221 13% 18%;
+  --color-border: 220 13% 23%;
+  --color-border-strong: 219 14% 30%;
+  --color-text: 220 24% 96%;
+  --color-text-secondary: 218 15% 74%;
+  --color-muted: 217 11% 56%;
+  --color-primary: 239 84% 68%;
+  --color-primary-hover: 239 82% 72%;
+  --color-primary-pressed: 239 78% 64%;
+  --color-primary-contrast: 229 35% 10%;
+  --color-success: 151 58% 52%;
+  --color-warning: 39 92% 60%;
+  --color-danger: 0 76% 65%;
+  --color-info: 207 86% 65%;
+  --color-overlay: 225 30% 2%;
+  --state-primary-subtle: hsl(var(--color-primary) / 0.12);
+  --state-primary-hover: hsl(var(--color-primary) / 0.18);
+  --state-primary-pressed: hsl(var(--color-primary) / 0.24);
+  --state-primary-selected: hsl(var(--color-primary) / 0.2);
+  --state-primary-border: hsl(var(--color-primary) / 0.38);
+  --state-success-subtle: hsl(var(--color-success) / 0.12);
+  --state-success-hover: hsl(var(--color-success) / 0.18);
+  --state-success-border: hsl(var(--color-success) / 0.42);
+  --state-warning-subtle: hsl(var(--color-warning) / 0.13);
+  --state-warning-hover: hsl(var(--color-warning) / 0.2);
+  --state-warning-border: hsl(var(--color-warning) / 0.44);
+  --state-danger-subtle: hsl(var(--color-danger) / 0.13);
+  --state-danger-hover: hsl(var(--color-danger) / 0.21);
+  --state-danger-border: hsl(var(--color-danger) / 0.4);
+  --state-info-subtle: hsl(var(--color-info) / 0.12);
+  --state-info-hover: hsl(var(--color-info) / 0.18);
+  --state-info-border: hsl(var(--color-info) / 0.4);
+  --state-focus-ring: hsl(var(--color-primary) / 0.3);
+  --state-focus-outline: hsl(var(--color-primary) / 0.86);
+  --state-selection: hsl(var(--color-primary) / 0.34);
+}
+
+:root[data-theme='light'] {
+  --color-bg: 225 33% 98%;
+  --color-bg-elevated: 0 0% 100%;
+  --color-surface: 0 0% 100%;
+  --color-surface-2: 225 28% 96%;
+  --color-surface-3: 225 22% 92%;
+  --color-border: 225 18% 86%;
+  --color-border-strong: 225 16% 74%;
+  --color-text: 225 28% 13%;
+  --color-text-secondary: 225 15% 35%;
+  --color-muted: 225 10% 48%;
+  --color-primary: 239 75% 58%;
+  --color-primary-hover: 239 72% 52%;
+  --color-primary-pressed: 239 74% 46%;
+  --color-primary-contrast: 0 0% 100%;
+  --color-success: 151 55% 39%;
+  --color-warning: 35 85% 43%;
+  --color-danger: 0 67% 51%;
+  --color-info: 207 76% 48%;
+  --color-overlay: 225 30% 8%;
+  --state-primary-subtle: hsl(var(--color-primary) / 0.08);
+  --state-primary-hover: hsl(var(--color-primary) / 0.12);
+  --state-primary-pressed: hsl(var(--color-primary) / 0.18);
+  --state-primary-selected: hsl(var(--color-primary) / 0.13);
+  --state-primary-border: hsl(var(--color-primary) / 0.3);
+  --state-success-subtle: hsl(var(--color-success) / 0.09);
+  --state-success-hover: hsl(var(--color-success) / 0.14);
+  --state-success-border: hsl(var(--color-success) / 0.34);
+  --state-warning-subtle: hsl(var(--color-warning) / 0.1);
+  --state-warning-hover: hsl(var(--color-warning) / 0.16);
+  --state-warning-border: hsl(var(--color-warning) / 0.36);
+  --state-danger-subtle: hsl(var(--color-danger) / 0.08);
+  --state-danger-hover: hsl(var(--color-danger) / 0.14);
+  --state-danger-border: hsl(var(--color-danger) / 0.3);
+  --state-info-subtle: hsl(var(--color-info) / 0.08);
+  --state-info-hover: hsl(var(--color-info) / 0.13);
+  --state-info-border: hsl(var(--color-info) / 0.32);
+  --state-focus-ring: hsl(var(--color-primary) / 0.26);
+  --state-focus-outline: hsl(var(--color-primary) / 0.82);
+  --state-selection: hsl(var(--color-primary) / 0.28);
+}
+
+:root[data-accent='blue'] {
+  --color-primary: 214 90% 62%;
+  --color-primary-hover: 214 90% 68%;
+  --color-primary-pressed: 214 84% 57%;
+  --color-primary-contrast: 222 35% 10%;
+}
+:root[data-theme='light'][data-accent='blue'] {
+  --color-primary: 214 82% 50%;
+  --color-primary-hover: 214 82% 44%;
+  --color-primary-pressed: 214 84% 39%;
+  --color-primary-contrast: 0 0% 100%;
+}
+:root[data-accent='emerald'] {
+  --color-primary: 158 64% 48%;
+  --color-primary-hover: 158 64% 55%;
+  --color-primary-pressed: 158 61% 43%;
+  --color-primary-contrast: 160 38% 8%;
+}
+:root[data-theme='light'][data-accent='emerald'] {
+  --color-primary: 158 66% 36%;
+  --color-primary-hover: 158 66% 31%;
+  --color-primary-pressed: 158 68% 27%;
+  --color-primary-contrast: 0 0% 100%;
+}
+:root[data-accent='amber'] {
+  --color-primary: 39 92% 58%;
+  --color-primary-hover: 39 92% 65%;
+  --color-primary-pressed: 39 88% 53%;
+  --color-primary-contrast: 34 48% 10%;
+}
+:root[data-theme='light'][data-accent='amber'] {
+  --color-primary: 35 88% 45%;
+  --color-primary-hover: 35 88% 39%;
+  --color-primary-pressed: 35 90% 34%;
+  --color-primary-contrast: 0 0% 100%;
+}

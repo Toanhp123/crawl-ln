@@ -1,0 +1,45 @@
+{
+  "name": "novel-tool",
+  "private": true,
+  "version": "2.9.6",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run build:shared && concurrently -k -n api,web \"npm run dev -w @novel-tool/api\" \"npm run dev -w @novel-tool/web\"",
+    "dev:api": "npm run build:shared && npm run dev -w @novel-tool/api",
+    "dev:web": "npm run build:shared && npm run dev -w @novel-tool/web",
+    "build": "npm run build -w packages/shared && npm run build -w apps/api && npm run build -w apps/web",
+    "check": "npm run check:arch && npm run check:crawler && npm run check:web-arch && npm run check:web-contracts && npm run format:check && npm run check -w packages/shared && npm run build:shared && npm run check -w apps/api && npm run check -w apps/web",
+    "check:arch": "node scripts/check-api-architecture.mjs",
+    "build:shared": "npm run build -w @novel-tool/shared",
+    "check:crawler": "node scripts/check-crawler-platform.mjs",
+    "setup:termux": "sh scripts/setup-termux.sh",
+    "termux": "sh scripts/termux-dev.sh",
+    "dev:termux": "sh scripts/termux-dev.sh",
+    "test:regression": "node --import tsx --test tests/regression/*.test.ts",
+    "test:integration": "npm run build:shared && node --experimental-sqlite --import tsx --test tests/integration/*.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "verify": "npm run check:lockfile && npm run check && npm run test:regression && npm run test:integration && npm run build",
+    "check:lockfile": "node scripts/check-lockfile-portability.mjs",
+    "check:web-contracts": "node scripts/check-web-contracts.mjs",
+    "format": "prettier --write \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
+    "check:web-arch": "node scripts/check-web-architecture.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "concurrently": "^10.0.3",
+    "prettier": "^3.9.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5.5.4"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10.0.0"
+  }
+}

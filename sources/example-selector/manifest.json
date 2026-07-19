@@ -1,0 +1,9 @@
+{
+  "id": "example-selector",
+  "name": "Example Selector Plugin",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "priority": 10,
+  "match": ["example.com"],
+  "capabilities": ["metadata", "chapters", "cover"]
+}

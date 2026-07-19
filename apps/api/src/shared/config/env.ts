@@ -13,6 +13,11 @@ function optionalBase64Key(name: string): Buffer | undefined {
   return decoded;
 }
 
+function jsonEnv<T>(name: string, fallback: T): T {
+  const value = process.env[name];
+  return value ? (JSON.parse(value) as T) : fallback;
+}
+
 function listEnv(name: string) {
   return (process.env[name] ?? '')
     .split(',')
@@ -38,5 +43,8 @@ export const env = {
   sourceReaderCursorKey:
     process.env.SOURCE_READER_CURSOR_KEY ?? 'development-only-source-reader-cursor-key-32-bytes',
   sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500),
-  sourceReaderMasterKey: optionalBase64Key('SOURCE_READER_MASTER_KEY')
+  sourceReaderMasterKey: optionalBase64Key('SOURCE_READER_MASTER_KEY'),
+  sourceReaderTrustedKeys: jsonEnv<
+    Array<{ id: string; algorithm: 'ed25519'; publicKeyPem: string }>
+  >('SOURCE_READER_TRUSTED_KEYS_JSON', [])
 };

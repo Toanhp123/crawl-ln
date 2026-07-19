@@ -3,7 +3,10 @@ import { mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
+import {
+  CURRENT_SCHEMA_VERSION,
+  createSqliteDatabase
+} from '../../apps/api/src/shared/database/sqlite.ts';
 import { JsZipBackupArchive } from '../../apps/api/src/modules/backup/infrastructure/archive/jszip-backup.archive.ts';
 import { SqliteBackupStore } from '../../apps/api/src/modules/backup/infrastructure/sqlite/sqlite-backup.store.ts';
 import { CreateBackupUseCase } from '../../apps/api/src/modules/backup/application/use-cases/create-backup.usecase.ts';
@@ -212,7 +215,7 @@ test('encrypted replace creates an encrypted safety backup with current app meta
     await assert.rejects(() => archive.open(safety), /password is required/);
     const opened = await archive.open(safety, 'secret');
     assert.equal(opened.manifest.appVersion, '2.9.6');
-    assert.equal(opened.manifest.schemaVersion, 14);
+    assert.equal(opened.manifest.schemaVersion, CURRENT_SCHEMA_VERSION);
   } finally {
     database.close();
     await rm(storage, { recursive: true, force: true });

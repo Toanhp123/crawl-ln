@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-const { createSqliteDatabase } = await import('../../apps/api/src/shared/database/sqlite.ts');
+const { CURRENT_SCHEMA_VERSION, createSqliteDatabase } =
+  await import('../../apps/api/src/shared/database/sqlite.ts');
 const { NovelSqliteRepository } =
   await import('../../apps/api/src/modules/novels/infrastructure/sqlite/novel-sqlite.repository.ts');
 const { NovelAnalysisSqliteAdapter } =
@@ -184,7 +185,7 @@ test('migration runner records every schema version in order', async () => {
       .all() as Array<{ version: number }>;
     assert.deepEqual(
       versions.map((row) => Number(row.version)),
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+      Array.from({ length: CURRENT_SCHEMA_VERSION }, (_, index) => index + 1)
     );
   } finally {
     database.close();

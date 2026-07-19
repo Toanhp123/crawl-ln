@@ -198,3 +198,57 @@ test('service signs module-managed cursors and resumes list offsets', async () =
   assert.equal(second.data.nextCursor, undefined);
   assert.deepEqual(receivedCursors, [undefined, undefined]);
 });
+
+test('service resolves runtime context before invoking a plugin', async () => {
+  const plugin: SourceReaderPlugin = {
+    manifest: manifest('runtime-aware', 1),
+    readMetadata: async ({ url }) => ({
+      data: { title: 'Book', sourceUrl: url, sourceName: 'Demo' }
+    }),
+    readChapterList: async () => ({ data: { items: [], hasMore: false } })
+  };
+  const registry = new InMemoryPluginRegistry();
+  registry.register(plugin);
+  const resolvedInputs: Array<Record<string, unknown>> = [];
+  const contextInputs: Array<Record<string, unknown>> = [];
+  const runtimeContext = {
+    credential: {
+      id: 'cred-1',
+      ownerType: 'user' as const,
+      ownerId: 'u1',
+      strategy: 'form-login' as const
+    },
+    executionMode: 'in-process' as const,
+    browserRequired: false,
+    cacheIdentity: { authScope: 'auth', networkScope: 'direct' }
+  };
+  const service = new SourceReaderService(
+    registry,
+    new InProcessPluginRuntime(),
+    {
+      create: (input: Record<string, unknown>) => {
+        contextInputs.push(input);
+        return contextFactory.create();
+      }
+    } as never,
+    new MemoryReaderCache(100),
+    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901')),
+    { now: () => new Date('2026-07-19T00:00:00.000Z') },
+    {
+      resolve: async (input: Record<string, unknown>) => {
+        resolvedInputs.push(input);
+        return runtimeContext;
+      }
+    } as never
+  );
+
+  await service.readMetadata({
+    url: 'https://example.test/book',
+    userId: 'u1',
+    credentialProfileId: 'cred-1'
+  });
+
+  assert.equal(resolvedInputs.length, 1);
+  assert.equal(resolvedInputs[0].userId, 'u1');
+  assert.deepEqual(contextInputs[0].runtimeContext, runtimeContext);
+});

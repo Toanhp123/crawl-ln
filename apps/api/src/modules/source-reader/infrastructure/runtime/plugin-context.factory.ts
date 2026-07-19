@@ -3,6 +3,7 @@ import type { HtmlParserPort } from '../../../../shared/ports/html-parser.port.j
 import type { HttpClientPort } from '../../../../shared/ports/http-client.port.js';
 import type { LoggerPort } from '../../../../shared/ports/logger.port.js';
 import type { PluginContextFactoryPort } from '../../application/ports/plugin-context-factory.port.js';
+import type { ResolvedRuntimeContext } from '../../application/ports/runtime-context-resolver.port.js';
 import { normalizeSourceUrl } from '../../application/services/plugin-matcher.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import type { PluginContext, PluginHtmlDocument } from '../../domain/plugin/source-plugin.js';
@@ -26,7 +27,12 @@ export class PluginContextFactory implements PluginContextFactoryPort {
     private readonly logger: LoggerPort
   ) {}
 
-  create(input: { pluginId: string; allowedHosts: string[]; signal: AbortSignal }): PluginContext {
+  create(input: {
+    pluginId: string;
+    allowedHosts: string[];
+    signal: AbortSignal;
+    runtimeContext: ResolvedRuntimeContext;
+  }): PluginContext {
     const memory = new Map<string, { expiresAt: number; value: unknown }>();
 
     return {

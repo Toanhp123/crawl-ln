@@ -5,6 +5,7 @@ import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.p
 import type { PluginCandidate, PluginRegistryPort } from '../ports/plugin-registry.port.js';
 import type { PluginRuntimePort } from '../ports/plugin-runtime.port.js';
 import type { ReaderCachePort } from '../ports/reader-cache.port.js';
+import type { RuntimeContextResolverPort } from '../ports/runtime-context-resolver.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import type { PluginOperationResult } from '../../domain/plugin/source-plugin.js';
 import type {
@@ -49,7 +50,20 @@ interface ExecutableRequest {
   cursor?: string;
   limit?: number;
   query?: string;
+  userId?: string;
+  credentialProfileId?: string;
+  networkProfileId?: string;
 }
+
+const anonymousRuntimeContexts: RuntimeContextResolverPort = {
+  async resolve(input) {
+    return {
+      executionMode: input.executionMode ?? 'in-process',
+      browserRequired: false,
+      cacheIdentity: { authScope: 'anonymous', networkScope: 'direct' }
+    };
+  }
+};
 
 function isPagedCapability(
   capability: Exclude<SourceCapability, 'authentication'>
@@ -66,7 +80,8 @@ export class SourceReaderService implements SourceReaderApi {
     private readonly contexts: PluginContextFactoryPort,
     private readonly cache: ReaderCachePort,
     private readonly cursors: CursorCodecPort,
-    private readonly clock: ClockPort
+    private readonly clock: ClockPort,
+    private readonly runtimeContexts: RuntimeContextResolverPort = anonymousRuntimeContexts
   ) {}
 
   identify(request: IdentifyRequest) {
@@ -147,23 +162,37 @@ export class SourceReaderService implements SourceReaderApi {
       );
       this.validateCursorBinding(cursorPayload, capability, candidate, requestFingerprint);
 
-      const cacheKey = `source-reader:${this.fingerprint({
-        capability,
-        request,
-        plugin: candidate.plugin.manifest
-      })}`;
-      if (!request.freshOnly) {
-        const cached = await this.cache.get<SourceReaderResult<T>>(cacheKey);
-        if (cached && cached.expiresAt > this.clock.now().getTime()) return cached.value;
-      }
-
-      const signal = request.signal ?? new AbortController().signal;
-      const context = this.contexts.create({
-        pluginId: candidate.plugin.manifest.id,
-        allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
-        signal
-      });
       try {
+        const runtimeContext = await this.runtimeContexts.resolve({
+          userId: request.userId,
+          pluginId: candidate.plugin.manifest.id,
+          pluginVersion: candidate.plugin.manifest.version,
+          domain: candidate.domain,
+          capability,
+          credentialProfileId: request.credentialProfileId,
+          networkProfileId: request.networkProfileId,
+          executionMode: candidate.executionMode,
+          runtimeRequirements: candidate.plugin.manifest.runtimeRequirements
+        });
+        const cacheKey = `source-reader:${this.fingerprint({
+          capability,
+          request,
+          plugin: candidate.plugin.manifest,
+          authScope: runtimeContext.cacheIdentity.authScope,
+          networkScope: runtimeContext.cacheIdentity.networkScope
+        })}`;
+        if (!request.freshOnly) {
+          const cached = await this.cache.get<SourceReaderResult<T>>(cacheKey);
+          if (cached && cached.expiresAt > this.clock.now().getTime()) return cached.value;
+        }
+
+        const signal = request.signal ?? new AbortController().signal;
+        const context = this.contexts.create({
+          pluginId: candidate.plugin.manifest.id,
+          allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
+          signal,
+          runtimeContext
+        });
         if (candidate.plugin.canHandle) {
           const accepted = await candidate.plugin.canHandle(
             {

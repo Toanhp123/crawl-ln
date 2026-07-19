@@ -1,5 +1,7 @@
 import { SourceReaderService } from '../../../modules/source-reader/application/services/source-reader.service.js';
 import { MemoryReaderCache } from '../../../modules/source-reader/infrastructure/cache/memory-reader.cache.js';
+import { SqliteReaderCache } from '../../../modules/source-reader/infrastructure/cache/sqlite-reader.cache.js';
+import { TieredReaderCache } from '../../../modules/source-reader/infrastructure/cache/tiered-reader.cache.js';
 import { HmacCursorCodec } from '../../../modules/source-reader/infrastructure/cursor/hmac-cursor.codec.js';
 import { novelCoolPlugin } from '../../../modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.js';
 import { InMemoryPluginRegistry } from '../../../modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.js';
@@ -20,6 +22,11 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     enabled: true
   });
 
+  const cache = new TieredReaderCache(
+    new MemoryReaderCache(env.sourceReaderMemoryCacheEntries),
+    new SqliteReaderCache(infrastructure.database)
+  );
+
   const api = new SourceReaderService(
     registry,
     new InProcessPluginRuntime(),
@@ -29,7 +36,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
       infrastructure.clock,
       infrastructure.logger
     ),
-    new MemoryReaderCache(env.sourceReaderMemoryCacheEntries),
+    cache,
     new HmacCursorCodec(Buffer.from(env.sourceReaderCursorKey.padEnd(32, '0').slice(0, 32))),
     infrastructure.clock
   ) satisfies SourceReaderApi;

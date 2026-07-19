@@ -5,10 +5,14 @@ import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.p
 import type { PluginCandidate, PluginRegistryPort } from '../ports/plugin-registry.port.js';
 import type { PluginRuntimePort } from '../ports/plugin-runtime.port.js';
 import type { ReaderCachePort } from '../ports/reader-cache.port.js';
-import type { RuntimeContextResolverPort } from '../ports/runtime-context-resolver.port.js';
+import type {
+  ResolvedRuntimeContext,
+  RuntimeContextResolverPort
+} from '../ports/runtime-context-resolver.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import type { PluginOperationResult } from '../../domain/plugin/source-plugin.js';
 import type {
+  CacheScope,
   ChapterContent,
   ChapterSummary,
   IdentifyRequest,
@@ -174,16 +178,13 @@ export class SourceReaderService implements SourceReaderApi {
           executionMode: candidate.executionMode,
           runtimeRequirements: candidate.plugin.manifest.runtimeRequirements
         });
-        const cacheKey = `source-reader:${this.fingerprint({
-          capability,
-          request,
-          plugin: candidate.plugin.manifest,
-          authScope: runtimeContext.cacheIdentity.authScope,
-          networkScope: runtimeContext.cacheIdentity.networkScope
-        })}`;
         if (!request.freshOnly) {
-          const cached = await this.cache.get<SourceReaderResult<T>>(cacheKey);
-          if (cached && cached.expiresAt > this.clock.now().getTime()) return cached.value;
+          for (const scope of this.cacheLookupScopes(runtimeContext)) {
+            const cached = await this.cache.get<SourceReaderResult<T>>(
+              this.cacheKey(capability, candidate, request, runtimeContext, scope)
+            );
+            if (cached && cached.expiresAt > this.clock.now().getTime()) return cached.value;
+          }
         }
 
         const signal = request.signal ?? new AbortController().signal;
@@ -239,21 +240,35 @@ export class SourceReaderService implements SourceReaderApi {
           0,
           Math.min(operation.cacheHints?.ttlMs ?? 0, 30 * 24 * 60 * 60_000)
         );
-        if (ttlMs > 0 && operation.cacheHints?.scope !== 'none') {
+        const effectiveScope = this.narrowCacheScope(
+          operation.cacheHints?.scope ?? 'public',
+          runtimeContext
+        );
+        if (ttlMs > 0 && effectiveScope !== 'none') {
           const now = this.clock.now().getTime();
-          await this.cache.set(cacheKey, {
-            value: result,
-            expiresAt: now + ttlMs,
-            staleUntil: operation.cacheHints?.staleWhileRevalidateMs
-              ? now + ttlMs + operation.cacheHints.staleWhileRevalidateMs
-              : undefined,
-            tags: [
-              `plugin:${candidate.plugin.manifest.id}`,
-              `domain:${candidate.domain}`,
-              `capability:${capability}`,
-              ...(operation.cacheHints?.tags ?? [])
-            ]
-          });
+          await this.cache.set(
+            this.cacheKey(capability, candidate, request, runtimeContext, effectiveScope),
+            {
+              value: result,
+              expiresAt: now + ttlMs,
+              staleUntil: operation.cacheHints?.staleWhileRevalidateMs
+                ? now + ttlMs + operation.cacheHints.staleWhileRevalidateMs
+                : undefined,
+              tags: [
+                `plugin:${candidate.plugin.manifest.id}`,
+                `domain:${candidate.domain}`,
+                `capability:${capability}`,
+                ...(runtimeContext.credential
+                  ? [`credential:${runtimeContext.credential.id}`]
+                  : []),
+                ...(runtimeContext.session ? [`session:${runtimeContext.session.id}`] : []),
+                ...(runtimeContext.networkRoute
+                  ? [`network:${runtimeContext.networkRoute.id}`]
+                  : []),
+                ...(operation.cacheHints?.tags ?? [])
+              ]
+            }
+          );
         }
         return result;
       } catch (error) {
@@ -360,6 +375,50 @@ export class SourceReaderService implements SourceReaderApi {
     }
 
     return { items, nextCursor, hasMore: nextCursor !== undefined };
+  }
+
+  private cacheLookupScopes(runtime: ResolvedRuntimeContext): CacheScope[] {
+    if (!runtime.credential && !runtime.session) return ['public'];
+    return runtime.session ? ['session', 'account', 'user'] : ['account', 'user'];
+  }
+
+  private cacheKey(
+    capability: Exclude<SourceCapability, 'authentication'>,
+    candidate: PluginCandidate,
+    request: ExecutableRequest,
+    runtime: ResolvedRuntimeContext,
+    scope: CacheScope
+  ): string {
+    return `source-reader:${this.fingerprint({
+      capability,
+      normalizedUrl: candidate.normalizedUrl,
+      requestParameters: this.cacheableRequest(request),
+      pluginId: candidate.plugin.manifest.id,
+      pluginVersion: candidate.plugin.manifest.version,
+      contractVersion: candidate.plugin.manifest.contracts[capability] ?? 0,
+      extensionContracts: candidate.plugin.manifest.extensionContracts ?? {},
+      cacheScope: scope,
+      authScopeIdentity: scope === 'public' ? 'public' : runtime.cacheIdentity.authScope,
+      networkScopeIdentity: runtime.cacheIdentity.networkScope
+    })}`;
+  }
+
+  private cacheableRequest(request: ExecutableRequest): Record<string, unknown> {
+    return {
+      cursor: request.cursor,
+      limit: request.limit,
+      query: request.query
+    };
+  }
+
+  private narrowCacheScope(requested: CacheScope, runtime: ResolvedRuntimeContext): CacheScope {
+    if (requested === 'none') return 'none';
+    if (runtime.session) return requested === 'public' ? 'session' : requested;
+    if (runtime.credential) {
+      if (requested === 'public' || requested === 'session') return 'account';
+      return requested;
+    }
+    return requested === 'public' ? 'public' : 'none';
   }
 
   private requestFingerprint(

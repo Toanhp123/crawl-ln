@@ -9,6 +9,9 @@ import { sealJson, unsealJson } from './encrypted-json.js';
 interface ChallengeRow {
   id: string;
   plugin_id: string;
+  credential_profile_id: string | null;
+  network_profile_id: string | null;
+  owner_id: string | null;
   type: AuthChallengeHandle['type'];
   status: AuthChallengeHandle['status'];
   expires_at: string;
@@ -18,6 +21,9 @@ function toHandle(row: ChallengeRow): AuthChallengeHandle {
   return {
     id: row.id,
     pluginId: row.plugin_id,
+    ...(row.credential_profile_id ? { credentialProfileId: row.credential_profile_id } : {}),
+    ...(row.network_profile_id ? { networkProfileId: row.network_profile_id } : {}),
+    ...(row.owner_id ? { ownerId: row.owner_id } : {}),
     type: row.type,
     status: row.status,
     expiresAt: row.expires_at
@@ -84,10 +90,10 @@ export class SqliteAuthChallengeRepository implements AuthChallengeRepository {
   async findPendingById(id: string): Promise<AuthChallengeHandle | undefined> {
     const row = this.database.connection
       .prepare(
-        `SELECT id, plugin_id, type, status, expires_at
-                FROM source_reader_auth_challenges
-                WHERE id=? AND status='pending'
-                  AND expires_at > strftime('%Y-%m-%dT%H:%M:%fZ','now')`
+        `SELECT id, plugin_id, credential_profile_id, network_profile_id, owner_id,
+                type, status, expires_at
+         FROM source_reader_auth_challenges
+         WHERE id=? AND status='pending'`
       )
       .get(id) as ChallengeRow | undefined;
     return row ? toHandle(row) : undefined;
@@ -124,10 +130,41 @@ export class SqliteAuthChallengeRepository implements AuthChallengeRepository {
   }
 
   async complete(id: string, completedAt: string): Promise<void> {
+    const result = this.database.connection
+      .prepare(
+        `UPDATE source_reader_auth_challenges
+         SET status='completed', completed_at=? WHERE id=? AND status='pending'`
+      )
+      .run(completedAt, id);
+    if (Number(result.changes) !== 1) throw new Error(`Challenge ${id} is no longer pending`);
+  }
+
+  async listExpiredPending(now: string): Promise<AuthChallengeHandle[]> {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT id, plugin_id, credential_profile_id, network_profile_id, owner_id,
+                type, status, expires_at
+         FROM source_reader_auth_challenges
+         WHERE status='pending' AND expires_at<=?
+         ORDER BY expires_at, id`
+      )
+      .all(now) as unknown as ChallengeRow[];
+    return rows.map(toHandle);
+  }
+
+  async markExpired(id: string): Promise<void> {
+    this.database.connection
+      .prepare(
+        "UPDATE source_reader_auth_challenges SET status='expired' WHERE id=? AND status='pending'"
+      )
+      .run(id);
+  }
+
+  async cancel(id: string, completedAt: string): Promise<void> {
     this.database.connection
       .prepare(
         `UPDATE source_reader_auth_challenges
-                SET status='completed', completed_at=? WHERE id=? AND status='pending'`
+         SET status='cancelled', completed_at=? WHERE id=? AND status='pending'`
       )
       .run(completedAt, id);
   }

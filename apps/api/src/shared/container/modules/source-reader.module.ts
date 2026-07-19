@@ -1,3 +1,4 @@
+import { AuthChallengeService } from '../../../modules/source-reader/application/services/auth-challenge.service.js';
 import { PluginHealthService } from '../../../modules/source-reader/application/services/plugin-health.service.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
@@ -11,6 +12,7 @@ import { ExternalPluginLoader } from '../../../modules/source-reader/infrastruct
 import { StaticTrustStore } from '../../../modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.js';
 import { InMemoryPluginRegistry } from '../../../modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.js';
 import { InProcessPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.js';
+import { BrowserRuntimeCoordinator } from '../../../modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.js';
 import { IsolatedWorkerPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/isolated-worker/isolated-worker-plugin.runtime.js';
 import { RuntimeRouter } from '../../../modules/source-reader/infrastructure/runtime/runtime-router.js';
 import { LocalEncryptedVault } from '../../../modules/source-reader/infrastructure/secrets/local-encrypted.vault.js';
@@ -55,10 +57,37 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     persistentCache
   );
   const runtimeContexts = new RuntimeContextResolverService(credentials, networks, sessions);
+  const pluginContexts = new PluginContextFactory(
+    new AxiosHttpClientAdapter(),
+    new CheerioHtmlParserAdapter(),
+    infrastructure.clock,
+    infrastructure.logger,
+    sessions
+  );
+  const browser = new BrowserRuntimeCoordinator({
+    credentialResolver: async ({ credentialId, field }) => {
+      const handle = await credentials.findHandleById(credentialId);
+      if (!handle) throw new Error(`Credential ${credentialId} is unavailable`);
+      const value = (await credentials.resolveSecret(handle))[field];
+      if (typeof value !== 'string') {
+        throw new Error(`Credential field ${field} is unavailable`);
+      }
+      return value;
+    }
+  });
+  const challengeService = new AuthChallengeService(
+    challenges,
+    browser,
+    registry,
+    sessions,
+    pluginContexts,
+    infrastructure.ids,
+    infrastructure.clock
+  );
   const maintenance = new SourceReaderMaintenanceService(
     persistentCache,
     sessions,
-    challenges,
+    challengeService,
     () => infrastructure.clock.now()
   );
 
@@ -68,13 +97,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
       new InProcessPluginRuntime(),
       new IsolatedWorkerPluginRuntime({ defaultTimeoutMs: env.requestTimeoutMs })
     ),
-    new PluginContextFactory(
-      new AxiosHttpClientAdapter(),
-      new CheerioHtmlParserAdapter(),
-      infrastructure.clock,
-      infrastructure.logger,
-      sessions
-    ),
+    pluginContexts,
     cache,
     new HmacCursorCodec(Buffer.from(env.sourceReaderCursorKey.padEnd(32, '0').slice(0, 32))),
     infrastructure.clock,

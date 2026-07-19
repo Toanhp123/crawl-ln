@@ -7,7 +7,7 @@ test('maintenance expires cache, sessions, and challenges in one pass', async ()
   const service = new SourceReaderMaintenanceService(
     { deleteExpired: async () => (calls.push('cache'), 1) },
     { expireBefore: async () => (calls.push('sessions'), 1) },
-    { expireBefore: async () => (calls.push('challenges'), 1) },
+    { expirePending: async () => void calls.push('challenges') },
     () => new Date('2026-07-19T00:00:00.000Z')
   );
   await service.runOnce();
@@ -18,7 +18,7 @@ test('maintenance start and stop are idempotent', async () => {
   const service = new SourceReaderMaintenanceService(
     { deleteExpired: async () => 0 },
     { expireBefore: async () => 0 },
-    { expireBefore: async () => 0 },
+    { expirePending: async () => undefined },
     () => new Date('2026-07-19T00:00:00.000Z'),
     60_000
   );

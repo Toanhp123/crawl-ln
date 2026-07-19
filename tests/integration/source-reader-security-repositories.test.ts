@@ -183,6 +183,15 @@ test('sessions and challenges enforce binding, expiry, and credential revocation
     ownerId: 'u1',
     createdAt: timestamp
   });
+  assert.equal(
+    (await fixture.challenges.findPendingById('expired-challenge'))?.id,
+    'expired-challenge'
+  );
+  assert.deepEqual(
+    (await fixture.challenges.listExpiredPending(timestamp)).map((challenge) => challenge.id),
+    ['expired-challenge']
+  );
+  await fixture.challenges.markExpired('expired-challenge');
   assert.equal(await fixture.challenges.findPendingById('expired-challenge'), undefined);
 
   await fixture.credentials.delete('credential-u1');

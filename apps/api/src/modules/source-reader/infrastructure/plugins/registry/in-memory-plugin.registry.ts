@@ -61,6 +61,10 @@ export class InMemoryPluginRegistry implements PluginRegistryPort {
     this.registrations.delete(pluginId);
   }
 
+  findById(pluginId: string): RegisteredPlugin | undefined {
+    return this.registrations.get(pluginId);
+  }
+
   async listCandidates(request: {
     url: string;
     capability: SourceCapability;

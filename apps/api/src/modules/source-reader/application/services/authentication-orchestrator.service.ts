@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { AuthenticationRuntimePort } from '../ports/authentication-runtime.port.js';
+import type { AuthChallengeHandle } from '../ports/auth-challenge.repository.js';
 import type { CredentialHandle, CredentialRepository } from '../ports/credential.repository.js';
 import type { NetworkProfileHandle } from '../ports/network-profile.repository.js';
 import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.port.js';
@@ -35,7 +36,19 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
     private readonly ids: { randomId(): string },
     private readonly clock: { now(): Date },
     private readonly plugins?: PluginRegistryPort,
-    private readonly contexts?: PluginContextFactoryPort
+    private readonly contexts?: PluginContextFactoryPort,
+    private readonly challenges?: {
+      create(input: {
+        pluginId: string;
+        pluginVersion: string;
+        credentialProfileId?: string;
+        networkProfileId?: string;
+        ownerId?: string;
+        type: AuthChallengeHandle['type'];
+        expiresAt: string;
+        state: Record<string, unknown>;
+      }): Promise<AuthChallengeHandle>;
+    }
   ) {}
 
   async login(input: LoginInput): Promise<AuthExecutionResult> {
@@ -87,8 +100,30 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
         ...(result.session.expiresAt ? { expiresAt: result.session.expiresAt } : {}),
         createdAt: this.clock.now().toISOString()
       });
+      return result;
     }
-    return result;
+
+    if (!this.challenges) {
+      throw new SourceReaderError(
+        'AUTHENTICATION_REQUIRED',
+        'Authentication challenge persistence is unavailable',
+        { retryable: false, fallbackAllowed: false }
+      );
+    }
+    const persisted = await this.challenges.create({
+      pluginId: input.pluginId,
+      pluginVersion: input.pluginVersion,
+      credentialProfileId: input.credential.id,
+      ...(input.networkRoute ? { networkProfileId: input.networkRoute.id } : {}),
+      ...(input.userId ? { ownerId: input.userId } : {}),
+      type: result.challenge.type,
+      expiresAt: result.challenge.expiresAt,
+      state: { pluginChallengeId: result.challenge.id }
+    });
+    return {
+      status: 'challenge-required',
+      challenge: { ...result.challenge, id: persisted.id }
+    };
   }
 
   async logout(input: { credentialProfileId: string }): Promise<void> {

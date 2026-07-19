@@ -22,6 +22,7 @@ export interface PluginCandidate extends RegisteredPlugin {
 export interface PluginRegistryPort {
   register(plugin: SourceReaderPlugin, options?: Partial<Omit<RegisteredPlugin, 'plugin'>>): void;
   unregister(pluginId: string): void;
+  findById(pluginId: string): RegisteredPlugin | undefined;
   listCandidates(request: {
     url: string;
     capability: SourceCapability;

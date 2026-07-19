@@ -4,7 +4,7 @@ export class SourceReaderMaintenanceService {
   constructor(
     private readonly cache: { deleteExpired(now?: number): Promise<number> },
     private readonly sessions: { expireBefore(now: string): Promise<number> },
-    private readonly challenges: { expireBefore(now: string): Promise<number> },
+    private readonly challenges: { expirePending(): Promise<void> },
     private readonly now: () => Date,
     private readonly intervalMs = 15 * 60_000
   ) {}
@@ -26,7 +26,7 @@ export class SourceReaderMaintenanceService {
     await Promise.all([
       this.cache.deleteExpired(now.getTime()),
       this.sessions.expireBefore(now.toISOString()),
-      this.challenges.expireBefore(now.toISOString())
+      this.challenges.expirePending()
     ]);
   }
 }

@@ -25,17 +25,17 @@ test('novels application depends on ports instead of crawler concrete use cases'
   assert.match(update, /CrawlJobCreatorPort/);
 });
 
-test('chapter URL identity is owned locally by crawler and novels', () => {
-  const analyze = read(
+test('source URL identity rules are owned locally by crawler and novels', () => {
+  const novelAnalyze = read(
     'apps/api/src/modules/novels/application/use-cases/analyze-novel.usecase.ts'
   );
-  const engine = read(
-    'apps/api/src/modules/crawler/application/services/crawler-engine.service.ts'
+  const crawlerAnalyze = read(
+    'apps/api/src/modules/crawler/application/use-cases/analyze-source.usecase.ts'
   );
-  assert.match(analyze, /novels\/domain|domain\/url\/chapter-source-url-key/);
-  assert.match(engine, /crawler\/domain|domain\/url\/chapter-source-url-key/);
-  assert.doesNotMatch(analyze, /shared\/domain/);
-  assert.doesNotMatch(engine, /shared\/domain/);
+  assert.match(novelAnalyze, /domain\/url\/chapter-source-url-key/);
+  assert.match(crawlerAnalyze, /function comparableHostname/);
+  assert.doesNotMatch(novelAnalyze, /shared\/domain/);
+  assert.doesNotMatch(crawlerAnalyze, /shared\/domain/);
 });
 
 test('scheduler infrastructure does not import novels infrastructure', () => {

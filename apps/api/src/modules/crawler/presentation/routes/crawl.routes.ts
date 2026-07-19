@@ -4,7 +4,6 @@ import { asyncHandler } from '../../../../shared/http/async-handler.js';
 
 export function createCrawlRoutes(controller: CrawlJobController) {
   const router = Router();
-  router.get('/sources', asyncHandler(controller.sources));
   router.post('/analyze', asyncHandler(controller.analyze));
   router.post('/jobs', asyncHandler(controller.create));
   router.post('/jobs/resume', asyncHandler(controller.resume));

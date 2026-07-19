@@ -1,43 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CrawlerEngineService } from '../../apps/api/src/modules/crawler/application/services/crawler-engine.service.js';
 import { AnalyzeSourceUseCase } from '../../apps/api/src/modules/crawler/application/use-cases/analyze-source.usecase.js';
 import { InMemoryRateLimiterService } from '../../apps/api/src/modules/crawler/infrastructure/services/rate-limiter.service.js';
 import { RobotsTxtPolicyService } from '../../apps/api/src/modules/crawler/infrastructure/services/robots-policy.service.js';
-import type { HtmlDocumentPort } from '../../apps/api/src/shared/ports/html-parser.port.js';
 import { env } from '../../apps/api/src/shared/config/env.js';
-
-function chapterDocument(count: number): HtmlDocumentPort {
-  const nodes = Array.from({ length: count }, (_, index) => ({ index }));
-  return {
-    text: (selector) => (selector === 'h1' ? 'Long Novel' : ''),
-    html: () => '',
-    attr: () => undefined,
-    queryAll: (selector) => (selector === '.chapter' ? nodes : []),
-    nodeText: (node) => `Chapter ${(node as { index: number }).index + 1}`,
-    nodeAttr: (node, name) =>
-      name === 'href' ? `/chapter/${(node as { index: number }).index + 1}` : undefined,
-    remove: () => undefined
-  };
-}
-
-test('analyze discovers every chapter even when maxChaptersPerRun is smaller', async () => {
-  const engine = new CrawlerEngineService(
-    {
-      detect: async () => ({
-        id: 'x',
-        name: 'X',
-        hosts: ['example.com'],
-        selectors: { title: 'h1', chapterLinks: '.chapter', chapterContent: 'article' },
-        crawlPolicy: { maxChaptersPerRun: 2 }
-      })
-    },
-    { get: async () => ({ status: 200, data: '<html />', headers: {} }) },
-    { load: () => chapterDocument(5) }
-  );
-  const result = await engine.analyze('https://example.com/book');
-  assert.equal(result.chapters.length, 5);
-});
 
 test('analyze accepts www and bare host as the same source host', async () => {
   const useCase = new AnalyzeSourceUseCase(

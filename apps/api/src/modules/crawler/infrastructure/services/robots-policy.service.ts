@@ -2,7 +2,7 @@ import { env } from '../../../../shared/config/env.js';
 import type { RobotsDecision } from '../../domain/entities/crawl-result.entity.js';
 import type { RobotsPolicyPort } from '../../application/ports/robots-policy.port.js';
 import type { HttpClientPort } from '../../domain/http/http-client.port.js';
-import { hostMatches, normalizedHost } from '../../domain/source/url-normalizer.js';
+import { hostMatches, normalizedHost } from '../../../../shared/url/source-host.js';
 
 type RobotsRule = {
   directive: 'allow' | 'disallow';

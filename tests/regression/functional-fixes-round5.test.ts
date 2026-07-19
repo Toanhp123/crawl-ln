@@ -16,11 +16,3 @@ test('cover restore uses path-relative containment instead of separator-sensitiv
   assert.match(store, /isAbsolute\(relativePath\)/);
   assert.doesNotMatch(store, /destination\.startsWith\(`\$\{root\}\//);
 });
-
-test('plugin watcher catches reload failures instead of dropping the promise', async () => {
-  const registry = await source(
-    'apps/api/src/modules/plugin/infrastructure/runtime/dynamic-source-plugin.registry.ts'
-  );
-  assert.match(registry, /requestReload\(\)/);
-  assert.match(registry, /Plugin reload failed/);
-});

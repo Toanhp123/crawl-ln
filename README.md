@@ -56,10 +56,11 @@ Tạo `apps/api/.env` từ file mẫu nếu có và kiểm tra các giá trị c
 PORT=3000
 STORAGE_DRIVER=sqlite
 SQLITE_PATH=storage/novel-tool.sqlite
-SOURCE_PROFILES_FILE=./config/source-profiles.json
+SOURCE_READER_CURSOR_KEY=replace-with-a-private-32-byte-key
+SOURCE_READER_MEMORY_CACHE_ENTRIES=500
 ```
 
-Chỉ bật adapter cho nguồn bạn có quyền crawl hoặc nguồn cho phép sử dụng. Copy `apps/api/config/source-profiles.example.json` thành `apps/api/config/source-profiles.json`, sau đó cấu hình selector cho metadata, chapter list và chapter content.
+Source Reader hiện dùng các plugin built-in đã đăng ký trong module. Chỉ crawl nguồn bạn có quyền sử dụng và luôn giữ allowlist/robots policy phù hợp.
 
 ## Script
 
@@ -125,6 +126,6 @@ The mobile-first interface uses four persistent destinations (Crawl, Library, Ta
 Use the novel detail export sheet to create EPUB3 or UTF-8 TXT files. Exports can include all downloaded chapters or an inclusive chapter range.
 
 
-## Dynamic source plugins
+## Source Reader
 
-Source plugins are loaded from `sources/<plugin-id>/manifest.json` and `index.js`. Plugin API v2 provides a restricted context for HTTP requests, HTML parsing, logging and time. Manage plugins from Settings or `/api/plugins`.
+Crawler metadata, chapter list, and chapter content now run through the Source Reader boundary. Preview endpoints are available under `/api/source-reader`; external plugin administration will be introduced by the dedicated plugin-ingestion plan rather than the removed legacy `/api/plugins` runtime.

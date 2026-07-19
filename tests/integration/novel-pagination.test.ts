@@ -6,10 +6,6 @@ import test from 'node:test';
 
 const storageDir = await mkdtemp(join(tmpdir(), 'novel-tool-pagination-'));
 process.env.STORAGE_DIR = storageDir;
-process.env.SOURCE_PROFILES_FILE = new URL(
-  '../../apps/api/config/source-profiles.json',
-  import.meta.url
-).pathname;
 
 const { createAppRuntime } = await import('../../apps/api/src/app.ts');
 const runtime = createAppRuntime({ startBackgroundServices: false });

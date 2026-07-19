@@ -19,18 +19,24 @@ const reader = {
     }
   }),
   async *streamChapterList({ url }: { url: string }) {
-    yield {
-      data: [
-        { index: 1, title: 'Chapter 1', url: `${url}/chapter/1` },
-        { index: 2, title: 'Chapter 2', url: `${url}/chapter/2` }
-      ],
-      source: {
-        pluginId: 'reader-plugin',
-        pluginVersion: '1.0.0',
-        domain: 'example.test',
-        capability: 'chapter-list' as const
-      }
-    };
+    for (const indexes of [
+      [1, 2],
+      [3, 4, 5]
+    ]) {
+      yield {
+        data: indexes.map((index) => ({
+          index,
+          title: `Chapter ${index}`,
+          url: `${url}/chapter/${index}`
+        })),
+        source: {
+          pluginId: 'reader-plugin',
+          pluginVersion: '1.0.0',
+          domain: 'example.test',
+          capability: 'chapter-list' as const
+        }
+      };
+    }
   }
 };
 
@@ -42,7 +48,7 @@ test('crawler analyze composes metadata and chapter stream from Source Reader', 
   assert.equal(result.sourceName, 'Reader Plugin');
   assert.deepEqual(
     result.chapters.map((chapter) => chapter.index),
-    [1, 2]
+    [1, 2, 3, 4, 5]
   );
-  assert.equal(result.diagnostics?.chapterCount, 2);
+  assert.equal(result.diagnostics?.chapterCount, 5);
 });

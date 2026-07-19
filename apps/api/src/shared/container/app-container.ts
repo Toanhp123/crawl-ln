@@ -4,7 +4,6 @@ import { createCrawlerModule } from './modules/crawler.module.js';
 import { createInfrastructureModule } from './modules/infrastructure.module.js';
 import { createExportModule } from './modules/export.module.js';
 import { createNovelsModule } from './modules/novels.module.js';
-import { createPluginModule } from './modules/plugin.module.js';
 import { createNovelsPersistence } from './modules/novels-persistence.module.js';
 import { createSchedulerModule } from './modules/scheduler.module.js';
 import { createSearchModule } from './modules/search.module.js';
@@ -27,13 +26,11 @@ export function createAppContainer() {
   const novelsPersistence = createNovelsPersistence(infrastructure, chapters);
   const exports = createExportModule(novelsPersistence);
   const sourceReader = createSourceReaderModule(infrastructure);
-  const plugins = createPluginModule(infrastructure);
   const crawler = createCrawlerModule(
     infrastructure,
     novelsPersistence,
     tasks,
     chapters,
-    plugins,
     sourceReader
   );
   const novels = createNovelsModule(infrastructure, chapters, novelsPersistence, crawler, tasks);
@@ -73,14 +70,12 @@ export function createAppContainer() {
     lifecycle: {
       async start() {
         await sourceReader.lifecycle.start();
-        await plugins.lifecycle.start();
         await crawler.api.recoverCrawlJobs.execute();
         scheduler.lifecycle.service.start();
       },
       async stop() {
         await crawler.lifecycle.queue.stop();
         await scheduler.lifecycle.service.stop();
-        await plugins.lifecycle.stop();
         await sourceReader.lifecycle.stop();
         infrastructure.database.close();
       }
@@ -94,7 +89,6 @@ export function createAppContainer() {
       crawlJobs: crawler.presentation.controller,
       exports: exports.presentation.controller,
       backups: backups.presentation.controller,
-      plugins: plugins.presentation.controller,
       search: search.presentation.controller,
       sourceReader: sourceReader.presentation.controller
     }

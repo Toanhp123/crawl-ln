@@ -6,7 +6,6 @@ import type { ResumeCrawlJobUseCase } from '../../application/use-cases/resume-c
 import type { ListCrawlEventsUseCase } from '../../application/use-cases/list-crawl-events.usecase.js';
 import type { AnalyzeSourceUseCase } from '../../application/use-cases/analyze-source.usecase.js';
 import type { ResumeCrawlJobsUseCase } from '../../application/use-cases/resume-crawl-jobs.usecase.js';
-import type { ListSourceProfilesUseCase } from '../../application/use-cases/source-profiles/list-source-profiles.usecase.js';
 import type { RealtimeEventPublisher } from '../../../../shared/realtime/realtime-event-broker.js';
 import { accepted, ok } from '../../../../shared/http/api-response.js';
 import { parseBody, parseParams, parseQuery } from '../../../../shared/validation/validate.js';
@@ -21,8 +20,7 @@ import {
   toAnalyzeSourceResponse,
   toCrawlEventListResponse,
   toCrawlTaskListResponse,
-  toCrawlTaskResponse,
-  toSourceProfileListResponse
+  toCrawlTaskResponse
 } from '../mappers/crawler-response.mapper.js';
 
 export class CrawlJobController {
@@ -34,7 +32,6 @@ export class CrawlJobController {
     private readonly listCrawlEvents: ListCrawlEventsUseCase,
     private readonly analyzeSource: AnalyzeSourceUseCase,
     private readonly resumeCrawlJobs: ResumeCrawlJobsUseCase,
-    private readonly listSourceProfiles: ListSourceProfilesUseCase,
     private readonly realtime: RealtimeEventPublisher
   ) {}
 
@@ -45,9 +42,6 @@ export class CrawlJobController {
         await this.analyzeSource.execute(parseBody(req, analyzeSourceDto).url)
       )
     );
-
-  sources = async (_req: Request, res: Response) =>
-    ok(res, toSourceProfileListResponse(await this.listSourceProfiles.execute()));
 
   create = async (req: Request, res: Response) => {
     const task = await this.createCrawlJob.execute(parseBody(req, createCrawlJobDto).novelId);

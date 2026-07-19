@@ -5,12 +5,6 @@ function numberEnv(name: string, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-function boolEnv(name: string, fallback: boolean) {
-  const value = process.env[name];
-  if (value == null) return fallback;
-  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
-}
-
 function listEnv(name: string) {
   return (process.env[name] ?? '')
     .split(',')
@@ -33,9 +27,6 @@ export const env = {
   maxExportSourceBytes: numberEnv('MAX_EXPORT_SOURCE_BYTES', 128 * 1024 * 1024),
   minChapterContentChars: numberEnv('MIN_CHAPTER_CONTENT_CHARS', 200),
   sourceAllowlist: listEnv('SOURCE_ALLOWLIST'),
-  genericHtmlAdapterEnabled: boolEnv('GENERIC_HTML_ADAPTER_ENABLED', false),
-  sourceProfilesFile: process.env.SOURCE_PROFILES_FILE ?? './config/source-profiles.json',
-  sourcesDir: process.env.SOURCES_DIR ?? './sources',
   sourceReaderCursorKey:
     process.env.SOURCE_READER_CURSOR_KEY ?? 'development-only-source-reader-cursor-key-32-bytes',
   sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500)

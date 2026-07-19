@@ -4,17 +4,13 @@ import test from 'node:test';
 
 const read = (path: string) => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
-test('NovelCool declares newest-first chapter order and crawler normalizes it before indexing', () => {
-  const profile = JSON.parse(read('apps/api/config/source-profiles.json')) as Array<
-    Record<string, unknown>
-  >;
-  const novelCool = profile.find((item) => item.id === 'novelcool');
-  assert.equal(novelCool?.chapterListOrder, 'newest-first');
-  const engine = read(
-    'apps/api/src/modules/crawler/application/services/crawler-engine.service.ts'
+test('NovelCool built-in normalizes newest-first source chapters before indexing', () => {
+  const plugin = read(
+    'apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts'
   );
-  assert.match(engine, /profile\.chapterListOrder === 'newest-first'/);
-  assert.match(engine, /\[\.\.\.chapterCandidates\]\.reverse\(\)/);
+  assert.match(plugin, /\.filter\(\(chapter\) => chapter\.url\.length > 0\)/);
+  assert.match(plugin, /\.reverse\(\)/);
+  assert.match(plugin, /index: index \+ 1/);
 });
 
 test('database migration reindexes existing NovelCool chapters from parsed chapter numbers', () => {

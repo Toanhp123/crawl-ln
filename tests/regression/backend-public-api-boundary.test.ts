@@ -6,7 +6,7 @@ const moduleFactories = [
   'chapters.module.ts',
   'crawler.module.ts',
   'novels.module.ts',
-  'plugin.module.ts',
+  'source-reader.module.ts',
   'scheduler.module.ts',
   'tasks.module.ts'
 ];

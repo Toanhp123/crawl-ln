@@ -9,62 +9,58 @@
 - Core Runtime Plan — Tasks 1–6: **complete**.
 - Crawler Cutover Plan — Tasks 1–5: **complete**.
 - State/Security Plan — Tasks 1–6: **complete**.
-- External Plugins Plan — Tasks 1–4: **complete**.
-- External Plugins Plan — Task 5: **next**.
-- Auth/Browser Plan — Tasks 1–5: **not started**.
+- External Plugins Plan — Tasks 1–5: **complete**.
+- Auth/Browser Plan — Tasks 1–2: **complete**.
+- Auth/Browser Plan — Task 3: **in progress in the working tree**.
+- Auth/Browser Plan — Tasks 4–5: **not started**.
 - HTTP/Observability/Finalization Plan — Tasks 1–6: **not started**.
 
-Completed roadmap tasks: **21/33**. Remaining: **12**.
+Completed roadmap tasks: **24/33**. Remaining completed-task count: **9 tasks**.
 
-## Latest delivered work
+## Three-task checkpoint batch
 
-### State/Security
+The three tasks completed since the previous ZIP are:
 
-- Owned SQLite schema migrations 15–17.
-- AES-256-GCM SecretVault with degraded mode.
-- Encrypted credential, network profile, session, and challenge repositories.
-- Runtime context resolution with ownership and region constraints.
-- Scope-aware tiered memory/SQLite cache.
-- Source Reader composition, maintenance cleanup, and degraded-mode coverage.
+1. External Plugins Task 5 — capability health, circuit eligibility, integrity quarantine.
+2. Auth/Browser Task 1 — authentication contracts and standard strategies.
+3. Auth/Browser Task 2 — encrypted route-bound login sessions and host-only session attachment.
 
-### External Plugins
-
-- Package path/checksum/signature verification and trust classification.
-- Persistent installation/version/permission lifecycle with atomic activation.
-- Isolated worker RPC runtime for untrusted external plugins.
-- Loading approved active external plugins into the capability registry.
-
-## Latest focused commits
+Focused commits:
 
 ```text
-311bf5b feat(source-reader): activate approved external plugins
-378f0e0 feat(source-reader): isolate external plugin execution
-8f465bf feat(source-reader): persist plugin installation lifecycle
-bc30be3 feat(source-reader): verify external plugin packages
-537400d feat(source-reader): compose secure persistent state
-3868e84 feat(source-reader): add scoped persistent cache
-aedce94 feat(source-reader): resolve auth and network context
-35da251 feat(source-reader): persist encrypted runtime profiles
-79bfe78 feat(source-reader): encrypt module secrets
-7533d3e feat(source-reader): add owned database schema
+8e60c24 fix(source-reader): harden route-bound session lookup
+b62da5a feat(source-reader): persist route-bound login sessions
+e022ab5 feat(source-reader): add standard authentication strategies
+4f38a5c feat(source-reader): supervise external plugin health
 ```
 
-## Verification evidence for this checkpoint
+## Verification evidence
 
-Fresh focused verification at this head:
+Fresh verification after Task 2 hardening:
 
 - Shared build: PASS.
-- State/Security and External Plugins focused suites: **18/18 pass**.
+- Session login + security repositories: **6/6 pass**.
+- Runtime-context regression: **4/4 pass**.
 - API TypeScript check: PASS.
-- Working tree before checkpoint documentation: clean.
 
-## Exact next task
+## Current uncommitted Task 3 state
+
+Auth/Browser Task 3 has started and is intentionally preserved as working-tree state:
+
+- `playwright-core` dependency added.
+- Browser runtime port created.
+- Worker protocol, worker entry, and coordinator created.
+- Browser integration test created.
+
+The browser integration test currently skips when `CHROMIUM_PATH` is unavailable. Before committing Task 3, add deterministic non-browser unit coverage or run the integration test with a real Chromium executable, normalize the lockfile registry URL, run API/architecture checks, and verify worker cleanup and host restrictions.
+
+## Exact continuation point
 
 Continue with:
 
 ```text
-docs/superpowers/plans/2026-07-19-source-reader-external-plugins.md
-Task 5: Add health checks, failure state, circuit eligibility, and quarantine
+docs/superpowers/plans/2026-07-19-source-reader-auth-browser.md
+Task 3: Add browser worker coordinator and restricted browser client
 ```
 
-After Task 5, continue Auth/Browser Tasks 1 and 2. Once those three tasks are complete and verified, create the next ZIP checkpoint.
+The archive includes `.git/`, the complete working tree, and a binary-safe patch of all uncommitted Task 3 changes.

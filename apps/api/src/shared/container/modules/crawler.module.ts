@@ -43,7 +43,7 @@ export function createCrawlerModule(
   tasks: TasksModule,
   chapters: ChaptersModule,
   plugins: PluginModule,
-  _sourceReader: SourceReaderModule
+  sourceReader: SourceReaderModule
 ) {
   const crawlEvents = new CrawlEventSqliteRepository(infrastructure.database);
   const crawlAuditHandler = new RecordCrawlAuditHandler(crawlEvents);
@@ -65,7 +65,7 @@ export function createCrawlerModule(
   ];
   const robotsPolicy = new RobotsTxtPolicyService(httpClient);
   const rateLimiter = new InMemoryRateLimiterService();
-  const analyzeSource = new AnalyzeSourceUseCase(sourceAdapters, robotsPolicy);
+  const analyzeSource = new AnalyzeSourceUseCase(sourceReader.api, robotsPolicy);
   const fetchChapter = new FetchChapterUseCase(sourceAdapters, robotsPolicy, rateLimiter);
   const crawlProgress = new CrawlProgressService();
   const crawlPersistence = new CrawlRunSqliteUnitOfWork(

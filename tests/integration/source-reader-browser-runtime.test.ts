@@ -10,7 +10,7 @@ test(
       ? false
       : 'CHROMIUM_PATH is required for browser runtime integration'
   },
-  async () => {
+  async (context) => {
     const server = createServer((_request, response) => {
       response.setHeader('content-type', 'text/html');
       response.end(
@@ -18,6 +18,7 @@ test(
       );
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    let session: Awaited<ReturnType<BrowserRuntimeCoordinator['open']>> | undefined;
     try {
       const address = server.address();
       if (!address || typeof address === 'string') throw new Error('server did not bind');
@@ -31,7 +32,7 @@ test(
         sourceAccountId: 'a1',
         networkRouteId: 'direct'
       };
-      const session = await runtime.open({
+      session = await runtime.open({
         identity,
         allowedHosts: ['127.0.0.1'],
         signal: new AbortController().signal
@@ -44,12 +45,23 @@ test(
         }),
         session
       );
-      await session.open(`http://127.0.0.1:${address.port}`);
+      await assert.rejects(
+        () => session!.open('https://forbidden.invalid'),
+        /host is not approved/
+      );
+      try {
+        await session.open(`http://127.0.0.1:${address.port}`);
+      } catch (error) {
+        if (String(error).includes('ERR_BLOCKED_BY_ADMINISTRATOR')) {
+          context.skip('Chromium is managed with a machine-wide URLBlocklist');
+          return;
+        }
+        throw error;
+      }
       await session.fillSecret('#password', { credentialId: 'cred-1', field: 'password' });
       assert.equal(await session.text('body'), 'outside');
-      await assert.rejects(() => session.open('https://forbidden.invalid'));
-      await session.close();
     } finally {
+      await session?.close();
       await new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve()))
       );

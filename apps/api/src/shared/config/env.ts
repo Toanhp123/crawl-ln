@@ -5,6 +5,14 @@ function numberEnv(name: string, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+function optionalBase64Key(name: string): Buffer | undefined {
+  const value = process.env[name];
+  if (!value) return undefined;
+  const decoded = Buffer.from(value, 'base64');
+  if (decoded.length !== 32) throw new Error(`${name} must be base64 for exactly 32 bytes`);
+  return decoded;
+}
+
 function listEnv(name: string) {
   return (process.env[name] ?? '')
     .split(',')
@@ -29,5 +37,6 @@ export const env = {
   sourceAllowlist: listEnv('SOURCE_ALLOWLIST'),
   sourceReaderCursorKey:
     process.env.SOURCE_READER_CURSOR_KEY ?? 'development-only-source-reader-cursor-key-32-bytes',
-  sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500)
+  sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500),
+  sourceReaderMasterKey: optionalBase64Key('SOURCE_READER_MASTER_KEY')
 };

@@ -54,5 +54,6 @@ export interface PluginStorePort {
   permissionsApproved(pluginId: string, version: string): Promise<boolean>;
   activate(pluginId: string, version: string, activatedAt: string): Promise<void>;
   findActive(pluginId: string): Promise<StoredPluginVersion | undefined>;
+  listActive(): Promise<StoredPluginVersion[]>;
   quarantine(pluginId: string, version: string, reason: string): Promise<void>;
 }

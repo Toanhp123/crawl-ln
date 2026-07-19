@@ -20,14 +20,41 @@ export class InMemoryPluginRegistry implements PluginRegistryPort {
     if (this.registrations.has(plugin.manifest.id)) {
       throw new Error(`Duplicate source plugin id: ${plugin.manifest.id}`);
     }
+    this.registrations.set(plugin.manifest.id, this.registration(plugin, options));
+  }
 
-    this.registrations.set(plugin.manifest.id, {
+  replaceExternal(registrations: RegisteredPlugin[]): void {
+    const next = new Map(
+      [...this.registrations].filter(([, registration]) => registration.trustLevel === 'built-in')
+    );
+    for (const registration of registrations) {
+      const pluginId = registration.plugin.manifest.id;
+      if (next.has(pluginId)) throw new Error(`Duplicate source plugin id: ${pluginId}`);
+      next.set(
+        pluginId,
+        this.registration(registration.plugin, {
+          trustLevel: registration.trustLevel,
+          executionMode: registration.executionMode,
+          enabled: registration.enabled,
+          packagePath: registration.packagePath
+        })
+      );
+    }
+    this.registrations.clear();
+    for (const [pluginId, registration] of next) this.registrations.set(pluginId, registration);
+  }
+
+  private registration(
+    plugin: SourceReaderPlugin,
+    options: Partial<Omit<RegisteredPlugin, 'plugin'>>
+  ): RegisteredPlugin {
+    return {
       plugin,
       trustLevel: options.trustLevel ?? 'built-in',
       executionMode: options.executionMode ?? plugin.manifest.runtime.preferredMode,
       enabled: options.enabled ?? true,
       ...(options.packagePath ? { packagePath: options.packagePath } : {})
-    });
+    };
   }
 
   unregister(pluginId: string): void {

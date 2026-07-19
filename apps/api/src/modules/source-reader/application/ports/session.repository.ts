@@ -23,7 +23,7 @@ export interface SessionRepository {
     ownerId?: string;
     networkProfileId?: string;
   }): Promise<SessionHandle | undefined>;
-  findActiveAnyRoute(input: {
+  findActiveAnyRoute?(input: {
     pluginId: string;
     credentialProfileId: string;
     ownerId?: string;

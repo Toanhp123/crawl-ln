@@ -93,25 +93,21 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
         })
       : undefined;
     const alternateSession =
-      credential && !routeSession
+      credential && !routeSession && this.sessions.findActiveAnyRoute
         ? await this.sessions.findActiveAnyRoute({
             pluginId: input.pluginId,
             credentialProfileId: credential.id,
             ownerId: input.userId
           })
         : undefined;
-    if (
-      alternateSession?.networkBinding === 'required' &&
-      alternateSession.networkProfileId !== networkRoute?.id
-    ) {
+    const session = routeSession ?? alternateSession;
+    if (session?.networkBinding === 'required' && session.networkProfileId !== networkRoute?.id) {
       throw new SourceReaderError(
         'SESSION_NETWORK_MISMATCH',
         'Session requires the network route used during login',
         { retryable: false, fallbackAllowed: false }
       );
     }
-    const session = routeSession ?? alternateSession;
-
 
     return {
       credential,

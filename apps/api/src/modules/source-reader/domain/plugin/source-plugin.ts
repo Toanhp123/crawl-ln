@@ -1,3 +1,4 @@
+import type { AuthExecutionResult } from '../auth/authentication.js';
 import type {
   ChapterContent,
   ChapterSummary,
@@ -125,8 +126,25 @@ export interface PluginOperationResult<T> {
   };
 }
 
+export interface AuthenticationExtension {
+  login(
+    request: { credentialHandleId: string },
+    context: PluginContext
+  ): Promise<AuthExecutionResult>;
+  refreshSession?(
+    request: { sessionHandleId: string },
+    context: PluginContext
+  ): Promise<AuthExecutionResult>;
+  logout?(request: { sessionHandleId: string }, context: PluginContext): Promise<void>;
+  resumeChallenge?(
+    request: { challengeId: string; response: Record<string, unknown> },
+    context: PluginContext
+  ): Promise<AuthExecutionResult>;
+}
+
 export interface SourceReaderPlugin {
   manifest: SourcePluginManifest;
+  authentication?: AuthenticationExtension;
   canHandle?(request: PluginMatchRequest, context: PluginContext): boolean | Promise<boolean>;
   identify?(
     request: { url: string },

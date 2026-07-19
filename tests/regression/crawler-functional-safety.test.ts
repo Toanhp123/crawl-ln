@@ -41,18 +41,35 @@ test('analyze discovers every chapter even when maxChaptersPerRun is smaller', a
 
 test('analyze accepts www and bare host as the same source host', async () => {
   const useCase = new AnalyzeSourceUseCase(
-    [
-      {
-        canHandle: async () => true,
-        analyzeNovel: async () => ({
+    {
+      readMetadata: async () => ({
+        data: {
           title: 'Novel',
           sourceUrl: 'https://example.com/book',
-          sourceName: 'X',
-          chapters: [{ index: 1, title: 'One', url: 'https://www.example.com/chapter/1' }]
-        }),
-        fetchChapter: async () => ({ title: 'One', content: 'x' })
+          sourceName: 'X'
+        },
+        source: {
+          pluginId: 'demo',
+          pluginVersion: '1.0.0',
+          domain: 'example.com',
+          capability: 'metadata'
+        }
+      }),
+      streamChapterList: async function* () {
+        yield {
+          data: [{ index: 1, title: 'One', url: 'https://www.example.com/chapter/1' }],
+          source: {
+            pluginId: 'demo',
+            pluginVersion: '1.0.0',
+            domain: 'example.com',
+            capability: 'chapter-list'
+          }
+        };
+      },
+      readChapterContent: async () => {
+        throw new Error('not used');
       }
-    ],
+    },
     { check: async () => ({ allowed: true }) }
   );
   const result = await useCase.execute('https://example.com/book');

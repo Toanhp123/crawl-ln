@@ -66,7 +66,7 @@ export function createCrawlerModule(
   const robotsPolicy = new RobotsTxtPolicyService(httpClient);
   const rateLimiter = new InMemoryRateLimiterService();
   const analyzeSource = new AnalyzeSourceUseCase(sourceReader.api, robotsPolicy);
-  const fetchChapter = new FetchChapterUseCase(sourceAdapters, robotsPolicy, rateLimiter);
+  const fetchChapter = new FetchChapterUseCase(sourceReader.api, robotsPolicy, rateLimiter);
   const crawlProgress = new CrawlProgressService();
   const crawlPersistence = new CrawlRunSqliteUnitOfWork(
     infrastructure.database,

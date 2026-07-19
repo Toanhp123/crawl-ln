@@ -95,7 +95,8 @@ export function createAppContainer() {
       exports: exports.presentation.controller,
       backups: backups.presentation.controller,
       plugins: plugins.presentation.controller,
-      search: search.presentation.controller
+      search: search.presentation.controller,
+      sourceReader: sourceReader.presentation.controller
     }
   };
 }

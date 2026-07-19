@@ -5,6 +5,7 @@ import { novelCoolPlugin } from '../../../modules/source-reader/infrastructure/p
 import { InMemoryPluginRegistry } from '../../../modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.js';
 import { InProcessPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.js';
 import { PluginContextFactory } from '../../../modules/source-reader/infrastructure/runtime/plugin-context.factory.js';
+import { SourceReaderController } from '../../../modules/source-reader/presentation/controllers/source-reader.controller.js';
 import type { SourceReaderApi } from '../../../modules/source-reader/public/source-reader.api.js';
 import { env } from '../../config/env.js';
 import { CheerioHtmlParserAdapter } from '../../infrastructure/html/cheerio-html-parser.adapter.js';
@@ -35,7 +36,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
 
   return {
     api,
-    presentation: {},
+    presentation: { controller: new SourceReaderController(api) },
     lifecycle: {
       async start() {},
       async stop() {}

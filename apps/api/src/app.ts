@@ -10,6 +10,7 @@ import { createBackupRoutes } from './modules/backup/presentation/routes/backup.
 import { createExportRoutes } from './modules/export/presentation/routes/export.routes.js';
 import { createSourcePluginRoutes } from './modules/plugin/presentation/routes/source-plugin.routes.js';
 import { createSearchRoutes } from './modules/search/presentation/routes/search.routes.js';
+import { createSourceReaderRoutes } from './modules/source-reader/presentation/routes/source-reader.routes.js';
 import { createAppContainer } from './shared/container/app-container.js';
 import { notFoundMiddleware } from './shared/http/not-found-middleware.js';
 import { errorMiddleware } from './app/http/error-middleware.js';
@@ -37,6 +38,7 @@ export function createAppRuntime(options: { startBackgroundServices?: boolean } 
   app.use('/api/backups', createBackupRoutes(container.presentation.backups));
   app.use('/api/plugins', createSourcePluginRoutes(container.presentation.plugins));
   app.use('/api/search', createSearchRoutes(container.presentation.search));
+  app.use('/api/source-reader', createSourceReaderRoutes(container.presentation.sourceReader));
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);
 

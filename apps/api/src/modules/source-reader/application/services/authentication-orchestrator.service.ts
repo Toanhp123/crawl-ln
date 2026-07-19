@@ -1,0 +1,160 @@
+import { createHash } from 'node:crypto';
+import type { AuthenticationRuntimePort } from '../ports/authentication-runtime.port.js';
+import type { CredentialHandle, CredentialRepository } from '../ports/credential.repository.js';
+import type { NetworkProfileHandle } from '../ports/network-profile.repository.js';
+import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.port.js';
+import type { PluginRegistryPort } from '../ports/plugin-registry.port.js';
+import type { SessionRepository } from '../ports/session.repository.js';
+import type {
+  AuthExecutionResult,
+  AuthenticationStrategy
+} from '../../domain/auth/authentication.js';
+import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
+import type { AuthenticationHttpClient } from './standard-authentication.service.js';
+import { StandardAuthenticationService } from './standard-authentication.service.js';
+
+const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+
+interface LoginInput {
+  pluginId: string;
+  pluginVersion: string;
+  userId?: string;
+  credentialProfileId: string;
+  networkRoute?: NetworkProfileHandle;
+  strategy: AuthenticationStrategy;
+  configuration: Record<string, unknown>;
+  signal?: AbortSignal;
+}
+
+export class AuthenticationOrchestratorService implements AuthenticationRuntimePort {
+  constructor(
+    private readonly credentials: CredentialRepository,
+    private readonly sessions: SessionRepository,
+    private readonly standard: StandardAuthenticationService,
+    private readonly http: AuthenticationHttpClient,
+    private readonly ids: { randomId(): string },
+    private readonly clock: { now(): Date },
+    private readonly plugins?: PluginRegistryPort,
+    private readonly contexts?: PluginContextFactoryPort
+  ) {}
+
+  async login(input: LoginInput): Promise<AuthExecutionResult> {
+    const credential = await this.credentials.findHandleById(input.credentialProfileId);
+    if (!credential) {
+      throw new SourceReaderError('CREDENTIAL_UNAVAILABLE', 'Credential is unavailable', {
+        retryable: false,
+        fallbackAllowed: false
+      });
+    }
+    this.assertCredentialAccess(credential, input.userId, input.pluginId);
+    return this.authenticate({
+      pluginId: input.pluginId,
+      pluginVersion: input.pluginVersion,
+      userId: input.userId,
+      credential,
+      networkRoute: input.networkRoute,
+      strategy: input.strategy,
+      configuration: input.configuration,
+      signal: input.signal
+    });
+  }
+
+  async authenticate(
+    input: Parameters<AuthenticationRuntimePort['authenticate']>[0]
+  ): Promise<AuthExecutionResult> {
+    this.assertCredentialAccess(input.credential, input.userId, input.pluginId);
+    const result =
+      input.strategy === 'custom'
+        ? await this.authenticateCustom(input)
+        : await this.standard.authenticate({
+            strategy: input.strategy,
+            secret: await this.credentials.resolveSecret(input.credential),
+            configuration: input.configuration,
+            http: this.http
+          });
+
+    if (result.status === 'authenticated') {
+      await this.sessions.save({
+        id: this.ids.randomId(),
+        pluginId: input.pluginId,
+        pluginVersion: input.pluginVersion,
+        credentialProfileId: input.credential.id,
+        ...(input.userId ? { ownerId: input.userId } : {}),
+        ...(input.networkRoute ? { networkProfileId: input.networkRoute.id } : {}),
+        networkBinding: result.session.networkBinding,
+        encryptedMaterial: result.session as unknown as Record<string, unknown>,
+        status: 'active',
+        ...(result.session.expiresAt ? { expiresAt: result.session.expiresAt } : {}),
+        createdAt: this.clock.now().toISOString()
+      });
+    }
+    return result;
+  }
+
+  async logout(input: { credentialProfileId: string }): Promise<void> {
+    await this.sessions.revokeByCredential(input.credentialProfileId);
+  }
+
+  private async authenticateCustom(
+    input: Parameters<AuthenticationRuntimePort['authenticate']>[0]
+  ): Promise<AuthExecutionResult> {
+    const sourceUrl =
+      typeof input.configuration.sourceUrl === 'string' ? input.configuration.sourceUrl : '';
+    if (!sourceUrl || !this.plugins || !this.contexts) {
+      return this.customUnavailable('Custom authentication is unavailable');
+    }
+
+    const candidate = (
+      await this.plugins.listCandidates({ url: sourceUrl, capability: 'authentication' })
+    ).find((item) => item.plugin.manifest.id === input.pluginId);
+    const extension = candidate?.plugin.authentication;
+    if (!candidate || !extension) {
+      return this.customUnavailable('Custom authentication is unavailable');
+    }
+
+    const signal = input.signal ?? new AbortController().signal;
+    const context = this.contexts.create({
+      pluginId: input.pluginId,
+      allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
+      signal,
+      runtimeContext: {
+        credential: input.credential,
+        ...(input.networkRoute ? { networkRoute: input.networkRoute } : {}),
+        executionMode: candidate.executionMode,
+        browserRequired: candidate.plugin.manifest.runtime.requiresBrowser ?? false,
+        cacheIdentity: {
+          authScope: hash(`${input.credential.ownerType}:${input.credential.id}`),
+          networkScope: input.networkRoute ? hash(input.networkRoute.id) : 'direct'
+        }
+      }
+    });
+    return extension.login({ credentialHandleId: input.credential.id }, context);
+  }
+
+  private assertCredentialAccess(
+    credential: CredentialHandle,
+    userId: string | undefined,
+    pluginId: string
+  ): void {
+    if (credential.ownerType === 'user' && credential.ownerId !== userId) {
+      throw new SourceReaderError('PLUGIN_PERMISSION_DENIED', 'Credential is not owned by actor', {
+        retryable: false,
+        fallbackAllowed: false
+      });
+    }
+    if (credential.pluginId && credential.pluginId !== pluginId) {
+      throw new SourceReaderError(
+        'PLUGIN_PERMISSION_DENIED',
+        'Credential is not approved for this plugin',
+        { retryable: false, fallbackAllowed: false }
+      );
+    }
+  }
+
+  private customUnavailable(message: string): never {
+    throw new SourceReaderError('CAPABILITY_NOT_SUPPORTED', message, {
+      retryable: false,
+      fallbackAllowed: false
+    });
+  }
+}

@@ -3,8 +3,10 @@ import type { HtmlParserPort } from '../../../../shared/ports/html-parser.port.j
 import type { HttpClientPort } from '../../../../shared/ports/http-client.port.js';
 import type { LoggerPort } from '../../../../shared/ports/logger.port.js';
 import type { PluginContextFactoryPort } from '../../application/ports/plugin-context-factory.port.js';
+import type { SessionRepository } from '../../application/ports/session.repository.js';
 import type { ResolvedRuntimeContext } from '../../application/ports/runtime-context-resolver.port.js';
 import { normalizeSourceUrl } from '../../application/services/plugin-matcher.js';
+import type { AuthSessionMaterial } from '../../domain/auth/authentication.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import type { PluginContext, PluginHtmlDocument } from '../../domain/plugin/source-plugin.js';
 
@@ -24,7 +26,8 @@ export class PluginContextFactory implements PluginContextFactoryPort {
     private readonly http: HttpClientPort,
     private readonly parser: HtmlParserPort,
     private readonly clock: ClockPort,
-    private readonly logger: LoggerPort
+    private readonly logger: LoggerPort,
+    private readonly sessions?: Pick<SessionRepository, 'resolveMaterial'>
   ) {}
 
   create(input: {
@@ -34,6 +37,13 @@ export class PluginContextFactory implements PluginContextFactoryPort {
     runtimeContext: ResolvedRuntimeContext;
   }): PluginContext {
     const memory = new Map<string, { expiresAt: number; value: unknown }>();
+    let sessionHeaders: Promise<Record<string, string>> | undefined;
+    const resolveSessionHeaders = () => {
+      if (!sessionHeaders) {
+        sessionHeaders = this.resolveSessionHeaders(input.runtimeContext);
+      }
+      return sessionHeaders;
+    };
 
     return {
       http: {
@@ -52,7 +62,12 @@ export class PluginContextFactory implements PluginContextFactoryPort {
               fallbackAllowed: false
             });
           }
-          return this.http.get(url, { ...options, signal: input.signal });
+          const attachedHeaders = await resolveSessionHeaders();
+          return this.http.get(url, {
+            ...options,
+            headers: { ...options?.headers, ...attachedHeaders },
+            signal: input.signal
+          });
         }
       },
       html: {
@@ -96,5 +111,28 @@ export class PluginContextFactory implements PluginContextFactoryPort {
       clock: { now: () => this.clock.now().toISOString() },
       signal: input.signal
     };
+  }
+  private async resolveSessionHeaders(
+    runtimeContext: ResolvedRuntimeContext
+  ): Promise<Record<string, string>> {
+    if (!runtimeContext.session || !this.sessions) return {};
+    const material = (await this.sessions.resolveMaterial(
+      runtimeContext.session
+    )) as unknown as AuthSessionMaterial;
+    const headers: Record<string, string> = {};
+    if (material.headers && typeof material.headers === 'object') {
+      for (const [name, value] of Object.entries(material.headers)) {
+        if (typeof value === 'string') headers[name] = value;
+      }
+    }
+    if (Array.isArray(material.cookies) && material.cookies.length > 0) {
+      headers.Cookie = material.cookies
+        .filter(
+          (cookie) => cookie && typeof cookie.name === 'string' && typeof cookie.value === 'string'
+        )
+        .map((cookie) => `${cookie.name}=${cookie.value}`)
+        .join('; ');
+    }
+    return headers;
   }
 }

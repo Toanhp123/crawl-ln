@@ -84,7 +84,7 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
       );
     }
 
-    const session = credential
+    const routeSession = credential
       ? await this.sessions.findActive({
           pluginId: input.pluginId,
           credentialProfileId: credential.id,
@@ -92,6 +92,26 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
           networkProfileId: networkRoute?.id
         })
       : undefined;
+    const alternateSession =
+      credential && !routeSession
+        ? await this.sessions.findActiveAnyRoute({
+            pluginId: input.pluginId,
+            credentialProfileId: credential.id,
+            ownerId: input.userId
+          })
+        : undefined;
+    if (
+      alternateSession?.networkBinding === 'required' &&
+      alternateSession.networkProfileId !== networkRoute?.id
+    ) {
+      throw new SourceReaderError(
+        'SESSION_NETWORK_MISMATCH',
+        'Session requires the network route used during login',
+        { retryable: false, fallbackAllowed: false }
+      );
+    }
+    const session = routeSession ?? alternateSession;
+
 
     return {
       credential,

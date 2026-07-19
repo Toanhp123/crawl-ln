@@ -23,6 +23,11 @@ export interface SessionRepository {
     ownerId?: string;
     networkProfileId?: string;
   }): Promise<SessionHandle | undefined>;
+  findActiveAnyRoute(input: {
+    pluginId: string;
+    credentialProfileId: string;
+    ownerId?: string;
+  }): Promise<SessionHandle | undefined>;
   resolveMaterial(handle: SessionHandle): Promise<Record<string, unknown>>;
   revokeByCredential(credentialProfileId: string): Promise<void>;
   expireBefore(now: string): Promise<number>;

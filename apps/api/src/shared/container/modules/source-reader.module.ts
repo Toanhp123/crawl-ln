@@ -72,7 +72,8 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
       new AxiosHttpClientAdapter(),
       new CheerioHtmlParserAdapter(),
       infrastructure.clock,
-      infrastructure.logger
+      infrastructure.logger,
+      sessions
     ),
     cache,
     new HmacCursorCodec(Buffer.from(env.sourceReaderCursorKey.padEnd(32, '0').slice(0, 32))),

@@ -84,3 +84,48 @@ test('user-owned explicit profiles cannot be used by another actor', async () =>
       error instanceof SourceReaderError && error.code === 'PLUGIN_PERMISSION_DENIED'
   );
 });
+
+test('required session route mismatch fails before plugin invocation', async () => {
+  const resolver = new RuntimeContextResolverService(
+    credentials as never,
+    {
+      findHandleById: async () => ({
+        id: 'route-eu',
+        ownerType: 'user',
+        ownerId: 'u1',
+        routeType: 'direct',
+        regions: ['EU'],
+        tags: [],
+        healthStatus: 'healthy'
+      }),
+      findCandidates: async () => []
+    } as never,
+    {
+      findActive: async () => ({
+        id: 'session-us',
+        pluginId: 'demo',
+        pluginVersion: '1.0.0',
+        credentialProfileId: 'explicit',
+        ownerId: 'u1',
+        networkProfileId: 'route-us',
+        networkBinding: 'required'
+      })
+    } as never
+  );
+
+  await assert.rejects(
+    () =>
+      resolver.resolve({
+        userId: 'u1',
+        pluginId: 'demo',
+        pluginVersion: '1.0.0',
+        domain: 'example.test',
+        capability: 'metadata',
+        credentialProfileId: 'explicit',
+        networkProfileId: 'route-eu',
+        runtimeRequirements: {}
+      }),
+    (error: unknown) =>
+      error instanceof SourceReaderError && error.code === 'SESSION_NETWORK_MISMATCH'
+  );
+});

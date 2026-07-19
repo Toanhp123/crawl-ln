@@ -511,6 +511,15 @@ const migrations: Migration[] = [
           ON source_reader_plugin_versions(plugin_id, status);
       `);
     }
+  },
+  {
+    version: 19,
+    up(db) {
+      db.exec(`
+        CREATE INDEX idx_source_reader_health_capability_window
+          ON source_reader_health_checks(plugin_id, plugin_version, capability, checked_at DESC);
+      `);
+    }
   }
 ];
 

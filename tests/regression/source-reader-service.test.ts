@@ -252,3 +252,43 @@ test('service resolves runtime context before invoking a plugin', async () => {
   assert.equal(resolvedInputs[0].userId, 'u1');
   assert.deepEqual(contextInputs[0].runtimeContext, runtimeContext);
 });
+
+test('service skips a capability candidate while its health circuit is open', async () => {
+  let highCalls = 0;
+  const high: SourceReaderPlugin = {
+    manifest: manifest('unhealthy-high', 100),
+    readMetadata: async ({ url }) => {
+      highCalls += 1;
+      return { data: { title: 'High', sourceUrl: url, sourceName: 'High' } };
+    },
+    readChapterList: async () => ({ data: { items: [], hasMore: false } })
+  };
+  const low: SourceReaderPlugin = {
+    manifest: manifest('healthy-low', 10),
+    readMetadata: async ({ url }) => ({
+      data: { title: 'Low', sourceUrl: url, sourceName: 'Low' }
+    }),
+    readChapterList: async () => ({ data: { items: [], hasMore: false } })
+  };
+  const registry = new InMemoryPluginRegistry();
+  registry.register(high);
+  registry.register(low);
+  const service = new SourceReaderService(
+    registry,
+    new InProcessPluginRuntime(),
+    contextFactory,
+    new MemoryReaderCache(100),
+    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901')),
+    { now: () => new Date('2026-07-20T00:00:00.000Z') },
+    undefined,
+    {
+      isEligible: async (pluginId: string) => pluginId !== 'unhealthy-high',
+      recordSuccess: async () => undefined,
+      recordFailure: async () => undefined
+    }
+  );
+
+  const result = await service.readMetadata({ url: 'https://example.test/book' });
+  assert.equal(result.data.title, 'Low');
+  assert.equal(highCalls, 0);
+});

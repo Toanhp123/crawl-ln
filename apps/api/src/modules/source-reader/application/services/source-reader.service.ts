@@ -69,6 +69,40 @@ const anonymousRuntimeContexts: RuntimeContextResolverPort = {
   }
 };
 
+export interface PluginHealthPolicy {
+  isEligible(
+    pluginId: string,
+    pluginVersion: string,
+    capability: SourceCapability
+  ): Promise<boolean>;
+  recordSuccess(input: {
+    pluginId: string;
+    pluginVersion: string;
+    capability: SourceCapability;
+    durationMs: number;
+  }): Promise<void>;
+  recordFailure(input: {
+    pluginId: string;
+    pluginVersion: string;
+    capability: SourceCapability;
+    durationMs: number;
+    failureCode: string;
+  }): Promise<void>;
+  quarantineIntegrityFailure?(input: {
+    pluginId: string;
+    pluginVersion: string;
+    failureCode: string;
+  }): Promise<void>;
+}
+
+const alwaysHealthy: PluginHealthPolicy = {
+  async isEligible() {
+    return true;
+  },
+  async recordSuccess() {},
+  async recordFailure() {}
+};
+
 function isPagedCapability(
   capability: Exclude<SourceCapability, 'authentication'>
 ): capability is PagedCapability {
@@ -85,7 +119,8 @@ export class SourceReaderService implements SourceReaderApi {
     private readonly cache: ReaderCachePort,
     private readonly cursors: CursorCodecPort,
     private readonly clock: ClockPort,
-    private readonly runtimeContexts: RuntimeContextResolverPort = anonymousRuntimeContexts
+    private readonly runtimeContexts: RuntimeContextResolverPort = anonymousRuntimeContexts,
+    private readonly health: PluginHealthPolicy = alwaysHealthy
   ) {}
 
   identify(request: IdentifyRequest) {
@@ -165,6 +200,7 @@ export class SourceReaderService implements SourceReaderApi {
         request
       );
       this.validateCursorBinding(cursorPayload, capability, candidate, requestFingerprint);
+      let invocationStartedAt: number | undefined;
 
       try {
         const runtimeContext = await this.runtimeContexts.resolve({
@@ -186,7 +222,9 @@ export class SourceReaderService implements SourceReaderApi {
             if (cached && cached.expiresAt > this.clock.now().getTime()) return cached.value;
           }
         }
+        if (!(await this.healthEligible(candidate, capability))) continue;
 
+        invocationStartedAt = this.clock.now().getTime();
         const signal = request.signal ?? new AbortController().signal;
         const context = this.contexts.create({
           pluginId: candidate.plugin.manifest.id,
@@ -236,6 +274,8 @@ export class SourceReaderService implements SourceReaderApi {
           extensions: operation.extensions,
           warnings: operation.warnings
         };
+        await this.recordHealthSuccess(candidate, capability, invocationStartedAt);
+        invocationStartedAt = undefined;
         const ttlMs = Math.max(
           0,
           Math.min(operation.cacheHints?.ttlMs ?? 0, 30 * 24 * 60 * 60_000)
@@ -272,6 +312,9 @@ export class SourceReaderService implements SourceReaderApi {
         }
         return result;
       } catch (error) {
+        if (invocationStartedAt !== undefined) {
+          await this.recordHealthFailure(candidate, capability, invocationStartedAt, error);
+        }
         lastError = error;
         if (!(error instanceof SourceReaderError) || !error.fallbackAllowed) throw error;
       }
@@ -286,6 +329,74 @@ export class SourceReaderService implements SourceReaderApi {
         fallbackAllowed: false
       }
     );
+  }
+
+  private async healthEligible(
+    candidate: PluginCandidate,
+    capability: Exclude<SourceCapability, 'authentication'>
+  ): Promise<boolean> {
+    try {
+      return await this.health.isEligible(
+        candidate.plugin.manifest.id,
+        candidate.plugin.manifest.version,
+        capability
+      );
+    } catch {
+      return true;
+    }
+  }
+
+  private async recordHealthSuccess(
+    candidate: PluginCandidate,
+    capability: Exclude<SourceCapability, 'authentication'>,
+    startedAt: number
+  ): Promise<void> {
+    try {
+      await this.health.recordSuccess({
+        pluginId: candidate.plugin.manifest.id,
+        pluginVersion: candidate.plugin.manifest.version,
+        capability,
+        durationMs: Math.max(0, this.clock.now().getTime() - startedAt)
+      });
+    } catch {
+      // Health telemetry cannot turn a successful source read into a failure.
+    }
+  }
+
+  private async recordHealthFailure(
+    candidate: PluginCandidate,
+    capability: Exclude<SourceCapability, 'authentication'>,
+    startedAt: number,
+    error: unknown
+  ): Promise<void> {
+    try {
+      const failureCode =
+        error instanceof SourceReaderError
+          ? error.code
+          : error instanceof Error
+            ? error.name
+            : 'UNKNOWN_PLUGIN_FAILURE';
+      await this.health.recordFailure({
+        pluginId: candidate.plugin.manifest.id,
+        pluginVersion: candidate.plugin.manifest.version,
+        capability,
+        durationMs: Math.max(0, this.clock.now().getTime() - startedAt),
+        failureCode
+      });
+      if (
+        candidate.trustLevel !== 'built-in' &&
+        failureCode === 'PLUGIN_PACKAGE_INVALID' &&
+        this.health.quarantineIntegrityFailure
+      ) {
+        await this.health.quarantineIntegrityFailure({
+          pluginId: candidate.plugin.manifest.id,
+          pluginVersion: candidate.plugin.manifest.version,
+          failureCode
+        });
+      }
+    } catch {
+      // Preserve the original plugin error and fallback policy.
+    }
   }
 
   private decodeCursor(

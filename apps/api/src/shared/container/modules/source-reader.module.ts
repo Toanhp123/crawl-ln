@@ -1,3 +1,4 @@
+import { PluginHealthService } from '../../../modules/source-reader/application/services/plugin-health.service.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
 import { SourceReaderService } from '../../../modules/source-reader/application/services/source-reader.service.js';
@@ -7,6 +8,7 @@ import { TieredReaderCache } from '../../../modules/source-reader/infrastructure
 import { HmacCursorCodec } from '../../../modules/source-reader/infrastructure/cursor/hmac-cursor.codec.js';
 import { novelCoolPlugin } from '../../../modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.js';
 import { ExternalPluginLoader } from '../../../modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.js';
+import { StaticTrustStore } from '../../../modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.js';
 import { InMemoryPluginRegistry } from '../../../modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.js';
 import { InProcessPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.js';
 import { IsolatedWorkerPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/isolated-worker/isolated-worker-plugin.runtime.js';
@@ -15,6 +17,7 @@ import { LocalEncryptedVault } from '../../../modules/source-reader/infrastructu
 import { SqliteAuthChallengeRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-auth-challenge.repository.js';
 import { SqliteCredentialRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-credential.repository.js';
 import { SqliteNetworkProfileRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-network-profile.repository.js';
+import { SqlitePluginHealthRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-plugin-health.repository.js';
 import { SqlitePluginStore } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.js';
 import { SqliteSessionRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-session.repository.js';
 import { PluginContextFactory } from '../../../modules/source-reader/infrastructure/runtime/plugin-context.factory.js';
@@ -40,6 +43,12 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
   const challenges = new SqliteAuthChallengeRepository(infrastructure.database, vault);
   const pluginStore = new SqlitePluginStore(infrastructure.database);
   const externalLoader = new ExternalPluginLoader(pluginStore);
+  const health = new PluginHealthService(
+    new SqlitePluginHealthRepository(infrastructure.database),
+    infrastructure.clock,
+    infrastructure.ids,
+    { pluginStore, registry }
+  );
   const persistentCache = new SqliteReaderCache(infrastructure.database);
   const cache = new TieredReaderCache(
     new MemoryReaderCache(env.sourceReaderMemoryCacheEntries),
@@ -68,7 +77,8 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     cache,
     new HmacCursorCodec(Buffer.from(env.sourceReaderCursorKey.padEnd(32, '0').slice(0, 32))),
     infrastructure.clock,
-    runtimeContexts
+    runtimeContexts,
+    health
   ) satisfies SourceReaderApi;
 
   return {

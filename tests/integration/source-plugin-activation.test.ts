@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -30,15 +31,29 @@ const manifest = {
   runtime: { preferredMode: 'isolated' },
   permissions: { network: { hosts: ['novelcool.com'] } }
 };
+const packagePath = join(root, 'installed', manifest.id, manifest.version);
 
 test.before(async () => {
+  const manifestBytes = Buffer.from(JSON.stringify(manifest));
+  const entryBytes = Buffer.from('export default {};');
+  await mkdir(join(packagePath, 'dist'), { recursive: true });
+  await writeFile(join(packagePath, 'manifest.json'), manifestBytes);
+  await writeFile(join(packagePath, 'dist', 'index.js'), entryBytes);
+  await writeFile(
+    join(packagePath, 'checksums.json'),
+    JSON.stringify({
+      'manifest.json': createHash('sha256').update(manifestBytes).digest('hex'),
+      'dist/index.js': createHash('sha256').update(entryBytes).digest('hex')
+    })
+  );
+
   await store.upsertPluginVersion({
     pluginId: manifest.id,
     name: manifest.name,
     version: manifest.version,
     trustLevel: 'local-unverified',
     status: 'pending-approval',
-    packagePath: join(root, 'installed', manifest.id, manifest.version),
+    packagePath,
     checksum: 'checksum',
     signatureStatus: 'unsigned',
     manifestJson: JSON.stringify(manifest),
@@ -83,5 +98,5 @@ test('approved external plugin overrides one capability without replacing built-
     capability: 'chapter-content'
   });
   assert.equal(content[0]?.plugin.manifest.id, 'novelcool-content-override');
-  assert.equal(content[0]?.packagePath, join(root, 'installed', manifest.id, manifest.version));
+  assert.equal(content[0]?.packagePath, packagePath);
 });

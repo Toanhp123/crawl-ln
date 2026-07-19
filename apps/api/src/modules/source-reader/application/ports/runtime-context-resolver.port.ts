@@ -27,5 +27,6 @@ export interface RuntimeContextResolverPort {
     networkProfileId?: string;
     executionMode?: 'in-process' | 'isolated';
     runtimeRequirements?: SourcePluginManifest['runtimeRequirements'];
+    requiresBrowser?: boolean;
   }): Promise<ResolvedRuntimeContext>;
 }

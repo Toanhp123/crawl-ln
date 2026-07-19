@@ -45,6 +45,7 @@ export const env = {
     process.env.SOURCE_READER_CURSOR_KEY ?? 'development-only-source-reader-cursor-key-32-bytes',
   sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500),
   sourceReaderMasterKey: optionalBase64Key('SOURCE_READER_MASTER_KEY'),
+  sourceReaderBrowserExecutable: process.env.SOURCE_READER_BROWSER_EXECUTABLE || undefined,
   sourceReaderPluginDir:
     process.env.SOURCE_READER_PLUGIN_DIR ??
     resolve(process.env.STORAGE_DIR ?? './storage', 'source-plugins'),

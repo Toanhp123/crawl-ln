@@ -1,8 +1,10 @@
 import { AuthChallengeService } from '../../../modules/source-reader/application/services/auth-challenge.service.js';
+import { AuthenticationOrchestratorService } from '../../../modules/source-reader/application/services/authentication-orchestrator.service.js';
 import { PluginHealthService } from '../../../modules/source-reader/application/services/plugin-health.service.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
 import { SourceReaderService } from '../../../modules/source-reader/application/services/source-reader.service.js';
+import { StandardAuthenticationService } from '../../../modules/source-reader/application/services/standard-authentication.service.js';
 import { MemoryReaderCache } from '../../../modules/source-reader/infrastructure/cache/memory-reader.cache.js';
 import { SqliteReaderCache } from '../../../modules/source-reader/infrastructure/cache/sqlite-reader.cache.js';
 import { TieredReaderCache } from '../../../modules/source-reader/infrastructure/cache/tiered-reader.cache.js';
@@ -57,14 +59,16 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     persistentCache
   );
   const runtimeContexts = new RuntimeContextResolverService(credentials, networks, sessions);
+  const http = new AxiosHttpClientAdapter();
   const pluginContexts = new PluginContextFactory(
-    new AxiosHttpClientAdapter(),
+    http,
     new CheerioHtmlParserAdapter(),
     infrastructure.clock,
     infrastructure.logger,
     sessions
   );
   const browser = new BrowserRuntimeCoordinator({
+    browserExecutablePath: env.sourceReaderBrowserExecutable,
     credentialResolver: async ({ credentialId, field }) => {
       const handle = await credentials.findHandleById(credentialId);
       if (!handle) throw new Error(`Credential ${credentialId} is unavailable`);
@@ -84,6 +88,17 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     infrastructure.ids,
     infrastructure.clock
   );
+  const authentication = new AuthenticationOrchestratorService(
+    credentials,
+    sessions,
+    new StandardAuthenticationService(),
+    http,
+    infrastructure.ids,
+    infrastructure.clock,
+    registry,
+    pluginContexts,
+    challengeService
+  );
   const maintenance = new SourceReaderMaintenanceService(
     persistentCache,
     sessions,
@@ -102,11 +117,13 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     new HmacCursorCodec(Buffer.from(env.sourceReaderCursorKey.padEnd(32, '0').slice(0, 32))),
     infrastructure.clock,
     runtimeContexts,
-    health
+    health,
+    browser
   ) satisfies SourceReaderApi;
 
   return {
     api,
+    application: { authentication, challenges: challengeService },
     presentation: { controller: new SourceReaderController(api) },
     lifecycle: {
       async start() {

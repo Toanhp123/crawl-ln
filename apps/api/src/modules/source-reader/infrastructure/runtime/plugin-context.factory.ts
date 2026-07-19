@@ -2,6 +2,7 @@ import type { ClockPort } from '../../../../shared/ports/clock.port.js';
 import type { HtmlParserPort } from '../../../../shared/ports/html-parser.port.js';
 import type { HttpClientPort } from '../../../../shared/ports/http-client.port.js';
 import type { LoggerPort } from '../../../../shared/ports/logger.port.js';
+import type { BrowserSessionHandle } from '../../application/ports/browser-runtime.port.js';
 import type { PluginContextFactoryPort } from '../../application/ports/plugin-context-factory.port.js';
 import type { SessionRepository } from '../../application/ports/session.repository.js';
 import type { ResolvedRuntimeContext } from '../../application/ports/runtime-context-resolver.port.js';
@@ -35,7 +36,18 @@ export class PluginContextFactory implements PluginContextFactoryPort {
     allowedHosts: string[];
     signal: AbortSignal;
     runtimeContext: ResolvedRuntimeContext;
+    browserSession?: BrowserSessionHandle;
   }): PluginContext {
+    if (
+      input.runtimeContext.session?.networkBinding === 'required' &&
+      input.runtimeContext.session.networkProfileId !== input.runtimeContext.networkRoute?.id
+    ) {
+      throw new SourceReaderError(
+        'SESSION_NETWORK_MISMATCH',
+        'Session requires the network route used during login',
+        { retryable: false, fallbackAllowed: false }
+      );
+    }
     const memory = new Map<string, { expiresAt: number; value: unknown }>();
     let sessionHeaders: Promise<Record<string, string>> | undefined;
     const resolveSessionHeaders = () => {
@@ -102,6 +114,20 @@ export class PluginContextFactory implements PluginContextFactoryPort {
           memory.set(key, { value, expiresAt: Date.now() + ttlMs });
         }
       },
+      ...(input.browserSession
+        ? {
+            browser: {
+              open: (url: string) => input.browserSession!.open(url),
+              waitFor: (selector: string) => input.browserSession!.waitFor(selector),
+              text: (selector: string) => input.browserSession!.text(selector),
+              html: (selector: string) => input.browserSession!.html(selector),
+              click: (selector: string) => input.browserSession!.click(selector),
+              fillSecret: (selector: string, handle: { credentialId: string; field: string }) =>
+                input.browserSession!.fillSecret(selector, handle),
+              cookies: () => input.browserSession!.cookies()
+            }
+          }
+        : {}),
       logger: {
         info: (message, metadata) =>
           this.logger.info(formatLog(`[${input.pluginId}] ${message}`, metadata)),

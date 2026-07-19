@@ -114,7 +114,9 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
       session,
       networkRoute,
       executionMode: input.executionMode ?? 'in-process',
-      browserRequired: false,
+      browserRequired:
+        Boolean(input.runtimeRequirements?.authentication?.required) &&
+        Boolean(input.requiresBrowser),
       cacheIdentity: {
         authScope: credential ? hash(`${credential.ownerType}:${credential.id}`) : 'anonymous',
         networkScope: networkRoute ? hash(networkRoute.id) : 'direct'

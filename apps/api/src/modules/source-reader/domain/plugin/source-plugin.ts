@@ -98,6 +98,15 @@ export interface PluginContext {
     get<T>(key: string): Promise<T | undefined>;
     set<T>(key: string, value: T, ttlMs: number): Promise<void>;
   };
+  browser?: {
+    open(url: string): Promise<void>;
+    waitFor(selector: string): Promise<void>;
+    text(selector: string): Promise<string | null>;
+    html(selector: string): Promise<string | null>;
+    click(selector: string): Promise<void>;
+    fillSecret(selector: string, handle: { credentialId: string; field: string }): Promise<void>;
+    cookies(): Promise<Array<Record<string, unknown>>>;
+  };
   logger: {
     info(message: string, metadata?: Record<string, unknown>): void;
     warn(message: string, metadata?: Record<string, unknown>): void;

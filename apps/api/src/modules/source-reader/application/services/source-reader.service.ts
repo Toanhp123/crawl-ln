@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { ClockPort } from '../../../../shared/ports/clock.port.js';
+import type { BrowserRuntimePort } from '../ports/browser-runtime.port.js';
 import type { CursorCodecPort, CursorPayload } from '../ports/cursor-codec.port.js';
 import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.port.js';
 import type { PluginCandidate, PluginRegistryPort } from '../ports/plugin-registry.port.js';
@@ -120,7 +121,8 @@ export class SourceReaderService implements SourceReaderApi {
     private readonly cursors: CursorCodecPort,
     private readonly clock: ClockPort,
     private readonly runtimeContexts: RuntimeContextResolverPort = anonymousRuntimeContexts,
-    private readonly health: PluginHealthPolicy = alwaysHealthy
+    private readonly health: PluginHealthPolicy = alwaysHealthy,
+    private readonly browser?: BrowserRuntimePort
   ) {}
 
   identify(request: IdentifyRequest) {
@@ -212,8 +214,29 @@ export class SourceReaderService implements SourceReaderApi {
           credentialProfileId: request.credentialProfileId,
           networkProfileId: request.networkProfileId,
           executionMode: candidate.executionMode,
-          runtimeRequirements: candidate.plugin.manifest.runtimeRequirements
+          runtimeRequirements: candidate.plugin.manifest.runtimeRequirements,
+          requiresBrowser: candidate.plugin.manifest.runtime.requiresBrowser
         });
+        const authenticationRequired =
+          candidate.plugin.manifest.runtimeRequirements?.authentication?.required === true;
+        if (authenticationRequired && !runtimeContext.credential) {
+          throw new SourceReaderError(
+            'CREDENTIAL_NOT_CONFIGURED',
+            'Credential is not configured for this source',
+            { retryable: false, fallbackAllowed: false }
+          );
+        }
+        if (authenticationRequired && !runtimeContext.session) {
+          throw new SourceReaderError(
+            'AUTHENTICATION_REQUIRED',
+            'Login is required before reading this source',
+            {
+              retryable: false,
+              fallbackAllowed: false,
+              details: { credentialProfileId: runtimeContext.credential?.id }
+            }
+          );
+        }
         if (!request.freshOnly) {
           for (const scope of this.cacheLookupScopes(runtimeContext)) {
             const cached = await this.cache.get<SourceReaderResult<T>>(
@@ -226,11 +249,43 @@ export class SourceReaderService implements SourceReaderApi {
 
         invocationStartedAt = this.clock.now().getTime();
         const signal = request.signal ?? new AbortController().signal;
+        let browserSession;
+        if (runtimeContext.browserRequired) {
+          if (!candidate.plugin.manifest.permissions.browser) {
+            throw new SourceReaderError(
+              'PLUGIN_PERMISSION_DENIED',
+              'Plugin browser permission is not approved',
+              { retryable: false, fallbackAllowed: false }
+            );
+          }
+          if (!this.browser || !runtimeContext.credential) {
+            throw new SourceReaderError('PLUGIN_UNAVAILABLE', 'Browser runtime is unavailable', {
+              retryable: true,
+              fallbackAllowed: false
+            });
+          }
+          browserSession = await this.browser.open({
+            identity: {
+              ...(request.userId ? { userId: request.userId } : {}),
+              pluginId: candidate.plugin.manifest.id,
+              sourceAccountId: runtimeContext.credential.id,
+              ...(runtimeContext.networkRoute
+                ? { networkRouteId: runtimeContext.networkRoute.id }
+                : {})
+            },
+            allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
+            ...(runtimeContext.networkRoute
+              ? { networkProfileId: runtimeContext.networkRoute.id }
+              : {}),
+            signal
+          });
+        }
         const context = this.contexts.create({
           pluginId: candidate.plugin.manifest.id,
           allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
           signal,
-          runtimeContext
+          runtimeContext,
+          ...(browserSession ? { browserSession } : {})
         });
         if (candidate.plugin.canHandle) {
           const accepted = await candidate.plugin.canHandle(

@@ -1,0 +1,58 @@
+import type {
+  PluginStatus,
+  PluginTrustLevel,
+  SourcePluginManifest
+} from '../../domain/plugin/source-plugin.js';
+
+export interface StoredPluginVersion {
+  pluginId: string;
+  version: string;
+  trustLevel: PluginTrustLevel;
+  status: PluginStatus;
+  packagePath: string;
+  checksum: string;
+  signatureStatus: 'built-in' | 'valid' | 'unsigned' | 'invalid';
+  manifest: SourcePluginManifest;
+}
+
+export interface PluginStorePort {
+  recordInstallation(input: {
+    id: string;
+    pluginId?: string;
+    pluginVersion?: string;
+    originalPackagePath: string;
+    stagingPath?: string;
+    status: string;
+    errorCode?: string;
+    createdAt: string;
+    completedAt?: string;
+  }): Promise<void>;
+  upsertPluginVersion(input: {
+    pluginId: string;
+    name: string;
+    version: string;
+    trustLevel: PluginTrustLevel;
+    status: PluginStatus;
+    packagePath: string;
+    checksum: string;
+    signatureStatus: 'built-in' | 'valid' | 'unsigned' | 'invalid';
+    manifestJson: string;
+    sdkRange: string;
+    installedAt: string;
+  }): Promise<void>;
+  replaceRequestedPermissions(input: {
+    pluginId: string;
+    pluginVersion: string;
+    permissions: Array<{ permission: string; scopeJson: string }>;
+  }): Promise<void>;
+  approvePermissions(input: {
+    pluginId: string;
+    pluginVersion: string;
+    approvedBy: string;
+    approvedAt: string;
+  }): Promise<void>;
+  permissionsApproved(pluginId: string, version: string): Promise<boolean>;
+  activate(pluginId: string, version: string, activatedAt: string): Promise<void>;
+  findActive(pluginId: string): Promise<StoredPluginVersion | undefined>;
+  quarantine(pluginId: string, version: string, reason: string): Promise<void>;
+}

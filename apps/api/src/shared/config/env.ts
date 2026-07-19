@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { resolve } from 'node:path';
 
 function numberEnv(name: string, fallback: number) {
   const value = Number(process.env[name]);
@@ -44,6 +45,9 @@ export const env = {
     process.env.SOURCE_READER_CURSOR_KEY ?? 'development-only-source-reader-cursor-key-32-bytes',
   sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500),
   sourceReaderMasterKey: optionalBase64Key('SOURCE_READER_MASTER_KEY'),
+  sourceReaderPluginDir:
+    process.env.SOURCE_READER_PLUGIN_DIR ??
+    resolve(process.env.STORAGE_DIR ?? './storage', 'source-plugins'),
   sourceReaderTrustedKeys: jsonEnv<
     Array<{ id: string; algorithm: 'ed25519'; publicKeyPem: string }>
   >('SOURCE_READER_TRUSTED_KEYS_JSON', [])

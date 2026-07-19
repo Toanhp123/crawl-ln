@@ -497,6 +497,20 @@ const migrations: Migration[] = [
           ON source_reader_health_checks(plugin_id, checked_at DESC);
       `);
     }
+  },
+  {
+    version: 18,
+    up(db) {
+      addColumns(db, 'source_reader_plugin_versions', [
+        ['trust_level', "TEXT NOT NULL DEFAULT 'local-unverified'"],
+        ['status', "TEXT NOT NULL DEFAULT 'installed'"],
+        ['quarantine_reason', 'TEXT']
+      ]);
+      db.exec(`
+        CREATE INDEX idx_source_reader_plugin_versions_status
+          ON source_reader_plugin_versions(plugin_id, status);
+      `);
+    }
   }
 ];
 

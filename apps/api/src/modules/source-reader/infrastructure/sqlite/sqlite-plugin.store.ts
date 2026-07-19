@@ -1,0 +1,270 @@
+import type { SqliteDatabase } from '../../../../shared/database/sqlite.js';
+import type {
+  PluginStorePort,
+  StoredPluginVersion
+} from '../../application/ports/plugin-store.port.js';
+import type { PluginStatus, PluginTrustLevel } from '../../domain/plugin/source-plugin.js';
+import { parseSourcePluginManifest } from '../../domain/plugin/source-plugin-manifest.schema.js';
+
+interface StoredVersionRow {
+  plugin_id: string;
+  version: string;
+  trust_level: PluginTrustLevel;
+  status: PluginStatus;
+  package_path: string;
+  checksum: string;
+  signature_status: StoredPluginVersion['signatureStatus'];
+  manifest_json: string;
+}
+
+function storedVersion(row: StoredVersionRow): StoredPluginVersion {
+  return {
+    pluginId: row.plugin_id,
+    version: row.version,
+    trustLevel: row.trust_level,
+    status: row.status,
+    packagePath: row.package_path,
+    checksum: row.checksum,
+    signatureStatus: row.signature_status,
+    manifest: parseSourcePluginManifest(JSON.parse(row.manifest_json) as unknown)
+  };
+}
+
+export class SqlitePluginStore implements PluginStorePort {
+  constructor(private readonly database: SqliteDatabase) {}
+
+  async recordInstallation(input: Parameters<PluginStorePort['recordInstallation']>[0]) {
+    this.database.connection
+      .prepare(
+        `
+        INSERT INTO source_reader_installations(
+          id, plugin_id, plugin_version, original_package_path, staging_path,
+          status, error_code, created_at, completed_at
+        ) VALUES(?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET
+          plugin_id=excluded.plugin_id,
+          plugin_version=excluded.plugin_version,
+          original_package_path=excluded.original_package_path,
+          staging_path=excluded.staging_path,
+          status=excluded.status,
+          error_code=excluded.error_code,
+          completed_at=excluded.completed_at
+      `
+      )
+      .run(
+        input.id,
+        input.pluginId ?? null,
+        input.pluginVersion ?? null,
+        input.originalPackagePath,
+        input.stagingPath ?? null,
+        input.status,
+        input.errorCode ?? null,
+        input.createdAt,
+        input.completedAt ?? null
+      );
+  }
+
+  async upsertPluginVersion(input: Parameters<PluginStorePort['upsertPluginVersion']>[0]) {
+    this.database.transactionSync(() => {
+      this.database.connection
+        .prepare(
+          `
+          INSERT INTO source_reader_plugins(
+            id, name, trust_level, status, active_version, enabled, installed_at, updated_at
+          ) VALUES(?,?,?,?,NULL,0,?,?)
+          ON CONFLICT(id) DO UPDATE SET
+            name=excluded.name,
+            trust_level=CASE
+              WHEN source_reader_plugins.active_version IS NULL THEN excluded.trust_level
+              ELSE source_reader_plugins.trust_level
+            END,
+            status=CASE
+              WHEN source_reader_plugins.active_version IS NULL THEN excluded.status
+              ELSE source_reader_plugins.status
+            END,
+            updated_at=excluded.updated_at
+        `
+        )
+        .run(
+          input.pluginId,
+          input.name,
+          input.trustLevel,
+          input.status,
+          input.installedAt,
+          input.installedAt
+        );
+      this.database.connection
+        .prepare(
+          `
+          INSERT INTO source_reader_plugin_versions(
+            plugin_id, version, trust_level, status, package_path, checksum,
+            signature_status, manifest_json, sdk_range, installed_at
+          ) VALUES(?,?,?,?,?,?,?,?,?,?)
+          ON CONFLICT(plugin_id, version) DO UPDATE SET
+            trust_level=excluded.trust_level,
+            status=CASE
+              WHEN source_reader_plugin_versions.status='active' THEN 'active'
+              ELSE excluded.status
+            END,
+            package_path=excluded.package_path,
+            checksum=excluded.checksum,
+            signature_status=excluded.signature_status,
+            manifest_json=excluded.manifest_json,
+            sdk_range=excluded.sdk_range
+        `
+        )
+        .run(
+          input.pluginId,
+          input.version,
+          input.trustLevel,
+          input.status,
+          input.packagePath,
+          input.checksum,
+          input.signatureStatus,
+          input.manifestJson,
+          input.sdkRange,
+          input.installedAt
+        );
+    });
+  }
+
+  async replaceRequestedPermissions(
+    input: Parameters<PluginStorePort['replaceRequestedPermissions']>[0]
+  ) {
+    this.database.transactionSync(() => {
+      this.database.connection
+        .prepare(
+          'DELETE FROM source_reader_plugin_permissions WHERE plugin_id=? AND plugin_version=?'
+        )
+        .run(input.pluginId, input.pluginVersion);
+      const insert = this.database.connection.prepare(
+        `INSERT INTO source_reader_plugin_permissions(
+          plugin_id, plugin_version, permission, scope_json, status
+        ) VALUES(?,?,?,?, 'pending')`
+      );
+      for (const permission of input.permissions) {
+        insert.run(
+          input.pluginId,
+          input.pluginVersion,
+          permission.permission,
+          permission.scopeJson
+        );
+      }
+    });
+  }
+
+  async approvePermissions(input: Parameters<PluginStorePort['approvePermissions']>[0]) {
+    this.database.connection
+      .prepare(
+        `UPDATE source_reader_plugin_permissions
+         SET status='approved', approved_by=?, approved_at=?
+         WHERE plugin_id=? AND plugin_version=?`
+      )
+      .run(input.approvedBy, input.approvedAt, input.pluginId, input.pluginVersion);
+  }
+
+  async permissionsApproved(pluginId: string, version: string): Promise<boolean> {
+    const row = this.database.connection
+      .prepare(
+        `SELECT COUNT(*) AS pending
+         FROM source_reader_plugin_permissions
+         WHERE plugin_id=? AND plugin_version=? AND status!='approved'`
+      )
+      .get(pluginId, version) as { pending: number };
+    return Number(row.pending) === 0;
+  }
+
+  async activate(pluginId: string, version: string, activatedAt: string): Promise<void> {
+    this.database.transactionSync(() => {
+      const candidate = this.database.connection
+        .prepare(
+          `SELECT trust_level, status
+           FROM source_reader_plugin_versions WHERE plugin_id=? AND version=?`
+        )
+        .get(pluginId, version) as
+        { trust_level: PluginTrustLevel; status: PluginStatus } | undefined;
+      if (!candidate) throw new Error(`Plugin version ${pluginId}@${version} does not exist`);
+      if (candidate.status === 'quarantined' || candidate.status === 'failed') {
+        throw new Error(`Plugin version ${pluginId}@${version} is not activatable`);
+      }
+      const approval = this.database.connection
+        .prepare(
+          `SELECT COUNT(*) AS pending
+           FROM source_reader_plugin_permissions
+           WHERE plugin_id=? AND plugin_version=? AND status!='approved'`
+        )
+        .get(pluginId, version) as { pending: number };
+      if (Number(approval.pending) > 0) throw new Error('Plugin permissions are not approved');
+
+      const plugin = this.database.connection
+        .prepare('SELECT active_version FROM source_reader_plugins WHERE id=?')
+        .get(pluginId) as { active_version: string | null } | undefined;
+      if (!plugin) throw new Error(`Plugin ${pluginId} does not exist`);
+      if (plugin.active_version && plugin.active_version !== version) {
+        this.database.connection
+          .prepare(
+            `UPDATE source_reader_plugin_versions SET status='installed'
+             WHERE plugin_id=? AND version=? AND status='active'`
+          )
+          .run(pluginId, plugin.active_version);
+      }
+
+      const pluginUpdate = this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugins
+           SET active_version=?, trust_level=?, status='active', enabled=1, updated_at=?
+           WHERE id=?`
+        )
+        .run(version, candidate.trust_level, activatedAt, pluginId);
+      if (Number(pluginUpdate.changes) !== 1)
+        throw new Error(`Plugin ${pluginId} activation failed`);
+
+      const versionUpdate = this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugin_versions
+           SET status='active', activated_at=?
+           WHERE plugin_id=? AND version=?`
+        )
+        .run(activatedAt, pluginId, version);
+      if (Number(versionUpdate.changes) !== 1) {
+        throw new Error(`Plugin version ${pluginId}@${version} activation failed`);
+      }
+    });
+  }
+
+  async findActive(pluginId: string): Promise<StoredPluginVersion | undefined> {
+    const row = this.database.connection
+      .prepare(
+        `SELECT v.plugin_id, v.version, v.trust_level, v.status, v.package_path,
+                v.checksum, v.signature_status, v.manifest_json
+         FROM source_reader_plugins p
+         JOIN source_reader_plugin_versions v
+           ON v.plugin_id=p.id AND v.version=p.active_version
+         WHERE p.id=? AND p.enabled=1 AND p.status='active' AND v.status='active'`
+      )
+      .get(pluginId) as StoredVersionRow | undefined;
+    return row ? storedVersion(row) : undefined;
+  }
+
+  async quarantine(pluginId: string, version: string, reason: string): Promise<void> {
+    this.database.transactionSync(() => {
+      const result = this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugin_versions
+           SET status='quarantined', quarantine_reason=?
+           WHERE plugin_id=? AND version=?`
+        )
+        .run(reason, pluginId, version);
+      if (Number(result.changes) !== 1) {
+        throw new Error(`Plugin version ${pluginId}@${version} does not exist`);
+      }
+      this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugins
+           SET active_version=NULL, enabled=0, status='quarantined', updated_at=?
+           WHERE id=? AND active_version=?`
+        )
+        .run(new Date().toISOString(), pluginId, version);
+    });
+  }
+}

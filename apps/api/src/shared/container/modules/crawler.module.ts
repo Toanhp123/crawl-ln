@@ -27,6 +27,7 @@ import type { NovelsPersistence } from './novels-persistence.module.js';
 import type { TasksModule } from './tasks.module.js';
 import type { ChaptersModule } from './chapters.module.js';
 import type { PluginModule } from './plugin.module.js';
+import type { SourceReaderModule } from './source-reader.module.js';
 import { PluginSourceAdapter } from '../../../modules/crawler/infrastructure/sources/plugin-source.adapter.js';
 import type { CrawlerApi, CrawlerLifecycle } from '../../../modules/crawler/public/crawler.api.js';
 import { ApplicationEventCrawlAuditPublisher } from '../../../modules/crawler/infrastructure/events/application-event-crawl-audit.publisher.js';
@@ -41,7 +42,8 @@ export function createCrawlerModule(
   novels: NovelsPersistence,
   tasks: TasksModule,
   chapters: ChaptersModule,
-  plugins: PluginModule
+  plugins: PluginModule,
+  _sourceReader: SourceReaderModule
 ) {
   const crawlEvents = new CrawlEventSqliteRepository(infrastructure.database);
   const crawlAuditHandler = new RecordCrawlAuditHandler(crawlEvents);

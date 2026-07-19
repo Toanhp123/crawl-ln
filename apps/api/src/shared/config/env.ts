@@ -35,5 +35,8 @@ export const env = {
   sourceAllowlist: listEnv('SOURCE_ALLOWLIST'),
   genericHtmlAdapterEnabled: boolEnv('GENERIC_HTML_ADAPTER_ENABLED', false),
   sourceProfilesFile: process.env.SOURCE_PROFILES_FILE ?? './config/source-profiles.json',
-  sourcesDir: process.env.SOURCES_DIR ?? './sources'
+  sourcesDir: process.env.SOURCES_DIR ?? './sources',
+  sourceReaderCursorKey:
+    process.env.SOURCE_READER_CURSOR_KEY ?? 'development-only-source-reader-cursor-key-32-bytes',
+  sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500)
 };

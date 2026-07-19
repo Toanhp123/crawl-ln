@@ -8,6 +8,7 @@ import { createPluginModule } from './modules/plugin.module.js';
 import { createNovelsPersistence } from './modules/novels-persistence.module.js';
 import { createSchedulerModule } from './modules/scheduler.module.js';
 import { createSearchModule } from './modules/search.module.js';
+import { createSourceReaderModule } from './modules/source-reader.module.js';
 import { createTasksModule } from './modules/tasks.module.js';
 import { RealtimeController } from '../realtime/realtime.controller.js';
 import {
@@ -25,8 +26,16 @@ export function createAppContainer() {
   const chapters = createChaptersModule(infrastructure);
   const novelsPersistence = createNovelsPersistence(infrastructure, chapters);
   const exports = createExportModule(novelsPersistence);
+  const sourceReader = createSourceReaderModule(infrastructure);
   const plugins = createPluginModule(infrastructure);
-  const crawler = createCrawlerModule(infrastructure, novelsPersistence, tasks, chapters, plugins);
+  const crawler = createCrawlerModule(
+    infrastructure,
+    novelsPersistence,
+    tasks,
+    chapters,
+    plugins,
+    sourceReader
+  );
   const novels = createNovelsModule(infrastructure, chapters, novelsPersistence, crawler, tasks);
   const scheduler = createSchedulerModule(infrastructure, novels, tasks);
   const backups = createBackupModule(infrastructure, crawler, scheduler);
@@ -63,6 +72,7 @@ export function createAppContainer() {
   return {
     lifecycle: {
       async start() {
+        await sourceReader.lifecycle.start();
         await plugins.lifecycle.start();
         await crawler.api.recoverCrawlJobs.execute();
         scheduler.lifecycle.service.start();
@@ -71,6 +81,7 @@ export function createAppContainer() {
         await crawler.lifecycle.queue.stop();
         await scheduler.lifecycle.service.stop();
         await plugins.lifecycle.stop();
+        await sourceReader.lifecycle.stop();
         infrastructure.database.close();
       }
     },

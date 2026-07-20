@@ -1,9 +1,9 @@
 # Source Reader Post-Review Remediation Checkpoint
 
-**Date:** 2026-07-20  
-**Branch:** `feat/source-reader`  
-**Runtime remediation commit:** `8d9be8a`  
-**Documentation reconciliation commit:** `9506b68`  
+**Date:** 2026-07-20
+**Branch:** `feat/source-reader`
+**Runtime remediation commit:** `8d9be8a`
+**Documentation reconciliation commit:** `9506b68`
 **Plan:** `docs/superpowers/plans/2026-07-20-source-reader-post-review-remediation.md`
 
 ## Scope closed

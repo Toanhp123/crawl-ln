@@ -55,5 +55,31 @@ export interface PluginStorePort {
   activate(pluginId: string, version: string, activatedAt: string): Promise<void>;
   findActive(pluginId: string): Promise<StoredPluginVersion | undefined>;
   listActive(): Promise<StoredPluginVersion[]>;
+  listInstalled(): Promise<
+    Array<{
+      pluginId: string;
+      name: string;
+      trustLevel: PluginTrustLevel;
+      status: PluginStatus;
+      activeVersion?: string;
+      enabled: boolean;
+      installedAt: string;
+      updatedAt: string;
+    }>
+  >;
+  listPermissions(pluginId: string): Promise<
+    Array<{
+      pluginId: string;
+      pluginVersion: string;
+      permission: string;
+      scope: unknown;
+      status: string;
+      approvedBy?: string;
+      approvedAt?: string;
+    }>
+  >;
+  denyPermissions(input: { pluginId: string; pluginVersion: string }): Promise<void>;
+  disable(pluginId: string): Promise<void>;
+  remove(pluginId: string): Promise<void>;
   quarantine(pluginId: string, version: string, reason: string): Promise<void>;
 }

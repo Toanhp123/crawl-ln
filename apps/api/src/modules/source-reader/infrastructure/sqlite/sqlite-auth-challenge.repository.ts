@@ -99,6 +99,30 @@ export class SqliteAuthChallengeRepository implements AuthChallengeRepository {
     return row ? toHandle(row) : undefined;
   }
 
+  async findById(id: string): Promise<AuthChallengeHandle | undefined> {
+    const row = this.database.connection
+      .prepare(
+        `SELECT id, plugin_id, credential_profile_id, network_profile_id, owner_id,
+                type, status, expires_at
+         FROM source_reader_auth_challenges WHERE id=?`
+      )
+      .get(id) as ChallengeRow | undefined;
+    return row ? toHandle(row) : undefined;
+  }
+
+  async listPending(ownerId?: string): Promise<AuthChallengeHandle[]> {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT id, plugin_id, credential_profile_id, network_profile_id, owner_id,
+                type, status, expires_at
+         FROM source_reader_auth_challenges
+         WHERE status='pending' AND owner_id IS ?
+         ORDER BY expires_at, id`
+      )
+      .all(ownerId ?? null) as unknown as ChallengeRow[];
+    return rows.map(toHandle);
+  }
+
   async resolveState(handle: AuthChallengeHandle): Promise<Record<string, unknown> | undefined> {
     const row = this.database.connection
       .prepare(

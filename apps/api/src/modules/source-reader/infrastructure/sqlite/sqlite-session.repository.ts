@@ -152,6 +152,12 @@ export class SqliteSessionRepository implements SessionRepository {
       .run(credentialProfileId);
   }
 
+  async revokeByNetworkProfile(networkProfileId: string): Promise<void> {
+    this.database.connection
+      .prepare("UPDATE source_reader_sessions SET status='revoked' WHERE network_profile_id=?")
+      .run(networkProfileId);
+  }
+
   async expireBefore(now: string): Promise<number> {
     const result = this.database.connection
       .prepare(

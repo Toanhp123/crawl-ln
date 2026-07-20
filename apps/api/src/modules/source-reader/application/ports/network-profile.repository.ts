@@ -25,4 +25,28 @@ export interface NetworkProfileRepository {
     tags?: string[];
   }): Promise<NetworkProfileHandle[]>;
   resolveConfig(handle: NetworkProfileHandle): Promise<Record<string, unknown> | undefined>;
+  listMetadata(input: { ownerId?: string; includeSystem: boolean }): Promise<
+    Array<
+      NetworkProfileHandle & {
+        name: string;
+        enabled: boolean;
+        createdAt: string;
+        updatedAt: string;
+      }
+    >
+  >;
+  requireHandle(id: string): Promise<NetworkProfileHandle>;
+  update(
+    id: string,
+    patch: Partial<{
+      name: string;
+      routeType: NetworkProfileHandle['routeType'];
+      regions: string[];
+      tags: string[];
+      config: Record<string, unknown>;
+      enabled: boolean;
+    }>,
+    updatedAt: string
+  ): Promise<void>;
+  delete(id: string): Promise<void>;
 }

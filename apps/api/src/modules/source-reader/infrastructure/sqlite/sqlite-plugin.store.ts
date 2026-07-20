@@ -262,6 +262,93 @@ export class SqlitePluginStore implements PluginStorePort {
     return rows.map(storedVersion);
   }
 
+  async listInstalled() {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT id, name, trust_level, status, active_version, enabled, installed_at, updated_at
+         FROM source_reader_plugins ORDER BY id`
+      )
+      .all() as unknown as Array<{
+      id: string;
+      name: string;
+      trust_level: PluginTrustLevel;
+      status: PluginStatus;
+      active_version: string | null;
+      enabled: number;
+      installed_at: string;
+      updated_at: string;
+    }>;
+    return rows.map((row) => ({
+      pluginId: row.id,
+      name: row.name,
+      trustLevel: row.trust_level,
+      status: row.status,
+      ...(row.active_version ? { activeVersion: row.active_version } : {}),
+      enabled: row.enabled === 1,
+      installedAt: row.installed_at,
+      updatedAt: row.updated_at
+    }));
+  }
+
+  async listPermissions(pluginId: string) {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT plugin_id, plugin_version, permission, scope_json, status,
+                approved_by, approved_at
+         FROM source_reader_plugin_permissions WHERE plugin_id=?
+         ORDER BY plugin_version, permission, scope_json`
+      )
+      .all(pluginId) as unknown as Array<{
+      plugin_id: string;
+      plugin_version: string;
+      permission: string;
+      scope_json: string;
+      status: string;
+      approved_by: string | null;
+      approved_at: string | null;
+    }>;
+    return rows.map((row) => ({
+      pluginId: row.plugin_id,
+      pluginVersion: row.plugin_version,
+      permission: row.permission,
+      scope: JSON.parse(row.scope_json) as unknown,
+      status: row.status,
+      ...(row.approved_by ? { approvedBy: row.approved_by } : {}),
+      ...(row.approved_at ? { approvedAt: row.approved_at } : {})
+    }));
+  }
+
+  async denyPermissions(input: { pluginId: string; pluginVersion: string }): Promise<void> {
+    this.database.connection
+      .prepare(
+        `UPDATE source_reader_plugin_permissions
+         SET status='denied', approved_by=NULL, approved_at=NULL
+         WHERE plugin_id=? AND plugin_version=?`
+      )
+      .run(input.pluginId, input.pluginVersion);
+  }
+
+  async disable(pluginId: string): Promise<void> {
+    this.database.transactionSync(() => {
+      this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugin_versions SET status='installed'
+           WHERE plugin_id=? AND status='active'`
+        )
+        .run(pluginId);
+      this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugins
+           SET enabled=0, status='disabled', active_version=NULL, updated_at=? WHERE id=?`
+        )
+        .run(new Date().toISOString(), pluginId);
+    });
+  }
+
+  async remove(pluginId: string): Promise<void> {
+    this.database.connection.prepare('DELETE FROM source_reader_plugins WHERE id=?').run(pluginId);
+  }
+
   async quarantine(pluginId: string, version: string, reason: string): Promise<void> {
     this.database.transactionSync(() => {
       const result = this.database.connection

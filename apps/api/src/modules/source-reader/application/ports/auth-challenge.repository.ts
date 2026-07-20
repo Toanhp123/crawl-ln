@@ -20,6 +20,8 @@ export interface AuthChallengeRepository {
     }
   ): Promise<void>;
   findPendingById(id: string): Promise<AuthChallengeHandle | undefined>;
+  findById(id: string): Promise<AuthChallengeHandle | undefined>;
+  listPending(ownerId?: string): Promise<AuthChallengeHandle[]>;
   resolveState(handle: AuthChallengeHandle): Promise<Record<string, unknown> | undefined>;
   complete(id: string, completedAt: string): Promise<void>;
   listExpiredPending(now: string): Promise<AuthChallengeHandle[]>;

@@ -4,6 +4,7 @@ import type {
   NetworkProfileRepository
 } from '../../application/ports/network-profile.repository.js';
 import type { SealedSecret, SecretVault } from '../../application/ports/secret-vault.port.js';
+import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import { sealJson, unsealJson } from './encrypted-json.js';
 
 interface NetworkRow {
@@ -14,6 +15,13 @@ interface NetworkRow {
   regions_json: string;
   tags_json: string;
   health_status: NetworkProfileHandle['healthStatus'];
+}
+
+interface NetworkMetadataRow extends NetworkRow {
+  name: string;
+  enabled: number;
+  created_at: string;
+  updated_at: string;
 }
 
 function toHandle(row: NetworkRow): NetworkProfileHandle {
@@ -147,5 +155,79 @@ export class SqliteNetworkProfileRepository implements NetworkProfileRepository 
         ownerId: handle.ownerId
       }
     );
+  }
+
+  async listMetadata(input: { ownerId?: string; includeSystem: boolean }) {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT id, owner_type, owner_id, name, route_type, regions_json, tags_json,
+                health_status, enabled, created_at, updated_at
+         FROM source_reader_network_profiles
+         WHERE (owner_type='user' AND owner_id=?)
+            OR (?=1 AND owner_type='system')
+         ORDER BY owner_type DESC, name, id`
+      )
+      .all(input.ownerId ?? null, input.includeSystem ? 1 : 0) as unknown as NetworkMetadataRow[];
+    return rows.map((row) => ({
+      ...toHandle(row),
+      name: row.name,
+      enabled: row.enabled === 1,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+  }
+
+  async requireHandle(id: string): Promise<NetworkProfileHandle> {
+    const handle = await this.findHandleById(id);
+    if (!handle) {
+      throw new SourceReaderError('NETWORK_ROUTE_OFFLINE', 'Network profile is unavailable', {
+        retryable: false,
+        fallbackAllowed: false
+      });
+    }
+    return handle;
+  }
+
+  async update(
+    id: string,
+    patch: Partial<{
+      name: string;
+      routeType: NetworkProfileHandle['routeType'];
+      regions: string[];
+      tags: string[];
+      config: Record<string, unknown>;
+      enabled: boolean;
+    }>,
+    updatedAt: string
+  ): Promise<void> {
+    const handle = await this.requireHandle(id);
+    const row = this.database.connection
+      .prepare(`SELECT name, enabled, created_at FROM source_reader_network_profiles WHERE id=?`)
+      .get(id) as { name: string; enabled: number; created_at: string } | undefined;
+    if (!row) return;
+    const currentConfig =
+      patch.config === undefined ? await this.resolveConfig(handle) : patch.config;
+    await this.save({
+      ...handle,
+      name: patch.name ?? row.name,
+      routeType: patch.routeType ?? handle.routeType,
+      regions: patch.regions ?? handle.regions,
+      tags: patch.tags ?? handle.tags,
+      ...(currentConfig ? { secretConfig: currentConfig } : {}),
+      enabled: patch.enabled ?? row.enabled === 1,
+      createdAt: row.created_at,
+      updatedAt
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    this.database.transactionSync(() => {
+      this.database.connection
+        .prepare("UPDATE source_reader_sessions SET status='revoked' WHERE network_profile_id=?")
+        .run(id);
+      this.database.connection
+        .prepare('DELETE FROM source_reader_network_profiles WHERE id=?')
+        .run(id);
+    });
   }
 }

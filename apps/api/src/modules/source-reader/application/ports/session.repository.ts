@@ -30,5 +30,6 @@ export interface SessionRepository {
   }): Promise<SessionHandle | undefined>;
   resolveMaterial(handle: SessionHandle): Promise<Record<string, unknown>>;
   revokeByCredential(credentialProfileId: string): Promise<void>;
+  revokeByNetworkProfile(networkProfileId: string): Promise<void>;
   expireBefore(now: string): Promise<number>;
 }

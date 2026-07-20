@@ -1,6 +1,1 @@
-export type SourceReaderRole = 'reader' | 'source-manager' | 'source-admin' | 'system-admin';
-
-export interface SourceReaderActor {
-  id?: string;
-  roles: SourceReaderRole[];
-}
+export type { SourceReaderActor, SourceReaderRole } from '../../public/source-reader.api.js';

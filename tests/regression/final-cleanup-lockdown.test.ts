@@ -45,6 +45,7 @@ test('known dead production artifacts are absent', () => {
 
 test('production safety configuration has one canonical API env surface', () => {
   assert.equal(existsSync('.env.example'), false);
+  assert.doesNotMatch(read('.gitignore'), /^!\.env\.example$/m);
   const apiEnv = read('apps/api/.env.example');
   const termuxEnv = read('apps/api/.env.termux.example');
   for (const content of [apiEnv, termuxEnv]) {

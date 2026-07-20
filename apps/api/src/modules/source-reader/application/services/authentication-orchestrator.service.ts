@@ -88,7 +88,7 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
         : await this.standard.authenticate({
             strategy: input.strategy,
             secret: await this.credentials.resolveSecret(input.credential),
-            configuration: input.configuration,
+            configuration: await this.standardConfiguration(input),
             http: routedHttp
           });
 
@@ -116,6 +116,7 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
         { retryable: false, fallbackAllowed: false }
       );
     }
+    const { opaqueState, ...publicChallenge } = result.challenge;
     const persisted = await this.challenges.create({
       pluginId: input.pluginId,
       pluginVersion: input.pluginVersion,
@@ -124,11 +125,15 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
       ...(input.userId ? { ownerId: input.userId } : {}),
       type: result.challenge.type,
       expiresAt: result.challenge.expiresAt,
-      state: { pluginChallengeId: result.challenge.id }
+      state: {
+        pluginChallengeId: result.challenge.id,
+        opaqueState: opaqueState ?? {},
+        __routeIdentity: resolvedRoute.identity
+      }
     });
     return {
       status: 'challenge-required',
-      challenge: { ...result.challenge, id: persisted.id }
+      challenge: { ...publicChallenge, id: persisted.id }
     };
   }
 
@@ -154,6 +159,21 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
       return this.customUnavailable('Custom authentication is unavailable');
     }
 
+    const secret = await this.credentials.resolveSecret(input.credential);
+    const allowedFields = candidate.plugin.manifest.authentication?.custom?.fields ?? [];
+    const fields = Object.fromEntries(
+      allowedFields.flatMap((field) =>
+        typeof secret[field] === 'string' ? [[field, secret[field] as string]] : []
+      )
+    );
+    if (candidate.packagePath) {
+      return extension.login({
+        credentialHandleId: input.credential.id,
+        fields,
+        routeIdentity: resolvedNetworkRoute.identity
+      });
+    }
+
     const signal = input.signal ?? new AbortController().signal;
     const context = this.contexts.create({
       pluginId: input.pluginId,
@@ -173,7 +193,37 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
         }
       }
     });
-    return extension.login({ credentialHandleId: input.credential.id }, context);
+    return extension.login(
+      {
+        credentialHandleId: input.credential.id,
+        fields,
+        routeIdentity: resolvedNetworkRoute.identity
+      },
+      context
+    );
+  }
+
+  private async standardConfiguration(
+    input: Parameters<AuthenticationRuntimePort['authenticate']>[0]
+  ): Promise<Record<string, unknown>> {
+    if (input.strategy !== 'form-login' || !this.plugins) return input.configuration;
+    const sourceUrl =
+      typeof input.configuration.sourceUrl === 'string' ? input.configuration.sourceUrl : '';
+    if (!sourceUrl) return input.configuration;
+    const candidate = (
+      await this.plugins.listCandidates({ url: sourceUrl, capability: 'authentication' })
+    ).find((item) => item.plugin.manifest.id === input.pluginId);
+    const formLogin = candidate?.plugin.manifest.authentication?.formLogin;
+    if (!formLogin) return input.configuration;
+    return {
+      ...input.configuration,
+      loginUrl: formLogin.loginUrlTemplate,
+      fields: formLogin.fields,
+      staticFields: formLogin.staticFields,
+      success: formLogin.success,
+      failure: formLogin.failure,
+      session: formLogin.session
+    };
   }
 
   private routedHttp(

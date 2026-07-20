@@ -161,7 +161,12 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     sessions,
     pluginContexts,
     infrastructure.ids,
-    infrastructure.clock
+    infrastructure.clock,
+    async (networkProfileId) => {
+      if (!networkProfileId) return 'direct';
+      const profile = await networks.requireHandle(networkProfileId);
+      return (await routes.resolve(profile)).identity;
+    }
   );
   const authentication = new AuthenticationOrchestratorService(
     credentials,

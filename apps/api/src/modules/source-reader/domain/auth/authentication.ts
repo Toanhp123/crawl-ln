@@ -24,6 +24,7 @@ export interface AuthChallenge {
   type: 'otp' | 'captcha' | 'approval' | 'browser-interaction';
   expiresAt: string;
   userInstructions?: string;
+  opaqueState?: Record<string, unknown>;
 }
 
 export type AuthExecutionResult =

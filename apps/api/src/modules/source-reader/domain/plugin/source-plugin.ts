@@ -33,6 +33,21 @@ export interface PluginMatcher {
   priority: number;
 }
 
+export interface FormLoginManifestConfiguration {
+  loginUrlTemplate: string;
+  method: 'POST';
+  fields: { username: string; password: string };
+  staticFields: Record<string, string>;
+  success: { status?: number[]; selector?: string };
+  failure: { status?: number[]; selector?: string };
+  session: { cookies: boolean; headers: string[] };
+}
+
+export interface PluginAuthenticationManifest {
+  custom?: { fields: string[] };
+  formLogin?: FormLoginManifestConfiguration;
+}
+
 export interface SourcePluginManifest {
   id: string;
   name: string;
@@ -63,6 +78,7 @@ export interface SourcePluginManifest {
     };
   };
   extensionContracts?: Record<string, { version: number; schema: string; required?: boolean }>;
+  authentication?: PluginAuthenticationManifest;
 }
 
 export interface PluginHttpResponse {
@@ -138,8 +154,12 @@ export interface PluginOperationResult<T> {
 
 export interface AuthenticationExtension {
   login(
-    request: { credentialHandleId: string },
-    context: PluginContext
+    request: {
+      credentialHandleId: string;
+      fields?: Record<string, string>;
+      routeIdentity?: string;
+    },
+    context?: PluginContext
   ): Promise<AuthExecutionResult>;
   refreshSession?(
     request: { sessionHandleId: string },
@@ -147,8 +167,14 @@ export interface AuthenticationExtension {
   ): Promise<AuthExecutionResult>;
   logout?(request: { sessionHandleId: string }, context: PluginContext): Promise<void>;
   resumeChallenge?(
-    request: { challengeId: string; response: Record<string, unknown> },
-    context: PluginContext
+    request: {
+      challengeId: string;
+      challengeType?: string;
+      response: Record<string, unknown>;
+      opaqueState?: Record<string, unknown>;
+      routeIdentity?: string;
+    },
+    context?: PluginContext
   ): Promise<AuthExecutionResult>;
 }
 

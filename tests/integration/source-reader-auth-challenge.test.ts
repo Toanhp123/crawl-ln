@@ -229,9 +229,63 @@ test('authentication orchestrator persists plugin challenges and returns the opa
       ownerId: 'u1',
       type: 'otp',
       expiresAt: '2026-07-19T00:05:00.000Z',
-      state: { pluginChallengeId: 'plugin-challenge' }
+      state: {
+        pluginChallengeId: 'plugin-challenge',
+        opaqueState: {},
+        __routeIdentity: 'direct'
+      }
     }
   ]);
+});
+
+test('challenge response is rejected when the active plugin version changed', async () => {
+  now = new Date('2026-07-19T00:00:00.000Z');
+  const challenge = await service.create({
+    pluginId: 'demo',
+    pluginVersion: '2.0.0',
+    credentialProfileId: 'cred-1',
+    networkProfileId: 'route-1',
+    ownerId: 'u1',
+    type: 'otp',
+    expiresAt: '2026-07-19T00:05:00.000Z',
+    state: { flowToken: 'opaque', __routeIdentity: 'route-1' }
+  });
+
+  await assert.rejects(
+    () =>
+      service.respond({
+        challengeId: challenge.id,
+        ownerId: 'u1',
+        response: { type: 'otp', code: '123456' }
+      }),
+    (error: unknown) =>
+      error instanceof SourceReaderError && error.code === 'SESSION_BINDING_MISMATCH'
+  );
+});
+
+test('challenge response is rejected when the network route identity changed', async () => {
+  now = new Date('2026-07-19T00:00:00.000Z');
+  const challenge = await service.create({
+    pluginId: 'demo',
+    pluginVersion: '1.0.0',
+    credentialProfileId: 'cred-1',
+    networkProfileId: 'route-1',
+    ownerId: 'u1',
+    type: 'otp',
+    expiresAt: '2026-07-19T00:05:00.000Z',
+    state: { flowToken: 'opaque', __routeIdentity: 'route-before-change' }
+  });
+
+  await assert.rejects(
+    () =>
+      service.respond({
+        challengeId: challenge.id,
+        ownerId: 'u1',
+        response: { type: 'otp', code: '123456' }
+      }),
+    (error: unknown) =>
+      error instanceof SourceReaderError && error.code === 'SESSION_BINDING_MISMATCH'
+  );
 });
 
 test('expired browser challenge closes its browser identity', async () => {

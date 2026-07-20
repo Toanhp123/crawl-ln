@@ -138,7 +138,14 @@ export class StandardAuthenticationService {
       return this.failed('Form login configuration or credentials are incomplete');
     }
 
+    const staticFields =
+      input.configuration.staticFields &&
+      typeof input.configuration.staticFields === 'object' &&
+      !Array.isArray(input.configuration.staticFields)
+        ? (input.configuration.staticFields as Record<string, string>)
+        : {};
     const body = new URLSearchParams({
+      ...staticFields,
       [fields.username]: username,
       [fields.password]: password
     });
@@ -146,16 +153,50 @@ export class StandardAuthenticationService {
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body
     });
-    const success = input.configuration.success as { urlIncludes?: unknown } | undefined;
+    const success = input.configuration.success as
+      { urlIncludes?: unknown; status?: unknown; selector?: unknown } | undefined;
+    const failure = input.configuration.failure as
+      { status?: unknown; selector?: unknown } | undefined;
+    if (Array.isArray(failure?.status) && failure.status.includes(response.status)) {
+      return this.failed('Form login failure status matched');
+    }
+    if (typeof failure?.selector === 'string' && response.data.includes(failure.selector)) {
+      return this.failed('Form login failure selector matched');
+    }
+    if (Array.isArray(success?.status) && !success.status.includes(response.status)) {
+      return this.failed('Form login success status did not match');
+    }
+    if (typeof success?.selector === 'string' && !response.data.includes(success.selector)) {
+      return this.failed('Form login success selector did not match');
+    }
     if (typeof success?.urlIncludes === 'string' && !response.url.includes(success.urlIncludes)) {
       return this.failed('Form login success condition failed');
     }
+    const sessionConfiguration = input.configuration.session as
+      { cookies?: unknown; headers?: unknown } | undefined;
     const setCookie = stringHeader(response.headers, 'set-cookie');
+    const selectedHeaders = Object.fromEntries(
+      (Array.isArray(sessionConfiguration?.headers) ? sessionConfiguration.headers : []).flatMap(
+        (name) => {
+          if (typeof name !== 'string') return [];
+          const value = stringHeader(response.headers, name.toLowerCase());
+          return value ? [[name, value]] : [];
+        }
+      )
+    );
+    const cookies =
+      sessionConfiguration?.cookies === false ? [] : setCookie ? parseSetCookie(setCookie) : [];
     return {
       status: 'authenticated',
       session: {
-        kind: 'cookies',
-        cookies: setCookie ? parseSetCookie(setCookie) : [],
+        kind:
+          cookies.length > 0 && Object.keys(selectedHeaders).length > 0
+            ? 'combined'
+            : Object.keys(selectedHeaders).length > 0
+              ? 'headers'
+              : 'cookies',
+        ...(cookies.length > 0 ? { cookies } : {}),
+        ...(Object.keys(selectedHeaders).length > 0 ? { headers: selectedHeaders } : {}),
         networkBinding: 'preferred'
       }
     };

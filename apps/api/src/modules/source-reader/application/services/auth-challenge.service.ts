@@ -28,7 +28,8 @@ export class AuthChallengeService {
     private readonly sessions: SessionRepository,
     private readonly contexts: PluginContextFactoryPort,
     private readonly ids: { randomId(): string },
-    private readonly clock: { now(): Date }
+    private readonly clock: { now(): Date },
+    private readonly resolveRouteIdentity?: (networkProfileId?: string) => Promise<string>
   ) {}
 
   async create(input: CreateChallengeInput): Promise<AuthChallengeHandle> {
@@ -73,28 +74,57 @@ export class AuthChallengeService {
         { retryable: false, fallbackAllowed: false }
       );
     }
-    const signal = new AbortController().signal;
-    const context = this.contexts.create({
-      pluginId: challenge.pluginId,
-      allowedHosts: registration.plugin.manifest.permissions.network.hosts,
-      signal,
-      runtimeContext: {
-        executionMode: registration.executionMode,
-        browserRequired: false,
-        resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
-        cacheIdentity: {
-          public: 'public',
-          ...(challenge.credentialProfileId ? { account: challenge.credentialProfileId } : {}),
-          ...(challenge.ownerId ? { user: challenge.ownerId } : {}),
-          network: challenge.networkProfileId ?? 'direct'
+    const pluginVersion = typeof state.__pluginVersion === 'string' ? state.__pluginVersion : '';
+    const routeIdentity = this.resolveRouteIdentity
+      ? await this.resolveRouteIdentity(challenge.networkProfileId)
+      : (challenge.networkProfileId ?? 'direct');
+    if (
+      pluginVersion !== registration.plugin.manifest.version ||
+      (typeof state.__routeIdentity === 'string' && state.__routeIdentity !== routeIdentity)
+    ) {
+      throw new SourceReaderError(
+        'SESSION_BINDING_MISMATCH',
+        'Authentication challenge binding no longer matches the active plugin or route',
+        { retryable: false, fallbackAllowed: false }
+      );
+    }
+
+    let result: AuthExecutionResult;
+    if (registration.packagePath) {
+      result = await resume.call(registration.plugin.authentication, {
+        challengeId: challenge.id,
+        challengeType: challenge.type,
+        response: input.response,
+        opaqueState:
+          state.opaqueState && typeof state.opaqueState === 'object'
+            ? (state.opaqueState as Record<string, unknown>)
+            : {},
+        routeIdentity
+      });
+    } else {
+      const signal = new AbortController().signal;
+      const context = this.contexts.create({
+        pluginId: challenge.pluginId,
+        allowedHosts: registration.plugin.manifest.permissions.network.hosts,
+        signal,
+        runtimeContext: {
+          executionMode: registration.executionMode,
+          browserRequired: false,
+          resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
+          cacheIdentity: {
+            public: 'public',
+            ...(challenge.credentialProfileId ? { account: challenge.credentialProfileId } : {}),
+            ...(challenge.ownerId ? { user: challenge.ownerId } : {}),
+            network: routeIdentity
+          }
         }
-      }
-    });
-    const result = await resume.call(
-      registration.plugin.authentication,
-      { challengeId: challenge.id, response: { ...state, ...input.response } },
-      context
-    );
+      });
+      result = await resume.call(
+        registration.plugin.authentication,
+        { challengeId: challenge.id, response: { ...state, ...input.response } },
+        context
+      );
+    }
     await this.repository.complete(challenge.id, this.clock.now().toISOString());
     if (result.status === 'authenticated') {
       await this.persistSession(challenge, state, result.session);

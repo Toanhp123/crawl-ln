@@ -20,6 +20,18 @@ function parseSchema(bytes: Uint8Array): unknown {
   return JSON.parse(Buffer.from(bytes).toString('utf8')) as unknown;
 }
 
+function hostAllowed(host: string, patterns: string[]): boolean {
+  const normalizedHost = host.toLowerCase().replace(/^www\./, '');
+  return patterns.some((pattern) => {
+    const normalized = pattern.toLowerCase().replace(/^www\./, '');
+    if (normalized.startsWith('*.')) {
+      const suffix = normalized.slice(2);
+      return normalizedHost === suffix || normalizedHost.endsWith(`.${suffix}`);
+    }
+    return normalizedHost === normalized || normalizedHost.endsWith(`.${normalized}`);
+  });
+}
+
 export class PluginCompatibilityService {
   constructor(private readonly host: SourceReaderHostCompatibility) {}
 
@@ -51,6 +63,22 @@ export class PluginCompatibilityService {
             `contracts.${capability}`,
             'fatal',
             `Capability ${capability} contract ${String(version)} is unsupported`
+          )
+        );
+      }
+    }
+
+    const formLogin = manifest.authentication?.formLogin;
+    if (formLogin) {
+      const loginHost = new URL(formLogin.loginUrlTemplate).hostname;
+      const allowedHosts = manifest.matchers.flatMap((matcher) => matcher.hosts);
+      if (!hostAllowed(loginHost, allowedHosts)) {
+        issues.push(
+          issue(
+            'PLUGIN_PERMISSION_DENIED',
+            'authentication.formLogin.loginUrlTemplate',
+            'fatal',
+            `Form login host ${loginHost} is outside plugin matcher allowlist`
           )
         );
       }

@@ -11,6 +11,36 @@ const capability = z.enum([
   'authentication'
 ]);
 
+const formLoginSchema = z
+  .object({
+    loginUrlTemplate: z.string().url(),
+    method: z.literal('POST'),
+    fields: z.object({ username: z.string().min(1), password: z.string().min(1) }).strict(),
+    staticFields: z.record(z.string(), z.string()).default({}),
+    success: z
+      .object({
+        status: z.array(z.number().int()).optional(),
+        selector: z.string().min(1).optional()
+      })
+      .strict()
+      .default({}),
+    failure: z
+      .object({
+        status: z.array(z.number().int()).optional(),
+        selector: z.string().min(1).optional()
+      })
+      .strict()
+      .default({}),
+    session: z
+      .object({
+        cookies: z.boolean().default(true),
+        headers: z.array(z.string().min(1)).default([])
+      })
+      .strict()
+      .default({ cookies: true, headers: [] })
+  })
+  .strict();
+
 const manifestSchema = z
   .object({
     id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
@@ -67,6 +97,16 @@ const manifestSchema = z
           })
           .optional()
       })
+      .optional(),
+    authentication: z
+      .object({
+        custom: z
+          .object({ fields: z.array(z.string().min(1)).min(1) })
+          .strict()
+          .optional(),
+        formLogin: formLoginSchema.optional()
+      })
+      .strict()
       .optional(),
     extensionContracts: z
       .record(

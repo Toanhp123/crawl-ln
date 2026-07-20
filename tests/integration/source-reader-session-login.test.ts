@@ -62,6 +62,7 @@ test('login resolves credential secret internally and persists encrypted session
 
   const session = await sessions.findActive({
     pluginId: 'demo',
+    pluginVersion: '1.0.0',
     credentialProfileId: 'cred-1',
     ownerId: 'user-1'
   });
@@ -81,6 +82,7 @@ test('login resolves credential secret internally and persists encrypted session
 test('plugin context attaches decrypted session headers only inside host HTTP calls', async () => {
   const session = await sessions.findActive({
     pluginId: 'demo',
+    pluginVersion: '1.0.0',
     credentialProfileId: 'cred-1',
     ownerId: 'user-1'
   });
@@ -108,7 +110,13 @@ test('plugin context attaches decrypted session headers only inside host HTTP ca
       session,
       executionMode: 'in-process',
       browserRequired: false,
-      cacheIdentity: { authScope: 'account', networkScope: 'direct' }
+      cacheIdentity: {
+        public: 'public',
+        account: 'cred-1',
+        user: 'user-1',
+        session: 'session-1',
+        network: 'direct'
+      }
     }
   });
 
@@ -122,6 +130,7 @@ test('logout revokes all sessions for the credential', async () => {
   assert.equal(
     await sessions.findActive({
       pluginId: 'demo',
+      pluginVersion: '1.0.0',
       credentialProfileId: 'cred-1',
       ownerId: 'user-1'
     }),

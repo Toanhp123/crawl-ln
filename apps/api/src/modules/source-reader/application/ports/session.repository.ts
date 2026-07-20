@@ -19,14 +19,10 @@ export interface SessionRepository {
   ): Promise<void>;
   findActive(input: {
     pluginId: string;
+    pluginVersion: string;
     credentialProfileId: string;
     ownerId?: string;
     networkProfileId?: string;
-  }): Promise<SessionHandle | undefined>;
-  findActiveAnyRoute?(input: {
-    pluginId: string;
-    credentialProfileId: string;
-    ownerId?: string;
   }): Promise<SessionHandle | undefined>;
   resolveMaterial(handle: SessionHandle): Promise<Record<string, unknown>>;
   revokeByCredential(credentialProfileId: string): Promise<void>;

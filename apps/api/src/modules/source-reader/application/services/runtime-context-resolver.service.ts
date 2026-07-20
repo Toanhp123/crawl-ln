@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { CredentialRepository } from '../ports/credential.repository.js';
 import type { NetworkProfileRepository } from '../ports/network-profile.repository.js';
 import type { NetworkRouteResolverPort } from '../ports/network-route.port.js';
@@ -8,8 +7,6 @@ import type {
 } from '../ports/runtime-context-resolver.port.js';
 import type { SessionRepository } from '../ports/session.repository.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
-
-const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 
 export class RuntimeContextResolverService implements RuntimeContextResolverPort {
   constructor(
@@ -88,30 +85,15 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
 
     const resolvedNetworkRoute = await this.routes.resolve(networkRoute);
 
-    const routeSession = credential
+    const session = credential
       ? await this.sessions.findActive({
           pluginId: input.pluginId,
+          pluginVersion: input.pluginVersion,
           credentialProfileId: credential.id,
           ownerId: input.userId,
           networkProfileId: networkRoute?.id
         })
       : undefined;
-    const alternateSession =
-      credential && !routeSession && this.sessions.findActiveAnyRoute
-        ? await this.sessions.findActiveAnyRoute({
-            pluginId: input.pluginId,
-            credentialProfileId: credential.id,
-            ownerId: input.userId
-          })
-        : undefined;
-    const session = routeSession ?? alternateSession;
-    if (session?.networkBinding === 'required' && session.networkProfileId !== networkRoute?.id) {
-      throw new SourceReaderError(
-        'SESSION_NETWORK_MISMATCH',
-        'Session requires the network route used during login',
-        { retryable: false, fallbackAllowed: false }
-      );
-    }
 
     return {
       credential,
@@ -123,8 +105,11 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
         Boolean(input.runtimeRequirements?.authentication?.required) &&
         Boolean(input.requiresBrowser),
       cacheIdentity: {
-        authScope: credential ? hash(`${credential.ownerType}:${credential.id}`) : 'anonymous',
-        networkScope: hash(resolvedNetworkRoute.identity)
+        public: 'public',
+        ...(credential ? { account: credential.id } : {}),
+        ...(input.userId ? { user: input.userId } : {}),
+        ...(session ? { session: session.id } : {}),
+        network: resolvedNetworkRoute.identity
       }
     };
   }

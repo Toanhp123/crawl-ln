@@ -220,7 +220,12 @@ test('service resolves runtime context before invoking a plugin', async () => {
     },
     executionMode: 'in-process' as const,
     browserRequired: false,
-    cacheIdentity: { authScope: 'auth', networkScope: 'direct' }
+    cacheIdentity: {
+      public: 'public',
+      account: 'cred-1',
+      user: 'u1',
+      network: 'direct'
+    }
   };
   const service = new SourceReaderService(
     registry,

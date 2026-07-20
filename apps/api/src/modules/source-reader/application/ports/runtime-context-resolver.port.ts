@@ -4,6 +4,7 @@ import type { ResolvedNetworkRoute } from './network-route.port.js';
 import type { SessionHandle } from './session.repository.js';
 import type { SourcePluginManifest } from '../../domain/plugin/source-plugin.js';
 import type { SourceCapability } from '../../public/source-reader.models.js';
+import type { ResolvedCacheIdentity } from '../services/source-reader-cache-key.js';
 
 export interface ResolvedRuntimeContext {
   credential?: CredentialHandle;
@@ -12,10 +13,7 @@ export interface ResolvedRuntimeContext {
   resolvedNetworkRoute: ResolvedNetworkRoute;
   executionMode: 'in-process' | 'isolated';
   browserRequired: boolean;
-  cacheIdentity: {
-    authScope: string;
-    networkScope: string;
-  };
+  cacheIdentity: ResolvedCacheIdentity;
 }
 
 export interface RuntimeContextResolverPort {

@@ -140,6 +140,7 @@ test('OTP challenge can resume the same plugin auth flow exactly once', async ()
   assert.ok(
     await sessions.findActive({
       pluginId: 'demo',
+      pluginVersion: '1.0.0',
       credentialProfileId: 'cred-1',
       ownerId: 'u1',
       networkProfileId: 'route-1'

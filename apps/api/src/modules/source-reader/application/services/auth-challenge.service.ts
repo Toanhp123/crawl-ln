@@ -83,8 +83,10 @@ export class AuthChallengeService {
         browserRequired: false,
         resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
         cacheIdentity: {
-          authScope: challenge.credentialProfileId ?? 'anonymous',
-          networkScope: challenge.networkProfileId ?? 'direct'
+          public: 'public',
+          ...(challenge.credentialProfileId ? { account: challenge.credentialProfileId } : {}),
+          ...(challenge.ownerId ? { user: challenge.ownerId } : {}),
+          network: challenge.networkProfileId ?? 'direct'
         }
       }
     });

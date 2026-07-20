@@ -89,7 +89,12 @@ test('read requiring auth returns AUTHENTICATION_REQUIRED when no session exists
       },
       executionMode: 'in-process',
       browserRequired: false,
-      cacheIdentity: { authScope: 'account', networkScope: 'direct' }
+      cacheIdentity: {
+        public: 'public',
+        account: 'cred-1',
+        user: 'u1',
+        network: 'direct'
+      }
     }
   });
 
@@ -161,7 +166,13 @@ test('active route-bound session attaches cookies to host HTTP requests', async 
       },
       executionMode: 'in-process',
       browserRequired: false,
-      cacheIdentity: { authScope: 'account', networkScope: 'route-us' }
+      cacheIdentity: {
+        public: 'public',
+        account: 'cred-1',
+        user: 'u1',
+        session: 'session-1',
+        network: 'direct'
+      }
     }
   });
 
@@ -220,7 +231,13 @@ test('browser-required read opens the approved browser identity and exposes only
       },
       executionMode: 'in-process',
       browserRequired: true,
-      cacheIdentity: { authScope: 'account', networkScope: 'direct' }
+      cacheIdentity: {
+        public: 'public',
+        account: 'cred-1',
+        user: 'u1',
+        session: 'session-1',
+        network: 'direct'
+      }
     }
   });
 

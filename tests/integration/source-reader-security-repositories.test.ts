@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
+import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
 import { LocalEncryptedVault } from '../../apps/api/src/modules/source-reader/infrastructure/secrets/local-encrypted.vault.ts';
 import { SqliteCredentialRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-credential.repository.ts';
 import { SqliteNetworkProfileRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-network-profile.repository.ts';
@@ -154,6 +155,7 @@ test('sessions and challenges enforce binding, expiry, and credential revocation
 
   const active = await fixture.sessions.findActive({
     pluginId: 'demo',
+    pluginVersion: '1.0.0',
     credentialProfileId: 'credential-u1',
     ownerId: 'u1',
     networkProfileId: 'user-us'
@@ -162,14 +164,17 @@ test('sessions and challenges enforce binding, expiry, and credential revocation
   assert.deepEqual(await fixture.sessions.resolveMaterial(active!), {
     cookie: 'session-secret'
   });
-  assert.equal(
-    await fixture.sessions.findActive({
-      pluginId: 'demo',
-      credentialProfileId: 'credential-u1',
-      ownerId: 'u1',
-      networkProfileId: 'system-us'
-    }),
-    undefined
+  await assert.rejects(
+    () =>
+      fixture.sessions.findActive({
+        pluginId: 'demo',
+        pluginVersion: '1.0.0',
+        credentialProfileId: 'credential-u1',
+        ownerId: 'u1',
+        networkProfileId: 'system-us'
+      }),
+    (error: unknown) =>
+      error instanceof SourceReaderError && error.code === 'SESSION_BINDING_MISMATCH'
   );
 
   await fixture.challenges.save({
@@ -198,6 +203,7 @@ test('sessions and challenges enforce binding, expiry, and credential revocation
   assert.equal(
     await fixture.sessions.findActive({
       pluginId: 'demo',
+      pluginVersion: '1.0.0',
       credentialProfileId: 'credential-u1',
       ownerId: 'u1',
       networkProfileId: 'user-us'

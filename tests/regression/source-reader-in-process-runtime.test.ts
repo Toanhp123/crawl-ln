@@ -32,7 +32,7 @@ test('plugin context blocks undeclared network hosts', async () => {
     runtimeContext: {
       executionMode: 'in-process',
       browserRequired: false,
-      cacheIdentity: { authScope: 'public', networkScope: 'direct' }
+      cacheIdentity: { public: 'public', network: 'direct' }
     }
   });
   await assert.rejects(

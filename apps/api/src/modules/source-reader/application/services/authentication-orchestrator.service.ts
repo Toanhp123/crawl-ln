@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { AuthenticationRuntimePort } from '../ports/authentication-runtime.port.js';
 import type { AuthChallengeHandle } from '../ports/auth-challenge.repository.js';
 import type { CredentialHandle, CredentialRepository } from '../ports/credential.repository.js';
@@ -17,8 +16,6 @@ import type {
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import type { AuthenticationHttpClient } from './standard-authentication.service.js';
 import { StandardAuthenticationService } from './standard-authentication.service.js';
-
-const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 
 interface LoginInput {
   pluginId: string;
@@ -169,8 +166,10 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
         resolvedNetworkRoute,
         browserRequired: candidate.plugin.manifest.runtime.requiresBrowser ?? false,
         cacheIdentity: {
-          authScope: hash(`${input.credential.ownerType}:${input.credential.id}`),
-          networkScope: input.networkRoute ? hash(input.networkRoute.id) : 'direct'
+          public: 'public',
+          account: input.credential.id,
+          ...(input.userId ? { user: input.userId } : {}),
+          network: resolvedNetworkRoute.identity
         }
       }
     });

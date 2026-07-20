@@ -34,6 +34,7 @@ import type {
 } from '../../public/source-reader.models.js';
 import type { SourceReaderApi } from '../../public/source-reader.api.js';
 import { validatePluginResult } from './plugin-result-validator.js';
+import { buildSourceReaderCacheKey, resolveCacheScopeIdentity } from './source-reader-cache-key.js';
 import { SourceReaderCircuitBreaker } from './source-reader-circuit-breaker.js';
 import type { SourceReaderRateLimiterPort } from './source-reader-rate-limiter.js';
 
@@ -70,7 +71,7 @@ const anonymousRuntimeContexts: RuntimeContextResolverPort = {
       executionMode: input.executionMode ?? 'in-process',
       browserRequired: false,
       resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
-      cacheIdentity: { authScope: 'anonymous', networkScope: 'direct' }
+      cacheIdentity: { public: 'public', network: 'direct' }
     };
   }
 };
@@ -650,8 +651,11 @@ export class SourceReaderService implements SourceReaderApi {
   }
 
   private cacheLookupScopes(runtime: ResolvedRuntimeContext): CacheScope[] {
-    if (!runtime.credential && !runtime.session) return ['public'];
-    return runtime.session ? ['session', 'account', 'user'] : ['account', 'user'];
+    const scopes: CacheScope[] = [];
+    if (runtime.cacheIdentity.session) scopes.push('session');
+    if (runtime.cacheIdentity.account) scopes.push('account');
+    if (runtime.cacheIdentity.user) scopes.push('user');
+    return scopes.length > 0 ? scopes : ['public'];
   }
 
   private cacheKey(
@@ -661,17 +665,31 @@ export class SourceReaderService implements SourceReaderApi {
     runtime: ResolvedRuntimeContext,
     scope: CacheScope
   ): string {
-    return `source-reader:${this.fingerprint({
-      capability,
-      normalizedUrl: candidate.normalizedUrl,
-      requestParameters: this.cacheableRequest(request),
+    if (scope === 'none') {
+      throw new SourceReaderError(
+        'CACHE_SCOPE_IDENTITY_MISSING',
+        'A cache key cannot be created for none scope',
+        { retryable: false, fallbackAllowed: false }
+      );
+    }
+    const extensionContractVersions = Object.fromEntries(
+      Object.entries(candidate.plugin.manifest.extensionContracts ?? {}).map(
+        ([namespace, value]) => [namespace, String(value.version)]
+      )
+    );
+    return `source-reader:${buildSourceReaderCacheKey({
       pluginId: candidate.plugin.manifest.id,
       pluginVersion: candidate.plugin.manifest.version,
-      contractVersion: candidate.plugin.manifest.contracts[capability] ?? 0,
-      extensionContracts: candidate.plugin.manifest.extensionContracts ?? {},
-      cacheScope: scope,
-      authScopeIdentity: scope === 'public' ? 'public' : runtime.cacheIdentity.authScope,
-      networkScopeIdentity: runtime.cacheIdentity.networkScope
+      capability,
+      contractVersion: String(candidate.plugin.manifest.contracts[capability] ?? 0),
+      extensionContractVersions,
+      normalizedRequestFingerprint: this.fingerprint({
+        normalizedUrl: candidate.normalizedUrl,
+        requestParameters: this.cacheableRequest(request)
+      }),
+      networkIdentity: runtime.cacheIdentity.network,
+      scope,
+      scopeIdentity: resolveCacheScopeIdentity(runtime.cacheIdentity, scope)
     })}`;
   }
 
@@ -685,12 +703,13 @@ export class SourceReaderService implements SourceReaderApi {
 
   private narrowCacheScope(requested: CacheScope, runtime: ResolvedRuntimeContext): CacheScope {
     if (requested === 'none') return 'none';
-    if (runtime.session) return requested === 'public' ? 'session' : requested;
-    if (runtime.credential) {
-      if (requested === 'public' || requested === 'session') return 'account';
-      return requested;
+    if (requested === 'public') {
+      if (runtime.cacheIdentity.session) return 'session';
+      if (runtime.cacheIdentity.account) return 'account';
+      if (runtime.cacheIdentity.user) return 'user';
+      return 'public';
     }
-    return requested === 'public' ? 'public' : 'none';
+    return runtime.cacheIdentity[requested] ? requested : 'none';
   }
 
   private requestFingerprint(

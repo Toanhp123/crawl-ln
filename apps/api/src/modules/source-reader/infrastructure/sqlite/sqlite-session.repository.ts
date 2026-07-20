@@ -4,6 +4,7 @@ import type {
   SessionRepository
 } from '../../application/ports/session.repository.js';
 import type { SealedSecret, SecretVault } from '../../application/ports/secret-vault.port.js';
+import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import { sealJson, unsealJson } from './encrypted-json.js';
 
 interface SessionRow {
@@ -89,31 +90,78 @@ export class SqliteSessionRepository implements SessionRepository {
 
   async findActive(input: {
     pluginId: string;
+    pluginVersion: string;
     credentialProfileId: string;
     ownerId?: string;
     networkProfileId?: string;
   }): Promise<SessionHandle | undefined> {
-    const row = this.database.connection
-      .prepare(
-        `
+    const exact = this.findActiveRow({
+      ...input,
+      networkProfileId: input.networkProfileId
+    });
+    if (exact) return toHandle(exact);
+
+    const alternate = this.findActiveRow(
+      {
+        pluginId: input.pluginId,
+        pluginVersion: input.pluginVersion,
+        credentialProfileId: input.credentialProfileId,
+        ownerId: input.ownerId
+      },
+      false
+    );
+    if (!alternate) return undefined;
+    const handle = toHandle(alternate);
+    if (handle.networkBinding === 'required') {
+      throw new SourceReaderError(
+        'SESSION_BINDING_MISMATCH',
+        'Session is bound to a different network route',
+        {
+          retryable: false,
+          fallbackAllowed: false,
+          details: {
+            sessionId: handle.id,
+            expectedNetworkProfileId: handle.networkProfileId ?? 'direct',
+            requestedNetworkProfileId: input.networkProfileId ?? 'direct'
+          }
+        }
+      );
+    }
+    return handle;
+  }
+
+  private findActiveRow(
+    input: {
+      pluginId: string;
+      pluginVersion: string;
+      credentialProfileId: string;
+      ownerId?: string;
+      networkProfileId?: string;
+    },
+    matchNetwork = true
+  ): SessionRow | undefined {
+    const networkClause = matchNetwork ? 'AND network_profile_id IS ?' : '';
+    const statement = this.database.connection.prepare(
+      `
         SELECT id, plugin_id, plugin_version, credential_profile_id, owner_id,
                network_profile_id, network_binding, expires_at
         FROM source_reader_sessions
-        WHERE plugin_id=? AND credential_profile_id=?
-          AND owner_id IS ? AND network_profile_id IS ?
+        WHERE plugin_id=? AND plugin_version=? AND credential_profile_id=?
+          AND owner_id IS ? ${networkClause}
           AND status='active'
           AND (expires_at IS NULL OR expires_at > strftime('%Y-%m-%dT%H:%M:%fZ','now'))
         ORDER BY COALESCE(last_used_at, created_at) DESC
         LIMIT 1
       `
-      )
-      .get(
-        input.pluginId,
-        input.credentialProfileId,
-        input.ownerId ?? null,
-        input.networkProfileId ?? null
-      ) as SessionRow | undefined;
-    return row ? toHandle(row) : undefined;
+    );
+    const parameters = [
+      input.pluginId,
+      input.pluginVersion,
+      input.credentialProfileId,
+      input.ownerId ?? null,
+      ...(matchNetwork ? [input.networkProfileId ?? null] : [])
+    ];
+    return statement.get(...parameters) as SessionRow | undefined;
   }
 
   async resolveMaterial(handle: SessionHandle): Promise<Record<string, unknown>> {

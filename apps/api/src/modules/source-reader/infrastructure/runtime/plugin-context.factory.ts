@@ -44,7 +44,7 @@ export class PluginContextFactory implements PluginContextFactoryPort {
       input.runtimeContext.session.networkProfileId !== input.runtimeContext.networkRoute?.id
     ) {
       throw new SourceReaderError(
-        'SESSION_NETWORK_MISMATCH',
+        'SESSION_BINDING_MISMATCH',
         'Session requires the network route used during login',
         { retryable: false, fallbackAllowed: false }
       );

@@ -39,6 +39,12 @@ test('explicit user credential wins over defaults', async () => {
     runtimeRequirements: {}
   });
   assert.equal(result.credential?.id, 'explicit');
+  assert.deepEqual(result.cacheIdentity, {
+    public: 'public',
+    account: 'explicit',
+    user: 'u1',
+    network: 'direct'
+  });
 });
 
 test('required regional route fails explicitly when unavailable', async () => {
@@ -107,15 +113,19 @@ test('required session route mismatch fails before plugin invocation', async () 
       findCandidates: async () => []
     } as never,
     {
-      findActive: async () => ({
-        id: 'session-us',
-        pluginId: 'demo',
-        pluginVersion: '1.0.0',
-        credentialProfileId: 'explicit',
-        ownerId: 'u1',
-        networkProfileId: 'route-us',
-        networkBinding: 'required'
-      })
+      findActive: async (input: Record<string, unknown>) => {
+        assert.deepEqual(input, {
+          pluginId: 'demo',
+          pluginVersion: '1.0.0',
+          credentialProfileId: 'explicit',
+          ownerId: 'u1',
+          networkProfileId: 'route-eu'
+        });
+        throw new SourceReaderError('SESSION_BINDING_MISMATCH', 'Session is bound to route-us', {
+          retryable: false,
+          fallbackAllowed: false
+        });
+      }
     } as never,
     routes as never
   );
@@ -133,6 +143,6 @@ test('required session route mismatch fails before plugin invocation', async () 
         runtimeRequirements: {}
       }),
     (error: unknown) =>
-      error instanceof SourceReaderError && error.code === 'SESSION_NETWORK_MISMATCH'
+      error instanceof SourceReaderError && error.code === 'SESSION_BINDING_MISMATCH'
   );
 });

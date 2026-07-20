@@ -15,3 +15,14 @@ test('web scripts invoke Vite through Node for Termux compatibility', async () =
     assert.doesNotMatch(script, /(?:^|&&|;)\s*vite(?:\s|$)/);
   }
 });
+
+const rootPackageUrl = new URL('../../package.json', import.meta.url);
+
+test('root exposes only the canonical Termux development alias', async () => {
+  const packageJson = JSON.parse(await readFile(rootPackageUrl, 'utf8')) as {
+    scripts: Record<string, string>;
+  };
+
+  assert.equal(packageJson.scripts.termux, undefined);
+  assert.equal(packageJson.scripts['dev:termux'], 'sh scripts/termux-dev.sh');
+});

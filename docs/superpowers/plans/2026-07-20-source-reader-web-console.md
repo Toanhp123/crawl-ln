@@ -1,6 +1,6 @@
 # Source Reader Web Console Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the minimal Sources page with a complete, typed Source Reader administration and inspection console covering all 33 HTTP routes that are meaningful to the browser.
 
@@ -90,7 +90,7 @@
 - Produces `SourceReaderCredentialMetadata`, `SourceReaderNetworkProfileMetadata`, `SourceReaderAuthChallenge`, `SourceReaderPluginPermission`, `SourceReaderPluginInstallResult`, reader request/result types, and `httpFormData<T>()`.
 - Later tasks consume only these shared types and query key functions.
 
-- [ ] **Step 1: Write the failing contract test**
+- [x] **Step 1: Write the failing contract test**
 
 ```ts
 import { readFile } from 'node:fs/promises';
@@ -113,13 +113,13 @@ test('shared exports complete Source Reader browser contracts', async () => {
 });
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --import tsx --test tests/regression/source-reader-web-console-contract.test.ts`
 
 Expected: FAIL because contracts and `httpFormData` do not exist.
 
-- [ ] **Step 3: Implement canonical contracts**
+- [x] **Step 3: Implement canonical contracts**
 
 Add exact browser-safe types to `packages/shared/src/index.ts`, including:
 
@@ -201,7 +201,7 @@ sourceReader: {
 }
 ```
 
-- [ ] **Step 4: Run GREEN and type checks**
+- [x] **Step 4: Run GREEN and type checks**
 
 Run:
 
@@ -214,7 +214,7 @@ npm run check -w @novel-tool/web
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/shared/src/index.ts apps/api/src/modules/source-reader/public/source-reader.api.ts apps/web/src/shared/api/http.ts apps/web/src/shared/api/queryKeys.ts tests/regression/source-reader-web-console-contract.test.ts
@@ -236,7 +236,7 @@ git commit -m "feat: define source reader web contracts"
 **Interfaces:**
 - Produces query hooks and entity UI: `useSourcePluginsQuery`, `useSourcePluginQuery`, `useSourceCredentialsQuery`, `useSourceNetworkProfilesQuery`, `useSourceAuthChallengesQuery`, `SourcePluginRow`, `SourceCredentialRow`, `SourceNetworkProfileRow`, `SourceAuthChallengeRow`, and `SourceReaderResultView`.
 
-- [ ] **Step 1: Write the failing FSD test**
+- [x] **Step 1: Write the failing FSD test**
 
 ```ts
 for (const slice of [
@@ -252,13 +252,13 @@ for (const slice of [
 
 Also assert that entity files do not import `@/features`, `@/widgets`, or `@/pages`.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `node --import tsx --test tests/regression/source-reader-web-console-fsd.test.ts`
 
 Expected: FAIL because slices do not exist.
 
-- [ ] **Step 3: Implement APIs and models**
+- [x] **Step 3: Implement APIs and models**
 
 Each entity API uses the canonical HTTP envelope and shared contracts. Example:
 
@@ -276,7 +276,7 @@ export function useSourceCredentialsQuery() {
 
 Plugin normalization remains in the entity API only until backend descriptors are canonical. Entity UI uses `ListRow`, `Badge`, `Text`, `Chip`, and `Switch` supplied by features as trailing actions.
 
-- [ ] **Step 4: Run GREEN and FSD gate**
+- [x] **Step 4: Run GREEN and FSD gate**
 
 ```bash
 node --import tsx --test tests/regression/source-reader-web-console-fsd.test.ts
@@ -286,7 +286,7 @@ npm run check -w @novel-tool/web
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/entities tests/regression/source-reader-web-console-fsd.test.ts
@@ -311,7 +311,7 @@ git commit -m "feat: add source reader entities"
 - Produces `SourceReaderOverview`, `SourcePluginDetails`, and `InstallSourcePluginForm`.
 - Consumes source-plugin entity queries and mutation APIs only.
 
-- [ ] **Step 1: Add RED assertions for every plugin endpoint**
+- [x] **Step 1: Add RED assertions for every plugin endpoint**
 
 Assert web source contains all routes:
 
@@ -326,11 +326,11 @@ Assert web source contains all routes:
 
 and `DELETE /plugins/:pluginId`.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Expected: missing install, remove, permissions, diagnostics UI.
 
-- [ ] **Step 3: Implement mutation features**
+- [x] **Step 3: Implement mutation features**
 
 - `install-source-plugin`: one file, 20 MiB validation, `FormData` field `plugin`, clears input after success.
 - `manage-source-plugins`: enable/disable optimistic rollback and remove confirmation.
@@ -339,11 +339,11 @@ Expected: missing install, remove, permissions, diagnostics UI.
 
 Use only existing `Button`, `Switch`, `Field`, `Input`, `ConfirmDialog`, `ErrorBanner`, `InlineNotice`, `Toast`, `Panel`, and `ListRow`.
 
-- [ ] **Step 4: Implement widgets and routes**
+- [x] **Step 4: Implement widgets and routes**
 
 `SourceReaderOverview` owns search, summary counts, plugin list, and navigation. `SourcePluginDetails` composes identity, diagnostics, health, permissions, lifecycle actions. `/sources/new` renders the install form instead of the unsupported empty state.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 ```bash
 node --import tsx --test tests/regression/source-reader-web-console-contract.test.ts
@@ -352,7 +352,7 @@ npm run check:web-contracts
 npm run check -w @novel-tool/web
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/entities/source-plugin apps/web/src/features/install-source-plugin apps/web/src/features/manage-source-plugins apps/web/src/features/review-source-permissions apps/web/src/features/test-source-plugin apps/web/src/widgets/source-reader-overview apps/web/src/widgets/source-plugin-details apps/web/src/pages/sources/ui/SourcePluginPage.tsx tests/regression/source-reader-web-console-contract.test.ts
@@ -372,11 +372,11 @@ git commit -m "feat: complete source plugin console"
 **Interfaces:**
 - Produces `SourceCredentialsPanel` with create, replace secret, delete, login, logout, and test actions.
 
-- [ ] **Step 1: Add RED route assertions**
+- [x] **Step 1: Add RED route assertions**
 
 Assert presence of POST/PATCH/DELETE credential routes and `/login`, `/logout`, `/test`.
 
-- [ ] **Step 2: Implement secret adapters**
+- [x] **Step 2: Implement secret adapters**
 
 Use local component state only. Strategies produce:
 
@@ -390,11 +390,11 @@ custom → Record<string, string>
 
 On mutation settle, clear password/token/cookie/custom value state. Never set secret payload in React Query cache.
 
-- [ ] **Step 3: Implement panel**
+- [x] **Step 3: Implement panel**
 
 Use existing `Drawer`/`BottomSheet` for create and replacement forms, `ListRow` for metadata, `ConfirmDialog` for deletion, and network-profile picker populated from entity metadata.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 ```bash
 node --import tsx --test tests/regression/source-reader-web-console-contract.test.ts
@@ -402,7 +402,7 @@ npm run check:web-arch
 npm run check -w @novel-tool/web
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/features/manage-source-credential apps/web/src/features/authenticate-source-credential apps/web/src/widgets/source-credentials-panel tests/regression/source-reader-web-console-contract.test.ts
@@ -421,8 +421,8 @@ git commit -m "feat: add source credential console"
 **Interfaces:**
 - Produces `SourceNetworkProfilesPanel` with create, edit, enable/disable, test, and delete.
 
-- [ ] **Step 1: Add RED assertions for all five network routes**
-- [ ] **Step 2: Implement route-specific form serialization**
+- [x] **Step 1: Add RED assertions for all five network routes**
+- [x] **Step 2: Implement route-specific form serialization**
 
 ```ts
 direct → undefined config
@@ -431,11 +431,11 @@ http-proxy | https-proxy | socks-proxy → { url, username?, password? }
 
 Persisted `vpn-gateway` is read-only and may only be deleted.
 
-- [ ] **Step 3: Implement panel and safe invalidation**
+- [x] **Step 3: Implement panel and safe invalidation**
 
 Boolean enable/disable may be optimistic with rollback; all other actions wait for server confirmation.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```bash
 node --import tsx --test tests/regression/source-reader-web-console-contract.test.ts
@@ -457,8 +457,8 @@ git commit -m "feat: add source network console"
 **Interfaces:**
 - Produces `SourceAuthChallengesPanel` and mutation forms for OTP, approval, browser interaction, and cancellation.
 
-- [ ] **Step 1: Add RED assertions for list/detail/respond/cancel routes**
-- [ ] **Step 2: Implement bounded polling**
+- [x] **Step 1: Add RED assertions for list/detail/respond/cancel routes**
+- [x] **Step 2: Implement bounded polling**
 
 ```ts
 refetchInterval: visible && pendingCount > 0 ? 5_000 : false
@@ -466,14 +466,14 @@ refetchInterval: visible && pendingCount > 0 ? 5_000 : false
 
 Do not announce a per-second countdown. Use formatted expiry and restrained status text.
 
-- [ ] **Step 3: Implement challenge-specific actions**
+- [x] **Step 3: Implement challenge-specific actions**
 
 - OTP: `{ type: 'otp', code }`
 - Approval: `{ type: 'approval', approved }`
 - Browser interaction: `{ type: 'browser-interaction', completed }`
 - Captcha: display manual/external completion notice and cancellation only.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```bash
 node --import tsx --test tests/regression/source-reader-web-console-contract.test.ts
@@ -495,7 +495,7 @@ git commit -m "feat: add source authentication challenges"
 **Interfaces:**
 - Produces `SourceInspector` and six typed mutation clients.
 
-- [ ] **Step 1: Add RED assertions for all six reader routes**
+- [x] **Step 1: Add RED assertions for all six reader routes**
 
 ```ts
 identify
@@ -506,19 +506,19 @@ search
 latest-updates
 ```
 
-- [ ] **Step 2: Implement typed operation clients**
+- [x] **Step 2: Implement typed operation clients**
 
 Inspector results remain mutation state and local widget state; they are never stored in persisted query keys.
 
-- [ ] **Step 3: Implement request controls**
+- [x] **Step 3: Implement request controls**
 
 Common controls: URL, credential profile, network profile, `freshOnly`, timeout 1–120000. Operation controls add query/cursor/limit. Do not expose plugin ID or runtime mode.
 
-- [ ] **Step 4: Implement results**
+- [x] **Step 4: Implement results**
 
 Compose `SourceReaderResultView` for normalized data, provenance, warnings, and advanced redacted JSON. Paginated operations retain opaque cursor only in active widget memory.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 node --import tsx --test tests/regression/source-reader-web-console-contract.test.ts
@@ -546,11 +546,11 @@ git commit -m "feat: add source reader inspector"
 **Interfaces:**
 - Produces URL-authoritative section state for `plugins`, `credentials`, `network`, `challenges`, and `inspector`.
 
-- [ ] **Step 1: Write RED tests for page purity and section names**
+- [x] **Step 1: Write RED tests for page purity and section names**
 
 Assert page sources import widgets but do not import `@/shared/api` or entity API modules. Assert both locales contain every section key.
 
-- [ ] **Step 2: Implement section route state**
+- [x] **Step 2: Implement section route state**
 
 ```ts
 export type SourcesSection = 'plugins' | 'credentials' | 'network' | 'challenges' | 'inspector';
@@ -558,15 +558,15 @@ export type SourcesSection = 'plugins' | 'credentials' | 'network' | 'challenges
 
 Invalid section values replace with `plugins`. Navigation uses `SegmentedControl`, URL search params, and existing route behavior.
 
-- [ ] **Step 3: Compose widgets responsively**
+- [x] **Step 3: Compose widgets responsively**
 
 Use `Page`, `PageHeader`, `Section`, `Panel`, `ResponsiveSplit`, `Stack`, and existing overlays. No new custom motion or visual tokens.
 
-- [ ] **Step 4: Add complete EN/VI copy**
+- [x] **Step 4: Add complete EN/VI copy**
 
 All labels, errors, confirmations, empty states, statuses, and form hints receive matching keys in both locale files.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 node --import tsx --test tests/regression/source-reader-web-console-fsd.test.ts
@@ -590,21 +590,21 @@ git commit -m "feat: compose source reader console"
 **Interfaces:**
 - Final deliverable has intentional coverage for all browser-relevant routes and no legacy page-owned API logic.
 
-- [ ] **Step 1: Expand E2E route fixtures**
+- [x] **Step 1: Expand E2E route fixtures**
 
 Cover navigation between all five sections, plugin detail/install, credential form secret clearing, network profile actions, challenge response, and Inspector operation rendering.
 
-- [ ] **Step 2: Extend static contract gate**
+- [x] **Step 2: Extend static contract gate**
 
 Assert every Source Reader HTTP route is either referenced by web code or explicitly classified backend-only (`streamChapterList` is not an HTTP route).
 
-- [ ] **Step 3: Remove obsolete files and run format**
+- [x] **Step 3: Remove obsolete files and run format**
 
 ```bash
 npm run format
 ```
 
-- [ ] **Step 4: Run full verification**
+- [x] **Step 4: Run full verification**
 
 ```bash
 npm run check:lockfile
@@ -623,7 +623,7 @@ npx playwright test tests/e2e/source-reader-sources-page.spec.ts
 
 Expected: all deterministic gates pass; if Chromium is policy-blocked, capture the exact pre-application navigation error without claiming E2E success.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web packages/shared apps/api tests scripts docs/SOURCE_READER.md
@@ -638,3 +638,10 @@ git commit -m "test: verify source reader web console"
 - **Placeholder scan:** No TBD, TODO, deferred implementation, or undefined interface remains.
 - **Type consistency:** All slices consume the `SourceReader*` contracts defined in Task 1; query keys use `queryKeys.sourceReader.*`; page sections use one `SourcesSection` union.
 - **Scope:** Backend runtime/domain behavior remains unchanged. Only browser contracts and presentation typing are adjusted.
+## Execution Verification
+
+- Static gates: `npm run check` passed, including API architecture, crawler platform, frontend FSD, web contracts, Prettier, and TypeScript checks.
+- Regression: 400 tests passed across four deterministic shards. The monolithic runner retains a pre-existing open handle in one mixed shard, so the final shard was also verified file-by-file (91/91 passed).
+- Integration: 94 passed, 1 conditional Chromium skip, 0 failed.
+- Production build: Shared, API, and Web passed.
+- Source Reader Playwright specs were authored and executed with system Chromium, but enterprise browser policy blocked localhost before application code with `net::ERR_BLOCKED_BY_ADMINISTRATOR`; no E2E success is claimed.

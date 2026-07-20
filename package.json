@@ -12,12 +12,12 @@
     "dev:api": "npm run build:shared && npm run dev -w @novel-tool/api",
     "dev:web": "npm run build:shared && npm run dev -w @novel-tool/web",
     "build": "npm run build:shared && npm run build:prepared",
-    "build:shared": "npm run build -w @novel-tool/shared",
+    "build:shared": "node scripts/prepare-shared.mjs",
     "build:api": "npm run build:shared && npm run build -w @novel-tool/api",
     "build:web": "npm run build:shared && npm run build -w @novel-tool/web",
     "check": "npm run prepare:shared && npm run check:prepared",
-    "check:api": "npm run check -w @novel-tool/shared && npm run build:shared && npm run check -w @novel-tool/api",
-    "check:web": "npm run check -w @novel-tool/shared && npm run build:shared && npm run check -w @novel-tool/web",
+    "check:api": "npm run prepare:shared && npm run check -w @novel-tool/api",
+    "check:web": "npm run prepare:shared && npm run check -w @novel-tool/web",
     "check:arch": "node scripts/check-api-architecture.mjs",
     "check:crawler": "node scripts/check-crawler-platform.mjs",
     "check:web-arch": "node scripts/check-web-architecture.mjs",
@@ -37,7 +37,7 @@
     "format:check": "prettier --check \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
     "build:prepared": "node scripts/build-prepared.mjs",
     "check:prepared": "node scripts/check-prepared.mjs",
-    "prepare:shared": "npm run check -w @novel-tool/shared && npm run build:shared"
+    "prepare:shared": "node scripts/prepare-shared.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

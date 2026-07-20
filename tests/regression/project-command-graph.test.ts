@@ -20,6 +20,7 @@ test('root build prepares shared once and workspace builds remain local', async 
   ]);
 
   assert.equal(root.scripts.build, 'npm run build:shared && npm run build:prepared');
+  assert.equal(root.scripts['build:shared'], 'node scripts/prepare-shared.mjs');
   assert.equal(root.scripts['build:prepared'], 'node scripts/build-prepared.mjs');
   assert.equal(
     root.scripts['build:api'],
@@ -44,18 +45,15 @@ test('root check prepares shared once and workspace checks remain local', async 
   ]);
 
   assert.equal(root.scripts.check, 'npm run prepare:shared && npm run check:prepared');
-  assert.equal(
-    root.scripts['prepare:shared'],
-    'npm run check -w @novel-tool/shared && npm run build:shared'
-  );
+  assert.equal(root.scripts['prepare:shared'], 'node scripts/prepare-shared.mjs');
   assert.equal(root.scripts['check:prepared'], 'node scripts/check-prepared.mjs');
   assert.equal(
     root.scripts['check:api'],
-    'npm run check -w @novel-tool/shared && npm run build:shared && npm run check -w @novel-tool/api'
+    'npm run prepare:shared && npm run check -w @novel-tool/api'
   );
   assert.equal(
     root.scripts['check:web'],
-    'npm run check -w @novel-tool/shared && npm run build:shared && npm run check -w @novel-tool/web'
+    'npm run prepare:shared && npm run check -w @novel-tool/web'
   );
 
   for (const workspace of [api, web]) {

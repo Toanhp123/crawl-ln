@@ -3,20 +3,18 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runSuite } from './run-test-files.mjs';
 
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-
 export const verificationSteps = [
   {
     type: 'command',
     name: 'check:lockfile',
-    command: npmCommand,
-    args: ['run', 'check:lockfile']
+    command: process.execPath,
+    args: ['scripts/check-lockfile-portability.mjs']
   },
   {
     type: 'command',
     name: 'prepare:shared',
-    command: npmCommand,
-    args: ['run', 'prepare:shared']
+    command: process.execPath,
+    args: ['scripts/prepare-shared.mjs']
   },
   {
     type: 'command',

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { fork, type ChildProcess } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +18,7 @@ import {
 import { hostToSandboxFrameSchema, sandboxToHostFrameSchema } from './sandbox-protocol.schema.js';
 import { minimumSupportedNodeVersion, sandboxEntryPath } from './sandbox-bootstrap.js';
 import { validateSandboxPackage } from './sandbox-module-loader.js';
+import type { SourceReaderStructuredLogger } from '../../../application/services/source-reader-structured-logger.js';
 
 interface PendingRequest {
   host?: ExternalPluginHostBridge;
@@ -28,9 +29,18 @@ interface PendingRequest {
   onAbort(): void;
 }
 
+interface OutputPolicyViolation {
+  pluginId: string;
+  pluginVersion: string;
+  stream: 'stdout' | 'stderr';
+  bytes: number;
+}
+
 interface SupervisorOptions {
   startupTimeoutMs: number;
   cancelGraceMs: number;
+  structuredLogger?: SourceReaderStructuredLogger;
+  onOutputPolicyViolation?(input: OutputPolicyViolation): Promise<void> | void;
 }
 
 function key(pluginId: string, pluginVersion: string): string {
@@ -337,6 +347,26 @@ export class ExternalProcessSupervisor implements ExternalPluginSupervisorPort {
       },
       stdio: ['ignore', 'pipe', 'pipe', 'ipc']
     });
+
+    const captureOutput = (stream: 'stdout' | 'stderr', chunk: Buffer | string) => {
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      const event = {
+        pluginId: input.pluginId,
+        pluginVersion: input.pluginVersion,
+        stream,
+        bytes: bytes.length
+      } satisfies OutputPolicyViolation;
+      this.options.structuredLogger?.host('source_reader.plugin_output_policy_violation', {
+        pluginId: input.pluginId,
+        pluginVersion: input.pluginVersion,
+        stream,
+        bytes: bytes.length,
+        previewHash: createHash('sha256').update(bytes).digest('hex').slice(0, 16)
+      });
+      Promise.resolve(this.options.onOutputPolicyViolation?.(event)).catch(() => undefined);
+    };
+    child.stdout?.on('data', (chunk: Buffer | string) => captureOutput('stdout', chunk));
+    child.stderr?.on('data', (chunk: Buffer | string) => captureOutput('stderr', chunk));
 
     const handle = new ExternalProcessHandle(
       input.pluginId,

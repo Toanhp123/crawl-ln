@@ -74,6 +74,7 @@ import { NetworkRouteTester } from '../../../modules/source-reader/infrastructur
 import { ProxyAgentFactory } from '../../../modules/source-reader/infrastructure/network/proxy-agent.factory.js';
 import { RouteAwareHttpClientAdapter } from '../../../modules/source-reader/infrastructure/network/route-aware-http-client.adapter.js';
 import { InProcessSourceReaderObservability } from '../../../modules/source-reader/infrastructure/observability/source-reader-observability.js';
+import { BoundedSourceReaderStructuredLogger } from '../../../modules/source-reader/application/services/source-reader-structured-logger.js';
 import { SourceReaderAdminController } from '../../../modules/source-reader/presentation/controllers/source-reader-admin.controller.js';
 import { SourceReaderController } from '../../../modules/source-reader/presentation/controllers/source-reader.controller.js';
 import type {
@@ -99,9 +100,18 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
   const sessions = new SqliteSessionRepository(infrastructure.database, vault);
   const challenges = new SqliteAuthChallengeRepository(infrastructure.database, vault);
   const pluginStore = new SqlitePluginStore(infrastructure.database);
+  const structuredLogger = new BoundedSourceReaderStructuredLogger(infrastructure.logger);
+  const health = new PluginHealthService(
+    new SqlitePluginHealthRepository(infrastructure.database),
+    infrastructure.clock,
+    infrastructure.ids,
+    { pluginStore, registry }
+  );
   const externalSupervisor = new ExternalProcessSupervisor({
     startupTimeoutMs: env.requestTimeoutMs,
-    cancelGraceMs: 100
+    cancelGraceMs: 100,
+    structuredLogger,
+    onOutputPolicyViolation: (input) => health.recordPolicyViolation(input)
   });
   const externalLoader = new ExternalPluginLoader(pluginStore, {
     supervisor: externalSupervisor,
@@ -118,12 +128,6 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     infrastructure.clock,
     compatibility
   );
-  const health = new PluginHealthService(
-    new SqlitePluginHealthRepository(infrastructure.database),
-    infrastructure.clock,
-    infrastructure.ids,
-    { pluginStore, registry }
-  );
   const persistentCache = new SqliteReaderCache(infrastructure.database);
   const memoryCache = new MemoryReaderCache(env.sourceReaderMemoryCacheEntries);
   const cache = new TieredReaderCache(memoryCache, persistentCache);
@@ -139,7 +143,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     http,
     new CheerioHtmlParserAdapter(),
     infrastructure.clock,
-    infrastructure.logger,
+    structuredLogger,
     sessions
   );
   const browser = new BrowserRuntimeCoordinator({
@@ -161,9 +165,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     persistentCache,
     {
       invalidationFinished(input) {
-        infrastructure.logger.info(
-          JSON.stringify({ event: 'source_reader.invalidation_finished', ...input })
-        );
+        structuredLogger.host('source_reader.invalidation_finished', input);
       }
     }
   );
@@ -224,7 +226,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     runtimeContexts,
     health,
     browser,
-    new InProcessSourceReaderObservability(infrastructure.logger),
+    new InProcessSourceReaderObservability(structuredLogger),
     new SourceReaderCircuitBreaker({ failureThreshold: 5, openMs: 60_000 }),
     new SourceReaderRateLimiter({ maxConcurrent: 2, minimumDelayMs: 100 }, infrastructure.clock),
     publicRefresh,

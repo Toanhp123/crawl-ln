@@ -104,7 +104,10 @@ export class AuthChallengeService {
     } else {
       const signal = new AbortController().signal;
       const context = this.contexts.create({
+        requestId: 'untracked',
         pluginId: challenge.pluginId,
+        pluginVersion,
+        capability: 'authentication',
         allowedHosts: registration.plugin.manifest.permissions.network.hosts,
         signal,
         runtimeContext: {

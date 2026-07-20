@@ -3,6 +3,10 @@ import type { HtmlParserPort } from '../../../../shared/ports/html-parser.port.j
 import type { HttpClientPort } from '../../../../shared/ports/http-client.port.js';
 import type { RouteAwareHttpClientPort } from '../../application/ports/network-route.port.js';
 import type { LoggerPort } from '../../../../shared/ports/logger.port.js';
+import {
+  BoundedSourceReaderStructuredLogger,
+  type SourceReaderStructuredLogger
+} from '../../application/services/source-reader-structured-logger.js';
 import type { BrowserSessionHandle } from '../../application/ports/browser-runtime.port.js';
 import type { PluginContextFactoryPort } from '../../application/ports/plugin-context-factory.port.js';
 import type { SessionRepository } from '../../application/ports/session.repository.js';
@@ -19,21 +23,24 @@ function allowed(host: string, patterns: string[]): boolean {
   });
 }
 
-function formatLog(message: string, metadata?: Record<string, unknown>): string {
-  return metadata ? `${message} ${JSON.stringify(metadata)}` : message;
-}
-
 export class PluginContextFactory implements PluginContextFactoryPort {
+  private readonly logger: SourceReaderStructuredLogger;
+
   constructor(
     private readonly http: HttpClientPort | (HttpClientPort & RouteAwareHttpClientPort),
     private readonly parser: HtmlParserPort,
     private readonly clock: ClockPort,
-    private readonly logger: LoggerPort,
+    logger: LoggerPort | SourceReaderStructuredLogger,
     private readonly sessions?: Pick<SessionRepository, 'resolveMaterial'>
-  ) {}
+  ) {
+    this.logger = 'host' in logger ? logger : new BoundedSourceReaderStructuredLogger(logger);
+  }
 
   create(input: {
+    requestId?: string;
     pluginId: string;
+    pluginVersion?: string;
+    capability?: string;
     allowedHosts: string[];
     signal: AbortSignal;
     runtimeContext: ResolvedRuntimeContext;
@@ -138,9 +145,25 @@ export class PluginContextFactory implements PluginContextFactoryPort {
         : {}),
       logger: {
         info: (message, metadata) =>
-          this.logger.info(formatLog(`[${input.pluginId}] ${message}`, metadata)),
+          void this.logger.plugin(
+            {
+              requestId: input.requestId ?? 'untracked',
+              pluginId: input.pluginId,
+              pluginVersion: input.pluginVersion ?? 'unknown',
+              ...(input.capability ? { capability: input.capability } : {})
+            },
+            { level: 'info', message, metadata }
+          ),
         warn: (message, metadata) =>
-          this.logger.warn(formatLog(`[${input.pluginId}] ${message}`, metadata))
+          void this.logger.plugin(
+            {
+              requestId: input.requestId ?? 'untracked',
+              pluginId: input.pluginId,
+              pluginVersion: input.pluginVersion ?? 'unknown',
+              ...(input.capability ? { capability: input.capability } : {})
+            },
+            { level: 'warn', message, metadata }
+          )
       },
       clock: { now: () => this.clock.now().toISOString() },
       signal: input.signal

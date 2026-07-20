@@ -61,6 +61,34 @@ export class PluginHealthService {
     });
   }
 
+  async recordPolicyViolation(input: {
+    pluginId: string;
+    pluginVersion: string;
+    stream: 'stdout' | 'stderr';
+    bytes: number;
+  }): Promise<void> {
+    const failureCode = 'PLUGIN_OUTPUT_POLICY_VIOLATION';
+    await this.repository.record({
+      id: this.ids.randomId(),
+      pluginId: input.pluginId,
+      pluginVersion: input.pluginVersion,
+      status: 'failed',
+      durationMs: 0,
+      failureCode,
+      checkedAt: this.clock.now().toISOString()
+    });
+    const since = new Date(this.clock.now().getTime() - this.windowMs).toISOString();
+    const failures = await this.repository.recentFailuresByCode({
+      pluginId: input.pluginId,
+      pluginVersion: input.pluginVersion,
+      failureCode,
+      since
+    });
+    if (failures < this.threshold || !this.options.pluginStore || !this.options.registry) return;
+    await this.options.pluginStore.quarantine(input.pluginId, input.pluginVersion, failureCode);
+    this.options.registry.unregister(input.pluginId);
+  }
+
   async quarantineIntegrityFailure(input: {
     pluginId: string;
     pluginVersion: string;

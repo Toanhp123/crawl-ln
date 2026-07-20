@@ -371,7 +371,10 @@ export class SourceReaderService implements SourceReaderApi {
           });
         }
         const context = this.contexts.create({
+          requestId: request.requestId ?? 'untracked',
           pluginId: candidate.plugin.manifest.id,
+          pluginVersion: candidate.plugin.manifest.version,
+          capability,
           allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
           signal,
           runtimeContext,

@@ -151,3 +151,51 @@ test('integrity failure quarantines the package and unregisters the plugin', asy
   ]);
   assert.deepEqual(unregistered, ['demo']);
 });
+
+test('repeated sandbox output policy violations quarantine and unregister the plugin', async () => {
+  const quarantined: Array<{ pluginId: string; version: string; reason: string }> = [];
+  const unregistered: string[] = [];
+  const supervised = new PluginHealthService(
+    repository,
+    { now: () => now },
+    { randomId: () => `health-${++sequence}` },
+    {
+      threshold: 2,
+      windowMs: 60_000,
+      pluginStore: {
+        quarantine: async (pluginId: string, version: string, reason: string) => {
+          quarantined.push({ pluginId, version, reason });
+        }
+      },
+      registry: {
+        unregister: (pluginId: string) => {
+          unregistered.push(pluginId);
+        }
+      }
+    }
+  );
+
+  await supervised.recordPolicyViolation({
+    pluginId: 'noisy-demo',
+    pluginVersion: '1.0.0',
+    stream: 'stdout',
+    bytes: 10
+  });
+  assert.deepEqual(quarantined, []);
+
+  await supervised.recordPolicyViolation({
+    pluginId: 'noisy-demo',
+    pluginVersion: '1.0.0',
+    stream: 'stderr',
+    bytes: 20
+  });
+
+  assert.deepEqual(quarantined, [
+    {
+      pluginId: 'noisy-demo',
+      version: '1.0.0',
+      reason: 'PLUGIN_OUTPUT_POLICY_VIOLATION'
+    }
+  ]);
+  assert.deepEqual(unregistered, ['noisy-demo']);
+});

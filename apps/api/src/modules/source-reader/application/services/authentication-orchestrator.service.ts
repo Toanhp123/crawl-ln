@@ -182,7 +182,10 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
 
     const signal = input.signal ?? new AbortController().signal;
     const context = this.contexts.create({
+      requestId: 'untracked',
       pluginId: input.pluginId,
+      pluginVersion: candidate.plugin.manifest.version,
+      capability: 'authentication',
       allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
       signal,
       runtimeContext: {

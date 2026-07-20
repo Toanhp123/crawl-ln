@@ -17,4 +17,10 @@ export interface PluginHealthRepository {
     capability: SourceCapability;
     since: string;
   }): Promise<number>;
+  recentFailuresByCode(input: {
+    pluginId: string;
+    pluginVersion: string;
+    failureCode: string;
+    since: string;
+  }): Promise<number>;
 }

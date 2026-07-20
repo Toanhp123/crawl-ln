@@ -13,18 +13,24 @@ const cancelled = new Set();
 const pendingHostCalls = new Map();
 let hostCallSequence = 0;
 
-const isInside = candidate => {
+const isInside = (candidate) => {
   const rel = relative(packageRoot, candidate);
   return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`));
 };
 
-const policyError = message => Object.assign(new Error(message), { code: 'PLUGIN_SANDBOX_POLICY_VIOLATION' });
+const policyError = (message) =>
+  Object.assign(new Error(message), { code: 'PLUGIN_SANDBOX_POLICY_VIOLATION' });
 
 const locate = async (specifier, referrer = pathToFileURL(entryPath).href) => {
-  if (specifier.startsWith('node:') || (!specifier.startsWith('.') && !specifier.startsWith('file:'))) {
+  if (
+    specifier.startsWith('node:') ||
+    (!specifier.startsWith('.') && !specifier.startsWith('file:'))
+  ) {
     throw policyError(`Forbidden module specifier: ${specifier}`);
   }
-  const base = specifier.startsWith('file:') ? fileURLToPath(specifier) : fileURLToPath(new URL(specifier, referrer));
+  const base = specifier.startsWith('file:')
+    ? fileURLToPath(specifier)
+    : fileURLToPath(new URL(specifier, referrer));
   const candidates = [base, `${base}.js`, `${base}.mjs`, resolve(base, 'index.js')];
   for (const candidate of candidates) {
     let actual;
@@ -47,7 +53,15 @@ const hostCall = (requestId, service, method, args = []) => {
   const callId = `${requestId}:${++hostCallSequence}`;
   return new Promise((resolveCall, rejectCall) => {
     pendingHostCalls.set(callId, { resolve: resolveCall, reject: rejectCall });
-    process.send?.({ protocolVersion, type: 'host-call', requestId, callId, service, method, args });
+    process.send?.({
+      protocolVersion,
+      type: 'host-call',
+      requestId,
+      callId,
+      service,
+      method,
+      args
+    });
   });
 };
 
@@ -55,24 +69,28 @@ const createContext = (requestId, payload) => {
   const contextData = payload.context && typeof payload.context === 'object' ? payload.context : {};
   const call = (service, method, args) => hostCall(requestId, service, method, args);
   const signal = {};
-  Object.defineProperty(signal, 'aborted', { enumerable: true, get: () => cancelled.has(requestId) });
+  Object.defineProperty(signal, 'aborted', {
+    enumerable: true,
+    get: () => cancelled.has(requestId)
+  });
   return harden({
     http: harden({ get: (url, options) => call('http', 'get', [url, options]) }),
     html: harden({
-      load: source => harden({
-        text: selector => call('html', 'text', [source, selector]),
-        attr: (selector, name) => call('html', 'attr', [source, selector, name]),
-        html: selector => call('html', 'html', [source, selector]),
-        all: () => [],
-        remove: () => undefined
-      })
+      load: (source) =>
+        harden({
+          text: (selector) => call('html', 'text', [source, selector]),
+          attr: (selector, name) => call('html', 'attr', [source, selector, name]),
+          html: (selector) => call('html', 'html', [source, selector]),
+          all: () => [],
+          remove: () => undefined
+        })
     }),
     url: harden({
-      normalize: value => call('url', 'normalize', [value]),
+      normalize: (value) => call('url', 'normalize', [value]),
       resolve: (value, base) => call('url', 'resolve', [value, base])
     }),
     cache: harden({
-      get: key => call('cache', 'get', [key]),
+      get: (key) => call('cache', 'get', [key]),
       set: (key, value, ttlMs) => call('cache', 'set', [key, value, ttlMs])
     }),
     logger: harden({
@@ -86,19 +104,27 @@ const createContext = (requestId, payload) => {
   });
 };
 
+const formatConsoleOutput = (args) =>
+  `${args.map((value) => (typeof value === 'string' ? value : String(value))).join(' ')}\n`;
+const pluginConsole = harden({
+  log: (...args) => process.stdout.write(formatConsoleOutput(args)),
+  info: (...args) => process.stdout.write(formatConsoleOutput(args)),
+  warn: (...args) => process.stderr.write(formatConsoleOutput(args)),
+  error: (...args) => process.stderr.write(formatConsoleOutput(args))
+});
+
 const compartment = new Compartment({
   name: `source-reader:${process.env.SOURCE_READER_PLUGIN_ID ?? 'unknown'}`,
-  globals: harden({}),
+  globals: harden({ console: pluginConsole }),
   resolveHook: (specifier, referrer) => new URL(specifier, referrer).href,
-  importHook: async specifier => {
+  importHook: async (specifier) => {
     const location = await locate(specifier);
     const extension = extname(fileURLToPath(location)).toLowerCase();
     const text = await readFile(fileURLToPath(location), 'utf8');
     return {
-      source: new ModuleSource(
-        extension === '.json' ? `export default ${text};` : text,
-        { sourceUrl: location }
-      )
+      source: new ModuleSource(extension === '.json' ? `export default ${text};` : text, {
+        sourceUrl: location
+      })
     };
   },
   __options__: true
@@ -116,7 +142,7 @@ const methodByCapability = {
   authentication: 'authenticate'
 };
 
-const execute = async frame => {
+const execute = async (frame) => {
   const context = createContext(frame.requestId, frame.payload);
   if (frame.operation === 'invokeCapability' && typeof namespace.invokeCapability === 'function') {
     return namespace.invokeCapability(frame.payload, context);
@@ -136,7 +162,7 @@ const execute = async frame => {
   return operationMethod(frame.payload, context);
 };
 
-process.on('message', async frame => {
+process.on('message', async (frame) => {
   if (!frame || frame.protocolVersion !== protocolVersion || typeof frame.type !== 'string') return;
   if (frame.type === 'cancel') {
     cancelled.add(frame.requestId);
@@ -147,13 +173,22 @@ process.on('message', async frame => {
     if (!pending) return;
     pendingHostCalls.delete(frame.callId);
     if (frame.ok) pending.resolve(frame.value);
-    else pending.reject(Object.assign(new Error(frame.error?.message ?? 'Host call failed'), frame.error));
+    else
+      pending.reject(
+        Object.assign(new Error(frame.error?.message ?? 'Host call failed'), frame.error)
+      );
     return;
   }
   if (frame.type !== 'request') return;
   try {
     const value = await execute(frame);
-    process.send?.({ protocolVersion, type: 'response', requestId: frame.requestId, ok: true, value });
+    process.send?.({
+      protocolVersion,
+      type: 'response',
+      requestId: frame.requestId,
+      ok: true,
+      value
+    });
   } catch (error) {
     process.send?.({
       protocolVersion,

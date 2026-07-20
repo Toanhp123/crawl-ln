@@ -39,4 +39,20 @@ export class SqlitePluginHealthRepository implements PluginHealthRepository {
     };
     return Number(row.count);
   }
+
+  async recentFailuresByCode(
+    input: Parameters<PluginHealthRepository['recentFailuresByCode']>[0]
+  ): Promise<number> {
+    const row = this.database.connection
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM source_reader_health_checks
+         WHERE plugin_id=? AND plugin_version=? AND failure_code=?
+           AND status='failed' AND checked_at>=?`
+      )
+      .get(input.pluginId, input.pluginVersion, input.failureCode, input.since) as {
+      count: number;
+    };
+    return Number(row.count);
+  }
 }

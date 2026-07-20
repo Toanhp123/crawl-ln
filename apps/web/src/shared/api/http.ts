@@ -74,3 +74,16 @@ export async function httpVoid(path: string, init?: RequestInit): Promise<void> 
     });
   }
 }
+
+export async function httpFormData<T>(
+  path: string,
+  body: FormData,
+  init?: Omit<RequestInit, 'body'>
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    method: init?.method ?? 'POST',
+    body
+  });
+  return readApiSuccess<T>(response);
+}

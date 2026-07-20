@@ -13,12 +13,11 @@ test('library card shows localized chapter count as a cover badge', () => {
   assert.doesNotMatch(source, /common\.items/);
 });
 
-test('source reload delegates stable loading feedback to the shared Button', () => {
-  const source = read('apps/web/src/pages/sources/ui/SourcesPage.tsx');
+test('source plugin tests delegate stable loading feedback to the shared Button', () => {
+  const source = read('apps/web/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx');
 
-  assert.match(source, /actionState=\{model\.reload\.status\}/);
-  assert.match(source, /feedbackPolicy="immediate"/);
-  assert.match(source, /leadingIcon=\{<RefreshCw/);
+  assert.match(source, /actionState=\{mutation\.status\}/);
+  assert.match(source, /leadingIcon=\{<FlaskConical/);
   assert.doesNotMatch(source, /motion-safe:animate-spin/);
 });
 
@@ -29,7 +28,9 @@ test('redesigned product screens route user-visible copy through i18n', () => {
     'apps/web/src/pages/activity/ui/ActivityPage.tsx',
     'apps/web/src/pages/sources/model/useSourcesPage.ts',
     'apps/web/src/pages/sources/ui/SourcesPage.tsx',
-    'apps/web/src/pages/sources/ui/SourcePluginCard.tsx',
+    'apps/web/src/entities/source-plugin/ui/SourcePluginRow.tsx',
+    'apps/web/src/features/manage-source-plugins/ui/SourcePluginActions.tsx',
+    'apps/web/src/widgets/source-reader-overview/ui/SourceReaderOverview.tsx',
     'apps/web/src/pages/sources/ui/SourcePluginPage.tsx',
     'apps/web/src/widgets/crawl-task-card/ui/CrawlTaskCard.tsx'
   ];
@@ -56,11 +57,13 @@ test('English and Vietnamese dictionaries contain the redesigned screen keys', (
     'activity.recent',
     'globalAdd.title',
     'globalAdd.advanced',
-    'sources.description',
-    'sources.refresh',
-    'sources.refreshed',
-    'sources.refreshFailed',
-    'sources.profile.advanced',
+    'sources.console.description',
+    'sources.section.plugins',
+    'sources.section.credentials',
+    'sources.section.network',
+    'sources.section.challenges',
+    'sources.section.inspector',
+    'sources.inspector.run',
     'common.more',
     'common.status.active',
     'common.status.disabled'

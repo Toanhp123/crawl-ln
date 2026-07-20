@@ -97,7 +97,7 @@ export function createRealtimeInvalidationQueue(
       for (const novelId of novelIds) add(queryKeys.novelUpdateDiagnostics(novelId));
     }
 
-    if (resources.has('plugins')) add(queryKeys.sourcePlugins);
+    if (resources.has('plugins')) add(queryKeys.sourceReader.plugins());
     if (resources.has('search')) add(['search']);
 
     await Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));

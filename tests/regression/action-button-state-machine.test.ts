@@ -104,7 +104,10 @@ test('disposing the controller cancels pending feedback timers', () => {
 
 test('button feedback timing and outcome are centralized', () => {
   const button = readFileSync('apps/web/src/shared/ui/actions/Button.tsx', 'utf8');
-  const sources = readFileSync('apps/web/src/pages/sources/ui/SourcesPage.tsx', 'utf8');
+  const sourceTestAction = readFileSync(
+    'apps/web/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx',
+    'utf8'
+  );
   const confirm = readFileSync('apps/web/src/shared/ui/overlay/ConfirmDialog.tsx', 'utf8');
 
   assert.match(button, /actionState\?: ActionState/);
@@ -113,18 +116,22 @@ test('button feedback timing and outcome are centralized', () => {
   assert.doesNotMatch(button, /loadingDelayMs|loadingMinDurationMs|successDurationMs/);
   assert.doesNotMatch(button, /Children\.toArray|isValidElement/);
 
-  assert.match(sources, /actionState=\{model\.reload\.status\}/);
-  assert.match(sources, /feedbackPolicy="immediate"/);
-  assert.doesNotMatch(sources, /loadingDelayMs|loadingMinDurationMs/);
+  assert.match(sourceTestAction, /actionState=\{mutation\.status\}/);
+  assert.doesNotMatch(sourceTestAction, /loadingDelayMs|loadingMinDurationMs|successDurationMs/);
 
   assert.match(confirm, /actionState\?: ActionState/);
   assert.doesNotMatch(confirm, /loading\?: boolean/);
 });
 
-test('source profile card has no nested interactive button', () => {
-  const card = readFileSync('apps/web/src/pages/sources/ui/SourcePluginCard.tsx', 'utf8');
+test('source plugin rows remain non-interactive when action controls are present', () => {
+  const row = readFileSync('apps/web/src/entities/source-plugin/ui/SourcePluginRow.tsx', 'utf8');
+  const overview = readFileSync(
+    'apps/web/src/widgets/source-reader-overview/ui/SourceReaderOverview.tsx',
+    'utf8'
+  );
 
-  assert.doesNotMatch(card, /event\.stopPropagation/);
-  assert.match(card, /<div className="flex items-start justify-between gap-3">/);
-  assert.match(card, /actionState=\{actionState\}/);
+  assert.doesNotMatch(row, /event\.stopPropagation|<button/);
+  assert.match(row, /trailing=\{trailing\}/);
+  assert.match(row, /showChevron=\{Boolean\(onOpen\) && !trailing\}/);
+  assert.doesNotMatch(overview, /<SourcePluginRow[^>]*onOpen=/s);
 });

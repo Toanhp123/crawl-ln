@@ -39,12 +39,12 @@ test('real load failures retain explicit retry actions', () => {
 });
 
 test('business reload and retry actions remain available', () => {
-  const sources = read('apps/web/src/pages/sources/ui/SourcesPage.tsx');
+  const sourceTest = read('apps/web/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx');
   const novelUpdate = read('apps/web/src/features/update-novel/ui/UpdateNovelButton.tsx');
   const addOverlay = read('apps/web/src/app/layouts/GlobalAddNovelOverlay.tsx');
 
-  assert.match(sources, /reload\.mutate/);
-  assert.match(sources, /RefreshCw/);
+  assert.match(sourceTest, /mutation\.mutate\(\)/);
+  assert.match(sourceTest, /FlaskConical/);
   assert.match(novelUpdate, /updateNovel\.action/);
   assert.match(addOverlay, /addNovel\.isError/);
 });

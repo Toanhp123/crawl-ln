@@ -121,6 +121,20 @@ Requests may include `credentialProfileId`, `networkProfileId`, `freshOnly`, and
 
 Role and ownership checks run before repository, vault, runtime, or browser access. Responses expose metadata only; they never return credential values, proxy endpoints, browser cookies, filesystem paths, or raw stack traces.
 
+## Web administration console
+
+The `/sources` web route is the Source Reader administration console. It follows Feature-Sliced Design: pages compose widgets, widgets coordinate independent features, entity slices own Source Reader HTTP clients and display models, and shared owns transport, localization, theme tokens, motion, and reusable UI primitives.
+
+The console exposes five user-facing sections:
+
+- **Plugins** — list, search, install, enable, disable, test, remove, inspect diagnostics and health, and approve or deny version-scoped permissions.
+- **Credentials** — create write-only cookie, bearer, basic, form-login, or custom secrets; replace or remove secrets; login, logout, and test through an optional network profile.
+- **Network** — create, update, enable, disable, test, and remove direct, HTTP, HTTPS, or SOCKS routes. Persisted legacy VPN rows remain visible but read-only.
+- **Challenges** — poll pending OTP, approval, CAPTCHA, or browser-interaction challenges and submit, reject, complete, or cancel the supported response types.
+- **Inspector** — invoke identify, metadata, chapter-list, chapter-content, search, and latest-updates with optional credential, network, cache, timeout, cursor, and limit controls.
+
+`streamChapterList` remains an internal crawler capability and is intentionally not exposed to the browser. Credential and proxy secret values are write-only form state: they are cleared after mutations, never placed in query keys, never persisted by the browser query cache, and never rendered back by list APIs.
+
 ## Error codes
 
 Common typed codes include `SOURCE_NOT_SUPPORTED`, `CAPABILITY_NOT_SUPPORTED`, `PLUGIN_UNAVAILABLE`, `PLUGIN_DISABLED`, `PLUGIN_QUARANTINED`, `PLUGIN_CONTRACT_INCOMPATIBLE`, `PLUGIN_PERMISSION_DENIED`, `PLUGIN_NETWORK_PERMISSION_DENIED`, `PLUGIN_RESULT_INVALID`, `PLUGIN_PACKAGE_INVALID`, `PLUGIN_RPC_PROTOCOL_INVALID`, `AUTHENTICATION_REQUIRED`, `AUTHENTICATION_FAILED`, `CREDENTIAL_NOT_CONFIGURED`, `SESSION_EXPIRED`, `SESSION_NETWORK_MISMATCH`, `AUTH_CHALLENGE_REQUIRED`, `NETWORK_ROUTE_REQUIRED`, `NETWORK_ROUTE_UNSUPPORTED`, `NETWORK_REGION_UNAVAILABLE`, `SOURCE_REQUEST_TIMEOUT`, `SOURCE_RATE_LIMITED`, `SOURCE_TEMPORARILY_UNAVAILABLE`, `CURSOR_INVALID`, `SECRET_VAULT_UNAVAILABLE`, and `SOURCE_READER_INTERNAL_ERROR`.

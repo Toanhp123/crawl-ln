@@ -11,10 +11,17 @@ export const queryKeys = {
   chapter: (novelId: string | null, chapterIndex?: number) =>
     ['chapters', novelId, chapterIndex] as const,
   search: (query: string, type: string, offset: number) => ['search', query, type, offset] as const,
-  sourcePlugins: ['source-reader', 'plugins'] as const,
-  sourceReaderCredentials: ['source-reader', 'credentials'] as const,
-  sourceReaderNetworkProfiles: ['source-reader', 'network-profiles'] as const,
-  sourceReaderChallenges: ['source-reader', 'auth-challenges'] as const,
+  sourceReader: {
+    all: ['source-reader'] as const,
+    plugins: () => ['source-reader', 'plugins'] as const,
+    plugin: (id: string) => ['source-reader', 'plugins', id] as const,
+    pluginHealth: (id: string) => ['source-reader', 'plugins', id, 'health'] as const,
+    pluginPermissions: (id: string) => ['source-reader', 'plugins', id, 'permissions'] as const,
+    credentials: () => ['source-reader', 'credentials'] as const,
+    networkProfiles: () => ['source-reader', 'network-profiles'] as const,
+    challenges: () => ['source-reader', 'auth-challenges'] as const,
+    challenge: (id: string) => ['source-reader', 'auth-challenges', id] as const
+  },
   novelUpdateDiagnostics: (id: string | null) =>
     ['scheduler', 'novel-update-diagnostics', id] as const,
   schedulerStatus: ['scheduler', 'status'] as const

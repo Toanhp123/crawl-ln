@@ -51,6 +51,23 @@ if (!webSource.includes('/source-reader/plugins')) {
   violations.push('Sources UI does not use Source Reader plugin endpoint');
 }
 
+for (const endpoint of [
+  '/source-reader/identify',
+  '/source-reader/metadata',
+  '/source-reader/chapter-list',
+  '/source-reader/chapter-content',
+  '/source-reader/search',
+  '/source-reader/latest-updates',
+  '/source-reader/plugins',
+  '/source-reader/credentials',
+  '/source-reader/network-profiles',
+  '/source-reader/auth/challenges'
+]) {
+  if (!webSource.includes(endpoint)) {
+    violations.push(`Source Reader web console does not reference ${endpoint}`);
+  }
+}
+
 const buildConfig = await readFile(path.join(webRoot, 'shared/config/build.ts'), 'utf8');
 if (!buildConfig.includes('__APP_VERSION__')) {
   violations.push(

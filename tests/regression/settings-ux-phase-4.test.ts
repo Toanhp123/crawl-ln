@@ -23,15 +23,20 @@ test('backup restore requires a review step before destructive restore', () => {
   assert.match(panel, /confirmRestore/);
 });
 
-test('source manager exposes human-readable health and a two-level detail view', () => {
+test('source manager exposes health, lifecycle actions, and a two-level detail view', () => {
   const page = read('apps/web/src/pages/sources/ui/SourcesPage.tsx');
-  const card = read('apps/web/src/pages/sources/ui/SourcePluginCard.tsx');
-  const detail = read('apps/web/src/pages/sources/ui/SourcePluginPage.tsx');
-  assert.match(page, /reload\.mutate/);
-  assert.match(page, /toggle\.mutate/);
-  assert.match(card, /plugin\.health\?\.status/);
-  assert.match(card, /plugin\.trustLevel/);
-  assert.match(detail, /sources\.profile\.advanced/);
-  assert.match(detail, /plugin\.permissionsPending/);
+  const overview = read('apps/web/src/widgets/source-reader-overview/ui/SourceReaderOverview.tsx');
+  const row = read('apps/web/src/entities/source-plugin/ui/SourcePluginRow.tsx');
+  const detailPage = read('apps/web/src/pages/sources/ui/SourcePluginPage.tsx');
+  const detail = read('apps/web/src/widgets/source-plugin-details/ui/SourcePluginDetails.tsx');
+
+  assert.match(page, /SourceReaderOverview/);
+  assert.match(overview, /SourcePluginEnableSwitch/);
+  assert.match(overview, /\/sources\/\$\{encodeURIComponent\(plugin\.id\)\}/);
+  assert.match(row, /sourcePluginTone\(plugin\)/);
+  assert.match(detail, /useSourcePluginHealthQuery/);
+  assert.match(detail, /plugin\.trustLevel/);
+  assert.match(detail, /ReviewSourcePermissions/);
+  assert.match(detailPage, /SourcePluginDetails/);
   assert.doesNotMatch(detail, /lastError|stack|packagePath/);
 });

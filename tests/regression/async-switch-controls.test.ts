@@ -36,20 +36,19 @@ test('automatic updates use an optimistic Switch instead of enable-disable butto
 });
 
 test('source plugin enabled state uses an optimistic Switch with rollback', () => {
-  const card = read('apps/web/src/pages/sources/ui/SourcePluginCard.tsx');
-  const model = read('apps/web/src/pages/sources/model/useSourcesPage.ts');
+  const control = read('apps/web/src/features/manage-source-plugins/ui/SourcePluginActions.tsx');
+  const model = read('apps/web/src/features/manage-source-plugins/model/useSourcePluginActions.ts');
 
-  assert.match(card, /<Switch/);
-  assert.match(card, /checked=\{plugin\.enabled\}/);
-  assert.match(card, /actionState=\{actionState\}/);
-  assert.match(card, /disabled=\{disabled\}/);
-  assert.doesNotMatch(card, /sources\.enable|sources\.disable/);
-  assert.doesNotMatch(card, /<Button/);
+  assert.match(control, /<Switch/);
+  assert.match(control, /checked=\{plugin\.enabled\}/);
+  assert.match(control, /actionState=\{owns \? toggle\.status : 'idle'\}/);
+  assert.match(control, /disabled=\{toggle\.isPending && !owns\}/);
+  assert.doesNotMatch(control, /sources\.enable|sources\.disable/);
 
   assert.match(model, /onMutate:/);
   assert.match(model, /cancelQueries/);
-  assert.match(model, /previousPlugins/);
+  assert.match(model, /const previous = client\.getQueryData/);
   assert.match(model, /client\.setQueryData/);
-  assert.match(model, /onError: \(error, _variables, context\)/);
-  assert.match(model, /context\?\.previousPlugins/);
+  assert.match(model, /onError: \(error, _input, context\)/);
+  assert.match(model, /context\?\.previous/);
 });

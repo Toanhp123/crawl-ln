@@ -6,7 +6,7 @@ const read = (path: string) => readFile(new URL(`../../${path}`, import.meta.url
 
 test('frontend API modules use the canonical /api backend routes', async () => {
   const [plugins, search, tasks] = await Promise.all([
-    read('apps/web/src/features/manage-source-plugins/api/sourcePlugins.ts'),
+    read('apps/web/src/entities/source-plugin/api/sourcePluginApi.ts'),
     read('apps/web/src/features/search-library/api/searchLibrary.ts'),
     read('apps/web/src/entities/task/api/taskApi.ts')
   ]);

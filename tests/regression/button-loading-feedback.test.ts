@@ -54,7 +54,10 @@ test('feedback timing is not configurable with raw milliseconds outside the cent
 test('async product actions pass mutation outcome instead of a pending boolean', () => {
   const expectations: Array<[string, RegExp]> = [
     ['apps/web/src/app/layouts/GlobalAddNovelOverlay.tsx', /actionState=\{addNovel\.status\}/],
-    ['apps/web/src/pages/sources/ui/SourcesPage.tsx', /actionState=\{model\.reload\.status\}/],
+    [
+      'apps/web/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx',
+      /actionState=\{mutation\.status\}/
+    ],
     ['apps/web/src/features/search-library/ui/SearchIndexPanel.tsx', /actionState=\{m\.status\}/],
     ['apps/web/src/pages/task-detail/ui/TaskDetailPage.tsx', /actionState=\{pause\.status\}/],
     [

@@ -28,10 +28,11 @@ test('current settings, source, activity, and library surfaces consume shared pr
     read('apps/web/src/pages/settings/ui/SettingRow.tsx'),
     read('apps/web/src/entities/chapter/ui/ChapterList.tsx'),
     read('apps/web/src/widgets/crawl-task-card/ui/CrawlTaskCard.tsx'),
-    read('apps/web/src/pages/sources/ui/SourcePluginCard.tsx'),
+    read('apps/web/src/entities/source-plugin/ui/SourcePluginRow.tsx'),
     read('apps/web/src/pages/library/ui/LibraryPage.tsx')
   ]);
   for (const source of [settingRow, chapters]) assert.match(source, /ListRow/);
-  for (const source of [taskCard, sourceCard]) assert.match(source, /<Card/);
+  assert.match(taskCard, /<Card/);
+  assert.match(sourceCard, /ListRow/);
   assert.match(library, /StickyToolbar/);
 });

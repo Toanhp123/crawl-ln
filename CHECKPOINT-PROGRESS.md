@@ -1,73 +1,64 @@
-# Source Reader Implementation Checkpoint
+# Source Reader Final Implementation Checkpoint
 
-**Checkpoint date:** 2026-07-20
-**Branch:** `feat/source-reader`
-**HEAD before checkpoint metadata commit:** `73f14f6`
+**Checkpoint date:** 2026-07-20  
+**Branch:** `feat/source-reader`  
+**HEAD before checkpoint metadata commit:** `0e5a002`  
 **Primary roadmap:** `docs/superpowers/plans/2026-07-19-source-reader-implementation-roadmap.md`
 
-## Verified implementation position
+## Final roadmap position
 
 - Core Runtime Plan — Tasks 1–6: **complete**.
 - Crawler Cutover Plan — Tasks 1–5: **complete**.
 - State/Security Plan — Tasks 1–6: **complete**.
 - External Plugins Plan — Tasks 1–5: **complete**.
 - Auth/Browser Plan — Tasks 1–5: **complete**.
-- HTTP/Observability/Finalization Plan — Tasks 1–4: **complete**.
-- HTTP/Observability/Finalization Plan — Tasks 5–6: **not started**.
+- HTTP/Observability/Finalization Plan — Tasks 1–6: **complete**.
 
-Completed roadmap tasks: **31/33**. Remaining roadmap tasks: **2**.
+Completed roadmap tasks: **33/33**. Remaining roadmap tasks: **0**.
 
-## Strict three-task checkpoint batch
+## Final two roadmap tasks
 
-Exactly three roadmap tasks were completed in this batch. No work was started on Task 5.
-
-1. HTTP/Observability/Finalization Task 2 — secured reader/plugin/credential/network/challenge management use cases and public management façade.
-2. HTTP/Observability/Finalization Task 3 — complete secured Source Reader HTTP surface, actor propagation, typed status mapping, and bounded 20 MB multipart package upload.
-3. HTTP/Observability/Finalization Task 4 — request correlation, secret redaction, bounded observability labels, circuit breaker, rate limiter, and service-level resilience wiring.
+1. HTTP/Observability/Finalization Task 5 — migrated the Sources UI and shared web contracts to the Source Reader endpoints, retained optimistic rollback, removed the old endpoint contract, and added browser coverage.
+2. HTTP/Observability/Finalization Task 6 — locked backend/crawler/web architecture rules, replaced stale Source Profile documentation, added current operator/plugin-author documentation, removed forbidden symbols, and completed final acceptance.
 
 Focused commits:
 
 ```text
-73f14f6 feat(source-reader): add resilience and observability
-29494b4 feat(source-reader): expose secured management API
-a7fc533 feat(source-reader): add secured management use cases
+0e5a002 docs(source-reader): lock final platform architecture
+2b8e1b2 refactor(web): manage sources through source reader
 ```
 
-The Task 4 verification also exposed and fixed a clock-boundary defect in cursor expiry. `HmacCursorCodec` now evaluates expiration through the injected `ClockPort`, with a dedicated regression test, instead of reading system time directly.
+## Fresh final acceptance evidence
 
-## Fresh verification evidence
+Verification performed after all implementation changes and before final packaging:
 
-Verification performed after the third task and before packaging:
+- Exact `npm run verify`: **exit code 0**.
+- Full regression suite: **358/358 pass**.
+- Full integration suite: **58 pass, 1 conditional browser-runtime skip, 0 fail**.
+- Full Playwright E2E suite: **5/5 pass** using the system Chromium executable.
+- Chromium managed URL policy was changed only inside the E2E command and restored successfully afterward.
+- Lockfile portability: **PASS**.
+- API architecture: **PASS**.
+- Crawler platform architecture: **PASS**.
+- Frontend FSD architecture: **PASS**.
+- Frontend contracts: **PASS**.
+- Prettier: **PASS**.
+- Shared/API/Web TypeScript checks: **PASS**.
+- Shared/API/Web production builds: **PASS**.
+- Final forbidden-symbol scan outside `docs/superpowers/**`: **no matches**.
+- Git whitespace check: **PASS**.
 
-- Focused management, HTTP contract, observability, circuit, cursor-clock, service, concurrency, and production-safety regressions: **29/29 pass**.
-- Source Reader admin HTTP, reader HTTP, authenticated-read, and API smoke integrations: **9/9 pass**.
-- API architecture check: **PASS**.
-- Frontend contract check: **PASS**.
-- Shared + API TypeScript checks: **PASS**.
-- Shared + API production build: **PASS**.
-- Changed-file Prettier and Git whitespace checks: **PASS**.
+## Final behavior locked
 
-## Behavior now locked
+- Source Reader is the only runtime boundary for source identification, metadata, chapter lists, chapter content, search, and plugin administration.
+- Crawler and other bounded contexts depend only on Source Reader public façades.
+- Legacy Source Profile, selector adapter, dynamic plugin module, and `/api/plugins` paths are removed and guarded against reintroduction.
+- Built-in and external plugins use capability contracts, deterministic matchers, trust/permission approval, integrity verification, quarantine, health, fallback, and circuit policies.
+- Credentials, network secrets, sessions, and challenges remain encrypted and redacted; degraded mode preserves public reads when the master key is unavailable.
+- Auth, browser, network binding, scoped cache, opaque cursors, request correlation, rate limiting, and bounded observability are covered by tests.
+- Sources UI uses `/api/source-reader/*`, renders safe plugin descriptors, and rolls optimistic switches back after failed mutations.
+- `docs/SOURCE_READER.md` is the current operator and plugin-author reference.
 
-- Management use cases enforce actor roles and ownership before repository/vault/runtime actions.
-- Credential and network responses expose metadata only; secret material remains host-side.
-- Reader and administration routes propagate trusted actor identity and return typed Source Reader errors.
-- Plugin package uploads are multipart-only and bounded to 20 MB.
-- Every Source Reader request receives or echoes an `x-request-id`.
-- Error details are redacted before leaving the API boundary.
-- Observability snapshots use bounded labels rather than raw user, URL, credential, or route identifiers.
-- Authentication failures do not poison the shared plugin circuit.
-- Eligible failures open a capability-scoped circuit and permit a controlled half-open probe.
-- Rate limiting is applied around plugin execution and always releases in `finally`.
-- Cursor expiration follows the same injected clock used by the Source Reader service.
+## Completion state
 
-## Exact continuation point
-
-Continue with no preliminary feature work at:
-
-```text
-docs/superpowers/plans/2026-07-19-source-reader-http-observability-finalization.md
-Task 5: Migrate Sources UI and shared web contracts to Source Reader endpoints
-```
-
-The working tree must be clean before continuing. Only two roadmap tasks remain; complete Tasks 5 and 6, then create the final checkpoint/package immediately without inventing an additional task.
+The implementation roadmap is complete. This branch is intentionally preserved at the final checkpoint for review, merge, or pull-request handling. No additional roadmap task should be inferred from this checkpoint.

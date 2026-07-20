@@ -8,6 +8,7 @@ import type {
 } from '../ports/plugin-registry.port.js';
 import type { PluginStorePort, StoredPluginVersion } from '../ports/plugin-store.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
+import { loadActivatedExtensionContracts } from './plugin-extension-validator.js';
 import type {
   PluginActivationResult,
   PluginLifecycle,
@@ -124,9 +125,13 @@ export class PluginActivationService {
       )) as { status?: unknown };
       if (health?.status !== 'healthy') throw new Error('Candidate health check is not healthy');
       phase = 'registry';
+      const activatedExtensionContracts = await loadActivatedExtensionContracts(
+        candidate.packagePath,
+        candidate.activatedExtensions ?? {}
+      );
       const prepared = this.registry.prepareRegistration(
         this.registry.snapshot(),
-        this.registration(candidate, this.lifecycleProxy(candidate))
+        this.registration(candidate, this.lifecycleProxy(candidate), activatedExtensionContracts)
       );
       phase = 'publish';
       await this.store.activateCandidateAtomically(
@@ -190,7 +195,11 @@ export class PluginActivationService {
     this.registry.publishPrepared({ registrations: next } as PreparedPluginRegistrySnapshot);
   }
 
-  private registration(version: StoredPluginVersion, lifecycle: PluginLifecycle): RegisteredPlugin {
+  private registration(
+    version: StoredPluginVersion,
+    lifecycle: PluginLifecycle,
+    activatedExtensionContracts: RegisteredPlugin['activatedExtensionContracts']
+  ): RegisteredPlugin {
     return {
       plugin: {
         manifest: {
@@ -202,7 +211,8 @@ export class PluginActivationService {
       trustLevel: version.trustLevel,
       executionMode: 'isolated',
       enabled: true,
-      packagePath: version.packagePath
+      packagePath: version.packagePath,
+      activatedExtensionContracts
     };
   }
 

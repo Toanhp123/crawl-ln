@@ -14,6 +14,7 @@ test('cursor expiry follows the injected clock', () => {
     capability: 'chapter-list',
     contractVersion: 1,
     requestFingerprint: 'request',
+    extensionContractVersions: {},
     offset: 0,
     expiresAt: now.getTime() + 1000
   });

@@ -34,6 +34,12 @@ export class HmacCursorCodec implements CursorCodecPort {
         !['chapter-list', 'search', 'latest-updates'].includes(payload.capability) ||
         !Number.isInteger(payload.contractVersion) ||
         typeof payload.requestFingerprint !== 'string' ||
+        !payload.extensionContractVersions ||
+        typeof payload.extensionContractVersions !== 'object' ||
+        Array.isArray(payload.extensionContractVersions) ||
+        Object.entries(payload.extensionContractVersions).some(
+          ([namespace, version]) => !namespace || typeof version !== 'string'
+        ) ||
         (payload.pluginCursor !== undefined && typeof payload.pluginCursor !== 'string') ||
         !Number.isInteger(payload.offset) ||
         typeof payload.expiresAt !== 'number' ||

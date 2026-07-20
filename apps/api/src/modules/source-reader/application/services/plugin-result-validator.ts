@@ -36,12 +36,27 @@ const schemas = {
     cleanText: z.string().min(1)
   }),
   search: z.object({
-    items: z.array(z.unknown()),
+    items: z.array(
+      z.object({
+        title: z.string().min(1),
+        url: z.string().url(),
+        author: z.string().optional(),
+        coverUrl: z.string().url().optional()
+      })
+    ),
     nextCursor: z.string().optional(),
     hasMore: z.boolean()
   }),
   'latest-updates': z.object({
-    items: z.array(z.unknown()),
+    items: z.array(
+      z.object({
+        novelTitle: z.string().min(1),
+        novelUrl: z.string().url(),
+        chapterTitle: z.string().optional(),
+        chapterUrl: z.string().url().optional(),
+        updatedAt: z.string().optional()
+      })
+    ),
     nextCursor: z.string().optional(),
     hasMore: z.boolean()
   })

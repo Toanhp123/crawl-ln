@@ -53,7 +53,8 @@ export class InMemoryPluginRegistry implements PluginRegistryPort {
       trustLevel: registration.trustLevel,
       executionMode: registration.executionMode,
       enabled: registration.enabled,
-      packagePath: registration.packagePath
+      packagePath: registration.packagePath,
+      activatedExtensionContracts: registration.activatedExtensionContracts
     });
     const pluginId = normalized.plugin.manifest.id;
     if (!pluginId || normalized.plugin.manifest.matchers.length === 0) {
@@ -77,7 +78,10 @@ export class InMemoryPluginRegistry implements PluginRegistryPort {
       trustLevel: options.trustLevel ?? 'built-in',
       executionMode: options.executionMode ?? plugin.manifest.runtime.preferredMode,
       enabled: options.enabled ?? true,
-      ...(options.packagePath ? { packagePath: options.packagePath } : {})
+      ...(options.packagePath ? { packagePath: options.packagePath } : {}),
+      ...(options.activatedExtensionContracts
+        ? { activatedExtensionContracts: options.activatedExtensionContracts }
+        : {})
     };
   }
 

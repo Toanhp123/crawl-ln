@@ -1,4 +1,5 @@
 import type { SourceCapability } from '../../public/source-reader.models.js';
+import type { ActivatedExtensionContract } from '../services/plugin-extension-validator.js';
 import type {
   PluginExecutionMode,
   PluginTrustLevel,
@@ -11,6 +12,7 @@ export interface RegisteredPlugin {
   executionMode: PluginExecutionMode;
   enabled: boolean;
   packagePath?: string;
+  activatedExtensionContracts?: Record<string, ActivatedExtensionContract>;
 }
 
 export interface PluginCandidate extends RegisteredPlugin {

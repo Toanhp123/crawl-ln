@@ -34,6 +34,10 @@ import type {
 } from '../../public/source-reader.models.js';
 import type { SourceReaderApi } from '../../public/source-reader.api.js';
 import { validatePluginResult } from './plugin-result-validator.js';
+import {
+  activatedExtensionVersions,
+  validatePluginExtensions
+} from './plugin-extension-validator.js';
 import { buildSourceReaderCacheKey, resolveCacheScopeIdentity } from './source-reader-cache-key.js';
 import { SourceReaderCircuitBreaker } from './source-reader-circuit-breaker.js';
 import type { SourceReaderRateLimiterPort } from './source-reader-rate-limiter.js';
@@ -379,6 +383,12 @@ export class SourceReaderService implements SourceReaderApi {
           context
         })) as PluginOperationResult<T>;
         let data = validatePluginResult(capability, operation.data) as T;
+        const validatedExtensions = validatePluginExtensions(
+          data,
+          operation.extensions,
+          candidate.activatedExtensionContracts ?? {}
+        );
+        data = validatedExtensions.data;
         if (isPagedCapability(capability)) {
           data = this.paginateResult(
             capability,
@@ -398,8 +408,8 @@ export class SourceReaderService implements SourceReaderApi {
             domain: candidate.domain,
             capability
           },
-          extensions: operation.extensions,
-          warnings: operation.warnings
+          extensions: validatedExtensions.extensions,
+          warnings: [...(operation.warnings ?? []), ...validatedExtensions.warnings]
         };
         this.circuit.recordSuccess(circuitKey);
         this.observability.invocationFinished({
@@ -591,7 +601,9 @@ export class SourceReaderService implements SourceReaderApi {
       payload.pluginId !== candidate.plugin.manifest.id ||
       payload.pluginVersion !== candidate.plugin.manifest.version ||
       payload.contractVersion !== contractVersion ||
-      payload.requestFingerprint !== requestFingerprint
+      payload.requestFingerprint !== requestFingerprint ||
+      JSON.stringify(payload.extensionContractVersions) !==
+        JSON.stringify(activatedExtensionVersions(candidate.activatedExtensionContracts))
     ) {
       this.cursorInvalidated('Cursor no longer matches the selected plugin or request');
     }
@@ -641,6 +653,9 @@ export class SourceReaderService implements SourceReaderApi {
         capability,
         contractVersion: candidate.plugin.manifest.contracts[capability] ?? 0,
         requestFingerprint,
+        extensionContractVersions: activatedExtensionVersions(
+          candidate.activatedExtensionContracts
+        ),
         pluginCursor: nextPluginCursor,
         offset: nextOffset,
         expiresAt: this.clock.now().getTime() + CURSOR_TTL_MS
@@ -672,10 +687,8 @@ export class SourceReaderService implements SourceReaderApi {
         { retryable: false, fallbackAllowed: false }
       );
     }
-    const extensionContractVersions = Object.fromEntries(
-      Object.entries(candidate.plugin.manifest.extensionContracts ?? {}).map(
-        ([namespace, value]) => [namespace, String(value.version)]
-      )
+    const extensionContractVersions = activatedExtensionVersions(
+      candidate.activatedExtensionContracts
     );
     return `source-reader:${buildSourceReaderCacheKey({
       pluginId: candidate.plugin.manifest.id,

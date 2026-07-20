@@ -16,6 +16,7 @@ import type {
   ExternalResumeChallengeRequest
 } from '../../../domain/plugin/external-auth-rpc.js';
 import { SANDBOX_PROTOCOL_VERSION } from '../../runtime/external-process/sandbox-protocol.js';
+import { loadActivatedExtensionContracts } from '../../../application/services/plugin-extension-validator.js';
 
 const INTEGRITY_FAILURE = 'PACKAGE_INTEGRITY_FAILED';
 const UNCHECKED_FILES = new Set(['checksums.json', 'signature.json']);
@@ -124,20 +125,24 @@ export class ExternalPluginLoader {
         continue;
       }
       registrations.push({
-        plugin: this.plugin(version),
+        plugin: await this.plugin(version),
         trustLevel: version.trustLevel,
         executionMode:
           version.trustLevel === 'local-unverified'
             ? 'isolated'
             : version.manifest.runtime.preferredMode,
         enabled: true,
-        packagePath: version.packagePath
+        packagePath: version.packagePath,
+        activatedExtensionContracts: await loadActivatedExtensionContracts(
+          version.packagePath,
+          version.activatedExtensions ?? {}
+        )
       });
     }
     return registrations;
   }
 
-  private plugin(version: StoredPluginVersion): SourceReaderPlugin {
+  private async plugin(version: StoredPluginVersion): Promise<SourceReaderPlugin> {
     const manifest = {
       ...version.manifest,
       extensionContracts: version.activatedExtensions ?? version.manifest.extensionContracts ?? {}

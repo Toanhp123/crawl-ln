@@ -4,6 +4,7 @@ export interface CursorPayload {
   capability: 'chapter-list' | 'search' | 'latest-updates';
   contractVersion: number;
   requestFingerprint: string;
+  extensionContractVersions: Record<string, string>;
   pluginCursor?: string;
   offset: number;
   expiresAt: number;

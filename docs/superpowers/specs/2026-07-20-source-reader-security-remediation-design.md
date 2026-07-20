@@ -235,6 +235,10 @@ Host cancellation propagates to the sandbox request. When a request exceeds its 
 
 Both sides validate every message. Unknown operations, additional privileged fields, malformed identifiers, oversized payloads, or unsupported protocol versions are protocol violations.
 
+Before recursive schema validation, the host performs an iterative structural preflight. A frame is rejected when it exceeds 32 levels of nesting, 10,000 traversed nodes, or approximately 512,000 serialized bytes. The preflight and schema parse are exception-safe so adversarial nesting cannot escape the supervisor message handler.
+
+Capability invocation payloads are constructed from operation-specific allowlists. Actor ids, credential profile ids, network profile ids, request ids, and host cancellation objects are not copied into plugin capability DTOs unless the operation contract explicitly declares them.
+
 The host rejects invalid plugin output before it reaches application result validation.
 
 ## 8. Real Network Routing

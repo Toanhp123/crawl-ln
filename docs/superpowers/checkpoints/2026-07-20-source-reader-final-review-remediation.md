@@ -1,4 +1,7 @@
-# Source Reader Final Review Remediation Checkpoint
+# Source Reader Final Review Remediation Checkpoint (Superseded)
+
+> Historical checkpoint for the four findings in the first final review. A later independent runtime review found additional gaps. Current evidence is in `2026-07-20-source-reader-post-review-remediation.md`.
+
 
 **Date:** 2026-07-20
 **Branch:** `feat/source-reader`
@@ -53,6 +56,6 @@
 
 ## Final status
 
-All four findings from the independent final review have been remediated. No additional task remains in this plan.
+All four findings scoped by that review were remediated at this checkpoint. This statement did not cover later-discovered RPC-depth, timeout, pagination, DTO-boundary, browser-semantics, or documentation findings.
 
 The branch remains `feat/source-reader` for review or integration. A final ZIP checkpoint must include Git history, exclude dependency/build artifacts, and pass archive integrity plus restored-repository checks before handoff.

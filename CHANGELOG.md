@@ -7,6 +7,11 @@
 - Added encrypted credentials, sessions, network profiles, resumable authentication challenges, browser coordination, scoped cache, signed cursors, rate limiting, circuit breaking, and redacted observability.
 - Migrated crawler reads, secured HTTP administration, and the Sources UI to `/api/source-reader/*`.
 - Added architecture, integration, regression, browser, and final-lockdown verification.
+- Bounded sandbox RPC by nesting depth, node count, and approximate frame bytes before schema parsing.
+- Enforced request-specific timeouts for in-process and external plugins and propagated cancellation through runtime signals.
+- Restricted capability requests to operation-specific DTO allowlists and rejected non-progressing or cyclic pagination.
+- Enabled approved browser-required execution for public JavaScript-heavy sources as well as authenticated sources.
+- Corrected package, network-route, runtime, milestone, plan, and checkpoint documentation after independent review.
 
 ## 2.9.6 - Web Performance Stability
 

@@ -866,9 +866,7 @@ test('active route-bound session attaches cookies to host HTTP requests', async 
 - [ ] **Step 2: Mark browser requirement in resolved context**
 
 ```ts
-browserRequired:
-  Boolean(input.runtimeRequirements?.authentication?.required) &&
-  Boolean(input.requiresBrowser)
+browserRequired: Boolean(input.requiresBrowser)
 ```
 
 Pass `candidate.plugin.manifest.runtime.requiresBrowser` into resolver input.
@@ -923,7 +921,8 @@ const browser = runtimeContext.browserRequired
       identity: {
         userId: request.userId as string | undefined,
         pluginId: candidate.plugin.manifest.id,
-        sourceAccountId: runtimeContext.credential!.id,
+        sourceAccountId: runtimeContext.credential?.id ?? `public:${candidate.domain}`,
+        credentialId: runtimeContext.credential?.id,
         networkRouteId: runtimeContext.networkRoute?.id
       },
       allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
@@ -933,7 +932,7 @@ const browser = runtimeContext.browserRequired
   : undefined;
 ```
 
-Expose browser operations in `PluginContext` only when manifest permission `browser: true` has been approved.
+Expose browser operations in `PluginContext` only when manifest permission `browser: true` has been approved. Public JavaScript-heavy sources use a source-scoped anonymous identity; authentication remains a separate runtime requirement.
 
 - [ ] **Step 6: Compose all auth/browser services**
 

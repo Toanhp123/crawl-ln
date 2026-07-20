@@ -10,7 +10,9 @@ Source Reader never writes novels, chapters, or crawl jobs. It returns source da
 
 ## Built-in and external plugins
 
-Built-in plugins are registered in-process by the composition root. External plugins are installed from a verified `.source-plugin` package and run in an isolated worker unless a trusted built-in explicitly uses in-process execution. The active version is selected atomically; disabled, quarantined, blocked, or incompatible versions are excluded from candidate resolution.
+Built-in plugins are registered in-process by the composition root. External plugins are installed from a verified `.source-plugin` package and execute in a supervised child-process sandbox with a constrained loader and schema-validated RPC. The active version is selected atomically; disabled, quarantined, blocked, or incompatible versions are excluded from candidate resolution.
+
+External plugins never receive the host `PluginContext` object. Each operation receives a purpose-specific DTO and can request only approved HTTP, HTML, browser, cache, clock, URL, and logging operations through host-mediated RPC.
 
 ## Capability and matcher contract
 
@@ -18,14 +20,18 @@ A plugin manifest declares capabilities such as `identify`, `metadata`, `chapter
 
 ## `.source-plugin` package layout
 
-A package is a ZIP archive with a manifest and compiled entry module at its root:
+A package is a ZIP archive with this required layout:
 
 ```text
-plugin.json
-index.js
-assets/                 # optional, only when declared
-signature.json          # required for signed trust
+manifest.json
+checksums.json
+dist/
+  index.js
+assets/                 # optional, only when declared and checksummed
+signature.json          # optional; required when claiming signed trust
 ```
+
+`checksums.json` must contain the SHA-256 digest of every package file except `checksums.json` and `signature.json`. Paths must be relative and safe; symbolic links, executable permission bits, native addons, unexpected unchecked files, and executable binary payloads are rejected.
 
 The manifest contains the plugin id, version, engine range, contract versions, capabilities, matchers, runtime preference, permissions, and optional authentication/network requirements. Package paths, stack traces, and raw installation details are never returned by the public API.
 
@@ -57,17 +63,36 @@ Other relevant settings are `SOURCE_READER_CURSOR_KEY`, `SOURCE_READER_MEMORY_CA
 
 ## Authentication strategies and challenges
 
-Standard strategies are cookie import, bearer token, basic authentication, and form login. Plugins may provide a custom authentication extension that receives only opaque handles. Secret values are resolved by the host at the last responsible moment and are not placed in plugin context.
+Standard strategies are cookie import, bearer token, basic authentication, and form login. Plugins may provide a custom authentication extension that receives only purpose-specific, schema-validated DTOs. Secret values are resolved by the host at the last responsible moment and are not placed in plugin requests or context.
 
 Login may return a resumable OTP, approval, or browser-interaction challenge. Challenges are single-use, expire automatically, remain bound to the initiating actor and browser identity, and can be cancelled through the management API.
 
-## Network profiles and VPN-gateway abstraction
+## Browser runtime
 
-Network profiles are actor-owned routes: direct, HTTP proxy, SOCKS proxy, or VPN gateway. A profile exposes only metadata and an opaque handle to the runtime. Resolution enforces ownership, region and tag requirements, health state, and session binding. A VPN gateway is an abstraction supplied by the host; plugins cannot start VPN software or inspect route credentials.
+A plugin version may request browser permission and declare `runtime.requiresBrowser`. Once that exact permission set is approved, Source Reader opens a host-managed browser session for the invocation.
+
+Browser use is independent of whether authentication is required. Public JavaScript-heavy sources use an anonymous source-scoped browser identity; authenticated sources bind the browser session to the resolved credential, actor, and network route. Plugins receive only the restricted browser operations exposed by the host and never receive Playwright objects, raw browser profiles, or unrestricted secret values.
+
+## Network profiles
+
+Network profiles are actor-owned routes of these supported types:
+
+- `direct`
+- `http-proxy`
+- `https-proxy`
+- `socks-proxy`
+
+A profile exposes only metadata and an opaque handle to the runtime. Resolution enforces ownership, region and tag requirements, health state, and session binding. Persisted legacy `vpn-gateway` rows are not executable and fail closed with `NETWORK_ROUTE_UNSUPPORTED`; the current create/update API does not accept that route type.
 
 ## Cache scopes and invalidation
 
 Cache entries use `public`, `account`, `user`, `session`, or `none` scope. Public data may be reused across actors; authenticated scopes include the resolved credential, session, and network identities. Memory cache sits above SQLite persistence. TTL, stale-while-revalidate, immutable hints, tags, plugin version, capability contract, and signed cursor state participate in validation and invalidation.
+
+## Runtime bounds and cancellation
+
+Reader requests may include `timeoutMs`, an integer from `1` through `120000`. The selected timeout is enforced for both in-process and external plugins. Cancellation is propagated through the invocation signal, and external processes are terminated when they do not stop within the supervisor grace period.
+
+Sandbox RPC validates protocol version and operation-specific schemas and rejects frames that exceed the configured nesting-depth, node-count, or approximate byte-size bounds before recursive schema parsing. Chapter streaming also fails closed when a plugin claims more pages without a cursor, produces an empty non-final page, repeats a cursor, or exceeds the host page budget.
 
 ## HTTP reader endpoints
 
@@ -80,7 +105,7 @@ All endpoints are under `/api/source-reader`:
 - `POST /search`
 - `POST /latest-updates`
 
-Requests may include credential and network profile ids. Responses use the canonical `{ data, error }` envelope and echo or create `x-request-id`.
+Requests may include `credentialProfileId`, `networkProfileId`, `freshOnly`, and `timeoutMs`. Paginated requests may include a signed host cursor and a bounded `limit`. Responses use the canonical `{ data, error }` envelope and echo or create `x-request-id`.
 
 ## HTTP administration endpoints
 
@@ -98,19 +123,20 @@ Role and ownership checks run before repository, vault, runtime, or browser acce
 
 ## Error codes
 
-Common typed codes include `SOURCE_NOT_SUPPORTED`, `CAPABILITY_NOT_SUPPORTED`, `PLUGIN_UNAVAILABLE`, `PLUGIN_DISABLED`, `PLUGIN_QUARANTINED`, `PLUGIN_CONTRACT_INCOMPATIBLE`, `PLUGIN_PERMISSION_DENIED`, `PLUGIN_NETWORK_PERMISSION_DENIED`, `PLUGIN_RESULT_INVALID`, `PLUGIN_PACKAGE_INVALID`, `AUTHENTICATION_REQUIRED`, `AUTHENTICATION_FAILED`, `CREDENTIAL_NOT_CONFIGURED`, `SESSION_EXPIRED`, `SESSION_NETWORK_MISMATCH`, `AUTH_CHALLENGE_REQUIRED`, `NETWORK_ROUTE_REQUIRED`, `NETWORK_REGION_UNAVAILABLE`, `SOURCE_REQUEST_TIMEOUT`, `SOURCE_RATE_LIMITED`, `SOURCE_TEMPORARILY_UNAVAILABLE`, `CURSOR_INVALID`, `SECRET_VAULT_UNAVAILABLE`, and `SOURCE_READER_INTERNAL_ERROR`.
+Common typed codes include `SOURCE_NOT_SUPPORTED`, `CAPABILITY_NOT_SUPPORTED`, `PLUGIN_UNAVAILABLE`, `PLUGIN_DISABLED`, `PLUGIN_QUARANTINED`, `PLUGIN_CONTRACT_INCOMPATIBLE`, `PLUGIN_PERMISSION_DENIED`, `PLUGIN_NETWORK_PERMISSION_DENIED`, `PLUGIN_RESULT_INVALID`, `PLUGIN_PACKAGE_INVALID`, `PLUGIN_RPC_PROTOCOL_INVALID`, `AUTHENTICATION_REQUIRED`, `AUTHENTICATION_FAILED`, `CREDENTIAL_NOT_CONFIGURED`, `SESSION_EXPIRED`, `SESSION_NETWORK_MISMATCH`, `AUTH_CHALLENGE_REQUIRED`, `NETWORK_ROUTE_REQUIRED`, `NETWORK_ROUTE_UNSUPPORTED`, `NETWORK_REGION_UNAVAILABLE`, `SOURCE_REQUEST_TIMEOUT`, `SOURCE_RATE_LIMITED`, `SOURCE_TEMPORARILY_UNAVAILABLE`, `CURSOR_INVALID`, `SECRET_VAULT_UNAVAILABLE`, and `SOURCE_READER_INTERNAL_ERROR`.
 
 Errors carry retry and fallback policy internally. Public details are redacted and observability labels are bounded; URLs, actor ids, credentials, and route identifiers are not metric labels.
 
 ## Plugin development workflow
 
-1. Define the manifest, exact capability contracts, matchers, and minimum permissions.
+1. Define `manifest.json`, exact capability contracts, matchers, and minimum permissions.
 2. Implement against the constrained context only; do not import host modules or perform direct filesystem/network/browser access.
 3. Add fixture-based parser and contract tests.
-4. Build the entry module and package the declared files into `.source-plugin`.
-5. Sign the package when distributing through a trusted channel.
-6. Install, review requested permissions, activate the exact version, run health checks, and test each capability.
-7. Publish a new version instead of mutating an installed package; mutation triggers quarantine.
+4. Build the entry module as `dist/index.js`.
+5. Generate `checksums.json` for every included file except checksum/signature documents.
+6. Add `signature.json` when distributing through a trusted signed channel.
+7. Package the files into `.source-plugin`, install it, review requested permissions, activate the exact version, and run capability health tests.
+8. Publish a new version instead of mutating an installed package; mutation triggers quarantine.
 
 The platform does not provide CAPTCHA bypass, forced execution, or raw-secret APIs.
 

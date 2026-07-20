@@ -1,4 +1,7 @@
-# Source Reader Final Implementation Checkpoint
+# Source Reader Historical Roadmap Checkpoint (Superseded)
+
+> This checkpoint records the original 33-task roadmap state at commit `0e5a002`. It is historical evidence, not the current acceptance result. See `docs/superpowers/checkpoints/2026-07-20-source-reader-post-review-remediation.md` for the independently re-verified post-review state.
+
 
 **Checkpoint date:** 2026-07-20  
 **Branch:** `feat/source-reader`  
@@ -14,7 +17,7 @@
 - Auth/Browser Plan — Tasks 1–5: **complete**.
 - HTTP/Observability/Finalization Plan — Tasks 1–6: **complete**.
 
-Completed roadmap tasks: **33/33**. Remaining roadmap tasks: **0**.
+Completed original roadmap tasks at this historical checkpoint: **33/33**. Later independent review identified additional runtime and documentation gaps outside that roadmap.
 
 ## Final two roadmap tasks
 
@@ -28,7 +31,7 @@ Focused commits:
 2b8e1b2 refactor(web): manage sources through source reader
 ```
 
-## Fresh final acceptance evidence
+## Acceptance evidence recorded at this historical checkpoint
 
 Verification performed after all implementation changes and before final packaging:
 
@@ -48,7 +51,7 @@ Verification performed after all implementation changes and before final packagi
 - Final forbidden-symbol scan outside `docs/superpowers/**`: **no matches**.
 - Git whitespace check: **PASS**.
 
-## Final behavior locked
+## Behavior asserted at this historical checkpoint
 
 - Source Reader is the only runtime boundary for source identification, metadata, chapter lists, chapter content, search, and plugin administration.
 - Crawler and other bounded contexts depend only on Source Reader public façades.
@@ -61,4 +64,4 @@ Verification performed after all implementation changes and before final packagi
 
 ## Completion state
 
-The implementation roadmap is complete. This branch is intentionally preserved at the final checkpoint for review, merge, or pull-request handling. No additional roadmap task should be inferred from this checkpoint.
+The original implementation roadmap was complete at this point. This document is superseded and must not be used to infer that later review found no additional work.

@@ -1,5 +1,7 @@
 # Source Reader Implementation Roadmap
 
+> **Implementation amendment:** The original external-plugin worker-thread task was superseded by `2026-07-20-source-reader-security-remediation.md`, which implements a supervised child-process sandbox with constrained loading and bounded typed RPC. Current acceptance is recorded in `../checkpoints/2026-07-20-source-reader-post-review-remediation.md`.
+
 The approved Source Reader design is implemented as six ordered plans. Each plan leaves the repository compiling and provides an independently reviewable test gate. The final state contains no legacy source-profile or old plugin execution path.
 
 ## Execution order
@@ -11,7 +13,7 @@ The approved Source Reader design is implemented as six ordered plans. Each plan
 3. [`2026-07-19-source-reader-state-security.md`](./2026-07-19-source-reader-state-security.md)
    - SQLite-owned state, SecretVault, credentials, network profiles, sessions, challenges, runtime-context resolution, and persistent scoped cache.
 4. [`2026-07-19-source-reader-external-plugins.md`](./2026-07-19-source-reader-external-plugins.md)
-   - `.source-plugin` verification, trust and permission approval, installation/activation, isolated worker runtime, health checks, and quarantine.
+   - `.source-plugin` verification, trust and permission approval, installation/activation, an originally planned isolated runtime later replaced by the supervised process sandbox, health checks, and quarantine.
 5. [`2026-07-19-source-reader-auth-browser.md`](./2026-07-19-source-reader-auth-browser.md)
    - Standard/custom authentication, browser worker, OTP/CAPTCHA/browser challenges, encrypted session material, and network-route binding.
 6. [`2026-07-19-source-reader-http-observability-finalization.md`](./2026-07-19-source-reader-http-observability-finalization.md)
@@ -22,7 +24,7 @@ The approved Source Reader design is implemented as six ordered plans. Each plan
 - Consumers import only `apps/api/src/modules/source-reader/public/*`.
 - No task introduces `LegacySourceAdapter`, `SourceProfileCompatibilityPlugin`, `USE_NEW_SOURCE_READER`, or a fallback to the removed parser path.
 - Built-in and external plugins use the same `SourceReaderPlugin` contract.
-- External `local-unverified` plugins always run isolated.
+- External `local-unverified` plugins always run in the supervised process sandbox.
 - Source Reader never persists novels, chapters, or crawl tasks.
 - Crawler never imports Source Reader infrastructure, registry, repositories, runtime, or secret components.
 - Plugin code never receives a master key, plaintext persisted secret, raw database handle, or unrestricted network/filesystem access.

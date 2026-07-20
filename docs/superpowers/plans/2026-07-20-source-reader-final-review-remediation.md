@@ -1,5 +1,7 @@
 # Source Reader Final Review Remediation Implementation Plan
 
+> **Historical note:** This completed plan is superseded for current acceptance by `2026-07-20-source-reader-post-review-remediation.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close the four runtime gaps found by the independent final review: atomic activation consistency, exact session route binding, immediate external registration parity, and browser/HTML RPC parity.
@@ -186,7 +188,7 @@ git commit -m "fix(source-reader): bind sessions to exact network route"
 - Create: `apps/api/src/modules/source-reader/application/services/external-plugin-registration.factory.ts`
 - Modify: `apps/api/src/modules/source-reader/application/services/plugin-activation.service.ts`
 - Modify: `apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts`
-- Modify: `apps/api/src/modules/source-reader/source-reader.module.ts`
+- Modify: `apps/api/src/shared/container/modules/source-reader.module.ts`
 - Create: `tests/integration/source-reader-external-registration-parity.test.ts`
 
 **Interfaces:**
@@ -239,7 +241,7 @@ set trustLevel, executionMode, enabled, packagePath
 
 - [ ] **Step 4: Compose one factory instance**
 
-Create a single factory in `source-reader.module.ts` and inject it into both loader and activation service. Remove duplicate private registration/lifecycle/request construction.
+Create a single factory in the composition-root `source-reader.module.ts` and inject it into both loader and activation service. Remove duplicate private registration/lifecycle/request construction.
 
 - [ ] **Step 5: Run verification**
 
@@ -260,7 +262,7 @@ Expected: PASS.
 git add apps/api/src/modules/source-reader/application/services/external-plugin-registration.factory.ts \
   apps/api/src/modules/source-reader/application/services/plugin-activation.service.ts \
   apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts \
-  apps/api/src/modules/source-reader/source-reader.module.ts \
+  apps/api/src/shared/container/modules/source-reader.module.ts \
   tests/integration/source-reader-external-registration-parity.test.ts
 git commit -m "refactor(source-reader): unify external plugin registration"
 ```

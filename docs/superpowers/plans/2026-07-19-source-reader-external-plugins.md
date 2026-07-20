@@ -1,12 +1,14 @@
 # Source Reader External Plugin Implementation Plan
 
+> **Superseded runtime note:** Tasks 1, 2, 4, and 5 remain historical implementation records. Task 3's `worker_threads` design was replaced by `2026-07-20-source-reader-security-remediation.md`; the current runtime is a supervised child-process sandbox with constrained loading and bounded schema-validated RPC. Do not implement the worker-thread snippets below.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Install, verify, approve, isolate, activate, monitor, and quarantine external `.source-plugin` packages while preserving the same logical plugin contract used by built-in plugins.
 
-**Architecture:** Treat package bytes as untrusted until archive, path, checksum, signature, manifest, contract, and permission checks pass. Persist installation and permission state, activate versions atomically, and execute all `local-unverified` code in worker threads through a serialized RPC boundary that exposes only approved context operations.
+**Architecture:** Treat package bytes as untrusted until archive, path, checksum, signature, manifest, contract, and permission checks pass. Persist installation and permission state and activate versions atomically. The worker-thread runtime described by the original Task 3 is superseded by the security-remediation process sandbox.
 
-**Tech Stack:** TypeScript 5.5, Node.js 22 `worker_threads`, `node:crypto`, JSZip 3, Zod 3, SQLite, Node test runner.
+**Tech Stack:** TypeScript 5.5, Node.js 22, `node:crypto`, JSZip 3, Zod 3, SQLite, Node test runner. Current sandbox details are defined in the superseding security-remediation plan.
 
 ## Global Constraints
 
@@ -16,7 +18,7 @@
 - `local-unverified` plugins always run isolated.
 - Invalid checksum/signature, path traversal, symlink escape, API incompatibility, or malformed manifest moves installation to quarantine.
 - Permission expansion on upgrade requires a new approval.
-- External plugin workers receive no database handle, master key, unrestricted filesystem, unrestricted network, `process.env`, `child_process`, or raw browser profile.
+- External plugin sandboxes receive no database handle, master key, unrestricted filesystem, unrestricted network, `process.env`, subprocess creation, worker creation, or raw browser profile.
 - Activation is atomic: the previous active version remains usable until the new version passes initialization and health checks.
 
 ---
@@ -540,7 +542,7 @@ git commit -m "feat(source-reader): persist plugin installation lifecycle"
 
 ---
 
-### Task 3: Build isolated worker RPC runtime
+### Task 3: Build isolated worker RPC runtime — superseded, do not execute
 
 **Files:**
 - Create: `apps/api/src/modules/source-reader/infrastructure/runtime/isolated-worker/worker-protocol.ts`

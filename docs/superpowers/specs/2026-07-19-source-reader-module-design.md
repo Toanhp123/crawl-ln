@@ -43,12 +43,12 @@ The current `SourceProfile`, selector-profile adapter, old plugin module, and fa
 - Built-in plugins compiled with the backend.
 - External `.source-plugin` packages.
 - Capability registry, domain/path matchers, priority, `canHandle`, and fallback.
-- Trusted in-process and isolated worker runtimes.
+- Trusted in-process and supervised external-process sandbox runtimes.
 - HTTP, HTML, browser, authentication, session, cache, URL, logging, clock, and cancellation services exposed through `PluginContext`.
 - Standard and custom authentication strategies.
 - OTP, CAPTCHA, approval, and browser-interaction challenges.
 - User and system credential profiles.
-- User and system network profiles, including region-aware proxy or VPN gateway routing.
+- User and system network profiles for direct, HTTP/HTTPS proxy, and SOCKS proxy routing. Persisted legacy VPN-gateway rows fail closed and are not executable.
 - Versioned plugin contracts and extension schemas.
 - Multi-layer, scope-aware caching.
 - Plugin installation, signature/checksum verification, permissions, health, lifecycle, and quarantine.
@@ -97,7 +97,7 @@ apps/api/src/modules/source-reader/
 │   │   └── registry/
 │   ├── runtime/
 │   │   ├── in-process/
-│   │   ├── isolated-worker/
+│   │   ├── external-process/
 │   │   └── browser-worker/
 │   ├── auth/
 │   ├── network/
@@ -475,13 +475,13 @@ Source Reader provides:
 
 ```text
 InProcessPluginRuntime
-IsolatedWorkerPluginRuntime
+ExternalProcessSandboxRuntime
 BrowserWorkerRuntime
 ```
 
-Built-in and trusted signed plugins may run in process when policy allows. External or unverified plugins always run in isolated workers. The backend may force any plugin into isolation regardless of its preferred mode.
+Built-in and trusted signed plugins may run in process when policy allows. External or unverified plugins always run in a supervised child-process sandbox. The backend may force any plugin into isolation regardless of its preferred mode.
 
-Worker runtime enforces invocation timeout, memory/resource limits, cancellation, controlled module loading, and termination after a grace period.
+The external-process runtime enforces schema-validated bounded RPC, invocation timeout, cancellation, controlled module loading, resource policy, and process termination after a grace period.
 
 ### 9.2 PluginContext
 
@@ -508,7 +508,7 @@ External plugins cannot access directly:
 - `process.env`;
 - the host filesystem;
 - SQLite or application repositories;
-- `child_process` or arbitrary workers;
+- `child_process`, `worker_threads`, or arbitrary subprocess/worker creation;
 - raw sockets or unrestricted network clients;
 - credential ciphertext or master keys;
 - browser profiles stored on disk;
@@ -808,7 +808,7 @@ Removing or changing a credential revokes dependent sessions and invalidates acc
 
 ### 15.3 Network records
 
-Network profiles support direct, HTTP proxy, SOCKS proxy, and VPN gateway routes. Sensitive connection configuration is encrypted. Health metadata is stored separately from secret material.
+Network profiles support direct, HTTP proxy, HTTPS proxy, and SOCKS proxy routes. Sensitive connection configuration is encrypted. Health metadata is stored separately from secret material. Persisted legacy `vpn-gateway` records are rejected with `NETWORK_ROUTE_UNSUPPORTED` and cannot be created or updated through the current API.
 
 ### 15.4 Session and challenge records
 
@@ -1139,11 +1139,11 @@ Every built-in and external plugin is tested for:
 ### 23.3 Runtime tests
 
 - in-process invocation;
-- isolated worker timeout and crash;
+- external-process sandbox timeout and crash;
 - cancellation and resource cleanup;
 - module/network permission denial;
 - response-size and redirect policy;
-- worker termination after grace period;
+- sandbox process termination after grace period;
 - browser context isolation.
 
 ### 23.4 Auth and network tests

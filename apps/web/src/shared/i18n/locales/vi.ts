@@ -101,7 +101,7 @@ export const vi: Record<keyof typeof en, string> = {
   'errors.network': 'Không thể kết nối tới máy chủ.',
   'errors.internal': 'Máy chủ gặp lỗi.',
   'errors.chapterContentTooShort':
-    'Không thể trích xuất nội dung chương từ nguồn này. Hãy kiểm tra cấu hình nguồn rồi thử lại.',
+    'Không thể trích xuất nội dung chương từ nguồn này. Hãy kiểm tra plugin Source Reader rồi thử lại.',
   'common.status.idle': 'Chờ',
   'common.status.pending': 'Đang chờ',
   'common.status.fetched': 'Đã tải',
@@ -173,7 +173,8 @@ export const vi: Record<keyof typeof en, string> = {
   'common.skipToReader': 'Bỏ qua đến trình đọc',
   'common.refreshing': 'Đang làm mới',
   'settings.crawler': 'Trình thu thập',
-  'settings.crawlerDescription': 'Hoạt động thu thập được quản lý bằng hồ sơ nguồn và máy chủ.',
+  'settings.crawlerDescription':
+    'Hoạt động thu thập được quản lý bằng plugin Source Reader và máy chủ.',
   'settings.crawlerManaged': 'Cấu hình',
   'settings.crawlerManagedValue': 'Do máy chủ quản lý',
   'settings.storage': 'Lưu trữ',
@@ -458,11 +459,12 @@ export const vi: Record<keyof typeof en, string> = {
   'globalAdd.pasteUrl': 'Dán URL',
   'globalAdd.advanced': 'Tùy chọn nâng cao',
   'globalAdd.advancedDescription':
-    'Ứng dụng tự chọn profile nguồn phù hợp từ URL. Bạn có thể thay đổi cấu hình tại trang Nguồn truyện.',
+    'Ứng dụng tự chọn plugin Source Reader phù hợp từ URL. Bạn có thể thay đổi cấu hình plugin tại trang Nguồn truyện.',
   'globalAdd.adding': 'Đang thêm…',
   'globalAdd.submit': 'Thêm truyện',
   'globalAdd.queuedDescription': 'Theo dõi tiến trình tại Hoạt động.',
-  'sources.description': 'Quản lý các profile dùng để nhận diện và tải nội dung truyện.',
+  'sources.description':
+    'Quản lý các plugin Source Reader dùng để nhận diện và tải nội dung truyện.',
   'sources.refresh': 'Tải lại',
   'sources.add': 'Thêm nguồn',
   'sources.emptyTitle': 'Chưa có nguồn truyện',

@@ -17,7 +17,8 @@ test('documentation check reports dead links, retired terminology, history direc
     await write(root, 'docs/README.md', '# Docs\n');
     await write(root, 'docs/ARCHITECTURE.md', 'Configure the JSON source profile for crawling.\n');
     await write(root, 'docs/archive/old.md', '# Old\n');
-    const duplicate = '# Duplicate\n\nThis document contains enough repeated content to be treated as a real duplicate.\n';
+    const duplicate =
+      '# Duplicate\n\nThis document contains enough repeated content to be treated as a real duplicate.\n';
     await write(root, 'docs/a.md', duplicate);
     await write(root, 'docs/b.md', duplicate);
 
@@ -39,7 +40,11 @@ test('documentation check accepts canonical current docs and ignores historical 
   try {
     await write(root, 'README.md', '# Project\n\n[Docs](docs/README.md)\n');
     await write(root, 'docs/README.md', '# Docs\n\n[Architecture](ARCHITECTURE.md)\n');
-    await write(root, 'docs/ARCHITECTURE.md', '# Architecture\n\nSource Reader plugins ingest content.\n');
+    await write(
+      root,
+      'docs/ARCHITECTURE.md',
+      '# Architecture\n\nSource Reader plugins ingest content.\n'
+    );
     await write(root, 'CHANGELOG.md', '# Changelog\n\nOld source profile support was removed.\n');
 
     const { checkDocumentation } = await import('../../scripts/check-docs.mjs');

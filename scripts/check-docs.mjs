@@ -7,7 +7,7 @@ const FORBIDDEN_DIRECTORIES = ['docs/superpowers', 'docs/archive', 'docs/changel
 const RETIRED_PATTERNS = [
   /\bsource[-_ ]profiles?\b/i,
   /\bSOURCE_PROFILES_FILE\b/,
-  /\bsource-profiles\.json\b/i,
+  /\bsource-profiles\.json\b/i
 ];
 const LINK_ENTRYPOINTS = ['README.md', 'docs/README.md'];
 const SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules']);

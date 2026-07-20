@@ -7,14 +7,16 @@ type PackageJson = {
 };
 
 async function readPackage(path: string): Promise<PackageJson> {
-  return JSON.parse(await readFile(new URL(`../../${path}`, import.meta.url), 'utf8')) as PackageJson;
+  return JSON.parse(
+    await readFile(new URL(`../../${path}`, import.meta.url), 'utf8')
+  ) as PackageJson;
 }
 
 test('root build prepares shared once and workspace builds remain local', async () => {
   const [root, api, web] = await Promise.all([
     readPackage('package.json'),
     readPackage('apps/api/package.json'),
-    readPackage('apps/web/package.json'),
+    readPackage('apps/web/package.json')
   ]);
 
   assert.equal(
@@ -40,7 +42,7 @@ test('root check prepares shared once and workspace checks remain local', async 
   const [root, api, web] = await Promise.all([
     readPackage('package.json'),
     readPackage('apps/api/package.json'),
-    readPackage('apps/web/package.json'),
+    readPackage('apps/web/package.json')
   ]);
 
   assert.match(root.scripts.check, /npm run check:docs/);

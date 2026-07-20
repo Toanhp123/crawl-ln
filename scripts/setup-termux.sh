@@ -7,5 +7,5 @@ command -v npm >/dev/null 2>&1 || { echo 'npm not found. Run: pkg install nodejs
 
 mkdir -p apps/api/storage
 cp -n apps/api/.env.termux.example apps/api/.env 2>/dev/null || cp -n apps/api/.env.example apps/api/.env 2>/dev/null || true
-npm install --registry=https://registry.npmjs.org/
-printf '\nDone. Start dev server with:\n  npm run dev\n\nOpen:\n  Web: http://127.0.0.1:5173\n  API: http://127.0.0.1:3000/health\n'
+npm ci --registry=https://registry.npmjs.org/
+printf '\nDone. Start dev server with:\n  npm run dev:termux\n\nOpen:\n  Web: http://127.0.0.1:5173\n  API: http://127.0.0.1:3000/health\n'

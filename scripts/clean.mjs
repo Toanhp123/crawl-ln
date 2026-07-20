@@ -9,7 +9,7 @@ const GENERATED_DIRECTORIES = [
   'coverage',
   'playwright-report',
   'test-results',
-  '.nyc_output',
+  '.nyc_output'
 ];
 
 const BUILD_INFO_ROOTS = ['apps', 'packages'];

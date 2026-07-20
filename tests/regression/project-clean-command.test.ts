@@ -25,14 +25,14 @@ test('clean removes only generated artifacts and is idempotent', async () => {
       'test-results/result.json',
       '.nyc_output/out.json',
       'apps/api/tsconfig.tsbuildinfo',
-      'packages/shared/cache/custom.tsbuildinfo',
+      'packages/shared/cache/custom.tsbuildinfo'
     ];
     const protectedPaths = [
       '.env',
       'package-lock.json',
       'storage/novel-tool.sqlite',
       'plugins/example/manifest.json',
-      'apps/api/src/main.ts',
+      'apps/api/src/main.ts'
     ];
 
     for (const path of [...generated, ...protectedPaths]) {

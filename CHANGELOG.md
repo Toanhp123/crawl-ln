@@ -2,6 +2,10 @@
 
 ## Unreleased - Source Reader Platform
 
+- Simplified root/workspace command orchestration so shared contracts compile once per full check or build.
+- Added safe cross-platform generated-output cleanup and canonical documentation consistency checks.
+- Consolidated current documentation and removed completed plans, reviews, checkpoints, duplicate reports, and obsolete setup guidance from the active tree while preserving Git history.
+- Removed the unused Radix Tabs dependency, retained the SES mapper runtime dependency after sandbox verification, and stopped repeated Termux dependency installation on every dev start.
 - Replaced the previous source-selection runtime with the capability-based Source Reader boundary.
 - Added built-in and isolated external plugins, signed package verification, permission approval, health quarantine, and deterministic fallback.
 - Added encrypted credentials, sessions, network profiles, resumable authentication challenges, browser coordination, scoped cache, signed cursors, rate limiting, circuit breaking, and redacted observability.

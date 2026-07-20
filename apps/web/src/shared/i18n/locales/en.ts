@@ -100,7 +100,7 @@ export const en = {
   'errors.network': 'Unable to connect to the server.',
   'errors.internal': 'The server encountered an error.',
   'errors.chapterContentTooShort':
-    'The chapter content could not be extracted from this source. Check the source profile and try again.',
+    'The chapter content could not be extracted from this source. Check the Source Reader plugin and try again.',
   'common.status.idle': 'Idle',
   'common.status.pending': 'Pending',
   'common.status.fetched': 'Fetched',
@@ -173,7 +173,8 @@ export const en = {
   'common.skipToReader': 'Skip to reader',
   'common.refreshing': 'Refreshing',
   'settings.crawler': 'Crawler',
-  'settings.crawlerDescription': 'Crawler behavior is managed by source profiles and the server.',
+  'settings.crawlerDescription':
+    'Crawler behavior is managed by Source Reader plugins and the server.',
   'settings.crawlerManaged': 'Configuration',
   'settings.crawlerManagedValue': 'Server-managed',
   'settings.storage': 'Storage',
@@ -458,11 +459,12 @@ export const en = {
   'globalAdd.pasteUrl': 'Paste URL',
   'globalAdd.advanced': 'Advanced options',
   'globalAdd.advancedDescription':
-    'The app automatically selects a matching source profile from the URL. Source settings can be changed on the Sources page.',
+    'The app automatically selects a matching Source Reader plugin from the URL. Plugin settings can be changed on the Sources page.',
   'globalAdd.adding': 'Adding…',
   'globalAdd.submit': 'Add novel',
   'globalAdd.queuedDescription': 'Track progress in Activity.',
-  'sources.description': 'Manage profiles used to identify and download novel content.',
+  'sources.description':
+    'Manage Source Reader plugins used to identify and download novel content.',
   'sources.refresh': 'Refresh',
   'sources.add': 'Add source',
   'sources.emptyTitle': 'No sources yet',

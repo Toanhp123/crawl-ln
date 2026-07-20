@@ -1,6 +1,7 @@
 import type { ClockPort } from '../../../../shared/ports/clock.port.js';
 import type { HtmlParserPort } from '../../../../shared/ports/html-parser.port.js';
 import type { HttpClientPort } from '../../../../shared/ports/http-client.port.js';
+import type { RouteAwareHttpClientPort } from '../../application/ports/network-route.port.js';
 import type { LoggerPort } from '../../../../shared/ports/logger.port.js';
 import type { BrowserSessionHandle } from '../../application/ports/browser-runtime.port.js';
 import type { PluginContextFactoryPort } from '../../application/ports/plugin-context-factory.port.js';
@@ -24,7 +25,7 @@ function formatLog(message: string, metadata?: Record<string, unknown>): string 
 
 export class PluginContextFactory implements PluginContextFactoryPort {
   constructor(
-    private readonly http: HttpClientPort,
+    private readonly http: HttpClientPort | (HttpClientPort & RouteAwareHttpClientPort),
     private readonly parser: HtmlParserPort,
     private readonly clock: ClockPort,
     private readonly logger: LoggerPort,
@@ -75,11 +76,18 @@ export class PluginContextFactory implements PluginContextFactoryPort {
             });
           }
           const attachedHeaders = await resolveSessionHeaders();
-          return this.http.get(url, {
+          const requestOptions = {
             ...options,
             headers: { ...options?.headers, ...attachedHeaders },
             signal: input.signal
-          });
+          };
+          const route = input.runtimeContext.resolvedNetworkRoute ?? {
+            kind: 'direct' as const,
+            identity: 'direct' as const
+          };
+          return 'getRouted' in this.http
+            ? this.http.getRouted(url, { ...requestOptions, route })
+            : this.http.get(url, requestOptions);
         }
       },
       html: {

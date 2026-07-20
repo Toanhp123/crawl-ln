@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { CredentialRepository } from '../ports/credential.repository.js';
 import type { NetworkProfileRepository } from '../ports/network-profile.repository.js';
+import type { NetworkRouteResolverPort } from '../ports/network-route.port.js';
 import type {
   ResolvedRuntimeContext,
   RuntimeContextResolverPort
@@ -14,7 +15,8 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
   constructor(
     private readonly credentials: CredentialRepository,
     private readonly networks: NetworkProfileRepository,
-    private readonly sessions: SessionRepository
+    private readonly sessions: SessionRepository,
+    private readonly routes: NetworkRouteResolverPort
   ) {}
 
   async resolve(
@@ -84,6 +86,8 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
       );
     }
 
+    const resolvedNetworkRoute = await this.routes.resolve(networkRoute);
+
     const routeSession = credential
       ? await this.sessions.findActive({
           pluginId: input.pluginId,
@@ -113,13 +117,14 @@ export class RuntimeContextResolverService implements RuntimeContextResolverPort
       credential,
       session,
       networkRoute,
+      resolvedNetworkRoute,
       executionMode: input.executionMode ?? 'in-process',
       browserRequired:
         Boolean(input.runtimeRequirements?.authentication?.required) &&
         Boolean(input.requiresBrowser),
       cacheIdentity: {
         authScope: credential ? hash(`${credential.ownerType}:${credential.id}`) : 'anonymous',
-        networkScope: networkRoute ? hash(networkRoute.id) : 'direct'
+        networkScope: hash(resolvedNetworkRoute.identity)
       }
     };
   }

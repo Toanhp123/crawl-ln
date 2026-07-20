@@ -38,7 +38,7 @@ export const credentialLoginSchema = z.object({
 export const networkProfileCreateSchema = z.object({
   ownerType: z.enum(['system', 'user']),
   name: z.string().min(1).max(100),
-  routeType: z.enum(['direct', 'http-proxy', 'socks-proxy', 'vpn-gateway']),
+  routeType: z.enum(['direct', 'http-proxy', 'https-proxy', 'socks-proxy']),
   regions: z.array(z.string().min(2)).default([]),
   tags: z.array(z.string().min(1)).default([]),
   config: z.record(z.unknown()).optional()
@@ -47,7 +47,7 @@ export const networkProfileCreateSchema = z.object({
 export const networkProfileUpdateSchema = z
   .object({
     name: z.string().min(1).max(100).optional(),
-    routeType: z.enum(['direct', 'http-proxy', 'socks-proxy', 'vpn-gateway']).optional(),
+    routeType: z.enum(['direct', 'http-proxy', 'https-proxy', 'socks-proxy']).optional(),
     regions: z.array(z.string().min(2)).optional(),
     tags: z.array(z.string().min(1)).optional(),
     config: z.record(z.unknown()).optional(),

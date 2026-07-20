@@ -1,8 +1,14 @@
+import type { ResolvedNetworkRoute } from './network-route.port.js';
+
 export interface BrowserSessionIdentity {
   userId?: string;
   pluginId: string;
+  pluginVersion?: string;
   sourceAccountId: string;
+  credentialId?: string;
+  sessionId?: string;
   networkRouteId?: string;
+  networkIdentity?: string;
 }
 
 export interface BrowserSecretHandle {
@@ -26,7 +32,7 @@ export interface BrowserRuntimePort {
   open(input: {
     identity: BrowserSessionIdentity;
     allowedHosts: string[];
-    networkProfileId?: string;
+    route: ResolvedNetworkRoute;
     signal: AbortSignal;
   }): Promise<BrowserSessionHandle>;
   closeByIdentity(identity: BrowserSessionIdentity): Promise<void>;

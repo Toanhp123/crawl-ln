@@ -1,8 +1,11 @@
+export type NetworkRouteType = 'direct' | 'http-proxy' | 'https-proxy' | 'socks-proxy';
+export type PersistedNetworkRouteType = NetworkRouteType | 'vpn-gateway';
+
 export interface NetworkProfileHandle {
   id: string;
   ownerType: 'system' | 'user';
   ownerId?: string;
-  routeType: 'direct' | 'http-proxy' | 'socks-proxy' | 'vpn-gateway';
+  routeType: PersistedNetworkRouteType;
   regions: string[];
   tags: string[];
   healthStatus: 'unknown' | 'healthy' | 'degraded' | 'offline';
@@ -40,13 +43,18 @@ export interface NetworkProfileRepository {
     id: string,
     patch: Partial<{
       name: string;
-      routeType: NetworkProfileHandle['routeType'];
+      routeType: NetworkRouteType;
       regions: string[];
       tags: string[];
       config: Record<string, unknown>;
       enabled: boolean;
     }>,
     updatedAt: string
+  ): Promise<void>;
+  setHealth(
+    id: string,
+    status: NetworkProfileHandle['healthStatus'],
+    checkedAt: string
   ): Promise<void>;
   delete(id: string): Promise<void>;
 }

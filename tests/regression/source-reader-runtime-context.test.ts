@@ -18,12 +18,16 @@ const networks = {
   findHandleById: async () => undefined,
   findCandidates: async () => []
 };
+const routes = {
+  resolve: async () => ({ kind: 'direct' as const, identity: 'direct' as const })
+};
 
 test('explicit user credential wins over defaults', async () => {
   const resolver = new RuntimeContextResolverService(
     credentials as never,
     networks as never,
-    sessions as never
+    sessions as never,
+    routes as never
   );
   const result = await resolver.resolve({
     userId: 'u1',
@@ -41,7 +45,8 @@ test('required regional route fails explicitly when unavailable', async () => {
   const resolver = new RuntimeContextResolverService(
     credentials as never,
     networks as never,
-    sessions as never
+    sessions as never,
+    routes as never
   );
   await assert.rejects(
     () =>
@@ -67,7 +72,8 @@ test('user-owned explicit profiles cannot be used by another actor', async () =>
   const resolver = new RuntimeContextResolverService(
     credentials as never,
     networks as never,
-    sessions as never
+    sessions as never,
+    routes as never
   );
   await assert.rejects(
     () =>
@@ -110,7 +116,8 @@ test('required session route mismatch fails before plugin invocation', async () 
         networkProfileId: 'route-us',
         networkBinding: 'required'
       })
-    } as never
+    } as never,
+    routes as never
   );
 
   await assert.rejects(

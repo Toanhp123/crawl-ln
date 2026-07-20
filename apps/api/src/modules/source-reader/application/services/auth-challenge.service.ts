@@ -81,6 +81,7 @@ export class AuthChallengeService {
       runtimeContext: {
         executionMode: registration.executionMode,
         browserRequired: false,
+        resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
         cacheIdentity: {
           authScope: challenge.credentialProfileId ?? 'anonymous',
           networkScope: challenge.networkProfileId ?? 'direct'

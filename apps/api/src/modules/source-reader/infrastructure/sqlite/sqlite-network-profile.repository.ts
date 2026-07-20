@@ -220,6 +220,20 @@ export class SqliteNetworkProfileRepository implements NetworkProfileRepository 
     });
   }
 
+  async setHealth(
+    id: string,
+    status: NetworkProfileHandle['healthStatus'],
+    checkedAt: string
+  ): Promise<void> {
+    this.database.connection
+      .prepare(
+        `UPDATE source_reader_network_profiles
+         SET health_status=?, last_health_check_at=?, updated_at=?
+         WHERE id=?`
+      )
+      .run(status, checkedAt, checkedAt, id);
+  }
+
   async delete(id: string): Promise<void> {
     this.database.transactionSync(() => {
       this.database.connection

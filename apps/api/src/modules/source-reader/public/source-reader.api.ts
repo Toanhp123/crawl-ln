@@ -130,7 +130,7 @@ export interface SourceReaderManagementApi {
       actor: SourceReaderActor;
       ownerType: 'system' | 'user';
       name: string;
-      routeType: 'direct' | 'http-proxy' | 'socks-proxy' | 'vpn-gateway';
+      routeType: 'direct' | 'http-proxy' | 'https-proxy' | 'socks-proxy';
       regions: string[];
       tags: string[];
       config?: Record<string, unknown>;

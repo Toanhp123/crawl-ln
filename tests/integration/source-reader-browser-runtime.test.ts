@@ -35,6 +35,7 @@ test(
       session = await runtime.open({
         identity,
         allowedHosts: ['127.0.0.1'],
+        route: { kind: 'direct', identity: 'direct' },
         signal: new AbortController().signal
       });
       assert.equal(

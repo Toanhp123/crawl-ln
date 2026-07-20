@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { parentPort, workerData } from 'node:worker_threads';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
+import type { ResolvedNetworkRoute } from '../../../application/ports/network-route.port.js';
+import { buildChromiumLaunchOptions } from './browser-launch-options.js';
 import type { BrowserCommand, BrowserEvent } from './browser-protocol.js';
 
 if (!parentPort) throw new Error('Browser worker requires parentPort');
@@ -8,6 +10,7 @@ if (!parentPort) throw new Error('Browser worker requires parentPort');
 const data = workerData as {
   browserExecutablePath?: string;
   allowedHosts: string[];
+  route: ResolvedNetworkRoute;
 };
 const allowedHosts = data.allowedHosts.map((host) => host.toLowerCase().replace(/^\*\./, ''));
 let browser: Browser;
@@ -32,11 +35,12 @@ function requestParentSecret(handle: { credentialId: string; field: string }): P
 }
 
 async function initialize(): Promise<void> {
-  browser = await chromium.launch({
-    headless: true,
-    ...(data.browserExecutablePath ? { executablePath: data.browserExecutablePath } : {}),
-    args: ['--disable-dev-shm-usage', '--no-sandbox']
-  });
+  browser = await chromium.launch(
+    buildChromiumLaunchOptions({
+      browserExecutablePath: data.browserExecutablePath,
+      route: data.route
+    })
+  );
   context = await browser.newContext({ acceptDownloads: false });
   page = await context.newPage();
   page.on('download', (download) => void download.cancel());

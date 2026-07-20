@@ -3,6 +3,10 @@ import type { AuthenticationRuntimePort } from '../ports/authentication-runtime.
 import type { AuthChallengeHandle } from '../ports/auth-challenge.repository.js';
 import type { CredentialHandle, CredentialRepository } from '../ports/credential.repository.js';
 import type { NetworkProfileHandle } from '../ports/network-profile.repository.js';
+import type {
+  NetworkRouteResolverPort,
+  RouteAwareHttpClientPort
+} from '../ports/network-route.port.js';
 import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.port.js';
 import type { PluginRegistryPort } from '../ports/plugin-registry.port.js';
 import type { SessionRepository } from '../ports/session.repository.js';
@@ -48,7 +52,8 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
         expiresAt: string;
         state: Record<string, unknown>;
       }): Promise<AuthChallengeHandle>;
-    }
+    },
+    private readonly routes?: NetworkRouteResolverPort
   ) {}
 
   async login(input: LoginInput): Promise<AuthExecutionResult> {
@@ -76,14 +81,18 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
     input: Parameters<AuthenticationRuntimePort['authenticate']>[0]
   ): Promise<AuthExecutionResult> {
     this.assertCredentialAccess(input.credential, input.userId, input.pluginId);
+    const resolvedRoute = this.routes
+      ? await this.routes.resolve(input.networkRoute)
+      : ({ kind: 'direct', identity: 'direct' } as const);
+    const routedHttp = this.routedHttp(resolvedRoute);
     const result =
       input.strategy === 'custom'
-        ? await this.authenticateCustom(input)
+        ? await this.authenticateCustom(input, resolvedRoute)
         : await this.standard.authenticate({
             strategy: input.strategy,
             secret: await this.credentials.resolveSecret(input.credential),
             configuration: input.configuration,
-            http: this.http
+            http: routedHttp
           });
 
     if (result.status === 'authenticated') {
@@ -131,7 +140,8 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
   }
 
   private async authenticateCustom(
-    input: Parameters<AuthenticationRuntimePort['authenticate']>[0]
+    input: Parameters<AuthenticationRuntimePort['authenticate']>[0],
+    resolvedNetworkRoute: Awaited<ReturnType<NetworkRouteResolverPort['resolve']>>
   ): Promise<AuthExecutionResult> {
     const sourceUrl =
       typeof input.configuration.sourceUrl === 'string' ? input.configuration.sourceUrl : '';
@@ -156,6 +166,7 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
         credential: input.credential,
         ...(input.networkRoute ? { networkRoute: input.networkRoute } : {}),
         executionMode: candidate.executionMode,
+        resolvedNetworkRoute,
         browserRequired: candidate.plugin.manifest.runtime.requiresBrowser ?? false,
         cacheIdentity: {
           authScope: hash(`${input.credential.ownerType}:${input.credential.id}`),
@@ -164,6 +175,17 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
       }
     });
     return extension.login({ credentialHandleId: input.credential.id }, context);
+  }
+
+  private routedHttp(
+    route: Awaited<ReturnType<NetworkRouteResolverPort['resolve']>>
+  ): AuthenticationHttpClient {
+    const candidate = this.http as AuthenticationHttpClient & Partial<RouteAwareHttpClientPort>;
+    if (!candidate.getRouted || !candidate.postRouted) return this.http;
+    return {
+      get: (url, options) => candidate.getRouted!(url, { ...options, route }),
+      post: (url, options) => candidate.postRouted!(url, { ...options, route })
+    };
   }
 
   private assertCredentialAccess(

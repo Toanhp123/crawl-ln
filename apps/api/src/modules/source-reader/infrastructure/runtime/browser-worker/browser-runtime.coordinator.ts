@@ -16,12 +16,16 @@ interface BrowserCoordinatorOptions {
   commandTimeoutMs?: number;
 }
 
-function identityKey(identity: BrowserSessionIdentity): string {
+export function browserSessionIdentityKey(identity: BrowserSessionIdentity): string {
   return JSON.stringify([
     identity.userId ?? null,
     identity.pluginId,
+    identity.pluginVersion ?? null,
     identity.sourceAccountId,
-    identity.networkRouteId ?? null
+    identity.credentialId ?? null,
+    identity.sessionId ?? null,
+    identity.networkRouteId ?? null,
+    identity.networkIdentity ?? null
   ]);
 }
 
@@ -54,6 +58,7 @@ class WorkerBackedBrowserSession implements BrowserSessionHandle {
       allowedHosts: string[];
       signal: AbortSignal;
       browserExecutablePath?: string;
+      route: Parameters<BrowserRuntimePort['open']>[0]['route'];
       credentialResolver?: (handle: BrowserSecretHandle) => Promise<string>;
       maxLifetimeMs: number;
       maxNavigations: number;
@@ -65,7 +70,8 @@ class WorkerBackedBrowserSession implements BrowserSessionHandle {
       execArgv: [],
       workerData: {
         browserExecutablePath: input.browserExecutablePath,
-        allowedHosts: input.allowedHosts
+        allowedHosts: input.allowedHosts,
+        route: input.route
       },
       resourceLimits: {
         maxOldGenerationSizeMb: 256,
@@ -203,13 +209,14 @@ export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
   constructor(private readonly options: BrowserCoordinatorOptions = {}) {}
 
   async open(input: Parameters<BrowserRuntimePort['open']>[0]): Promise<BrowserSessionHandle> {
-    const key = identityKey(input.identity);
+    const key = browserSessionIdentityKey(input.identity);
     const existing = this.sessions.get(key);
     if (existing) return existing;
     const session = new WorkerBackedBrowserSession({
       allowedHosts: input.allowedHosts,
       signal: input.signal,
       browserExecutablePath: this.options.browserExecutablePath,
+      route: input.route,
       credentialResolver: this.options.credentialResolver,
       maxLifetimeMs: this.options.maxLifetimeMs ?? 10 * 60_000,
       maxNavigations: this.options.maxNavigations ?? 50,
@@ -221,6 +228,6 @@ export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
   }
 
   async closeByIdentity(identity: BrowserSessionIdentity): Promise<void> {
-    await this.sessions.get(identityKey(identity))?.close();
+    await this.sessions.get(browserSessionIdentityKey(identity))?.close();
   }
 }

@@ -64,6 +64,10 @@ import { SqlitePluginHealthRepository } from '../../../modules/source-reader/inf
 import { SqlitePluginStore } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.js';
 import { SqliteSessionRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-session.repository.js';
 import { PluginContextFactory } from '../../../modules/source-reader/infrastructure/runtime/plugin-context.factory.js';
+import { NetworkRouteResolver } from '../../../modules/source-reader/infrastructure/network/network-route.resolver.js';
+import { NetworkRouteTester } from '../../../modules/source-reader/infrastructure/network/network-route-tester.js';
+import { ProxyAgentFactory } from '../../../modules/source-reader/infrastructure/network/proxy-agent.factory.js';
+import { RouteAwareHttpClientAdapter } from '../../../modules/source-reader/infrastructure/network/route-aware-http-client.adapter.js';
 import { InProcessSourceReaderObservability } from '../../../modules/source-reader/infrastructure/observability/source-reader-observability.js';
 import { SourceReaderAdminController } from '../../../modules/source-reader/presentation/controllers/source-reader-admin.controller.js';
 import { SourceReaderController } from '../../../modules/source-reader/presentation/controllers/source-reader.controller.js';
@@ -74,7 +78,6 @@ import type {
 import { SourceReaderError } from '../../../modules/source-reader/domain/errors/source-reader.error.js';
 import { env } from '../../config/env.js';
 import { CheerioHtmlParserAdapter } from '../../infrastructure/html/cheerio-html-parser.adapter.js';
-import { AxiosHttpClientAdapter } from '../../infrastructure/http/axios-http-client.adapter.js';
 import type { InfrastructureModule } from './infrastructure.module.js';
 
 export function createSourceReaderModule(infrastructure: InfrastructureModule) {
@@ -110,8 +113,14 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     new MemoryReaderCache(env.sourceReaderMemoryCacheEntries),
     persistentCache
   );
-  const runtimeContexts = new RuntimeContextResolverService(credentials, networks, sessions);
-  const http = new AxiosHttpClientAdapter();
+  const routes = new NetworkRouteResolver(networks);
+  const http = new RouteAwareHttpClientAdapter(new ProxyAgentFactory(20));
+  const runtimeContexts = new RuntimeContextResolverService(
+    credentials,
+    networks,
+    sessions,
+    routes
+  );
   const pluginContexts = new PluginContextFactory(
     http,
     new CheerioHtmlParserAdapter(),
@@ -149,7 +158,8 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     infrastructure.clock,
     registry,
     pluginContexts,
-    challengeService
+    challengeService,
+    routes
   );
   const maintenance = new SourceReaderMaintenanceService(
     persistentCache,
@@ -205,32 +215,14 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     plugins: pluginStore,
     networks
   };
-  const networkTester = {
-    async test(profileId: string, ownerId?: string) {
-      const profile = await networks.requireHandle(profileId);
-      if (profile.ownerType === 'user' && profile.ownerId !== ownerId) {
-        throw new SourceReaderError(
-          'PLUGIN_PERMISSION_DENIED',
-          'Network profile belongs to another user',
-          {
-            retryable: false,
-            fallbackAllowed: false
-          }
-        );
-      }
-      return {
-        status:
-          profile.healthStatus === 'offline'
-            ? ('offline' as const)
-            : profile.healthStatus === 'degraded'
-              ? ('degraded' as const)
-              : ('healthy' as const),
-        ...(profile.regions[0] ? { region: profile.regions[0] } : {}),
-        latencyMs: 0,
-        checkedAt: infrastructure.clock.now().toISOString()
-      };
-    }
-  };
+  const networkTester = new NetworkRouteTester(
+    networks,
+    routes,
+    http,
+    infrastructure.clock,
+    env.sourceReaderNetworkDiagnosticUrl,
+    env.requestTimeoutMs
+  );
 
   const management = {
     plugins: {

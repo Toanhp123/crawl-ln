@@ -1,5 +1,6 @@
 import type { CredentialHandle } from './credential.repository.js';
 import type { NetworkProfileHandle } from './network-profile.repository.js';
+import type { ResolvedNetworkRoute } from './network-route.port.js';
 import type { SessionHandle } from './session.repository.js';
 import type { SourcePluginManifest } from '../../domain/plugin/source-plugin.js';
 import type { SourceCapability } from '../../public/source-reader.models.js';
@@ -8,6 +9,7 @@ export interface ResolvedRuntimeContext {
   credential?: CredentialHandle;
   session?: SessionHandle;
   networkRoute?: NetworkProfileHandle;
+  resolvedNetworkRoute: ResolvedNetworkRoute;
   executionMode: 'in-process' | 'isolated';
   browserRequired: boolean;
   cacheIdentity: {

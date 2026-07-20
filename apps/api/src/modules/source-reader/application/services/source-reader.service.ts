@@ -69,6 +69,7 @@ const anonymousRuntimeContexts: RuntimeContextResolverPort = {
     return {
       executionMode: input.executionMode ?? 'in-process',
       browserRequired: false,
+      resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
       cacheIdentity: { authScope: 'anonymous', networkScope: 'direct' }
     };
   }
@@ -316,19 +317,25 @@ export class SourceReaderService implements SourceReaderApi {
               fallbackAllowed: false
             });
           }
+          const resolvedRoute = runtimeContext.resolvedNetworkRoute ?? {
+            kind: 'direct' as const,
+            identity: 'direct' as const
+          };
           browserSession = await this.browser.open({
             identity: {
               ...(request.userId ? { userId: request.userId } : {}),
               pluginId: candidate.plugin.manifest.id,
+              pluginVersion: candidate.plugin.manifest.version,
               sourceAccountId: runtimeContext.credential.id,
+              credentialId: runtimeContext.credential.id,
+              ...(runtimeContext.session ? { sessionId: runtimeContext.session.id } : {}),
               ...(runtimeContext.networkRoute
                 ? { networkRouteId: runtimeContext.networkRoute.id }
-                : {})
+                : {}),
+              networkIdentity: resolvedRoute.identity
             },
             allowedHosts: candidate.plugin.manifest.permissions.network.hosts,
-            ...(runtimeContext.networkRoute
-              ? { networkProfileId: runtimeContext.networkRoute.id }
-              : {}),
+            route: resolvedRoute,
             signal
           });
         }

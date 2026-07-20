@@ -52,6 +52,8 @@ export const env = {
   sourceReaderMemoryCacheEntries: numberEnv('SOURCE_READER_MEMORY_CACHE_ENTRIES', 500),
   sourceReaderMasterKey: optionalBase64Key('SOURCE_READER_MASTER_KEY'),
   sourceReaderBrowserExecutable: process.env.SOURCE_READER_BROWSER_EXECUTABLE || undefined,
+  sourceReaderNetworkDiagnosticUrl:
+    process.env.SOURCE_READER_NETWORK_DIAGNOSTIC_URL ?? 'https://example.com/',
   sourceReaderDefaultRoles: jsonEnv<
     Array<'reader' | 'source-manager' | 'source-admin' | 'system-admin'>
   >('SOURCE_READER_DEFAULT_ROLES_JSON', [

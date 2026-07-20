@@ -232,6 +232,10 @@ test('browser-required read opens the approved browser identity and exposes only
   assert.deepEqual(opened[0]?.identity, {
     userId: 'u1',
     pluginId: 'premium-demo',
-    sourceAccountId: 'cred-1'
+    pluginVersion: '1.0.0',
+    sourceAccountId: 'cred-1',
+    credentialId: 'cred-1',
+    sessionId: 'session-1',
+    networkIdentity: 'direct'
   });
 });

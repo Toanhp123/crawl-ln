@@ -1,37 +1,59 @@
 import type { NextFunction, Request, Response } from 'express';
+import type { ApiAccessRequest } from '../../../shared/http/api-access.middleware.js';
 import type {
   SourceReaderActor,
   SourceReaderRole
 } from '../application/ports/source-reader-actor.port.js';
 
-const roles = new Set<SourceReaderRole>([
+const allRoles: SourceReaderRole[] = [
   'reader',
   'source-manager',
   'source-admin',
   'system-admin'
-]);
+];
+const roleSet = new Set<SourceReaderRole>(allRoles);
 
-export interface SourceReaderRequest extends Request {
+export interface SourceReaderRequest extends Request, ApiAccessRequest {
   sourceReaderActor?: SourceReaderActor;
   sourceReaderRequestId?: string;
 }
 
 export function sourceReaderActorMiddleware(options: {
-  defaultRoles: SourceReaderRole[];
+  localAdminEnabled: boolean;
   trustRoleHeaders: boolean;
 }) {
   return (request: SourceReaderRequest, _response: Response, next: NextFunction): void => {
+    const access = request.apiAccess ?? { isLocal: false, authenticated: false };
     const id = request.header('x-source-reader-user-id') || undefined;
-    const requested = options.trustRoleHeaders
-      ? request
-          .header('x-source-reader-roles')
-          ?.split(',')
-          .map((value) => value.trim())
-          .filter((value): value is SourceReaderRole => roles.has(value as SourceReaderRole))
-      : undefined;
+    const requested = request
+      .header('x-source-reader-roles')
+      ?.split(',')
+      .map((value) => value.trim())
+      .filter((value): value is SourceReaderRole => roleSet.has(value as SourceReaderRole));
+
+    let effective: SourceReaderRole[] = ['reader'];
+    if (access.isLocal && options.localAdminEnabled) {
+      effective = [...allRoles];
+    } else if (
+      options.trustRoleHeaders &&
+      access.authenticated &&
+      !access.isLocal &&
+      requested?.length
+    ) {
+      effective = [...new Set(requested)];
+    } else if (
+      options.trustRoleHeaders &&
+      access.isLocal &&
+      requested?.length
+    ) {
+      const allowed = new Set(effective);
+      const selected = requested.filter((role) => allowed.has(role));
+      effective = selected.length ? selected : ['reader'];
+    }
+
     request.sourceReaderActor = {
       ...(id ? { id } : {}),
-      roles: requested?.length ? requested : [...options.defaultRoles]
+      roles: effective
     };
     next();
   };

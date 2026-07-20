@@ -388,7 +388,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
       reader: new SourceReaderController(api),
       admin: new SourceReaderAdminController(management),
       actorOptions: {
-        defaultRoles: env.sourceReaderDefaultRoles,
+        localAdminEnabled: env.sourceReaderLocalAdmin,
         trustRoleHeaders: env.sourceReaderTrustRoleHeaders
       }
     },

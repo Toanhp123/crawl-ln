@@ -15,6 +15,9 @@ import { notFoundMiddleware } from './shared/http/not-found-middleware.js';
 import { errorMiddleware } from './app/http/error-middleware.js';
 import { ok } from './shared/http/api-response.js';
 import { createRealtimeRoutes } from './shared/realtime/realtime.routes.js';
+import { env } from './shared/config/env.js';
+import { apiAccessMiddleware } from './shared/http/api-access.middleware.js';
+import { createCorsOptions } from './shared/http/cors-options.js';
 
 export function createAppRuntime(options: { startBackgroundServices?: boolean } = {}) {
   const app = express();
@@ -22,10 +25,11 @@ export function createAppRuntime(options: { startBackgroundServices?: boolean } 
   const ready =
     (options.startBackgroundServices ?? true) ? container.lifecycle.start() : Promise.resolve();
 
-  app.use(cors());
+  app.use(cors(createCorsOptions(env.apiCorsOrigins)));
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/health', (_req, res) => ok(res, { ok: true, name: 'novel-tool' }));
+  app.use('/api', apiAccessMiddleware({ remoteToken: env.apiRemoteToken }));
   app.use('/api/events', createRealtimeRoutes(container.presentation.realtime));
   app.use('/api/novels', createNovelRoutes(container.presentation.novels));
   app.use('/api/novels', createChapterRoutes(container.presentation.chapters));

@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { asyncHandler } from '../../../../shared/http/async-handler.js';
-import type { SourceReaderRole } from '../../public/source-reader.api.js';
 import type { SourceReaderAdminController } from '../controllers/source-reader-admin.controller.js';
 import type { SourceReaderController } from '../controllers/source-reader.controller.js';
 import { sourceReaderActorMiddleware } from '../source-reader-actor.middleware.js';
@@ -11,7 +10,7 @@ export interface SourceReaderPresentation {
   reader: SourceReaderController;
   admin: SourceReaderAdminController;
   actorOptions: {
-    defaultRoles: SourceReaderRole[];
+    localAdminEnabled: boolean;
     trustRoleHeaders: boolean;
   };
 }

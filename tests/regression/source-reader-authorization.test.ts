@@ -26,35 +26,83 @@ test('only source-admin or system-admin can perform source-admin operations', ()
   policy.requireRole({ id: 'root-1', roles: ['system-admin'] }, 'source-admin');
 });
 
-test('actor middleware ignores client role headers unless deployment explicitly trusts them', () => {
-  const request = {
+function actorRequest(options: {
+  isLocal: boolean;
+  authenticated?: boolean;
+  roles?: string;
+}) {
+  return {
+    apiAccess: {
+      isLocal: options.isLocal,
+      authenticated: options.authenticated ?? options.isLocal
+    },
     header(name: string) {
       if (name === 'x-source-reader-user-id') return 'user-1';
-      if (name === 'x-source-reader-roles') return 'system-admin';
+      if (name === 'x-source-reader-roles') return options.roles;
       return undefined;
     }
   };
-  let nextCalls = 0;
-  sourceReaderActorMiddleware({
-    defaultRoles: ['reader', 'source-manager'],
-    trustRoleHeaders: false
-  })(request as never, {} as never, () => {
-    nextCalls += 1;
-  });
-  assert.deepEqual((request as { sourceReaderActor?: unknown }).sourceReaderActor, {
+}
+
+test('actor middleware defaults to reader and grants local administration only when enabled', () => {
+  const readOnly = actorRequest({ isLocal: true });
+  sourceReaderActorMiddleware({ localAdminEnabled: false, trustRoleHeaders: false })(
+    readOnly as never,
+    {} as never,
+    () => undefined
+  );
+  assert.deepEqual((readOnly as { sourceReaderActor?: unknown }).sourceReaderActor, {
     id: 'user-1',
-    roles: ['reader', 'source-manager']
+    roles: ['reader']
   });
 
-  sourceReaderActorMiddleware({
-    defaultRoles: ['reader'],
-    trustRoleHeaders: true
-  })(request as never, {} as never, () => {
-    nextCalls += 1;
-  });
-  assert.deepEqual((request as { sourceReaderActor?: unknown }).sourceReaderActor, {
+  const localAdmin = actorRequest({ isLocal: true });
+  sourceReaderActorMiddleware({ localAdminEnabled: true, trustRoleHeaders: false })(
+    localAdmin as never,
+    {} as never,
+    () => undefined
+  );
+  assert.deepEqual((localAdmin as { sourceReaderActor?: unknown }).sourceReaderActor, {
     id: 'user-1',
-    roles: ['system-admin']
+    roles: ['reader', 'source-manager', 'source-admin', 'system-admin']
   });
-  assert.equal(nextCalls, 2);
+});
+
+test('role headers cannot elevate by default and require authenticated explicit trust remotely', () => {
+  const ignored = actorRequest({ isLocal: false, authenticated: true, roles: 'system-admin' });
+  sourceReaderActorMiddleware({ localAdminEnabled: true, trustRoleHeaders: false })(
+    ignored as never,
+    {} as never,
+    () => undefined
+  );
+  assert.deepEqual((ignored as { sourceReaderActor?: unknown }).sourceReaderActor, {
+    id: 'user-1',
+    roles: ['reader']
+  });
+
+  const unauthenticated = actorRequest({
+    isLocal: false,
+    authenticated: false,
+    roles: 'system-admin'
+  });
+  sourceReaderActorMiddleware({ localAdminEnabled: true, trustRoleHeaders: true })(
+    unauthenticated as never,
+    {} as never,
+    () => undefined
+  );
+  assert.deepEqual((unauthenticated as { sourceReaderActor?: unknown }).sourceReaderActor, {
+    id: 'user-1',
+    roles: ['reader']
+  });
+
+  const trusted = actorRequest({ isLocal: false, authenticated: true, roles: 'source-admin' });
+  sourceReaderActorMiddleware({ localAdminEnabled: false, trustRoleHeaders: true })(
+    trusted as never,
+    {} as never,
+    () => undefined
+  );
+  assert.deepEqual((trusted as { sourceReaderActor?: unknown }).sourceReaderActor, {
+    id: 'user-1',
+    roles: ['source-admin']
+  });
 });

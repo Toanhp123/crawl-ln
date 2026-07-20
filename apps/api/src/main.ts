@@ -4,8 +4,8 @@ import { logger } from './shared/logger/logger.js';
 
 const runtime = createAppRuntime({ startBackgroundServices: true });
 await runtime.ready;
-const server = runtime.app.listen(env.port, () => {
-  logger.info(`API running at http://localhost:${env.port}`);
+const server = runtime.app.listen(env.port, env.host, () => {
+  logger.info(`API running at http://${env.host}:${env.port}`);
 });
 
 let shuttingDown = false;

@@ -301,6 +301,7 @@ export type ApiErrorCode =
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'FORBIDDEN'
+  | 'UNAUTHORIZED'
   | 'INTERNAL_ERROR'
   | SourceReaderApiErrorCode;
 export type ApiFailure = {

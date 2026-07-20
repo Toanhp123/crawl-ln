@@ -35,6 +35,7 @@ export function createSourceReaderRoutes(presentation: SourceReaderPresentation)
   router.post('/latest-updates', asyncHandler(reader.latestUpdates));
 
   router.get('/plugins', asyncHandler(admin.listPlugins));
+  router.get('/plugins/:pluginId', asyncHandler(admin.pluginDiagnostics));
   router.post('/plugins/install', upload.single('plugin'), asyncHandler(admin.installPlugin));
   router.post('/plugins/:pluginId/enable', asyncHandler(admin.enablePlugin));
   router.post('/plugins/:pluginId/disable', asyncHandler(admin.disablePlugin));

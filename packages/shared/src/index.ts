@@ -361,6 +361,7 @@ export interface SourceReaderPluginDescriptor {
   trustLevel: 'built-in' | 'signed' | 'local-unverified' | 'blocked';
   status:
     | 'installed'
+    | 'installed-pending-revalidation'
     | 'pending-approval'
     | 'initializing'
     | 'active'
@@ -376,6 +377,23 @@ export interface SourceReaderPluginDescriptor {
     status: 'healthy' | 'degraded' | 'failed';
     lastCheckedAt?: string;
   };
+}
+
+export interface SourceReaderPluginDiagnostics {
+  pluginId: string;
+  activeVersion?: string;
+  status: string;
+  lifecycleState: string;
+  runtimeVersion: string;
+  sandboxProtocolVersion: number;
+  compatibilityIssues: Array<{
+    code: string;
+    path: string;
+    severity: 'warning' | 'fatal';
+    message: string;
+  }>;
+  lastHealth?: { status: string; checkedAt: string; failureCode?: string };
+  policy: { processStartTimeoutMs: number; violationThreshold: number };
 }
 
 export type RealtimeResource = 'novels' | 'tasks' | 'scheduler' | 'plugins' | 'search' | 'all';

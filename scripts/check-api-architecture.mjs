@@ -47,6 +47,39 @@ function checkFile(path) {
   const sourceModule = moduleOf(path);
   const edges = [];
 
+  if (
+    normalizedPath.includes('/modules/source-reader/') &&
+    source.includes('IsolatedWorkerPluginRuntime')
+  ) {
+    violations.push(`${normalizedPath}: legacy IsolatedWorkerPluginRuntime is forbidden`);
+  }
+  if (
+    normalizedPath.includes('/modules/source-reader/infrastructure/runtime/') &&
+    !normalizedPath.includes('/browser-worker/') &&
+    imports.includes('node:worker_threads')
+  ) {
+    violations.push(
+      `${normalizedPath}: node:worker_threads is allowed only for the browser worker, never as an external plugin security boundary`
+    );
+  }
+  if (
+    normalizedPath.includes('/modules/source-reader/infrastructure/runtime/external-process/') &&
+    imports.some((target) =>
+      [
+        'node:net',
+        'node:tls',
+        'node:dgram',
+        'node:http',
+        'node:https',
+        'node:worker_threads'
+      ].includes(target)
+    )
+  ) {
+    violations.push(
+      `${normalizedPath}: external process host code must not open raw network transports; plugin traffic goes through host capabilities`
+    );
+  }
+
   if (normalizedPath.includes('/shared/errors/')) {
     violations.push(
       `${normalizedPath}: application errors must be module-owned; shared must not define business or transport error classes`
@@ -296,6 +329,14 @@ function findCycles() {
   }
 
   for (const file of files) visit(file);
+}
+
+const sandboxLoader = join(
+  sourceRoot,
+  'modules/source-reader/infrastructure/runtime/external-process/sandbox-module-loader.ts'
+);
+if (!existsSync(sandboxLoader)) {
+  violations.push('sandbox-module-loader: external plugin deny-by-default loader is required');
 }
 
 walk(sourceRoot);

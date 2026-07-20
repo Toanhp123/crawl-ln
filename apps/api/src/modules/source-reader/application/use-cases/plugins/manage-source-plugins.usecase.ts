@@ -1,5 +1,6 @@
 import type { ClockPort } from '../../../../../shared/ports/clock.port.js';
 import type { SourceReaderActor } from '../../ports/source-reader-actor.port.js';
+import type { SourceReaderPluginDiagnostics } from '../../../public/source-reader.api.js';
 import type { SourceReaderInvalidationPort } from '../../ports/source-reader-invalidation.port.js';
 import type { SourceReaderAuthorizationPolicy } from '../../policies/source-reader-authorization.policy.js';
 
@@ -25,7 +26,7 @@ interface PluginInstaller {
 
 interface PluginHealthAdministration {
   runPluginHealthCheck(pluginId: string): Promise<unknown>;
-  describePlugin(pluginId: string): Promise<unknown>;
+  describePlugin(pluginId: string): Promise<SourceReaderPluginDiagnostics>;
 }
 
 interface PluginActivationAdministration {
@@ -156,6 +157,17 @@ export class TestPluginUseCase {
   execute(input: { actor: SourceReaderActor; pluginId: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
     return this.health.runPluginHealthCheck(input.pluginId);
+  }
+}
+
+export class GetPluginDiagnosticsUseCase {
+  constructor(
+    private readonly authorization: SourceReaderAuthorizationPolicy,
+    private readonly health: PluginHealthAdministration
+  ) {}
+  execute(input: { actor: SourceReaderActor; pluginId: string }) {
+    this.authorization.requireRole(input.actor, 'reader');
+    return this.health.describePlugin(input.pluginId);
   }
 }
 

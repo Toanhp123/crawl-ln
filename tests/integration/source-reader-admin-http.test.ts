@@ -42,3 +42,14 @@ test('plugin installation requires a bounded multipart package', async () => {
   const body = (await response.json()) as { error: { code: string } };
   assert.equal(body.error.code, 'PLUGIN_RESULT_INVALID');
 });
+
+test('plugin diagnostics route returns a typed unavailable error without leaking internals', async () => {
+  const response = await fetch(`${baseUrl}/api/source-reader/plugins/missing-plugin`, {
+    headers: { 'x-source-reader-user-id': 'user-1' }
+  });
+  assert.equal(response.status, 503);
+  const body = (await response.json()) as { error: { code: string; message: string } };
+  assert.equal(body.error.code, 'PLUGIN_UNAVAILABLE');
+  assert.equal(JSON.stringify(body).includes(storageDir), false);
+  assert.equal(JSON.stringify(body).includes('package_path'), false);
+});

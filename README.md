@@ -130,3 +130,16 @@ Use the novel detail export sheet to create EPUB3 or UTF-8 TXT files. Exports ca
 ## Source Reader
 
 Crawler metadata, chapter list, chapter content, search, authentication, network routing, and plugin administration run through the Source Reader boundary. Reader and management endpoints are available under `/api/source-reader/*`; external packages use the verified `.source-plugin` format and secret-backed features require `SOURCE_READER_MASTER_KEY`. See `docs/SOURCE_READER.md`.
+
+
+## Source Reader security runtime
+
+External source plugins require Node.js 22 or newer and execute in a separate deny-by-default process sandbox. Node permission flags are defense in depth; the sandbox module loader and SES compartment are the authority boundary. External plugins never receive database, vault, actor-role, or unrestricted network access.
+
+Operational settings:
+
+- `SOURCE_READER_EXTERNAL_PROCESS_START_TIMEOUT_MS=10000` limits sandbox startup.
+- `SOURCE_READER_PLUGIN_POLICY_VIOLATION_THRESHOLD=3` quarantines repeated output-policy violations.
+- `SOURCE_READER_NETWORK_DIAGNOSTIC_URL=https://example.com/` is fetched through the selected route when an administrator tests a network profile.
+
+Plugin diagnostics expose lifecycle, compatibility, health, runtime, and policy metadata only. They never expose package paths, package checksums, proxy endpoints, credentials, session material, raw plugin errors, or plugin output.

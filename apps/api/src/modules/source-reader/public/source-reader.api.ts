@@ -54,6 +54,23 @@ export interface SourceReaderApi {
   latestUpdates(request: LatestUpdatesRequest): Promise<SourceReaderResult<Page<LatestUpdate>>>;
 }
 
+export interface SourceReaderPluginDiagnostics {
+  pluginId: string;
+  activeVersion?: string;
+  status: string;
+  lifecycleState: string;
+  runtimeVersion: string;
+  sandboxProtocolVersion: number;
+  compatibilityIssues: Array<{
+    code: string;
+    path: string;
+    severity: 'warning' | 'fatal';
+    message: string;
+  }>;
+  lastHealth?: { status: string; checkedAt: string; failureCode?: string };
+  policy: { processStartTimeoutMs: number; violationThreshold: number };
+}
+
 export type SourceReaderRole = 'reader' | 'source-manager' | 'source-admin' | 'system-admin';
 
 export interface SourceReaderActor {
@@ -95,6 +112,10 @@ export interface SourceReaderManagementApi {
     remove: SourceReaderExecutor<{ actor: SourceReaderActor; pluginId: string }>;
     test: SourceReaderExecutor<{ actor: SourceReaderActor; pluginId: string }>;
     health: SourceReaderExecutor<{ actor: SourceReaderActor; pluginId: string }>;
+    diagnostics: SourceReaderExecutor<
+      { actor: SourceReaderActor; pluginId: string },
+      SourceReaderPluginDiagnostics
+    >;
   };
   credentials: {
     create: SourceReaderExecutor<{

@@ -94,6 +94,15 @@ export class SourceReaderAdminController {
       })
     );
 
+  pluginDiagnostics = async (req: SourceReaderRequest, res: Response) =>
+    ok(
+      res,
+      await this.management.plugins.diagnostics.execute({
+        actor: requireActor(req),
+        pluginId: req.params.pluginId
+      })
+    );
+
   listPermissions = async (req: SourceReaderRequest, res: Response) =>
     ok(
       res,

@@ -20,6 +20,7 @@ import {
   DenyPluginPermissionsUseCase,
   DisablePluginUseCase,
   EnablePluginUseCase,
+  GetPluginDiagnosticsUseCase,
   GetPluginHealthUseCase,
   InstallSourcePluginUseCase,
   ListPluginPermissionsUseCase,
@@ -109,10 +110,14 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     new SqlitePluginHealthRepository(infrastructure.database),
     infrastructure.clock,
     infrastructure.ids,
-    { pluginStore, registry }
+    {
+      pluginStore,
+      registry,
+      threshold: env.sourceReaderPluginPolicyViolationThreshold
+    }
   );
   const externalSupervisor = new ExternalProcessSupervisor({
-    startupTimeoutMs: env.requestTimeoutMs,
+    startupTimeoutMs: env.sourceReaderExternalProcessStartTimeoutMs,
     cancelGraceMs: 100,
     structuredLogger,
     onOutputPolicyViolation: (input) => health.recordPolicyViolation(input)
@@ -255,18 +260,40 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
           fallbackAllowed: false
         });
       }
-      return installed;
+      const version = installed.activeVersion
+        ? await pluginStore.findVersion(pluginId, installed.activeVersion)
+        : await pluginStore.findLatestVersion(pluginId);
+      const registration = registry.findById(pluginId);
+      return {
+        pluginId,
+        ...(installed.activeVersion ? { activeVersion: installed.activeVersion } : {}),
+        status: installed.status,
+        lifecycleState: registration ? 'running' : installed.status,
+        runtimeVersion: SOURCE_READER_HOST_COMPATIBILITY.runtimeVersion,
+        sandboxProtocolVersion: version?.sandboxProtocolVersion ?? 1,
+        compatibilityIssues: version?.compatibilityIssues ?? [],
+        policy: {
+          processStartTimeoutMs: env.sourceReaderExternalProcessStartTimeoutMs,
+          violationThreshold: env.sourceReaderPluginPolicyViolationThreshold
+        }
+      };
     },
     async runPluginHealthCheck(pluginId: string) {
-      const installed = await this.describePlugin(pluginId);
-      const lifecycle = registry.findById(pluginId)?.plugin.lifecycle;
-      const lifecycleHealth = lifecycle
-        ? await lifecycle.healthCheck()
-        : { status: 'healthy' as const };
+      const diagnostics = await this.describePlugin(pluginId);
+      const registration = registry.findById(pluginId);
+      if (!registration) {
+        throw new SourceReaderError('PLUGIN_UNAVAILABLE', 'Plugin is not active', {
+          retryable: false,
+          fallbackAllowed: false
+        });
+      }
+      const lifecycleHealth = registration.plugin.lifecycle
+        ? await registration.plugin.lifecycle.healthCheck()
+        : { status: 'healthy' as const, details: { adapter: 'built-in' } };
+      const checkedAt = infrastructure.clock.now().toISOString();
       return {
-        ...installed,
-        lifecycle: lifecycleHealth,
-        checkedAt: infrastructure.clock.now().toISOString()
+        ...diagnostics,
+        lastHealth: { status: lifecycleHealth.status, checkedAt }
       };
     }
   };
@@ -300,7 +327,8 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
       disable: new DisablePluginUseCase(authorization, pluginActivation, invalidation),
       remove: new RemovePluginUseCase(authorization, pluginStore, invalidation),
       test: new TestPluginUseCase(authorization, healthAdministration),
-      health: new GetPluginHealthUseCase(authorization, healthAdministration)
+      health: new GetPluginHealthUseCase(authorization, healthAdministration),
+      diagnostics: new GetPluginDiagnosticsUseCase(authorization, healthAdministration)
     },
     credentials: {
       create: new CreateCredentialUseCase(

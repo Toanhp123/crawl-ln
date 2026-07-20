@@ -54,6 +54,14 @@ export const env = {
   sourceReaderBrowserExecutable: process.env.SOURCE_READER_BROWSER_EXECUTABLE || undefined,
   sourceReaderNetworkDiagnosticUrl:
     process.env.SOURCE_READER_NETWORK_DIAGNOSTIC_URL ?? 'https://example.com/',
+  sourceReaderExternalProcessStartTimeoutMs: numberEnv(
+    'SOURCE_READER_EXTERNAL_PROCESS_START_TIMEOUT_MS',
+    10_000
+  ),
+  sourceReaderPluginPolicyViolationThreshold: numberEnv(
+    'SOURCE_READER_PLUGIN_POLICY_VIOLATION_THRESHOLD',
+    3
+  ),
   sourceReaderDefaultRoles: jsonEnv<
     Array<'reader' | 'source-manager' | 'source-admin' | 'system-admin'>
   >('SOURCE_READER_DEFAULT_ROLES_JSON', [

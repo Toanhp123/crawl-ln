@@ -15,6 +15,7 @@ test('source reader routes expose approved reader and administration surface', a
     '/search',
     '/latest-updates',
     '/plugins',
+    '/plugins/:pluginId',
     '/credentials',
     '/network-profiles',
     '/auth/challenges'

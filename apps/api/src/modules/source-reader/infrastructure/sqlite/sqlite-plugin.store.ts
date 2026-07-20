@@ -287,6 +287,21 @@ export class SqlitePluginStore implements PluginStorePort {
     return row ? storedVersion(row) : undefined;
   }
 
+  async findLatestVersion(pluginId: string): Promise<StoredPluginVersion | undefined> {
+    const row = this.database.connection
+      .prepare(
+        `SELECT plugin_id, version, trust_level, status, package_path,
+                checksum, signature_status, manifest_json, compatibility_issues_json,
+                activated_extensions_json, sandbox_protocol_version
+         FROM source_reader_plugin_versions
+         WHERE plugin_id=?
+         ORDER BY installed_at DESC, version DESC
+         LIMIT 1`
+      )
+      .get(pluginId) as StoredVersionRow | undefined;
+    return row ? storedVersion(row) : undefined;
+  }
+
   async findActive(pluginId: string): Promise<StoredPluginVersion | undefined> {
     const row = this.database.connection
       .prepare(

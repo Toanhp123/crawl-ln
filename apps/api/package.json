@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "node --experimental-sqlite --watch --import tsx src/main.ts",
-    "build": "cd ../.. && npm run build -w @novel-tool/shared && cd apps/api && tsc -p tsconfig.json && mkdir -p dist/modules/source-reader/infrastructure/runtime/external-process && cp src/modules/source-reader/infrastructure/runtime/external-process/sandbox-entry.mjs dist/modules/source-reader/infrastructure/runtime/external-process/sandbox-entry.mjs",
+    "build": "tsc -p tsconfig.json && mkdir -p dist/modules/source-reader/infrastructure/runtime/external-process && cp src/modules/source-reader/infrastructure/runtime/external-process/sandbox-entry.mjs dist/modules/source-reader/infrastructure/runtime/external-process/sandbox-entry.mjs",
     "start": "node --experimental-sqlite dist/main.js",
-    "check": "cd ../.. && npm run check -w @novel-tool/shared && cd apps/api && tsc -p tsconfig.json --noEmit",
+    "check": "tsc -p tsconfig.json --noEmit",
     "db:reset": "node scripts/reset-db.mjs"
   },
   "dependencies": {

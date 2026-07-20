@@ -3,6 +3,7 @@ import type {
   SessionHandle,
   SessionRepository
 } from '../../application/ports/session.repository.js';
+import type { SourceReaderInvalidationEvent } from '../../application/ports/source-reader-invalidation.port.js';
 import type { SealedSecret, SecretVault } from '../../application/ports/secret-vault.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import { sealJson, unsealJson } from './encrypted-json.js';
@@ -204,6 +205,43 @@ export class SqliteSessionRepository implements SessionRepository {
     this.database.connection
       .prepare("UPDATE source_reader_sessions SET status='revoked' WHERE network_profile_id=?")
       .run(networkProfileId);
+  }
+
+  async revokeMatching(event: SourceReaderInvalidationEvent): Promise<number> {
+    let sql: string | undefined;
+    let parameters: string[] = [];
+    switch (event.type) {
+      case 'credential-updated':
+      case 'credential-deleted':
+      case 'logout':
+        sql =
+          "UPDATE source_reader_sessions SET status='revoked' WHERE credential_profile_id=? AND status='active'";
+        parameters = [event.credentialId];
+        break;
+      case 'session-revoked':
+        sql = "UPDATE source_reader_sessions SET status='revoked' WHERE id=? AND status='active'";
+        parameters = [event.sessionId];
+        break;
+      case 'network-profile-updated':
+      case 'network-profile-deleted':
+        sql =
+          "UPDATE source_reader_sessions SET status='revoked' WHERE network_profile_id=? AND status='active'";
+        parameters = [event.networkIdentity];
+        break;
+      case 'plugin-activated':
+      case 'plugin-upgraded':
+      case 'plugin-disabled':
+      case 'plugin-quarantined':
+        sql = event.pluginVersion
+          ? "UPDATE source_reader_sessions SET status='revoked' WHERE plugin_id=? AND plugin_version=? AND status='active'"
+          : "UPDATE source_reader_sessions SET status='revoked' WHERE plugin_id=? AND status='active'";
+        parameters = event.pluginVersion ? [event.pluginId, event.pluginVersion] : [event.pluginId];
+        break;
+      case 'chapter-list-version-changed':
+        return 0;
+    }
+    const result = this.database.connection.prepare(sql).run(...parameters);
+    return Number(result.changes);
   }
 
   async expireBefore(now: string): Promise<number> {

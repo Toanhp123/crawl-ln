@@ -22,6 +22,7 @@ test('source reader owns required tables and indexes', () => {
   assert.deepEqual(tables, [
     'source_reader_auth_challenges',
     'source_reader_cache_entries',
+    'source_reader_cache_tags',
     'source_reader_credentials',
     'source_reader_health_checks',
     'source_reader_installations',

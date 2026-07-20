@@ -9,6 +9,7 @@ import type {
 import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.port.js';
 import type { PluginRegistryPort } from '../ports/plugin-registry.port.js';
 import type { SessionRepository } from '../ports/session.repository.js';
+import type { SourceReaderInvalidationPort } from '../ports/source-reader-invalidation.port.js';
 import type {
   AuthExecutionResult,
   AuthenticationStrategy
@@ -50,7 +51,8 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
         state: Record<string, unknown>;
       }): Promise<AuthChallengeHandle>;
     },
-    private readonly routes?: NetworkRouteResolverPort
+    private readonly routes?: NetworkRouteResolverPort,
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
 
   async login(input: LoginInput): Promise<AuthExecutionResult> {
@@ -139,6 +141,10 @@ export class AuthenticationOrchestratorService implements AuthenticationRuntimeP
 
   async logout(input: { credentialProfileId: string }): Promise<void> {
     await this.sessions.revokeByCredential(input.credentialProfileId);
+    await this.invalidation?.invalidate({
+      type: 'logout',
+      credentialId: input.credentialProfileId
+    });
   }
 
   private async authenticateCustom(

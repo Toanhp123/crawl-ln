@@ -1,5 +1,6 @@
 import type { ClockPort } from '../../../../../shared/ports/clock.port.js';
 import type { SourceReaderActor } from '../../ports/source-reader-actor.port.js';
+import type { SourceReaderInvalidationPort } from '../../ports/source-reader-invalidation.port.js';
 import type { SourceReaderAuthorizationPolicy } from '../../policies/source-reader-authorization.policy.js';
 
 export interface PluginAdministrationStore {
@@ -103,37 +104,47 @@ export class ListPluginPermissionsUseCase {
 export class EnablePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
-    private readonly activation: Pick<PluginActivationAdministration, 'activate'>
+    private readonly activation: Pick<PluginActivationAdministration, 'activate'>,
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string; version: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
-    return this.activation.activate({
+    const result = await this.activation.activate({
       pluginId: input.pluginId,
       version: input.version,
       signal: new AbortController().signal
     });
+    await this.invalidation?.invalidate({
+      type: 'plugin-activated',
+      pluginId: input.pluginId
+    });
+    return result;
   }
 }
 
 export class DisablePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
-    private readonly activation: Pick<PluginActivationAdministration, 'disable'>
+    private readonly activation: Pick<PluginActivationAdministration, 'disable'>,
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
     await this.activation.disable(input.pluginId);
+    await this.invalidation?.invalidate({ type: 'plugin-disabled', pluginId: input.pluginId });
   }
 }
 
 export class RemovePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
-    private readonly store: Pick<PluginAdministrationStore, 'remove'>
+    private readonly store: Pick<PluginAdministrationStore, 'remove'>,
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
     await this.store.remove(input.pluginId);
+    await this.invalidation?.invalidate({ type: 'plugin-disabled', pluginId: input.pluginId });
   }
 }
 
@@ -162,7 +173,8 @@ export class GetPluginHealthUseCase {
 export class QuarantinePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
-    private readonly activation: Pick<PluginActivationAdministration, 'quarantine'>
+    private readonly activation: Pick<PluginActivationAdministration, 'quarantine'>,
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: {
     actor: SourceReaderActor;
@@ -172,5 +184,10 @@ export class QuarantinePluginUseCase {
   }) {
     this.authorization.requireRole(input.actor, 'source-admin');
     await this.activation.quarantine(input.pluginId, input.version, input.reason);
+    await this.invalidation?.invalidate({
+      type: 'plugin-quarantined',
+      pluginId: input.pluginId,
+      pluginVersion: input.version
+    });
   }
 }

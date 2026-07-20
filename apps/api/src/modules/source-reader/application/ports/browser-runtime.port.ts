@@ -1,3 +1,4 @@
+import type { SourceReaderInvalidationEvent } from './source-reader-invalidation.port.js';
 import type { ResolvedNetworkRoute } from './network-route.port.js';
 
 export interface BrowserSessionIdentity {
@@ -36,4 +37,5 @@ export interface BrowserRuntimePort {
     signal: AbortSignal;
   }): Promise<BrowserSessionHandle>;
   closeByIdentity(identity: BrowserSessionIdentity): Promise<void>;
+  closeMatching(event: SourceReaderInvalidationEvent): Promise<number>;
 }

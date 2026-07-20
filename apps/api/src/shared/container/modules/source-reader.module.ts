@@ -7,6 +7,8 @@ import { SOURCE_READER_HOST_COMPATIBILITY } from '../../../modules/source-reader
 import { PluginActivationService } from '../../../modules/source-reader/application/services/plugin-activation.service.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
+import { SourceReaderInvalidationService } from '../../../modules/source-reader/application/services/source-reader-invalidation.service.js';
+import { PublicCacheRefreshService } from '../../../modules/source-reader/application/services/public-cache-refresh.service.js';
 import { SourceReaderService } from '../../../modules/source-reader/application/services/source-reader.service.js';
 import { SourceReaderCircuitBreaker } from '../../../modules/source-reader/application/services/source-reader-circuit-breaker.js';
 import { SourceReaderRateLimiter } from '../../../modules/source-reader/application/services/source-reader-rate-limiter.js';
@@ -123,10 +125,8 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     { pluginStore, registry }
   );
   const persistentCache = new SqliteReaderCache(infrastructure.database);
-  const cache = new TieredReaderCache(
-    new MemoryReaderCache(env.sourceReaderMemoryCacheEntries),
-    persistentCache
-  );
+  const memoryCache = new MemoryReaderCache(env.sourceReaderMemoryCacheEntries);
+  const cache = new TieredReaderCache(memoryCache, persistentCache);
   const routes = new NetworkRouteResolver(networks);
   const http = new RouteAwareHttpClientAdapter(new ProxyAgentFactory(20));
   const runtimeContexts = new RuntimeContextResolverService(
@@ -154,6 +154,20 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
       return value;
     }
   });
+  const invalidation = new SourceReaderInvalidationService(
+    sessions,
+    browser,
+    memoryCache,
+    persistentCache,
+    {
+      invalidationFinished(input) {
+        infrastructure.logger.info(
+          JSON.stringify({ event: 'source_reader.invalidation_finished', ...input })
+        );
+      }
+    }
+  );
+  const publicRefresh = new PublicCacheRefreshService();
   const challengeService = new AuthChallengeService(
     challenges,
     browser,
@@ -178,7 +192,8 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     registry,
     pluginContexts,
     challengeService,
-    routes
+    routes,
+    invalidation
   );
   const maintenance = new SourceReaderMaintenanceService(
     persistentCache,
@@ -211,7 +226,9 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     browser,
     new InProcessSourceReaderObservability(infrastructure.logger),
     new SourceReaderCircuitBreaker({ failureThreshold: 5, openMs: 60_000 }),
-    new SourceReaderRateLimiter({ maxConcurrent: 2, minimumDelayMs: 100 }, infrastructure.clock)
+    new SourceReaderRateLimiter({ maxConcurrent: 2, minimumDelayMs: 100 }, infrastructure.clock),
+    publicRefresh,
+    invalidation
   ) satisfies SourceReaderApi;
 
   const authorization = new SourceReaderAuthorizationPolicy();
@@ -267,9 +284,9 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
       ),
       denyPermissions: new DenyPluginPermissionsUseCase(authorization, pluginStore),
       listPermissions: new ListPluginPermissionsUseCase(authorization, pluginStore),
-      enable: new EnablePluginUseCase(authorization, pluginActivation),
-      disable: new DisablePluginUseCase(authorization, pluginActivation),
-      remove: new RemovePluginUseCase(authorization, pluginStore),
+      enable: new EnablePluginUseCase(authorization, pluginActivation, invalidation),
+      disable: new DisablePluginUseCase(authorization, pluginActivation, invalidation),
+      remove: new RemovePluginUseCase(authorization, pluginStore, invalidation),
       test: new TestPluginUseCase(authorization, healthAdministration),
       health: new GetPluginHealthUseCase(authorization, healthAdministration)
     },
@@ -285,9 +302,10 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
         authorization,
         credentials,
         sessions,
-        infrastructure.clock
+        infrastructure.clock,
+        invalidation
       ),
-      remove: new DeleteCredentialUseCase(authorization, credentials, sessions),
+      remove: new DeleteCredentialUseCase(authorization, credentials, sessions, invalidation),
       login: new LoginCredentialUseCase(authorization, loginDependencies),
       logout: new LogoutCredentialUseCase(authorization, authentication),
       test: new TestCredentialUseCase(authorization, loginDependencies)
@@ -300,8 +318,13 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
         infrastructure.clock
       ),
       list: new ListNetworkProfilesUseCase(authorization, networks),
-      update: new UpdateNetworkProfileUseCase(authorization, networks, infrastructure.clock),
-      remove: new DeleteNetworkProfileUseCase(authorization, networks, sessions),
+      update: new UpdateNetworkProfileUseCase(
+        authorization,
+        networks,
+        infrastructure.clock,
+        invalidation
+      ),
+      remove: new DeleteNetworkProfileUseCase(authorization, networks, sessions, invalidation),
       test: new TestNetworkProfileUseCase(authorization, networkTester)
     },
     challenges: {

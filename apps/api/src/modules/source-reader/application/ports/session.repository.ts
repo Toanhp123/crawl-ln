@@ -1,3 +1,4 @@
+import type { SourceReaderInvalidationEvent } from './source-reader-invalidation.port.js';
 export interface SessionHandle {
   id: string;
   pluginId: string;
@@ -27,5 +28,6 @@ export interface SessionRepository {
   resolveMaterial(handle: SessionHandle): Promise<Record<string, unknown>>;
   revokeByCredential(credentialProfileId: string): Promise<void>;
   revokeByNetworkProfile(networkProfileId: string): Promise<void>;
+  revokeMatching(event: SourceReaderInvalidationEvent): Promise<number>;
   expireBefore(now: string): Promise<number>;
 }

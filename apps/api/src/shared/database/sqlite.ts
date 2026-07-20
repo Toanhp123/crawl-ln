@@ -530,6 +530,32 @@ const migrations: Migration[] = [
         ['sandbox_protocol_version', 'INTEGER']
       ]);
     }
+  },
+  {
+    version: 21,
+    up(db) {
+      addColumns(db, 'source_reader_cache_entries', [
+        ['extension_contract_versions_json', "TEXT NOT NULL DEFAULT '{}'"],
+        ['network_identity_hash', 'TEXT']
+      ]);
+      db.exec(`
+        UPDATE source_reader_cache_entries
+           SET network_identity_hash=network_scope_hash
+         WHERE network_identity_hash IS NULL;
+        CREATE TABLE source_reader_cache_tags (
+          cache_key TEXT NOT NULL,
+          tag TEXT NOT NULL,
+          PRIMARY KEY(cache_key, tag),
+          FOREIGN KEY(cache_key) REFERENCES source_reader_cache_entries(cache_key) ON DELETE CASCADE
+        );
+        CREATE INDEX idx_source_reader_cache_tags_tag
+          ON source_reader_cache_tags(tag, cache_key);
+        INSERT OR IGNORE INTO source_reader_cache_tags(cache_key, tag)
+          SELECT source_reader_cache_entries.cache_key, json_each.value
+            FROM source_reader_cache_entries, json_each(source_reader_cache_entries.tags_json)
+           WHERE json_each.type='text';
+      `);
+    }
   }
 ];
 

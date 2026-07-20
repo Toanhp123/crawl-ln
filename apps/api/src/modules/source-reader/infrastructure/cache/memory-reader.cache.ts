@@ -29,7 +29,7 @@ export class MemoryReaderCache implements ReaderCachePort {
   async invalidate(tags: string[]): Promise<void> {
     const requested = new Set(tags);
     for (const [key, entry] of this.entries) {
-      if (entry.tags.some((tag) => requested.has(tag))) this.entries.delete(key);
+      if (entry.metadata.tags.some((tag) => requested.has(tag))) this.entries.delete(key);
     }
   }
 }

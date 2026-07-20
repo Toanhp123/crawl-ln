@@ -6,6 +6,7 @@ import type {
 } from '../../ports/network-profile.repository.js';
 import type { SessionRepository } from '../../ports/session.repository.js';
 import type { SourceReaderActor } from '../../ports/source-reader-actor.port.js';
+import type { SourceReaderInvalidationPort } from '../../ports/source-reader-invalidation.port.js';
 import type { SourceReaderAuthorizationPolicy } from '../../policies/source-reader-authorization.policy.js';
 
 export type NetworkProfileAdministrationRepository = NetworkProfileRepository;
@@ -89,7 +90,8 @@ export class UpdateNetworkProfileUseCase {
       NetworkProfileAdministrationRepository,
       'requireHandle' | 'update'
     >,
-    private readonly clock: ClockPort
+    private readonly clock: ClockPort,
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: {
     actor: SourceReaderActor;
@@ -99,6 +101,10 @@ export class UpdateNetworkProfileUseCase {
     const current = await this.profiles.requireHandle(input.profileId);
     this.authorization.assertNetworkAccess(input.actor, current);
     await this.profiles.update(input.profileId, input.patch, this.clock.now().toISOString());
+    await this.invalidation?.invalidate({
+      type: 'network-profile-updated',
+      networkIdentity: input.profileId
+    });
   }
 }
 
@@ -109,13 +115,18 @@ export class DeleteNetworkProfileUseCase {
       NetworkProfileAdministrationRepository,
       'requireHandle' | 'delete'
     >,
-    private readonly sessions: { revokeByNetworkProfile(profileId: string): Promise<void> }
+    private readonly sessions: { revokeByNetworkProfile(profileId: string): Promise<void> },
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: { actor: SourceReaderActor; profileId: string }) {
     const current = await this.profiles.requireHandle(input.profileId);
     this.authorization.assertNetworkAccess(input.actor, current);
-    await this.sessions.revokeByNetworkProfile(input.profileId);
+    if (!this.invalidation) await this.sessions.revokeByNetworkProfile(input.profileId);
     await this.profiles.delete(input.profileId);
+    await this.invalidation?.invalidate({
+      type: 'network-profile-deleted',
+      networkIdentity: input.profileId
+    });
   }
 }
 

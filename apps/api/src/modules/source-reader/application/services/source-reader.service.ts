@@ -5,7 +5,8 @@ import type { CursorCodecPort, CursorPayload } from '../ports/cursor-codec.port.
 import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.port.js';
 import type { PluginCandidate, PluginRegistryPort } from '../ports/plugin-registry.port.js';
 import type { PluginRuntimePort } from '../ports/plugin-runtime.port.js';
-import type { ReaderCachePort } from '../ports/reader-cache.port.js';
+import type { ReaderCacheMetadata, ReaderCachePort } from '../ports/reader-cache.port.js';
+import type { SourceReaderInvalidationPort } from '../ports/source-reader-invalidation.port.js';
 import type { SourceReaderObservabilityPort } from '../ports/source-reader-observability.port.js';
 import type {
   ResolvedRuntimeContext,
@@ -41,6 +42,7 @@ import {
 import { buildSourceReaderCacheKey, resolveCacheScopeIdentity } from './source-reader-cache-key.js';
 import { SourceReaderCircuitBreaker } from './source-reader-circuit-breaker.js';
 import type { SourceReaderRateLimiterPort } from './source-reader-rate-limiter.js';
+import { PublicCacheRefreshService } from './public-cache-refresh.service.js';
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
@@ -151,7 +153,9 @@ export class SourceReaderService implements SourceReaderApi {
       failureThreshold: 5,
       openMs: 60_000
     }),
-    private readonly rateLimiter: SourceReaderRateLimiterPort = unlimitedRateLimiter
+    private readonly rateLimiter: SourceReaderRateLimiterPort = unlimitedRateLimiter,
+    private readonly publicRefresh: PublicCacheRefreshService = new PublicCacheRefreshService(),
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
 
   identify(request: IdentifyRequest) {
@@ -272,16 +276,38 @@ export class SourceReaderService implements SourceReaderApi {
         }
         if (!request.freshOnly) {
           for (const scope of this.cacheLookupScopes(runtimeContext)) {
-            const cached = await this.cache.get<SourceReaderResult<T>>(
-              this.cacheKey(capability, candidate, request, runtimeContext, scope)
-            );
-            if (cached && cached.expiresAt > this.clock.now().getTime()) {
+            const cacheKey = this.cacheKey(capability, candidate, request, runtimeContext, scope);
+            const cached = await this.cache.get<SourceReaderResult<T>>(cacheKey);
+            const now = this.clock.now().getTime();
+            if (cached && cached.expiresAt > now) {
               this.observability.cacheHit({
                 pluginId: candidate.plugin.manifest.id,
                 capability,
                 stale: false
               });
               return cached.value;
+            }
+            if (
+              cached &&
+              scope === 'public' &&
+              cached.staleUntil !== undefined &&
+              cached.staleUntil > now
+            ) {
+              this.observability.cacheHit({
+                pluginId: candidate.plugin.manifest.id,
+                capability,
+                stale: true
+              });
+              this.publicRefresh.schedule(cacheKey, () =>
+                this.execute(capability, { ...request, freshOnly: true })
+              );
+              return {
+                ...cached.value,
+                warnings: [
+                  ...(cached.value.warnings ?? []),
+                  { code: 'STALE_CACHE_USED', message: 'A stale public cache entry was used' }
+                ]
+              };
             }
           }
         }
@@ -434,29 +460,50 @@ export class SourceReaderService implements SourceReaderApi {
         );
         if (ttlMs > 0 && effectiveScope !== 'none') {
           const now = this.clock.now().getTime();
-          await this.cache.set(
-            this.cacheKey(capability, candidate, request, runtimeContext, effectiveScope),
-            {
-              value: result,
-              expiresAt: now + ttlMs,
-              staleUntil: operation.cacheHints?.staleWhileRevalidateMs
-                ? now + ttlMs + operation.cacheHints.staleWhileRevalidateMs
-                : undefined,
-              tags: [
-                `plugin:${candidate.plugin.manifest.id}`,
-                `domain:${candidate.domain}`,
-                `capability:${capability}`,
-                ...(runtimeContext.credential
-                  ? [`credential:${runtimeContext.credential.id}`]
-                  : []),
-                ...(runtimeContext.session ? [`session:${runtimeContext.session.id}`] : []),
-                ...(runtimeContext.networkRoute
-                  ? [`network:${runtimeContext.networkRoute.id}`]
-                  : []),
-                ...(operation.cacheHints?.tags ?? [])
-              ]
-            }
+          const cacheKey = this.cacheKey(
+            capability,
+            candidate,
+            request,
+            runtimeContext,
+            effectiveScope
           );
+          const tags = this.cacheTags(
+            capability,
+            candidate,
+            runtimeContext,
+            operation.cacheHints?.tags ?? []
+          );
+          const previous =
+            capability === 'chapter-list'
+              ? await this.cache.get<SourceReaderResult<T>>(cacheKey)
+              : undefined;
+          const chapterListChanged =
+            capability === 'chapter-list' &&
+            previous !== undefined &&
+            this.chapterListFingerprint(previous.value.data) !==
+              this.chapterListFingerprint(result.data);
+          if (chapterListChanged) {
+            await this.invalidation?.invalidate({
+              type: 'chapter-list-version-changed',
+              pluginId: candidate.plugin.manifest.id,
+              normalizedUrl: candidate.normalizedUrl
+            });
+          }
+          await this.cache.set(cacheKey, {
+            value: result,
+            expiresAt: now + ttlMs,
+            ...(effectiveScope === 'public' && operation.cacheHints?.staleWhileRevalidateMs
+              ? { staleUntil: now + ttlMs + operation.cacheHints.staleWhileRevalidateMs }
+              : {}),
+            metadata: this.cacheMetadata(
+              capability,
+              candidate,
+              request,
+              runtimeContext,
+              effectiveScope,
+              tags
+            )
+          });
         }
         return result;
       } catch (error) {
@@ -663,6 +710,74 @@ export class SourceReaderService implements SourceReaderApi {
     }
 
     return { items, nextCursor, hasMore: nextCursor !== undefined };
+  }
+
+  private cacheTags(
+    capability: Exclude<SourceCapability, 'authentication'>,
+    candidate: PluginCandidate,
+    runtime: ResolvedRuntimeContext,
+    extra: string[]
+  ): string[] {
+    return [
+      `plugin:${candidate.plugin.manifest.id}`,
+      `plugin-version:${candidate.plugin.manifest.id}@${candidate.plugin.manifest.version}`,
+      `domain:${candidate.domain}`,
+      `capability:${capability}`,
+      ...(runtime.credential ? [`credential:${runtime.credential.id}`] : []),
+      ...(runtime.cacheIdentity.user ? [`user:${runtime.cacheIdentity.user}`] : []),
+      ...(runtime.session ? [`session:${runtime.session.id}`] : []),
+      `network:${runtime.cacheIdentity.network}`,
+      ...(runtime.networkRoute ? [`network-profile:${runtime.networkRoute.id}`] : []),
+      ...(capability === 'chapter-list'
+        ? [`chapter-list:${candidate.plugin.manifest.id}:${candidate.normalizedUrl}`]
+        : []),
+      ...extra
+    ];
+  }
+
+  private cacheMetadata(
+    capability: Exclude<SourceCapability, 'authentication'>,
+    candidate: PluginCandidate,
+    request: ExecutableRequest,
+    runtime: ResolvedRuntimeContext,
+    scope: Exclude<CacheScope, 'none'>,
+    tags: string[]
+  ): ReaderCacheMetadata {
+    const scopeIdentity = resolveCacheScopeIdentity(runtime.cacheIdentity, scope);
+    return {
+      pluginId: candidate.plugin.manifest.id,
+      pluginVersion: candidate.plugin.manifest.version,
+      capability,
+      contractVersion: String(candidate.plugin.manifest.contracts[capability] ?? 0),
+      extensionContractVersions: activatedExtensionVersions(candidate.activatedExtensionContracts),
+      requestFingerprint: this.fingerprint({
+        normalizedUrl: candidate.normalizedUrl,
+        requestParameters: this.cacheableRequest(request)
+      }),
+      normalizedUrl: candidate.normalizedUrl,
+      scope,
+      scopeIdentityHash: this.fingerprint(scopeIdentity),
+      networkIdentityHash: this.fingerprint(runtime.cacheIdentity.network),
+      tags
+    };
+  }
+
+  private chapterListFingerprint(value: unknown): string {
+    if (!value || typeof value !== 'object' || !('items' in value) || !Array.isArray(value.items)) {
+      return this.fingerprint([]);
+    }
+    return this.fingerprint(
+      value.items.map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        const chapter = item as Record<string, unknown>;
+        return {
+          index: chapter.index,
+          title: chapter.title,
+          url: chapter.url,
+          publishedAt: chapter.publishedAt
+        };
+      })
+    );
   }
 
   private cacheLookupScopes(runtime: ResolvedRuntimeContext): CacheScope[] {

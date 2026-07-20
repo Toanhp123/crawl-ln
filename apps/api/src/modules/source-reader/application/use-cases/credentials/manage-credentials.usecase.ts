@@ -5,6 +5,7 @@ import type { NetworkProfileRepository } from '../../ports/network-profile.repos
 import type { PluginStorePort } from '../../ports/plugin-store.port.js';
 import type { SessionRepository } from '../../ports/session.repository.js';
 import type { SourceReaderActor } from '../../ports/source-reader-actor.port.js';
+import type { SourceReaderInvalidationPort } from '../../ports/source-reader-invalidation.port.js';
 import type { SourceReaderAuthorizationPolicy } from '../../policies/source-reader-authorization.policy.js';
 import type { AuthenticationOrchestratorService } from '../../services/authentication-orchestrator.service.js';
 import { SourceReaderError } from '../../../domain/errors/source-reader.error.js';
@@ -71,7 +72,8 @@ export class UpdateCredentialSecretUseCase {
       'requireHandle' | 'updateSecret'
     >,
     private readonly sessions: Pick<SessionRepository, 'revokeByCredential'>,
-    private readonly clock: ClockPort
+    private readonly clock: ClockPort,
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: {
     actor: SourceReaderActor;
@@ -85,7 +87,14 @@ export class UpdateCredentialSecretUseCase {
       input.secret,
       this.clock.now().toISOString()
     );
-    await this.sessions.revokeByCredential(input.credentialId);
+    if (this.invalidation) {
+      await this.invalidation.invalidate({
+        type: 'credential-updated',
+        credentialId: input.credentialId
+      });
+    } else {
+      await this.sessions.revokeByCredential(input.credentialId);
+    }
   }
 }
 
@@ -96,13 +105,18 @@ export class DeleteCredentialUseCase {
       CredentialAdministrationRepository,
       'requireHandle' | 'delete'
     >,
-    private readonly sessions: Pick<SessionRepository, 'revokeByCredential'>
+    private readonly sessions: Pick<SessionRepository, 'revokeByCredential'>,
+    private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: { actor: SourceReaderActor; credentialId: string }) {
     const handle = await this.credentials.requireHandle(input.credentialId);
     this.authorization.assertCredentialAccess(input.actor, handle);
-    await this.sessions.revokeByCredential(input.credentialId);
+    if (!this.invalidation) await this.sessions.revokeByCredential(input.credentialId);
     await this.credentials.delete(input.credentialId);
+    await this.invalidation?.invalidate({
+      type: 'credential-deleted',
+      credentialId: input.credentialId
+    });
   }
 }
 

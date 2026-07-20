@@ -1,8 +1,22 @@
+export interface ReaderCacheMetadata {
+  pluginId: string;
+  pluginVersion: string;
+  capability: string;
+  contractVersion: string;
+  extensionContractVersions: Record<string, string>;
+  requestFingerprint: string;
+  normalizedUrl?: string;
+  scope: 'public' | 'account' | 'user' | 'session';
+  scopeIdentityHash: string;
+  networkIdentityHash: string;
+  tags: string[];
+}
+
 export interface ReaderCacheEntry<T> {
   value: T;
   expiresAt: number;
   staleUntil?: number;
-  tags: string[];
+  metadata: ReaderCacheMetadata;
 }
 
 export interface ReaderCachePort {

@@ -6,6 +6,7 @@ import type {
   BrowserSessionHandle,
   BrowserSessionIdentity
 } from '../../../application/ports/browser-runtime.port.js';
+import type { SourceReaderInvalidationEvent } from '../../../application/ports/source-reader-invalidation.port.js';
 import type { BrowserCommand, BrowserCommandPayload, BrowserEvent } from './browser-protocol.js';
 
 interface BrowserCoordinatorOptions {
@@ -204,14 +205,17 @@ class WorkerBackedBrowserSession implements BrowserSessionHandle {
 }
 
 export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
-  private readonly sessions = new Map<string, WorkerBackedBrowserSession>();
+  private readonly sessions = new Map<
+    string,
+    { identity: BrowserSessionIdentity; session: WorkerBackedBrowserSession }
+  >();
 
   constructor(private readonly options: BrowserCoordinatorOptions = {}) {}
 
   async open(input: Parameters<BrowserRuntimePort['open']>[0]): Promise<BrowserSessionHandle> {
     const key = browserSessionIdentityKey(input.identity);
     const existing = this.sessions.get(key);
-    if (existing) return existing;
+    if (existing) return existing.session;
     const session = new WorkerBackedBrowserSession({
       allowedHosts: input.allowedHosts,
       signal: input.signal,
@@ -223,11 +227,42 @@ export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
       commandTimeoutMs: this.options.commandTimeoutMs ?? 30_000,
       onClosed: () => this.sessions.delete(key)
     });
-    this.sessions.set(key, session);
+    this.sessions.set(key, { identity: input.identity, session });
     return session;
   }
 
   async closeByIdentity(identity: BrowserSessionIdentity): Promise<void> {
-    await this.sessions.get(browserSessionIdentityKey(identity))?.close();
+    await this.sessions.get(browserSessionIdentityKey(identity))?.session.close();
+  }
+
+  async closeMatching(event: SourceReaderInvalidationEvent): Promise<number> {
+    const matching = [...this.sessions.values()].filter(({ identity }) => {
+      switch (event.type) {
+        case 'credential-updated':
+        case 'credential-deleted':
+        case 'logout':
+          return identity.credentialId === event.credentialId;
+        case 'session-revoked':
+          return identity.sessionId === event.sessionId;
+        case 'network-profile-updated':
+        case 'network-profile-deleted':
+          return (
+            identity.networkRouteId === event.networkIdentity ||
+            identity.networkIdentity === event.networkIdentity
+          );
+        case 'plugin-activated':
+        case 'plugin-upgraded':
+        case 'plugin-disabled':
+        case 'plugin-quarantined':
+          return (
+            identity.pluginId === event.pluginId &&
+            (!event.pluginVersion || identity.pluginVersion === event.pluginVersion)
+          );
+        case 'chapter-list-version-changed':
+          return false;
+      }
+    });
+    await Promise.all(matching.map(({ session }) => session.close()));
+    return matching.length;
   }
 }

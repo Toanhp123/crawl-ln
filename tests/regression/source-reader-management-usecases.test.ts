@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  EnablePluginUseCase,
   InstallSourcePluginUseCase,
   ListPluginsUseCase
 } from '../../apps/api/src/modules/source-reader/application/use-cases/plugins/manage-source-plugins.usecase.ts';
@@ -8,7 +9,10 @@ import {
   CreateCredentialUseCase,
   UpdateCredentialSecretUseCase
 } from '../../apps/api/src/modules/source-reader/application/use-cases/credentials/manage-credentials.usecase.ts';
-import { CreateNetworkProfileUseCase } from '../../apps/api/src/modules/source-reader/application/use-cases/network/manage-network-profiles.usecase.ts';
+import {
+  CreateNetworkProfileUseCase,
+  UpdateNetworkProfileUseCase
+} from '../../apps/api/src/modules/source-reader/application/use-cases/network/manage-network-profiles.usecase.ts';
 import { RespondAuthChallengeUseCase } from '../../apps/api/src/modules/source-reader/application/use-cases/auth-challenges/manage-auth-challenges.usecase.ts';
 
 const actor = { id: 'user-1', roles: ['source-admin'] as const };
@@ -89,6 +93,57 @@ test('updating credential secret revokes dependent sessions', async () => {
     clock
   ).execute({ actor, credentialId: 'c1', secret: { token: 'new' } });
   assert.deepEqual(calls, ['authorize', 'update', 'revoke']);
+});
+
+test('credential, network, and plugin mutations invalidate only after persistence succeeds', async () => {
+  const calls: string[] = [];
+  const invalidation = {
+    invalidate: async (event: { type: string }) => calls.push(`invalidate:${event.type}`)
+  };
+
+  await new UpdateCredentialSecretUseCase(
+    { assertCredentialAccess: () => calls.push('credential:authorize') } as never,
+    {
+      requireHandle: async () => ({ id: 'c1', ownerType: 'user', ownerId: 'user-1' }),
+      updateSecret: async () => calls.push('credential:update')
+    } as never,
+    { revokeByCredential: async () => calls.push('credential:legacy-revoke') } as never,
+    clock,
+    invalidation
+  ).execute({ actor, credentialId: 'c1', secret: { token: 'new' } });
+
+  await new UpdateNetworkProfileUseCase(
+    { assertNetworkAccess: () => calls.push('network:authorize') } as never,
+    {
+      requireHandle: async () => ({ id: 'n1', ownerType: 'user', ownerId: 'user-1' }),
+      update: async () => calls.push('network:update')
+    } as never,
+    clock,
+    invalidation
+  ).execute({ actor, profileId: 'n1', patch: { name: 'Updated' } });
+
+  await new EnablePluginUseCase(
+    { requireRole: () => calls.push('plugin:authorize') } as never,
+    {
+      activate: async () => {
+        calls.push('plugin:activate');
+        return { status: 'active' };
+      }
+    },
+    invalidation
+  ).execute({ actor, pluginId: 'demo', version: '2.0.0' });
+
+  assert.deepEqual(calls, [
+    'credential:authorize',
+    'credential:update',
+    'invalidate:credential-updated',
+    'network:authorize',
+    'network:update',
+    'invalidate:network-profile-updated',
+    'plugin:authorize',
+    'plugin:activate',
+    'invalidate:plugin-activated'
+  ]);
 });
 
 test('network profile creation enforces ownership and returns metadata only', async () => {

@@ -21,6 +21,7 @@ interface ActivationStore extends Pick<
   | 'findActive'
   | 'permissionsApproved'
   | 'activateCandidateAtomically'
+  | 'restoreActivation'
   | 'recordActivationFailure'
   | 'disable'
   | 'quarantine'
@@ -129,17 +130,25 @@ export class PluginActivationService {
         candidate.packagePath,
         candidate.activatedExtensions ?? {}
       );
+      const previousRegistry = this.registry.snapshot();
       const prepared = this.registry.prepareRegistration(
-        this.registry.snapshot(),
+        previousRegistry,
         this.registration(candidate, this.lifecycleProxy(candidate), activatedExtensionContracts)
       );
       phase = 'publish';
+      const publishedAt = this.clock.now().toISOString();
       await this.store.activateCandidateAtomically(
         candidate.pluginId,
         candidate.version,
-        this.clock.now().toISOString()
+        publishedAt
       );
-      this.registry.publishPrepared(prepared);
+      try {
+        this.registry.publishPrepared(prepared);
+      } catch (error) {
+        this.restoreRegistry(previousRegistry);
+        await this.store.restoreActivation(candidate.pluginId, previous?.version, publishedAt);
+        throw error;
+      }
     } catch (error) {
       await handle.terminate('activation-failed').catch(() => undefined);
       await this.store.recordActivationFailure({
@@ -169,18 +178,42 @@ export class PluginActivationService {
 
   async disable(pluginId: string): Promise<void> {
     const previous = await this.store.findActive(pluginId);
-    this.publishWithout(pluginId);
+    const previousRegistry = this.registry.snapshot();
     await this.store.disable(pluginId);
+    try {
+      this.publishWithout(pluginId, previousRegistry);
+    } catch (error) {
+      if (previous) {
+        await this.store.restoreActivation(
+          pluginId,
+          previous.version,
+          this.clock.now().toISOString()
+        );
+      }
+      this.restoreRegistry(previousRegistry);
+      throw error;
+    }
     if (previous) await this.shutdownVersion(previous, 'disable').catch(() => undefined);
   }
 
   async quarantine(pluginId: string, version: string, reason: string): Promise<void> {
     const previous = await this.store.findActive(pluginId);
-    this.publishWithout(pluginId);
+    const removesActiveVersion = previous?.version === version;
+    const previousRegistry = this.registry.snapshot();
     await this.store.quarantine(pluginId, version, reason);
-    if (previous?.version === version) {
-      await this.shutdownVersion(previous, 'quarantine').catch(() => undefined);
+    if (!removesActiveVersion) return;
+    try {
+      this.publishWithout(pluginId, previousRegistry);
+    } catch (error) {
+      await this.store.restoreActivation(
+        pluginId,
+        previous.version,
+        this.clock.now().toISOString()
+      );
+      this.restoreRegistry(previousRegistry);
+      throw error;
     }
+    await this.shutdownVersion(previous, 'quarantine').catch(() => undefined);
   }
 
   async stopAll(): Promise<void> {
@@ -189,10 +222,23 @@ export class PluginActivationService {
     }
   }
 
-  private publishWithout(pluginId: string): void {
-    const next = new Map(this.registry.snapshot());
+  private publishWithout(
+    pluginId: string,
+    snapshot: ReadonlyMap<string, RegisteredPlugin> = this.registry.snapshot()
+  ): void {
+    const next = new Map(snapshot);
     next.delete(pluginId);
     this.registry.publishPrepared({ registrations: next } as PreparedPluginRegistrySnapshot);
+  }
+
+  private restoreRegistry(snapshot: ReadonlyMap<string, RegisteredPlugin>): void {
+    try {
+      this.registry.publishPrepared({
+        registrations: new Map(snapshot)
+      } as PreparedPluginRegistrySnapshot);
+    } catch {
+      // Best-effort rollback. The original lifecycle error remains the primary failure.
+    }
   }
 
   private registration(

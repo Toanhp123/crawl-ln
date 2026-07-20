@@ -259,6 +259,65 @@ export class SqlitePluginStore implements PluginStorePort {
     });
   }
 
+  async restoreActivation(
+    pluginId: string,
+    previousVersion: string | undefined,
+    restoredAt: string
+  ): Promise<void> {
+    this.database.transactionSync(() => {
+      this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugin_versions
+           SET status='installed', activated_at=NULL
+           WHERE plugin_id=? AND status IN ('active','initializing')`
+        )
+        .run(pluginId);
+
+      if (!previousVersion) {
+        this.database.connection
+          .prepare(
+            `UPDATE source_reader_plugins
+             SET active_version=NULL, enabled=0, status='disabled', updated_at=?
+             WHERE id=?`
+          )
+          .run(restoredAt, pluginId);
+        return;
+      }
+
+      const previous = this.database.connection
+        .prepare(
+          `SELECT trust_level FROM source_reader_plugin_versions
+           WHERE plugin_id=? AND version=?`
+        )
+        .get(pluginId, previousVersion) as { trust_level: PluginTrustLevel } | undefined;
+      if (!previous) {
+        throw new Error(`Plugin version ${pluginId}@${previousVersion} does not exist`);
+      }
+
+      const versionUpdate = this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugin_versions
+           SET status='active', activated_at=?, quarantine_reason=NULL
+           WHERE plugin_id=? AND version=?`
+        )
+        .run(restoredAt, pluginId, previousVersion);
+      if (Number(versionUpdate.changes) !== 1) {
+        throw new Error(`Plugin version ${pluginId}@${previousVersion} restore failed`);
+      }
+
+      const pluginUpdate = this.database.connection
+        .prepare(
+          `UPDATE source_reader_plugins
+           SET active_version=?, trust_level=?, status='active', enabled=1, updated_at=?
+           WHERE id=?`
+        )
+        .run(previousVersion, previous.trust_level, restoredAt, pluginId);
+      if (Number(pluginUpdate.changes) !== 1) {
+        throw new Error(`Plugin ${pluginId} restore failed`);
+      }
+    });
+  }
+
   async recordActivationFailure(input: {
     pluginId: string;
     version: string;

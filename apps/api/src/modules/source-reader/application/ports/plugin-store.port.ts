@@ -65,6 +65,11 @@ export interface PluginStorePort {
     version: string,
     activatedAt: string
   ): Promise<void>;
+  restoreActivation(
+    pluginId: string,
+    previousVersion: string | undefined,
+    restoredAt: string
+  ): Promise<void>;
   recordActivationFailure(input: {
     pluginId: string;
     version: string;

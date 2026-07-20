@@ -52,16 +52,22 @@ function fixture(
     failInitialize?: boolean;
     degradedHealth?: boolean;
     failPrepare?: boolean;
+    failPublish?: boolean;
+    failDisable?: boolean;
+    failQuarantine?: boolean;
     failOldShutdown?: boolean;
   } = {}
 ) {
   const events: string[] = [];
   const previous = stored('1.0.0', 'active');
   const candidate = stored('2.0.0', 'installed');
-  const oldRegistration = registration('1.0.0');
+  let activeVersion: string | undefined = previous.version;
+  let live = new Map([['demo', registration(previous.version)]]);
+  let publishAttempts = 0;
+
   const candidateHandle: ExternalPluginProcessHandle = {
     pluginId: 'demo',
-    pluginVersion: '2.0.0',
+    pluginVersion: candidate.version,
     async request(request) {
       if (request.operation === 'initialize') {
         events.push('candidate.initialize');
@@ -80,7 +86,7 @@ function fixture(
   };
   const oldHandle: ExternalPluginProcessHandle = {
     pluginId: 'demo',
-    pluginVersion: '1.0.0',
+    pluginVersion: previous.version,
     async request(request) {
       assert.equal(request.operation, 'shutdown');
       events.push('old.shutdown');
@@ -94,16 +100,32 @@ function fixture(
 
   const store = {
     async findVersion(pluginId: string, version: string) {
-      return pluginId === 'demo' && version === '2.0.0' ? candidate : undefined;
+      return pluginId === 'demo' && version === candidate.version ? candidate : undefined;
     },
     async findActive(pluginId: string) {
-      return pluginId === 'demo' ? previous : undefined;
+      if (pluginId !== 'demo' || !activeVersion) return undefined;
+      return activeVersion === previous.version ? previous : candidate;
     },
     async permissionsApproved() {
       return true;
     },
     async activateCandidateAtomically() {
       events.push('store.publish');
+      activeVersion = candidate.version;
+    },
+    async restoreActivation(_pluginId: string, version: string | undefined) {
+      events.push('store.restore');
+      activeVersion = version;
+    },
+    async disable() {
+      events.push('store.disable');
+      if (options.failDisable) throw new Error('disable failed');
+      activeVersion = undefined;
+    },
+    async quarantine() {
+      events.push('store.quarantine');
+      if (options.failQuarantine) throw new Error('quarantine failed');
+      activeVersion = undefined;
     },
     async recordActivationFailure() {
       events.push('store.failure');
@@ -114,23 +136,29 @@ function fixture(
     | 'findActive'
     | 'permissionsApproved'
     | 'activateCandidateAtomically'
+    | 'disable'
+    | 'quarantine'
     | 'recordActivationFailure'
-  >;
+  > & {
+    restoreActivation(pluginId: string, version: string | undefined): Promise<void>;
+  };
 
-  const live = new Map([['demo', oldRegistration]]);
   const prepared: PreparedPluginRegistrySnapshot = {
-    registrations: new Map([['demo', registration('2.0.0')]])
+    registrations: new Map([['demo', registration(candidate.version)]])
   };
   const registry = {
-    snapshot: () => live,
+    snapshot: () => new Map(live),
     prepareRegistration: () => {
       if (options.failPrepare) throw new Error('resolution failed');
       return prepared;
     },
-    publishPrepared: () => {
+    publishPrepared: (snapshot: PreparedPluginRegistrySnapshot) => {
+      publishAttempts += 1;
       events.push('registry.publish');
+      if (options.failPublish && publishAttempts === 1) throw new Error('publication failed');
+      live = new Map(snapshot.registrations);
     },
-    findById: () => oldRegistration
+    findById: () => live.get('demo')
   } as Pick<
     PluginRegistryPort,
     'snapshot' | 'prepareRegistration' | 'publishPrepared' | 'findById'
@@ -141,7 +169,11 @@ function fixture(
       return candidateHandle;
     },
     get(_pluginId: string, version: string) {
-      return version === '1.0.0' ? oldHandle : version === '2.0.0' ? candidateHandle : undefined;
+      return version === previous.version
+        ? oldHandle
+        : version === candidate.version
+          ? candidateHandle
+          : undefined;
     },
     async stop() {}
   };
@@ -155,7 +187,12 @@ function fixture(
     5_000
   );
 
-  return { service, events };
+  return {
+    service,
+    events,
+    activeVersion: () => activeVersion,
+    registryVersion: () => live.get('demo')?.plugin.manifest.version
+  };
 }
 
 test('publishes a healthy candidate atomically before shutting down the old version', async () => {
@@ -202,6 +239,47 @@ for (const [name, options] of [
     assert.equal(events.includes('store.failure'), true);
   });
 }
+
+test('registry publication failure restores the previous database and registry state', async () => {
+  const { service, activeVersion, registryVersion, events } = fixture({ failPublish: true });
+
+  await assert.rejects(
+    service.activate({
+      pluginId: 'demo',
+      version: '2.0.0',
+      signal: new AbortController().signal
+    }),
+    (error: unknown) =>
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'PLUGIN_LIFECYCLE_FAILED'
+  );
+
+  assert.equal(activeVersion(), '1.0.0');
+  assert.equal(registryVersion(), '1.0.0');
+  assert.equal(events.includes('store.restore'), true);
+  assert.equal(events.includes('candidate.terminate'), true);
+  assert.equal(events.includes('old.shutdown'), false);
+});
+
+test('disable store failure leaves the active registry registration untouched', async () => {
+  const { service, activeVersion, registryVersion } = fixture({ failDisable: true });
+
+  await assert.rejects(service.disable('demo'), /disable failed/);
+
+  assert.equal(activeVersion(), '1.0.0');
+  assert.equal(registryVersion(), '1.0.0');
+});
+
+test('quarantine store failure leaves the active registry registration untouched', async () => {
+  const { service, activeVersion, registryVersion } = fixture({ failQuarantine: true });
+
+  await assert.rejects(service.quarantine('demo', '1.0.0', 'policy'), /quarantine failed/);
+
+  assert.equal(activeVersion(), '1.0.0');
+  assert.equal(registryVersion(), '1.0.0');
+});
 
 test('old-version shutdown failure does not roll back the published candidate', async () => {
   const { service, events } = fixture({ failOldShutdown: true });

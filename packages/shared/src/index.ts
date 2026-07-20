@@ -340,34 +340,29 @@ export type BackupRestoreResult = {
   safetyBackupPath: string | null;
 };
 
-export type SourcePluginCapability = 'metadata' | 'chapters' | 'search' | 'cover';
-export type SourcePluginStatus = 'active' | 'disabled' | 'invalid' | 'api_mismatch' | 'failed';
-export type SourcePluginManifest = {
+export interface SourceReaderPluginDescriptor {
   id: string;
   name: string;
-  version: string;
-  apiVersion: number;
-  priority: number;
-  match: string[];
-  capabilities: SourcePluginCapability[];
-  entry?: string;
-};
-export type SourcePluginHealth = {
-  successCount: number;
-  failureCount: number;
-  averageLatencyMs: number;
-  lastSuccessAt?: string;
-  lastFailureAt?: string;
-  lastError?: string;
-};
-export type SourcePluginDescriptor = {
-  manifest: SourcePluginManifest;
-  status: SourcePluginStatus;
+  activeVersion?: string;
+  trustLevel: 'built-in' | 'signed' | 'local-unverified' | 'blocked';
+  status:
+    | 'installed'
+    | 'pending-approval'
+    | 'initializing'
+    | 'active'
+    | 'degraded'
+    | 'disabled'
+    | 'quarantined'
+    | 'failed';
   enabled: boolean;
-  health: SourcePluginHealth;
-  loadedAt?: string;
-  error?: string;
-};
+  capabilities: string[];
+  domains: string[];
+  permissionsPending: boolean;
+  health?: {
+    status: 'healthy' | 'degraded' | 'failed';
+    lastCheckedAt?: string;
+  };
+}
 
 export type RealtimeResource = 'novels' | 'tasks' | 'scheduler' | 'plugins' | 'search' | 'all';
 

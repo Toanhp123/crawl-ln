@@ -1,26 +1,39 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  listSourceAuthChallenges,
+  listSourceCredentials,
+  listSourceNetworkProfiles,
   listSourcePlugins,
-  reloadSourcePlugins,
   setSourcePluginEnabled,
   type SourcePlugin
 } from '@/features/manage-source-plugins/api/sourcePlugins';
+import { queryKeys } from '@/shared/api/queryKeys';
 import { useI18n } from '@/shared/i18n/I18nProvider';
 import { toast } from '@/shared/ui';
-
-export const sourcePluginsKey = ['source-plugins'] as const;
 
 export function useSourcesPage() {
   const client = useQueryClient();
   const { t, errorMessage } = useI18n();
   const query = useQuery({
-    queryKey: sourcePluginsKey,
+    queryKey: queryKeys.sourcePlugins,
     queryFn: ({ signal }) => listSourcePlugins(signal)
   });
-  const reload = useMutation({
-    mutationFn: reloadSourcePlugins,
+  const credentials = useQuery({
+    queryKey: queryKeys.sourceReaderCredentials,
+    queryFn: listSourceCredentials
+  });
+  const networkProfiles = useQuery({
+    queryKey: queryKeys.sourceReaderNetworkProfiles,
+    queryFn: listSourceNetworkProfiles
+  });
+  const challenges = useQuery({
+    queryKey: queryKeys.sourceReaderChallenges,
+    queryFn: listSourceAuthChallenges
+  });
+  const refresh = useMutation({
+    mutationFn: () => listSourcePlugins(),
     onSuccess: (data) => {
-      client.setQueryData(sourcePluginsKey, data);
+      client.setQueryData(queryKeys.sourcePlugins, data);
       toast({ kind: 'success', title: t('sources.refreshed') });
     },
     onError: (error) =>
@@ -31,39 +44,30 @@ export function useSourcesPage() {
       })
   });
   const toggle = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      setSourcePluginEnabled(id, enabled),
-    onMutate: async ({ id, enabled }) => {
-      await client.cancelQueries({ queryKey: sourcePluginsKey });
-      const previousPlugins = client.getQueryData<SourcePlugin[]>(sourcePluginsKey);
-      client.setQueryData<SourcePlugin[]>(sourcePluginsKey, (plugins) =>
-        plugins?.map((plugin) =>
-          plugin.manifest.id === id
+    mutationFn: ({ plugin, enabled }: { plugin: SourcePlugin; enabled: boolean }) =>
+      setSourcePluginEnabled(plugin.id, enabled, plugin.activeVersion),
+    onMutate: async ({ plugin, enabled }) => {
+      await client.cancelQueries({ queryKey: queryKeys.sourcePlugins });
+      const previousPlugins = client.getQueryData<SourcePlugin[]>(queryKeys.sourcePlugins);
+      client.setQueryData<SourcePlugin[]>(queryKeys.sourcePlugins, (plugins = []) =>
+        plugins.map((current) =>
+          current.id === plugin.id
             ? {
-                ...plugin,
+                ...current,
                 enabled,
-                status: enabled
-                  ? plugin.status === 'disabled'
-                    ? 'active'
-                    : plugin.status
-                  : 'disabled'
+                status: enabled ? 'initializing' : 'disabled'
               }
-            : plugin
+            : current
         )
       );
       return { previousPlugins };
     },
-    onSuccess: (updatedPlugin) => {
-      client.setQueryData<SourcePlugin[]>(sourcePluginsKey, (plugins) =>
-        plugins?.map((plugin) =>
-          plugin.manifest.id === updatedPlugin.manifest.id ? updatedPlugin : plugin
-        )
-      );
+    onSuccess: () => {
       toast({ kind: 'success', title: t('sources.updated') });
     },
     onError: (error, _variables, context) => {
       if (context?.previousPlugins) {
-        client.setQueryData(sourcePluginsKey, context.previousPlugins);
+        client.setQueryData(queryKeys.sourcePlugins, context.previousPlugins);
       }
       toast({
         kind: 'error',
@@ -72,8 +76,8 @@ export function useSourcesPage() {
       });
     },
     onSettled: () => {
-      void client.invalidateQueries({ queryKey: sourcePluginsKey });
+      void client.invalidateQueries({ queryKey: queryKeys.sourcePlugins });
     }
   });
-  return { query, reload, toggle };
+  return { query, credentials, networkProfiles, challenges, refresh, toggle };
 }

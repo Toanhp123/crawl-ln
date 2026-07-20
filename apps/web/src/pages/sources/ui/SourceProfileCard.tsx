@@ -1,4 +1,4 @@
-import { Activity, Clock3, Globe2 } from 'lucide-react';
+import { Activity, Globe2, KeyRound, ShieldCheck } from 'lucide-react';
 import { Badge, Card, Panel, Switch, Text, type ActionState } from '@/shared/ui';
 import type { SourcePlugin } from '@/features/manage-source-plugins/api/sourcePlugins';
 import { useI18n } from '@/shared/i18n/I18nProvider';
@@ -16,7 +16,7 @@ export function SourceProfileCard({
   actionState: ActionState;
   disabled?: boolean;
 }) {
-  const { t, status, number } = useI18n();
+  const { t, status } = useI18n();
   const tone =
     !plugin.enabled || plugin.status === 'disabled'
       ? 'neutral'
@@ -29,19 +29,23 @@ export function SourceProfileCard({
         <button type="button" className="min-w-0 flex-1 text-left" onClick={onOpen}>
           <div className="flex flex-wrap items-center gap-2">
             <Text as="h3" variant="title">
-              {plugin.manifest.name}
+              {plugin.name}
             </Text>
             <Badge tone={tone}>{status(plugin.status)}</Badge>
+            <Badge tone="neutral">
+              {t('sources.trust')}: {plugin.trustLevel}
+            </Badge>
           </div>
           <Text variant="supporting" tone="muted" className="mt-1 flex items-center gap-1">
-            <Globe2 size={15} /> {plugin.manifest.match.join(', ')}
+            <Globe2 size={15} />{' '}
+            {plugin.domains.length ? plugin.domains.join(', ') : t('sources.domainsNone')}
           </Text>
         </button>
         <Switch
           checked={plugin.enabled}
           actionState={actionState}
           disabled={disabled}
-          aria-label={t('sources.toggleLabel', { name: plugin.manifest.name })}
+          aria-label={t('sources.toggleLabel', { name: plugin.name })}
           className="min-h-0 w-auto border-0 bg-transparent p-0 hover:bg-transparent"
           onCheckedChange={onToggle}
         />
@@ -49,22 +53,27 @@ export function SourceProfileCard({
       <div className="grid grid-cols-3 gap-2">
         <Panel tone="inset" padding="sm" className="text-center">
           <Activity size={15} className="mx-auto mb-1" />
-          <Text variant="label">{number(plugin.health.successCount)}</Text>
+          <Text variant="label">{plugin.health?.status ?? t('sources.healthUnknown')}</Text>
           <Text variant="caption" tone="muted">
-            {t('sources.success')}
+            {t('sources.health')}
           </Text>
         </Panel>
         <Panel tone="inset" padding="sm" className="text-center">
-          <Text variant="label">{number(plugin.health.failureCount)}</Text>
+          <ShieldCheck size={15} className="mx-auto mb-1" />
+          <Text variant="label">{plugin.capabilities.length}</Text>
           <Text variant="caption" tone="muted">
-            {t('sources.failures')}
+            {t('sources.capabilities')}
           </Text>
         </Panel>
         <Panel tone="inset" padding="sm" className="text-center">
-          <Clock3 size={15} className="mx-auto mb-1" />
-          <Text variant="label">{number(Math.round(plugin.health.averageLatencyMs))} ms</Text>
+          <KeyRound size={15} className="mx-auto mb-1" />
+          <Text variant="label">
+            {plugin.permissionsPending
+              ? t('sources.permissionsPending')
+              : t('sources.permissionsApproved')}
+          </Text>
           <Text variant="caption" tone="muted">
-            {t('sources.latency')}
+            {t('sources.permissions')}
           </Text>
         </Panel>
       </div>

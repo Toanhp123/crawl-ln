@@ -445,6 +445,18 @@ export const vi: Record<keyof typeof en, string> = {
   'sources.success': 'Thành công',
   'sources.failures': 'Lỗi',
   'sources.latency': 'Độ trễ',
+  'sources.trust': 'Mức tin cậy',
+  'sources.permissions': 'Quyền',
+  'sources.permissionsPending': 'Đang chờ',
+  'sources.permissionsApproved': 'Đã duyệt',
+  'sources.capabilities': 'Khả năng',
+  'sources.domains': 'Tên miền',
+  'sources.domainsNone': 'Chưa khai báo tên miền',
+  'sources.health': 'Sức khỏe',
+  'sources.healthUnknown': 'Chưa rõ',
+  'sources.credentials': 'Thông tin đăng nhập',
+  'sources.networkProfiles': 'Hồ sơ mạng',
+  'sources.authChallenges': 'Yêu cầu xác thực',
   'sources.profile.createTitle': 'Thêm nguồn truyện',
   'sources.profile.createUnsupportedTitle': 'API tạo profile chưa được hỗ trợ',
   'sources.profile.createUnsupportedDescription':
@@ -455,6 +467,5 @@ export const vi: Record<keyof typeof en, string> = {
   'sources.profile.advancedDescription':
     'Selector và parser được quản lý trong source plugin. Giao diện chỉnh sửa sẽ được bật khi backend có API lưu profile.',
   'sources.profile.version': 'Phiên bản',
-  'sources.profile.apiVersion': 'Phiên bản API',
   'sources.profile.capabilities': 'Khả năng'
 };

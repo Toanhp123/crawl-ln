@@ -18,7 +18,7 @@ export function SourceProfilePage({ mode = 'edit' }: { mode?: 'create' | 'edit' 
   const { t, status } = useI18n();
   const { profileId } = useParams();
   const model = useSourcesPage();
-  const plugin = model.query.data?.find((item) => item.manifest.id === profileId);
+  const plugin = model.query.data?.find((item) => item.id === profileId);
   if (model.query.isLoading)
     return (
       <Page>
@@ -50,7 +50,7 @@ export function SourceProfilePage({ mode = 'edit' }: { mode?: 'create' | 'edit' 
     );
   return (
     <Page className="max-w-3xl">
-      <PageHeader title={plugin.manifest.name} description={plugin.manifest.match.join(', ')} />
+      <PageHeader title={plugin.name} description={plugin.domains.join(', ')} />
       <Card className="space-y-4">
         <div className="flex items-center justify-between">
           <Text variant="title">{t('sources.profile.basic')}</Text>
@@ -60,13 +60,13 @@ export function SourceProfilePage({ mode = 'edit' }: { mode?: 'create' | 'edit' 
         </div>
         <Panel tone="inset" padding="lg" className="space-y-2">
           <Text variant="supporting">
-            {t('sources.profile.version')}: {plugin.manifest.version}
+            {t('sources.profile.version')}: {plugin.activeVersion ?? '—'}
           </Text>
           <Text variant="supporting">
-            {t('sources.profile.apiVersion')}: {plugin.manifest.apiVersion}
+            {t('sources.trust')}: {plugin.trustLevel}
           </Text>
           <Text variant="supporting">
-            {t('sources.profile.capabilities')}: {plugin.manifest.capabilities.join(', ')}
+            {t('sources.profile.capabilities')}: {plugin.capabilities.join(', ')}
           </Text>
         </Panel>
       </Card>
@@ -80,11 +80,15 @@ export function SourceProfilePage({ mode = 'edit' }: { mode?: 'create' | 'edit' 
             <Text variant="supporting" tone="muted">
               {t('sources.profile.advancedDescription')}
             </Text>
-            {plugin.error || plugin.health.lastError ? (
-              <Panel tone="inset" padding="lg">
-                <Text tone="danger">{plugin.error ?? plugin.health.lastError}</Text>
-              </Panel>
-            ) : null}
+            <Text variant="supporting">
+              {t('sources.health')}: {plugin.health?.status ?? t('sources.healthUnknown')}
+            </Text>
+            <Text variant="supporting">
+              {t('sources.permissions')}:{' '}
+              {plugin.permissionsPending
+                ? t('sources.permissionsPending')
+                : t('sources.permissionsApproved')}
+            </Text>
           </div>
         </details>
       </Card>

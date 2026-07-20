@@ -445,6 +445,18 @@ export const en = {
   'sources.success': 'Success',
   'sources.failures': 'Failures',
   'sources.latency': 'Latency',
+  'sources.trust': 'Trust',
+  'sources.permissions': 'Permissions',
+  'sources.permissionsPending': 'Pending',
+  'sources.permissionsApproved': 'Approved',
+  'sources.capabilities': 'Capabilities',
+  'sources.domains': 'Domains',
+  'sources.domainsNone': 'No declared domains',
+  'sources.health': 'Health',
+  'sources.healthUnknown': 'Unknown',
+  'sources.credentials': 'Credentials',
+  'sources.networkProfiles': 'Network profiles',
+  'sources.authChallenges': 'Auth challenges',
   'sources.profile.createTitle': 'Add source',
   'sources.profile.createUnsupportedTitle': 'Creating profiles is not supported yet',
   'sources.profile.createUnsupportedDescription':
@@ -455,6 +467,5 @@ export const en = {
   'sources.profile.advancedDescription':
     'Selectors and parsers are managed by the source plugin. Editing will be available when the backend supports saving profiles.',
   'sources.profile.version': 'Version',
-  'sources.profile.apiVersion': 'API version',
   'sources.profile.capabilities': 'Capabilities'
 } as const;

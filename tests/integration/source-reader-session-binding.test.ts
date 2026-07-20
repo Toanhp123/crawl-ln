@@ -108,6 +108,49 @@ test('required route-bound session rejects direct or another proxy profile', asy
   }
 });
 
+test('optional route-bound session is never reused through a different route', async (t) => {
+  const { sessions } = await fixture(t);
+  await sessions.save({
+    id: 'session-optional-proxy-a',
+    pluginId: 'demo',
+    pluginVersion: '1.1.0',
+    credentialProfileId: 'credential-1',
+    ownerId: 'user-1',
+    networkProfileId: 'proxy-a',
+    networkBinding: 'optional',
+    encryptedMaterial: { cookie: 'optional-session-secret' },
+    status: 'active',
+    expiresAt: '2999-01-01T00:00:00.000Z',
+    createdAt: '2026-07-20T00:01:00.000Z'
+  });
+
+  assert.equal(
+    (
+      await sessions.findActive({
+        pluginId: 'demo',
+        pluginVersion: '1.1.0',
+        credentialProfileId: 'credential-1',
+        ownerId: 'user-1',
+        networkProfileId: 'proxy-a'
+      })
+    )?.id,
+    'session-optional-proxy-a'
+  );
+
+  for (const networkProfileId of [undefined, 'proxy-b']) {
+    assert.equal(
+      await sessions.findActive({
+        pluginId: 'demo',
+        pluginVersion: '1.1.0',
+        credentialProfileId: 'credential-1',
+        ownerId: 'user-1',
+        ...(networkProfileId ? { networkProfileId } : {})
+      }),
+      undefined
+    );
+  }
+});
+
 test('browser pool identity binds plugin version, account, session, owner, and route identity', () => {
   const base = {
     userId: 'user-1',

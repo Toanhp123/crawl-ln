@@ -113,22 +113,20 @@ export class SqliteSessionRepository implements SessionRepository {
     );
     if (!alternate) return undefined;
     const handle = toHandle(alternate);
-    if (handle.networkBinding === 'required') {
-      throw new SourceReaderError(
-        'SESSION_BINDING_MISMATCH',
-        'Session is bound to a different network route',
-        {
-          retryable: false,
-          fallbackAllowed: false,
-          details: {
-            sessionId: handle.id,
-            expectedNetworkProfileId: handle.networkProfileId ?? 'direct',
-            requestedNetworkProfileId: input.networkProfileId ?? 'direct'
-          }
+    if (handle.networkBinding !== 'required') return undefined;
+    throw new SourceReaderError(
+      'SESSION_BINDING_MISMATCH',
+      'Session is bound to a different network route',
+      {
+        retryable: false,
+        fallbackAllowed: false,
+        details: {
+          sessionId: handle.id,
+          expectedNetworkProfileId: handle.networkProfileId ?? 'direct',
+          requestedNetworkProfileId: input.networkProfileId ?? 'direct'
         }
-      );
-    }
-    return handle;
+      }
+    );
   }
 
   private findActiveRow(

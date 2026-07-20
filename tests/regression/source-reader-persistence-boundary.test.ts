@@ -13,7 +13,7 @@ function files(root: string): string[] {
 test('only source reader infrastructure queries source_reader tables', () => {
   for (const file of files('apps/api/src')) {
     const source = readFileSync(file, 'utf8');
-    if (!/source_reader_/.test(source)) continue;
+    if (!/\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+source_reader_/i.test(source)) continue;
     assert.match(
       file.replaceAll('\\', '/'),
       /modules\/source-reader\/infrastructure\/(?:sqlite|cache)\/|shared\/database\/sqlite\.ts$/,

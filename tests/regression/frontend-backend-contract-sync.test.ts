@@ -10,7 +10,8 @@ test('frontend API modules use the canonical /api backend routes', async () => {
     read('apps/web/src/features/search-library/api/searchLibrary.ts'),
     read('apps/web/src/entities/task/api/taskApi.ts')
   ]);
-  assert.match(plugins, /['"]\/api\/plugins/);
+  assert.match(plugins, /['"]\/api\/source-reader\/plugins/);
+  assert.doesNotMatch(plugins, /['"]\/api\/plugins/);
   assert.match(search, /['"]\/api\/search/);
   assert.match(tasks, /['"]\/api\/tasks/);
   assert.doesNotMatch(tasks, /listTasks\(\).*\/api\/crawl\/jobs/);

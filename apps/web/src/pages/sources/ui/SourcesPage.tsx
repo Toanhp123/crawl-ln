@@ -12,7 +12,7 @@ import {
   Text
 } from '@/shared/ui';
 import { useSourcesPage } from '../model/useSourcesPage';
-import { SourceProfileCard } from './SourceProfileCard';
+import { SourcePluginCard } from './SourcePluginCard';
 
 export function SourcesPage() {
   const navigate = useNavigate();
@@ -28,10 +28,10 @@ export function SourcesPage() {
             <Button
               size="sm"
               variant="secondary"
-              actionState={model.refresh.status}
+              actionState={model.reload.status}
               feedbackPolicy="immediate"
               leadingIcon={<RefreshCw size={16} />}
-              onClick={() => model.refresh.mutate()}
+              onClick={() => model.reload.mutate()}
             >
               {t('sources.refresh')}
             </Button>
@@ -78,7 +78,7 @@ export function SourcesPage() {
           {model.query.data.map((plugin) => {
             const ownsToggle = model.toggle.variables?.plugin.id === plugin.id;
             return (
-              <SourceProfileCard
+              <SourcePluginCard
                 key={plugin.id}
                 plugin={plugin}
                 actionState={ownsToggle ? model.toggle.status : 'idle'}

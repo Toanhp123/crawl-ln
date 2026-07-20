@@ -17,8 +17,8 @@ const TaskDetailPage = lazy(() =>
 );
 const ActivityPage = lazy(() => routeLoaders.activity().then((m) => ({ default: m.ActivityPage })));
 const SourcesPage = lazy(() => routeLoaders.sources().then((m) => ({ default: m.SourcesPage })));
-const SourceProfilePage = lazy(() =>
-  routeLoaders.sourceProfile().then((m) => ({ default: m.SourceProfilePage }))
+const SourcePluginPage = lazy(() =>
+  routeLoaders.sourcePlugin().then((m) => ({ default: m.SourcePluginPage }))
 );
 const SettingsPage = lazy(() => routeLoaders.settings().then((m) => ({ default: m.SettingsPage })));
 
@@ -35,8 +35,8 @@ export function AppRouter() {
         <Route path="/activity" element={<ActivityPage />} />
         <Route path="/activity/:taskId" element={<TaskDetailPage />} />
         <Route path="/sources" element={<SourcesPage />} />
-        <Route path="/sources/new" element={<SourceProfilePage mode="create" />} />
-        <Route path="/sources/:profileId" element={<SourceProfilePage mode="edit" />} />
+        <Route path="/sources/new" element={<SourcePluginPage mode="create" />} />
+        <Route path="/sources/:pluginId" element={<SourcePluginPage mode="edit" />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/crawl" element={<Navigate to="/activity" replace />} />
         <Route path="/tasks" element={<Navigate to="/activity" replace />} />

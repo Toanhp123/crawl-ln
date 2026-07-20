@@ -5,7 +5,7 @@ import test from 'node:test';
 const files = [
   'apps/web/src/features/manage-source-plugins/api/sourcePlugins.ts',
   'apps/web/src/pages/sources/model/useSourcesPage.ts',
-  'apps/web/src/pages/sources/ui/SourceProfileCard.tsx'
+  'apps/web/src/pages/sources/ui/SourcePluginCard.tsx'
 ];
 
 test('Sources UI uses Source Reader API and retains optimistic switches', () => {

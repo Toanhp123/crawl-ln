@@ -122,7 +122,7 @@ test('button feedback timing and outcome are centralized', () => {
 });
 
 test('source profile card has no nested interactive button', () => {
-  const card = readFileSync('apps/web/src/pages/sources/ui/SourceProfileCard.tsx', 'utf8');
+  const card = readFileSync('apps/web/src/pages/sources/ui/SourcePluginCard.tsx', 'utf8');
 
   assert.doesNotMatch(card, /event\.stopPropagation/);
   assert.match(card, /<div className="flex items-start justify-between gap-3">/);

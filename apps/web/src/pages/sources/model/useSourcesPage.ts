@@ -30,7 +30,7 @@ export function useSourcesPage() {
     queryKey: queryKeys.sourceReaderChallenges,
     queryFn: listSourceAuthChallenges
   });
-  const refresh = useMutation({
+  const reload = useMutation({
     mutationFn: () => listSourcePlugins(),
     onSuccess: (data) => {
       client.setQueryData(queryKeys.sourcePlugins, data);
@@ -79,5 +79,5 @@ export function useSourcesPage() {
       void client.invalidateQueries({ queryKey: queryKeys.sourcePlugins });
     }
   });
-  return { query, credentials, networkProfiles, challenges, refresh, toggle };
+  return { query, credentials, networkProfiles, challenges, reload, toggle };
 }

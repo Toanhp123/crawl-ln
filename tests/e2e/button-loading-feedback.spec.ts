@@ -1,23 +1,19 @@
 import { expect, test } from '@playwright/test';
 
 const plugin = {
-  manifest: {
-    id: 'novelcool',
-    name: 'NovelCool',
-    version: '1.0.0',
-    apiVersion: 1,
-    priority: 10,
-    match: ['novelcool.com'],
-    capabilities: ['metadata', 'chapters', 'cover']
-  },
+  id: 'novelcool',
+  name: 'NovelCool',
+  activeVersion: '1.0.0',
+  trustLevel: 'built-in',
   status: 'active',
   enabled: true,
-  health: {
-    successCount: 12,
-    failureCount: 0,
-    averageLatencyMs: 120
-  }
+  capabilities: ['metadata', 'chapter-list', 'chapter-content'],
+  domains: ['novelcool.com'],
+  permissionsPending: false,
+  health: { status: 'healthy' }
 };
+
+const success = (data: unknown) => JSON.stringify({ data, error: null });
 
 test('source refresh shows stable in-place loading feedback even for a fast request', async ({
   page
@@ -26,20 +22,11 @@ test('source refresh shows stable in-place loading feedback even for a fast requ
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
 
-    if (pathname === '/api/plugins' && request.method() === 'GET') {
+    if (pathname === '/api/source-reader/plugins' && request.method() === 'GET') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ data: [plugin], error: null })
-      });
-      return;
-    }
-
-    if (pathname === '/api/plugins/reload' && request.method() === 'POST') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ data: [plugin], error: null })
+        body: success([plugin])
       });
       return;
     }
@@ -48,10 +35,7 @@ test('source refresh shows stable in-place loading feedback even for a fast requ
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          data: { activeCount: 0, queuedCount: 0, failedCount: 0 },
-          error: null
-        })
+        body: success({ activeCount: 0, queuedCount: 0, failedCount: 0 })
       });
       return;
     }
@@ -59,7 +43,7 @@ test('source refresh shows stable in-place loading feedback even for a fast requ
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: [], error: null })
+      body: success([])
     });
   });
 
@@ -84,25 +68,29 @@ test('source refresh shows stable in-place loading feedback even for a fast requ
 test('source refresh reports an error phase instead of a success check on failure', async ({
   page
 }) => {
+  let pluginRequests = 0;
   await page.route('http://127.0.0.1:3000/api/**', async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
 
-    if (pathname === '/api/plugins' && request.method() === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ data: [plugin], error: null })
-      });
-      return;
-    }
-
-    if (pathname === '/api/plugins/reload' && request.method() === 'POST') {
-      await route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ data: null, error: { message: 'Reload failed' } })
-      });
+    if (pathname === '/api/source-reader/plugins' && request.method() === 'GET') {
+      pluginRequests += 1;
+      if (pluginRequests === 1) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: success([plugin])
+        });
+      } else {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: null,
+            error: { code: 'INTERNAL_ERROR', message: 'Refresh failed', details: null }
+          })
+        });
+      }
       return;
     }
 
@@ -110,10 +98,7 @@ test('source refresh reports an error phase instead of a success check on failur
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          data: { activeCount: 0, queuedCount: 0, failedCount: 0 },
-          error: null
-        })
+        body: success({ activeCount: 0, queuedCount: 0, failedCount: 0 })
       });
       return;
     }
@@ -121,7 +106,7 @@ test('source refresh reports an error phase instead of a success check on failur
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: [], error: null })
+      body: success([])
     });
   });
 

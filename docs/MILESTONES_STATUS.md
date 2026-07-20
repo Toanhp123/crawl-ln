@@ -9,8 +9,8 @@ Done:
 - HTTP client port/adapter: `HttpClientPort` + `AxiosHttpClientAdapter`.
 - Robots policy: allowlist + cached `robots.txt` parsing with user-agent groups, allow/disallow priority, wildcard basics, and crawl-delay.
 - HTML engine: `HtmlParserPort` + Cheerio adapter.
-- Source profile: typed `SourceProfile`, `SourceProfileSchema`, JSON repository, duplicate-id detection, legacy profile normalization.
-- Source detection: `SourceDetectorService` resolves URL -> source profile.
+- Historical source configuration: typed schema, JSON repository, duplicate-id detection, and normalization.
+- Historical source detection resolved a URL to configuration before the Source Reader migration.
 - Crawl engine: `CrawlerEngineService` owns analyze/fetch flow and uses only ports.
 - Adapter boundary: selector adapter delegates to engine; legacy singleton HTTP client removed.
 - Host-aware rate limiter: delay is tracked per host, not globally.

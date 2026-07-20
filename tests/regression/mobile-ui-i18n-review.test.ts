@@ -29,8 +29,8 @@ test('redesigned product screens route user-visible copy through i18n', () => {
     'apps/web/src/pages/activity/ui/ActivityPage.tsx',
     'apps/web/src/pages/sources/model/useSourcesPage.ts',
     'apps/web/src/pages/sources/ui/SourcesPage.tsx',
-    'apps/web/src/pages/sources/ui/SourceProfileCard.tsx',
-    'apps/web/src/pages/sources/ui/SourceProfilePage.tsx',
+    'apps/web/src/pages/sources/ui/SourcePluginCard.tsx',
+    'apps/web/src/pages/sources/ui/SourcePluginPage.tsx',
     'apps/web/src/widgets/crawl-task-card/ui/CrawlTaskCard.tsx'
   ];
 

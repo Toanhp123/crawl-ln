@@ -13,7 +13,7 @@ Edit `.env`:
 
 ```env
 SOURCE_ALLOWLIST=your-allowed-domain.example
-SOURCE_PROFILES_FILE=./config/source-profiles.json
+SOURCE_READER_MASTER_KEY=<base64-32-byte-key>
 MAX_CHAPTERS_PER_RUN=5
 CRAWLER_CONCURRENCY=1
 CRAWLER_DELAY_MS=1200
@@ -23,7 +23,7 @@ GENERIC_HTML_ADAPTER_ENABLED=false
 
 ## 2. Configure source profile
 
-Edit `apps/api/config/source-profiles.json`:
+Install or enable the required Source Reader plugin, then verify:
 
 - replace the host;
 - set `enabled` to `true`;

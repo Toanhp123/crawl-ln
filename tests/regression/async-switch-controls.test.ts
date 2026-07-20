@@ -36,7 +36,7 @@ test('automatic updates use an optimistic Switch instead of enable-disable butto
 });
 
 test('source plugin enabled state uses an optimistic Switch with rollback', () => {
-  const card = read('apps/web/src/pages/sources/ui/SourceProfileCard.tsx');
+  const card = read('apps/web/src/pages/sources/ui/SourcePluginCard.tsx');
   const model = read('apps/web/src/pages/sources/model/useSourcesPage.ts');
 
   assert.match(card, /<Switch/);

@@ -117,7 +117,6 @@ test('plugin context attaches decrypted session headers only inside host HTTP ca
   assert.equal('session' in context, false);
 });
 
-
 test('logout revokes all sessions for the credential', async () => {
   await orchestrator.logout({ credentialProfileId: 'cred-1' });
   assert.equal(

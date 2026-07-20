@@ -28,7 +28,12 @@ test('plugin context blocks undeclared network hosts', async () => {
   const context = factory.create({
     pluginId: 'demo',
     allowedHosts: ['example.test'],
-    signal: new AbortController().signal
+    signal: new AbortController().signal,
+    runtimeContext: {
+      executionMode: 'in-process',
+      browserRequired: false,
+      cacheIdentity: { authScope: 'public', networkScope: 'direct' }
+    }
   });
   await assert.rejects(
     () => context.http.get('https://forbidden.test/book'),

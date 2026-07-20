@@ -16,7 +16,7 @@ The frontend treats backend 2.9.2+ as the single source of truth.
 - Task queries: `/api/tasks`
 - Crawl commands/events: `/api/crawl/jobs`
 - Search: `/api/search`
-- Source plugins: `/api/plugins`
+- Source Reader plugins: `/api/source-reader/plugins`
 - Export: `/api/exports/novels/:id`
 - Backup/restore: `/api/backups`
 

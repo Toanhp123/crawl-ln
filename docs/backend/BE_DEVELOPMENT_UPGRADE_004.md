@@ -7,7 +7,7 @@ Milestone 1 started. The crawler is now closer to a real platform instead of one
 - `HttpClientPort` with GET/POST/HEAD contract.
 - `AxiosHttpClientAdapter` with timeout, redirect, headers and user-agent handling.
 - `HtmlParserPort` with a Cheerio implementation.
-- `SourceProfile` domain model and JSON repository.
+- Original typed source configuration model and JSON repository.
 - New selector profile format under `apps/api/config/source-profiles.example.json`.
 - Robots policy now reads `robots.txt` for allowlisted hosts and respects `Disallow` and `Crawl-delay`.
 - Selector adapter now uses injected ports: source profiles, HTTP client and HTML parser.

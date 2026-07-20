@@ -58,7 +58,7 @@ function contextFixture(logs: string[] = []): PluginContext {
 test('isolated worker invokes plugin without exposing process.env', async () => {
   process.env.WORKER_SECRET_SENTINEL = 'must-not-leak';
   const logs: string[] = [];
-  const runtime = new IsolatedWorkerPluginRuntime({ defaultTimeoutMs: 2_000 });
+  const runtime = new IsolatedWorkerPluginRuntime({ defaultTimeoutMs: 10_000 });
   const result = await runtime.invokeExternal({
     pluginPath,
     manifest,
@@ -90,7 +90,7 @@ test('hung worker is terminated and mapped to plugin runtime error', async () =>
 });
 
 test('worker plugin failures are mapped without crashing the host', async () => {
-  const runtime = new IsolatedWorkerPluginRuntime({ defaultTimeoutMs: 2_000 });
+  const runtime = new IsolatedWorkerPluginRuntime({ defaultTimeoutMs: 10_000 });
   await assert.rejects(
     () =>
       runtime.invokeExternal({

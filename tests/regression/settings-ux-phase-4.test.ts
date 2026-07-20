@@ -25,12 +25,13 @@ test('backup restore requires a review step before destructive restore', () => {
 
 test('source manager exposes human-readable health and a two-level detail view', () => {
   const page = read('apps/web/src/pages/sources/ui/SourcesPage.tsx');
-  const card = read('apps/web/src/pages/sources/ui/SourceProfileCard.tsx');
-  const detail = read('apps/web/src/pages/sources/ui/SourceProfilePage.tsx');
+  const card = read('apps/web/src/pages/sources/ui/SourcePluginCard.tsx');
+  const detail = read('apps/web/src/pages/sources/ui/SourcePluginPage.tsx');
   assert.match(page, /reload\.mutate/);
   assert.match(page, /toggle\.mutate/);
-  assert.match(card, /plugin\.health\.successCount/);
-  assert.match(card, /plugin\.health\.failureCount/);
+  assert.match(card, /plugin\.health\?\.status/);
+  assert.match(card, /plugin\.trustLevel/);
   assert.match(detail, /sources\.profile\.advanced/);
-  assert.match(detail, /plugin\.health\.lastError/);
+  assert.match(detail, /plugin\.permissionsPending/);
+  assert.doesNotMatch(detail, /lastError|stack|packagePath/);
 });

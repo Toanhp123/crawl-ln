@@ -4,6 +4,7 @@ import path from 'node:path';
 const root = process.cwd();
 const webRoot = path.join(root, 'apps/web/src');
 const violations = [];
+const webSources = [];
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -19,6 +20,7 @@ async function walk(directory) {
 for (const file of await walk(webRoot)) {
   const source = await readFile(file, 'utf8');
   const relative = path.relative(root, file).replaceAll('\\', '/');
+  webSources.push(source);
 
   for (const match of source.matchAll(/http(?:Void)?<[^>]*>\(\s*([`'"])([^`'"]+)/g)) {
     const endpoint = match[2];
@@ -39,6 +41,14 @@ for (const file of await walk(webRoot)) {
   if (/\/api\/novels\/[^\s'"`]*\/export|\/api\/novels\/crawl/.test(source)) {
     violations.push(`${relative}: legacy backend endpoint remains in frontend source`);
   }
+}
+
+const webSource = webSources.join('\n');
+if (webSource.includes('/api/' + 'plugins')) {
+  violations.push('web retains removed plugin endpoint');
+}
+if (!webSource.includes('/source-reader/plugins')) {
+  violations.push('Sources UI does not use Source Reader plugin endpoint');
 }
 
 const buildConfig = await readFile(path.join(webRoot, 'shared/config/build.ts'), 'utf8');

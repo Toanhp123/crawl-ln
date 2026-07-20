@@ -5,7 +5,7 @@
 - `DELETE /api/crawl/jobs/:id` to cancel queued/running crawl jobs.
 - `CancelCrawlJobUseCase` in crawler application layer.
 - Queue cancellation signal in `CrawlQueuePort` and `CrawlQueueService`.
-- `SelectorHtmlAdapter` for real site integration through CSS selector profiles.
+- Original CSS-selector HTML integration adapter.
 - Example selector profile at `apps/api/config/source-profiles.example.json`.
 
 ## Architecture notes

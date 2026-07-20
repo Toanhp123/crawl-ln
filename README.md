@@ -57,6 +57,7 @@ PORT=3000
 STORAGE_DRIVER=sqlite
 SQLITE_PATH=storage/novel-tool.sqlite
 SOURCE_READER_CURSOR_KEY=replace-with-a-private-32-byte-key
+SOURCE_READER_MASTER_KEY=<base64-32-byte-key>
 SOURCE_READER_MEMORY_CACHE_ENTRIES=500
 ```
 
@@ -101,7 +102,7 @@ Crawl task queries use `/api/tasks`; crawl creation and control use `/api/crawl/
 - `apps/web/FSD.md` — ranh giới FSD của frontend.
 - `apps/web/src/shared/theme/README.md` — theme tokens và runtime preferences.
 - `apps/web/src/shared/ui/README.md` — shared UI primitives.
-- `docs/SOURCE_PROFILE.md` — định dạng source profile.
+- `docs/SOURCE_READER.md` — kiến trúc, bảo mật, API và quy trình phát triển plugin Source Reader.
 - `docs/MILESTONES_STATUS.md` — trạng thái milestone.
 - `docs/superpowers/plans/2026-07-15-maintenance-and-fsd-cleanup.md` — kế hoạch bản vá 2.0.2.
 
@@ -128,4 +129,4 @@ Use the novel detail export sheet to create EPUB3 or UTF-8 TXT files. Exports ca
 
 ## Source Reader
 
-Crawler metadata, chapter list, and chapter content now run through the Source Reader boundary. Preview endpoints are available under `/api/source-reader`; external plugin administration will be introduced by the dedicated plugin-ingestion plan rather than the removed legacy `/api/plugins` runtime.
+Crawler metadata, chapter list, chapter content, search, authentication, network routing, and plugin administration run through the Source Reader boundary. Reader and management endpoints are available under `/api/source-reader/*`; external packages use the verified `.source-plugin` format and secret-backed features require `SOURCE_READER_MASTER_KEY`. See `docs/SOURCE_READER.md`.

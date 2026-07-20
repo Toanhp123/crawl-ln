@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased - Source Reader Platform
+
+- Replaced the previous source-selection runtime with the capability-based Source Reader boundary.
+- Added built-in and isolated external plugins, signed package verification, permission approval, health quarantine, and deterministic fallback.
+- Added encrypted credentials, sessions, network profiles, resumable authentication challenges, browser coordination, scoped cache, signed cursors, rate limiting, circuit breaking, and redacted observability.
+- Migrated crawler reads, secured HTTP administration, and the Sources UI to `/api/source-reader/*`.
+- Added architecture, integration, regression, browser, and final-lockdown verification.
+
 ## 2.9.6 - Web Performance Stability
 
 - Moved Library search, filtering, sorting, counting, and pagination into SQLite queries.
@@ -23,7 +31,7 @@
 - Removed obsolete frontend route redirects, dead feature/entity/widget files, unused backend artifacts, and deprecated `ListItem`.
 - Removed unused compile-time source adapter examples from production code.
 - Added a cleanup regression gate and Prettier formatting gate.
-- Updated current architecture, API, source-profile, and E2E documentation to the canonical contracts.
+- Updated current architecture, API, source configuration, and E2E documentation to the canonical contracts.
 
 ## 2.9.3 - Frontend Contract Synchronization
 
@@ -114,7 +122,7 @@
 - Removed obsolete frontend route redirects, dead feature/entity/widget files, unused backend artifacts, and deprecated `ListItem`.
 - Removed unused compile-time source adapter examples from production code.
 - Added a cleanup regression gate and Prettier formatting gate.
-- Updated current architecture, API, source-profile, and E2E documentation to the canonical contracts.
+- Updated current architecture, API, source configuration, and E2E documentation to the canonical contracts.
 
 ## 2.4.1 - Backend boundary hardening
 
@@ -245,8 +253,8 @@
 
 ## Milestone 1 crawler platform hardening
 
-- Added SourceProfile zod schema and duplicate id validation.
-- Added SourceDetectorService and CrawlerEngineService.
+- Added the original typed source configuration schema and duplicate-id validation.
+- Added the original source-detection and crawl-engine services.
 - Refactored selector crawling to use the engine through ports.
 - Removed legacy singleton HTTP client path.
 - Made rate limiting host-aware.

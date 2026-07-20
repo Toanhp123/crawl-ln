@@ -14,11 +14,11 @@ import {
 import { useI18n } from '@/shared/i18n/I18nProvider';
 import { useSourcesPage } from '../model/useSourcesPage';
 
-export function SourceProfilePage({ mode = 'edit' }: { mode?: 'create' | 'edit' }) {
+export function SourcePluginPage({ mode = 'edit' }: { mode?: 'create' | 'edit' }) {
   const { t, status } = useI18n();
-  const { profileId } = useParams();
+  const { pluginId } = useParams();
   const model = useSourcesPage();
-  const plugin = model.query.data?.find((item) => item.id === profileId);
+  const plugin = model.query.data?.find((item) => item.id === pluginId);
   if (model.query.isLoading)
     return (
       <Page>

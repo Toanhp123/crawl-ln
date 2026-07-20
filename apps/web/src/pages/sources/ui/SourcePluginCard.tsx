@@ -3,7 +3,7 @@ import { Badge, Card, Panel, Switch, Text, type ActionState } from '@/shared/ui'
 import type { SourcePlugin } from '@/features/manage-source-plugins/api/sourcePlugins';
 import { useI18n } from '@/shared/i18n/I18nProvider';
 
-export function SourceProfileCard({
+export function SourcePluginCard({
   plugin,
   onOpen,
   onToggle,

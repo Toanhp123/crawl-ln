@@ -5,7 +5,7 @@ export const routeLoaders = {
   taskDetail: () => import('@/pages/task-detail/ui/TaskDetailPage'),
   activity: () => import('@/pages/activity/ui/ActivityPage'),
   sources: () => import('@/pages/sources/ui/SourcesPage'),
-  sourceProfile: () => import('@/pages/sources/ui/SourceProfilePage'),
+  sourcePlugin: () => import('@/pages/sources/ui/SourcePluginPage'),
   settings: () => import('@/pages/settings/ui/SettingsPage')
 } as const;
 

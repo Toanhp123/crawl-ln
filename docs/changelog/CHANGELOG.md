@@ -32,7 +32,7 @@
 
 - Added cancel crawl job endpoint: `DELETE /api/crawl/jobs/:id`.
 - Added configurable selector-based HTML source adapter.
-- Added `SOURCE_PROFILES_FILE` config and example profile.
+- Added the original file-based source configuration and example.
 
 
 ## Milestone 1 started - Core Crawler Platform

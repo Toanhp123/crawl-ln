@@ -107,8 +107,19 @@ function checkFile(path) {
     'novels.module.ts',
     'plugin.module.ts',
     'scheduler.module.ts',
+    'source-reader.module.ts',
     'tasks.module.ts'
   ];
+  if (
+    normalizedPath.endsWith('/shared/container/modules/source-reader.module.ts') &&
+    (!/satisfies\s+SourceReaderApi/.test(source) ||
+      !/satisfies\s+SourceReaderManagementApi/.test(source))
+  ) {
+    violations.push(
+      `${normalizedPath}: Source Reader composition must constrain both reader and management public facades`
+    );
+  }
+
   if (
     normalizedPath.includes('/shared/container/modules/') &&
     publicFacadeModules.some((name) => normalizedPath.endsWith(name)) &&
@@ -134,6 +145,16 @@ function checkFile(path) {
   ) {
     violations.push(
       `${normalizedPath}: crawler infrastructure must not write chapter, task, or novel tables; coordinate module-owned writers through the application unit of work`
+    );
+  }
+
+  if (
+    normalizedPath.includes('/modules/source-reader/') &&
+    !normalizedPath.includes('/presentation/') &&
+    /\b(?:INSERT|UPDATE|DELETE)\s+(?:novels|chapters|crawl_tasks)\b/i.test(source)
+  ) {
+    violations.push(
+      `${normalizedPath}: Source Reader must not persist novels, chapters, or crawl tasks`
     );
   }
 
@@ -198,6 +219,16 @@ function checkFile(path) {
   }
 
   for (const target of imports) {
+    if (
+      sourceModule &&
+      sourceModule !== 'source-reader' &&
+      target.includes('/modules/source-reader/') &&
+      !target.includes('/modules/source-reader/public/')
+    ) {
+      violations.push(
+        `${normalizedPath}: imports Source Reader internals; depend only on modules/source-reader/public/*: ${target}`
+      );
+    }
     if ((isDomain || isApplication) && target.includes('/infrastructure/')) {
       violations.push(`${normalizedPath}: core layer imports infrastructure: ${target}`);
     }

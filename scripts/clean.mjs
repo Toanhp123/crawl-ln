@@ -1,5 +1,5 @@
 import { readdir, rm, stat } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import path, { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const GENERATED_DIRECTORIES = [
@@ -22,6 +22,11 @@ async function pathExists(path) {
     if (error?.code === 'ENOENT') return false;
     throw error;
   }
+}
+
+export function isSafeCleanTarget(root, target, pathApi = path) {
+  const relativePath = pathApi.relative(pathApi.resolve(root), pathApi.resolve(target));
+  return relativePath !== '' && !relativePath.startsWith('..') && !pathApi.isAbsolute(relativePath);
 }
 
 async function findBuildInfoFiles(root, current, matches) {
@@ -54,7 +59,7 @@ export async function cleanGeneratedArtifacts(projectRoot = process.cwd()) {
   const removed = [];
   for (const candidate of [...new Set(candidates)].sort()) {
     const absolute = resolve(root, candidate);
-    if (absolute !== root && !absolute.startsWith(`${root}/`)) {
+    if (!isSafeCleanTarget(root, absolute)) {
       throw new Error(`Refusing to clean outside project root: ${candidate}`);
     }
     if (!(await pathExists(absolute))) continue;

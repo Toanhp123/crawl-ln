@@ -31,6 +31,8 @@ test('root build prepares shared once and workspace builds remain local', async 
     'npm run build:shared && npm run build -w @novel-tool/web'
   );
 
+  assert.equal(api.scripts.build, 'node scripts/build.mjs');
+
   for (const workspace of [api, web]) {
     assert.doesNotMatch(workspace.scripts.build, /build(?::shared)?\s+-w\s+@novel-tool\/shared/);
     assert.doesNotMatch(workspace.scripts.build, /cd \.\.\/\.\./);
@@ -56,6 +58,8 @@ test('root check prepares shared once and workspace checks remain local', async 
     'npm run prepare:shared && npm run check -w @novel-tool/web'
   );
 
+  assert.equal(api.scripts.build, 'node scripts/build.mjs');
+
   for (const workspace of [api, web]) {
     assert.doesNotMatch(workspace.scripts.check, /check\s+-w\s+@novel-tool\/shared/);
     assert.doesNotMatch(workspace.scripts.check, /cd \.\.\/\.\./);
@@ -79,4 +83,14 @@ test('verify reuses prepared integration output and maintenance commands are can
   assert.equal(root.scripts['dev:termux'], 'sh scripts/termux-dev.sh');
   assert.equal(root.scripts.clean, 'node scripts/clean.mjs');
   assert.equal(root.scripts['check:docs'], 'node scripts/check-docs.mjs');
+});
+
+test('prepared build isolates API, Web type-check, and Vite into child processes', async () => {
+  const source = await readFile(
+    new URL('../../scripts/build-prepared.mjs', import.meta.url),
+    'utf8'
+  );
+  assert.match(source, /spawn/);
+  assert.doesNotMatch(source, /emitTypeScriptProject|checkTypeScriptProject/);
+  assert.doesNotMatch(source, /await import\(viteModule\)/);
 });

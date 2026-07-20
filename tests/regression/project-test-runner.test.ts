@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-test('test runner discovers only sorted test files', async () => {
+test('test runner discovers only sorted test files and forbids shared-process escape hatches', async () => {
   const root = await mkdtemp(join(tmpdir(), 'novel-tool-test-runner-'));
   try {
     await mkdir(join(root, 'suite'), { recursive: true });
@@ -14,13 +14,43 @@ test('test runner discovers only sorted test files', async () => {
       writeFile(join(root, 'suite', 'helper.ts'), '')
     ]);
 
-    const { collectTestFiles, chunkTestFiles, createTestBatches } =
-      await import('../../scripts/run-test-files.mjs');
+    const { collectTestFiles } = await import('../../scripts/run-test-files.mjs');
     const files = await collectTestFiles(join(root, 'suite'));
     assert.deepEqual(files, [join(root, 'suite', 'a.test.ts'), join(root, 'suite', 'b.test.ts')]);
-    assert.deepEqual(chunkTestFiles(files, 1), [[files[0]], [files[1]]]);
-    assert.deepEqual(createTestBatches(files, 2, new Set(['b.test.ts'])), [[files[0]], [files[1]]]);
+
+    const runnerSource = await readFile('scripts/run-test-files.mjs', 'utf8');
+    assert.equal(runnerSource.includes('--experimental-test-isolation=none'), false);
+    assert.equal(runnerSource.includes('--test-force-exit'), false);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('test runner summarizes isolated TAP results without streaming successful child output', async () => {
+  const { parseTestSummary } = await import('../../scripts/run-test-files.mjs');
+  assert.deepEqual(
+    parseTestSummary(
+      `# tests 4\n# suites 1\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 1\n# todo 0\n`
+    ),
+    { tests: 4, pass: 3, fail: 0, skipped: 1 }
+  );
+
+  const runnerSource = await readFile('scripts/run-test-files.mjs', 'utf8');
+  assert.equal(runnerSource.includes("stdio: 'inherit'"), false);
+});
+
+test('external sandbox lifecycle tests run exclusively from other test processes', async () => {
+  const { partitionTestFiles } = await import('../../scripts/run-test-files.mjs');
+  const files = [
+    '/repo/tests/regression/a.test.ts',
+    '/repo/tests/regression/source-reader-external-process-sandbox.test.ts',
+    '/repo/tests/regression/source-reader-external-context-parity.test.ts'
+  ];
+  assert.deepEqual(partitionTestFiles('regression', files), {
+    regular: ['/repo/tests/regression/a.test.ts'],
+    exclusive: [
+      '/repo/tests/regression/source-reader-external-context-parity.test.ts',
+      '/repo/tests/regression/source-reader-external-process-sandbox.test.ts'
+    ]
+  });
 });

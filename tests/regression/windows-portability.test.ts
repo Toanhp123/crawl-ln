@@ -21,3 +21,14 @@ test('database reset is cross-platform', () => {
   assert.equal(apiPackage.scripts['db:reset'], 'node scripts/reset-db.mjs');
   assert.doesNotMatch(apiPackage.scripts['db:reset'], /\brm\s+-f\b/);
 });
+
+test('API build uses a Node script instead of POSIX mkdir and cp', async () => {
+  assert.equal(apiPackage.scripts.build, 'node scripts/build.mjs');
+  const source = await readFile(
+    new URL('../../apps/api/scripts/build.mjs', import.meta.url),
+    'utf8'
+  );
+  assert.match(source, /copyFile/);
+  assert.match(source, /mkdir/);
+  assert.doesNotMatch(source, /mkdir -p|\bcp\s/);
+});

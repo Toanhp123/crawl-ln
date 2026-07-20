@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, posix, win32 } from 'node:path';
 import test from 'node:test';
 
 async function exists(path: string): Promise<boolean> {
@@ -54,4 +54,14 @@ test('clean removes only generated artifacts and is idempotent', async () => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('clean path guard handles POSIX and Windows separators without allowing escapes', async () => {
+  const { isSafeCleanTarget } = await import('../../scripts/clean.mjs');
+  assert.equal(isSafeCleanTarget('/repo', '/repo/apps/api/dist', posix), true);
+  assert.equal(isSafeCleanTarget('/repo', '/repo', posix), false);
+  assert.equal(isSafeCleanTarget('/repo', '/outside/dist', posix), false);
+  assert.equal(isSafeCleanTarget('C:\\repo', 'C:\\repo\\apps\\api\\dist', win32), true);
+  assert.equal(isSafeCleanTarget('C:\\repo', 'C:\\repo', win32), false);
+  assert.equal(isSafeCleanTarget('C:\\repo', 'D:\\outside\\dist', win32), false);
 });

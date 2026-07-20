@@ -4,7 +4,8 @@ export const sourceUrlRequestSchema = z.object({
   url: z.string().url(),
   credentialProfileId: z.string().min(1).optional(),
   networkProfileId: z.string().min(1).optional(),
-  freshOnly: z.boolean().optional()
+  freshOnly: z.boolean().optional(),
+  timeoutMs: z.number().int().min(1).max(120_000).optional()
 });
 
 export const chapterListRequestSchema = sourceUrlRequestSchema.extend({

@@ -11,7 +11,11 @@ import { PluginContextFactory } from '../../apps/api/src/modules/source-reader/i
 
 const now = new Date('2026-07-20T00:00:00.000Z');
 
-function manifest(options?: { requiresBrowser?: boolean; browserPermission?: boolean }) {
+function manifest(options?: {
+  requiresBrowser?: boolean;
+  browserPermission?: boolean;
+  authenticationRequired?: boolean;
+}) {
   return {
     id: 'premium-demo',
     name: 'Premium Demo',
@@ -29,9 +33,13 @@ function manifest(options?: { requiresBrowser?: boolean; browserPermission?: boo
       authentication: true,
       ...(options?.browserPermission ? { browser: true } : {})
     },
-    runtimeRequirements: {
-      authentication: { required: true, methods: ['form-login' as const] }
-    }
+    ...(options?.authenticationRequired === false
+      ? {}
+      : {
+          runtimeRequirements: {
+            authentication: { required: true, methods: ['form-login' as const] }
+          }
+        })
   };
 }
 
@@ -253,6 +261,56 @@ test('browser-required read opens the approved browser identity and exposes only
     sourceAccountId: 'cred-1',
     credentialId: 'cred-1',
     sessionId: 'session-1',
+    networkIdentity: 'direct'
+  });
+});
+
+test('public browser-required read opens an anonymous browser identity without credentials', async () => {
+  const opened: Array<Record<string, unknown>> = [];
+  const plugin: SourceReaderPlugin = {
+    manifest: manifest({
+      requiresBrowser: true,
+      browserPermission: true,
+      authenticationRequired: false
+    }),
+    async readChapterContent({ url }, context) {
+      assert.ok(context.browser);
+      return { data: { title: 'Public', url, rawText: 'public', cleanText: 'public' } };
+    }
+  };
+  const reader = createReader({
+    plugin,
+    browser: {
+      open: async (input) => {
+        opened.push(input);
+        return {
+          id: 'public-browser',
+          open: async () => undefined,
+          waitFor: async () => undefined,
+          text: async () => 'public',
+          html: async () => '<p>public</p>',
+          click: async () => undefined,
+          fillSecret: async () => undefined,
+          cookies: async () => [],
+          close: async () => undefined
+        };
+      },
+      closeByIdentity: async () => undefined
+    },
+    runtimeContext: {
+      resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
+      executionMode: 'in-process',
+      browserRequired: true,
+      cacheIdentity: { public: 'public', network: 'direct' }
+    }
+  });
+
+  const result = await reader.readChapterContent({ url: 'https://example.test/public/1' });
+  assert.equal(result.data.cleanText, 'public');
+  assert.deepEqual(opened[0]?.identity, {
+    pluginId: 'premium-demo',
+    pluginVersion: '1.0.0',
+    sourceAccountId: 'public:example.test',
     networkIdentity: 'direct'
   });
 });

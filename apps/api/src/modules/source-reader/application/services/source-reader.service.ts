@@ -47,6 +47,7 @@ import { PublicCacheRefreshService } from './public-cache-refresh.service.js';
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
 const CURSOR_TTL_MS = 24 * 60 * 60_000;
+const MAX_STREAM_PAGES = 10_000;
 const DISCOVERABLE_CAPABILITIES: Array<Exclude<SourceCapability, 'authentication'>> = [
   'identify',
   'metadata',
@@ -63,6 +64,7 @@ interface ExecutableRequest {
   requestId?: string;
   signal?: AbortSignal;
   freshOnly?: boolean;
+  timeoutMs?: number;
   cursor?: string;
   limit?: number;
   query?: string;
@@ -194,10 +196,28 @@ export class SourceReaderService implements SourceReaderApi {
   async *streamChapterList(request: StreamChapterListRequest) {
     const batchSize = this.limit(request.batchSize);
     let cursor: string | undefined;
+    let pages = 0;
+    const seenCursors = new Set<string>();
     do {
+      if (++pages > MAX_STREAM_PAGES) {
+        throw new SourceReaderError(
+          'SOURCE_RESPONSE_TOO_LARGE',
+          'Chapter-list stream exceeded the page limit',
+          { retryable: false, fallbackAllowed: false }
+        );
+      }
       const page = await this.readChapterList({ ...request, cursor, limit: batchSize });
       yield { ...page, data: page.data.items };
-      cursor = page.data.nextCursor;
+      const nextCursor = page.data.nextCursor;
+      if (nextCursor && (nextCursor === cursor || seenCursors.has(nextCursor))) {
+        throw new SourceReaderError(
+          'PLUGIN_RESULT_INVALID',
+          'Plugin chapter-list pagination did not make progress',
+          { retryable: false, fallbackAllowed: true }
+        );
+      }
+      if (nextCursor) seenCursors.add(nextCursor);
+      cursor = nextCursor;
     } while (cursor);
   }
 
@@ -240,6 +260,7 @@ export class SourceReaderService implements SourceReaderApi {
       let observedStartedAt: number | undefined;
       let circuitKey: string | undefined;
       let leaveRateLimit: (() => void) | undefined;
+      let browserSession: Awaited<ReturnType<BrowserRuntimePort['open']>> | undefined;
 
       try {
         const runtimeContext = await this.runtimeContexts.resolve({
@@ -333,7 +354,6 @@ export class SourceReaderService implements SourceReaderApi {
           domain: candidate.domain,
           runtimeMode: candidate.executionMode
         });
-        let browserSession;
         if (runtimeContext.browserRequired) {
           if (!candidate.plugin.manifest.permissions.browser) {
             throw new SourceReaderError(
@@ -342,7 +362,7 @@ export class SourceReaderService implements SourceReaderApi {
               { retryable: false, fallbackAllowed: false }
             );
           }
-          if (!this.browser || !runtimeContext.credential) {
+          if (!this.browser) {
             throw new SourceReaderError('PLUGIN_UNAVAILABLE', 'Browser runtime is unavailable', {
               retryable: true,
               fallbackAllowed: false
@@ -357,8 +377,8 @@ export class SourceReaderService implements SourceReaderApi {
               ...(request.userId ? { userId: request.userId } : {}),
               pluginId: candidate.plugin.manifest.id,
               pluginVersion: candidate.plugin.manifest.version,
-              sourceAccountId: runtimeContext.credential.id,
-              credentialId: runtimeContext.credential.id,
+              sourceAccountId: runtimeContext.credential?.id ?? `public:${candidate.domain}`,
+              ...(runtimeContext.credential ? { credentialId: runtimeContext.credential.id } : {}),
               ...(runtimeContext.session ? { sessionId: runtimeContext.session.id } : {}),
               ...(runtimeContext.networkRoute
                 ? { networkRouteId: runtimeContext.networkRoute.id }
@@ -409,7 +429,8 @@ export class SourceReaderService implements SourceReaderApi {
           registration: candidate,
           capability,
           request: this.pluginRequest(capability, request, cursorPayload),
-          context
+          context,
+          timeoutMs: request.timeoutMs
         })) as PluginOperationResult<T>;
         let data = validatePluginResult(capability, operation.data) as T;
         const validatedExtensions = validatePluginExtensions(
@@ -664,12 +685,24 @@ export class SourceReaderService implements SourceReaderApi {
     request: ExecutableRequest,
     cursor: CursorPayload | undefined
   ): Record<string, unknown> {
-    const pluginRequest: Record<string, unknown> = { ...request };
-    if (isPagedCapability(capability)) {
-      pluginRequest.cursor = cursor?.pluginCursor;
-      pluginRequest.limit = MAX_LIMIT;
+    switch (capability) {
+      case 'search':
+        return {
+          url: request.url,
+          query: request.query ?? '',
+          ...(cursor?.pluginCursor ? { cursor: cursor.pluginCursor } : {}),
+          limit: MAX_LIMIT
+        };
+      case 'chapter-list':
+      case 'latest-updates':
+        return {
+          url: request.url,
+          ...(cursor?.pluginCursor ? { cursor: cursor.pluginCursor } : {}),
+          limit: MAX_LIMIT
+        };
+      default:
+        return { url: request.url };
     }
-    return pluginRequest;
   }
 
   private paginateResult(
@@ -680,8 +713,21 @@ export class SourceReaderService implements SourceReaderApi {
     requestFingerprint: string,
     cursor: CursorPayload | undefined
   ): Page<unknown> {
+    if (page.hasMore && !page.nextCursor) {
+      this.paginationInvalid('Plugin page reports more data without a next cursor');
+    }
+    if (page.hasMore && page.items.length === 0) {
+      this.paginationInvalid('Plugin page reports more data without returning any items');
+    }
+    if (page.hasMore && page.nextCursor === cursor?.pluginCursor) {
+      this.paginationInvalid('Plugin pagination cursor did not advance');
+    }
+
     const limit = this.limit(request.limit);
     const offset = cursor?.offset ?? 0;
+    if (offset > page.items.length) {
+      this.paginationInvalid('Plugin page no longer contains the signed cursor offset');
+    }
     const items = page.items.slice(offset, offset + limit);
     const consumed = offset + items.length;
 
@@ -713,6 +759,13 @@ export class SourceReaderService implements SourceReaderApi {
     }
 
     return { items, nextCursor, hasMore: nextCursor !== undefined };
+  }
+
+  private paginationInvalid(message: string): never {
+    throw new SourceReaderError('PLUGIN_RESULT_INVALID', message, {
+      retryable: false,
+      fallbackAllowed: true
+    });
   }
 
   private cacheTags(

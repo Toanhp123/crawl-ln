@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { InProcessPluginRuntime } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.ts';
+import { RuntimeRouter } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/runtime-router.ts';
 import { PluginContextFactory } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/plugin-context.factory.ts';
 import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
 
@@ -72,4 +73,100 @@ test('in-process runtime dispatches only the requested capability', async () => 
     context: {} as never
   });
   assert.equal((result.data as { title: string }).title, 'Book');
+});
+
+test('runtime router enforces request-specific timeout for an uncooperative in-process plugin', async () => {
+  let pluginSignal: AbortSignal | undefined;
+  const router = new RuntimeRouter(
+    new InProcessPluginRuntime(),
+    {
+      start: async () => {
+        throw new Error('external runtime should not start');
+      }
+    } as never,
+    5_000
+  );
+
+  await assert.rejects(
+    () =>
+      router.invoke({
+        registration: {
+          plugin: {
+            manifest: {
+              id: 'hanging-demo',
+              name: 'Hanging Demo',
+              version: '1.0.0',
+              engines: { sourceReader: '>=1.0.0 <2.0.0' },
+              capabilities: ['metadata'],
+              contracts: { metadata: 1 },
+              matchers: [{ hosts: ['example.test'], priority: 1 }],
+              runtime: { preferredMode: 'in-process' },
+              permissions: { network: { hosts: ['example.test'] } }
+            },
+            readMetadata: async (_request, context) => {
+              pluginSignal = context.signal;
+              return new Promise(() => undefined);
+            }
+          },
+          trustLevel: 'built-in',
+          executionMode: 'in-process',
+          enabled: true
+        },
+        capability: 'metadata',
+        request: { url: 'https://example.test/book' },
+        context: { signal: new AbortController().signal } as never,
+        timeoutMs: 25
+      }),
+    (error: unknown) =>
+      error instanceof SourceReaderError && error.code === 'SOURCE_REQUEST_TIMEOUT'
+  );
+  assert.equal(pluginSignal?.aborted, true);
+});
+
+test('runtime router uses the requested timeout when building an isolated deadline', async () => {
+  let deadlineAt = '';
+  const before = Date.now();
+  const router = new RuntimeRouter(
+    new InProcessPluginRuntime(),
+    {
+      start: async () => ({
+        request: async (request: { deadlineAt: string }) => {
+          deadlineAt = request.deadlineAt;
+          return {
+            data: { title: 'Book', sourceUrl: 'https://example.test/book', sourceName: 'Demo' }
+          };
+        },
+        terminate: async () => undefined
+      })
+    } as never,
+    5_000
+  );
+  await router.invoke({
+    registration: {
+      plugin: {
+        manifest: {
+          id: 'isolated-demo',
+          name: 'Isolated Demo',
+          version: '1.0.0',
+          engines: { sourceReader: '>=1.0.0 <2.0.0' },
+          capabilities: ['metadata'],
+          contracts: { metadata: 1 },
+          matchers: [{ hosts: ['example.test'], priority: 1 }],
+          runtime: { preferredMode: 'isolated' },
+          permissions: { network: { hosts: ['example.test'] } }
+        }
+      },
+      trustLevel: 'signed',
+      executionMode: 'isolated',
+      enabled: true,
+      packagePath: '/tmp/isolated-demo'
+    },
+    capability: 'metadata',
+    request: { url: 'https://example.test/book' },
+    context: { signal: new AbortController().signal, clock: { now: () => '' } } as never,
+    timeoutMs: 40
+  });
+  const deadlineMs = Date.parse(deadlineAt);
+  assert.ok(deadlineMs >= before + 20);
+  assert.ok(deadlineMs <= Date.now() + 100);
 });

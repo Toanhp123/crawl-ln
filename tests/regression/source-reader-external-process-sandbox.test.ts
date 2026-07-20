@@ -173,3 +173,49 @@ test('timeout and cancellation terminate the sandbox handle after the grace peri
   );
   assert.equal(supervisor.get('pure-compute', '1.0.0'), undefined);
 });
+
+test('deep sandbox responses are rejected without escaping the host message handler', async (t) => {
+  const root = await mkdtemp(resolve(tmpdir(), 'source-reader-deep-rpc-'));
+  await mkdir(resolve(root, 'dist'), { recursive: true });
+  await writeFile(
+    resolve(root, 'dist/index.js'),
+    `export async function invokeCapability() {
+      let value = 'leaf';
+      for (let index = 0; index < 1_200; index += 1) value = { nested: value };
+      return { data: value };
+    }`
+  );
+  const supervisor = new ExternalProcessSupervisor({
+    startupTimeoutMs: 30_000,
+    cancelGraceMs: 20
+  });
+  t.after(() => supervisor.stop('deep-rpc', '1.0.0', 'test-complete'));
+  const handle = await supervisor.start({
+    pluginId: 'deep-rpc',
+    pluginVersion: '1.0.0',
+    packageRoot: root,
+    entryPath: resolve(root, 'dist/index.js')
+  });
+  const uncaught: unknown[] = [];
+  const onUncaught = (error: unknown) => uncaught.push(error);
+  process.on('uncaughtException', onUncaught);
+  t.after(() => process.off('uncaughtException', onUncaught));
+
+  await assert.rejects(
+    () =>
+      handle.request(
+        {
+          requestId: randomUUID(),
+          operation: 'invokeCapability',
+          deadlineAt: deadline(1_000),
+          payload: { capability: 'metadata', request: { url: 'https://example.test/book' } }
+        },
+        new AbortController().signal
+      ),
+    (error: unknown) =>
+      error instanceof SourceReaderError && error.code === 'PLUGIN_RPC_PROTOCOL_INVALID'
+  );
+  await new Promise((resolveTick) => setImmediate(resolveTick));
+  assert.deepEqual(uncaught, []);
+  assert.equal(supervisor.get('deep-rpc', '1.0.0'), undefined);
+});

@@ -15,7 +15,7 @@ import {
   type SandboxHostCallFrame,
   type SandboxToHostFrame
 } from './sandbox-protocol.js';
-import { hostToSandboxFrameSchema, sandboxToHostFrameSchema } from './sandbox-protocol.schema.js';
+import { parseHostToSandboxFrame, parseSandboxToHostFrame } from './sandbox-protocol.schema.js';
 import { minimumSupportedNodeVersion, sandboxEntryPath } from './sandbox-bootstrap.js';
 import { validateSandboxPackage } from './sandbox-module-loader.js';
 import type { SourceReaderStructuredLogger } from '../../../application/services/source-reader-structured-logger.js';
@@ -205,7 +205,7 @@ async function dispatchHostCall(
 }
 
 function send(child: ChildProcess, frame: HostToSandboxFrame): void {
-  const parsed = hostToSandboxFrameSchema.safeParse(frame);
+  const parsed = parseHostToSandboxFrame(frame);
   if (!parsed.success) {
     throw new SourceReaderError('PLUGIN_RPC_PROTOCOL_INVALID', 'Sandbox RPC frame is invalid', {
       retryable: false,
@@ -243,7 +243,7 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
     if (this.terminated || !this.child.connected) {
       throw this.unavailable('Plugin sandbox is unavailable');
     }
-    const parsed = hostToSandboxFrameSchema.safeParse({
+    const parsed = parseHostToSandboxFrame({
       protocolVersion: SANDBOX_PROTOCOL_VERSION,
       type: 'request',
       ...request
@@ -332,7 +332,7 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
   }
 
   private onMessage(value: unknown): void {
-    const parsed = sandboxToHostFrameSchema.safeParse(value);
+    const parsed = parseSandboxToHostFrame(value);
     if (!parsed.success) {
       void this.terminate('invalid-rpc-frame');
       this.failAll(
@@ -457,7 +457,7 @@ export class ExternalProcessSupervisor implements ExternalPluginSupervisorPort {
           this.options.startupTimeoutMs
         );
         const onMessage = (value: unknown) => {
-          const parsed = sandboxToHostFrameSchema.safeParse(value);
+          const parsed = parseSandboxToHostFrame(value);
           if (parsed.success && parsed.data.type === 'hello') {
             clearTimeout(timer);
             child.off('message', onMessage);

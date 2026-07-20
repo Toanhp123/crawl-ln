@@ -146,3 +146,22 @@ test('required session route mismatch fails before plugin invocation', async () 
       error instanceof SourceReaderError && error.code === 'SESSION_BINDING_MISMATCH'
   );
 });
+
+test('browser requirement is independent from authentication requirements', async () => {
+  const resolver = new RuntimeContextResolverService(
+    { findHandleById: async () => undefined, findCandidates: async () => [] } as never,
+    networks as never,
+    sessions as never,
+    routes as never
+  );
+  const result = await resolver.resolve({
+    pluginId: 'public-browser',
+    pluginVersion: '1.0.0',
+    domain: 'example.test',
+    capability: 'metadata',
+    runtimeRequirements: {},
+    requiresBrowser: true
+  });
+  assert.equal(result.credential, undefined);
+  assert.equal(result.browserRequired, true);
+});

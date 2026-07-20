@@ -221,7 +221,15 @@ export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
       signal: input.signal,
       browserExecutablePath: this.options.browserExecutablePath,
       route: input.route,
-      credentialResolver: this.options.credentialResolver,
+      credentialResolver:
+        input.identity.credentialId && this.options.credentialResolver
+          ? async (handle) => {
+              if (handle.credentialId !== input.identity.credentialId) {
+                throw new Error('Browser secret handle is outside the approved credential scope');
+              }
+              return this.options.credentialResolver!(handle);
+            }
+          : undefined,
       maxLifetimeMs: this.options.maxLifetimeMs ?? 10 * 60_000,
       maxNavigations: this.options.maxNavigations ?? 50,
       commandTimeoutMs: this.options.commandTimeoutMs ?? 30_000,

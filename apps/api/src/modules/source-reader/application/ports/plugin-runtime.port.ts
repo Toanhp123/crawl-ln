@@ -7,6 +7,7 @@ export interface PluginInvocation {
   capability: SourceCapability;
   request: Record<string, unknown>;
   context: PluginContext;
+  timeoutMs?: number;
 }
 
 export interface PluginRuntimePort {

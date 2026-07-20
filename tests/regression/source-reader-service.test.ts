@@ -301,3 +301,108 @@ test('service skips a capability candidate while its health circuit is open', as
   assert.equal(result.data.title, 'Low');
   assert.equal(highCalls, 0);
 });
+
+test('service exposes only capability contract fields to plugins', async () => {
+  const received: Array<Record<string, unknown>> = [];
+  const plugin: SourceReaderPlugin = {
+    manifest: manifest('least-privilege', 1),
+    readMetadata: async (request) => {
+      received.push(request);
+      return {
+        data: { title: 'Book', sourceUrl: request.url, sourceName: 'Demo' }
+      };
+    },
+    readChapterList: async (request) => {
+      received.push(request);
+      return { data: { items: [], hasMore: false } };
+    }
+  };
+  const service = createService([plugin]);
+  await service.readMetadata({
+    url: 'https://example.test/book',
+    userId: 'u1',
+    credentialProfileId: 'cred-1',
+    networkProfileId: 'route-1',
+    requestId: 'request-1',
+    freshOnly: true,
+    timeoutMs: 25,
+    signal: new AbortController().signal
+  });
+  await service.readChapterList({
+    url: 'https://example.test/book',
+    userId: 'u1',
+    credentialProfileId: 'cred-1',
+    networkProfileId: 'route-1',
+    requestId: 'request-2',
+    freshOnly: true,
+    timeoutMs: 25,
+    limit: 10
+  });
+  assert.deepEqual(received, [
+    { url: 'https://example.test/book' },
+    { url: 'https://example.test/book', limit: 500 }
+  ]);
+});
+
+test('service rejects paged plugin results that claim more data without a cursor', async () => {
+  const plugin: SourceReaderPlugin = {
+    manifest: manifest('missing-cursor', 1),
+    readMetadata: async ({ url }) => ({
+      data: { title: 'Book', sourceUrl: url, sourceName: 'Demo' }
+    }),
+    readChapterList: async ({ url }) => ({
+      data: {
+        items: [{ index: 1, title: 'Chapter 1', url: `${url}/1` }],
+        hasMore: true
+      }
+    })
+  };
+  await assert.rejects(
+    () => createService([plugin]).readChapterList({ url: 'https://example.test/book' }),
+    (error: unknown) => error instanceof SourceReaderError && error.code === 'PLUGIN_RESULT_INVALID'
+  );
+});
+
+test('service rejects empty and repeated plugin pagination progress', async () => {
+  const emptyPlugin: SourceReaderPlugin = {
+    manifest: manifest('empty-progress', 1),
+    readMetadata: async ({ url }) => ({
+      data: { title: 'Book', sourceUrl: url, sourceName: 'Demo' }
+    }),
+    readChapterList: async () => ({
+      data: { items: [], hasMore: true, nextCursor: 'next' }
+    })
+  };
+  await assert.rejects(
+    () => createService([emptyPlugin]).readChapterList({ url: 'https://example.test/book' }),
+    (error: unknown) => error instanceof SourceReaderError && error.code === 'PLUGIN_RESULT_INVALID'
+  );
+
+  const repeatedPlugin: SourceReaderPlugin = {
+    manifest: manifest('repeated-progress', 1),
+    readMetadata: async ({ url }) => ({
+      data: { title: 'Book', sourceUrl: url, sourceName: 'Demo' }
+    }),
+    readChapterList: async ({ url, cursor }) => ({
+      data: {
+        items: [{ index: cursor ? 2 : 1, title: 'Chapter', url: `${url}/${cursor ? 2 : 1}` }],
+        hasMore: true,
+        nextCursor: 'same'
+      }
+    })
+  };
+  const service = createService([repeatedPlugin]);
+  const first = await service.readChapterList({
+    url: 'https://example.test/book',
+    limit: 1
+  });
+  await assert.rejects(
+    () =>
+      service.readChapterList({
+        url: 'https://example.test/book',
+        limit: 1,
+        cursor: first.data.nextCursor
+      }),
+    (error: unknown) => error instanceof SourceReaderError && error.code === 'PLUGIN_RESULT_INVALID'
+  );
+});

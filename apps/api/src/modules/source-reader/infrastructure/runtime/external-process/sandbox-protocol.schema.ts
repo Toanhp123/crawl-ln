@@ -4,6 +4,10 @@ const protocolVersion = z.literal(1);
 const safeId = z.string().min(1).max(160);
 const safeString = z.string().max(200_000);
 
+const MAX_PROTOCOL_DEPTH = 32;
+const MAX_PROTOCOL_NODES = 10_000;
+const MAX_PROTOCOL_BYTES = 512_000;
+
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 const boundedJsonValue: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([
@@ -137,3 +141,84 @@ export const sandboxToHostFrameSchema = z.union([
     .strict(),
   sandboxHostCallFrameSchema
 ]);
+
+type ProtocolParseResult<T> = { success: true; data: T } | { success: false };
+
+function isProtocolFrameWithinBounds(root: unknown): boolean {
+  const stack: Array<{ value: unknown; depth: number }> = [{ value: root, depth: 0 }];
+  const seen = new WeakSet<object>();
+  let nodes = 0;
+  let bytes = 0;
+
+  try {
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      nodes += 1;
+      if (nodes > MAX_PROTOCOL_NODES || current.depth > MAX_PROTOCOL_DEPTH) return false;
+
+      const value = current.value;
+      if (value === null) {
+        bytes += 4;
+      } else if (typeof value === 'string') {
+        bytes += Buffer.byteLength(value, 'utf8') + 2;
+      } else if (typeof value === 'number') {
+        bytes += 24;
+      } else if (typeof value === 'boolean') {
+        bytes += 5;
+      } else if (typeof value === 'undefined') {
+        // Optional top-level protocol properties may be present with undefined; Zod decides validity.
+        bytes += 0;
+      } else if (typeof value === 'object') {
+        if (seen.has(value)) return false;
+        seen.add(value);
+        if (Array.isArray(value)) {
+          bytes += value.length + 2;
+          for (const child of value) stack.push({ value: child, depth: current.depth + 1 });
+        } else {
+          const prototype = Object.getPrototypeOf(value);
+          if (prototype !== Object.prototype && prototype !== null) return false;
+          const keys = Object.keys(value);
+          if (Reflect.ownKeys(value).length !== keys.length) return false;
+          bytes += keys.length + 2;
+          for (const key of keys) {
+            bytes += Buffer.byteLength(key, 'utf8') + 3;
+            stack.push({
+              value: (value as Record<string, unknown>)[key],
+              depth: current.depth + 1
+            });
+          }
+        }
+      } else {
+        return false;
+      }
+
+      if (bytes > MAX_PROTOCOL_BYTES) return false;
+    }
+  } catch {
+    return false;
+  }
+
+  return true;
+}
+
+function parseBounded<T>(schema: z.ZodType<T>, value: unknown): ProtocolParseResult<T> {
+  if (!isProtocolFrameWithinBounds(value)) return { success: false };
+  try {
+    const parsed = schema.safeParse(value);
+    return parsed.success ? { success: true, data: parsed.data } : { success: false };
+  } catch {
+    return { success: false };
+  }
+}
+
+export function parseHostToSandboxFrame(
+  value: unknown
+): ProtocolParseResult<z.infer<typeof hostToSandboxFrameSchema>> {
+  return parseBounded(hostToSandboxFrameSchema, value);
+}
+
+export function parseSandboxToHostFrame(
+  value: unknown
+): ProtocolParseResult<z.infer<typeof sandboxToHostFrameSchema>> {
+  return parseBounded(sandboxToHostFrameSchema, value);
+}

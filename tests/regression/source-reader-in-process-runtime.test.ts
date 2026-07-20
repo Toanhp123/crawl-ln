@@ -12,6 +12,7 @@ const parser = {
     queryAll: () => [],
     nodeText: () => '',
     nodeAttr: () => undefined,
+    nodeHtml: () => '',
     remove: () => undefined
   })
 };

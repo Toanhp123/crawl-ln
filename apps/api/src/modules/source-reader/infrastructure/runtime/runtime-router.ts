@@ -45,7 +45,8 @@ export class RuntimeRouter implements PluginRuntimePort {
             request: invocation.request,
             context: {
               now: invocation.context.clock.now(),
-              normalizedUrl: String(invocation.request.url ?? '')
+              normalizedUrl: String(invocation.request.url ?? ''),
+              browserAvailable: Boolean(invocation.context.browser)
             }
           }
         },

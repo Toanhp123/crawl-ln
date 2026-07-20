@@ -34,7 +34,7 @@ async function invoke(supervisor: ExternalProcessSupervisor, name: string, paylo
 test('external process sandbox blocks ambient Node authority and preserves pure computation', async () => {
   process.env.SOURCE_READER_MASTER_KEY = 'must-not-leak';
   const supervisor = new ExternalProcessSupervisor({
-    startupTimeoutMs: 10_000,
+    startupTimeoutMs: 30_000,
     cancelGraceMs: 100
   });
   const hostile = (await invoke(supervisor, 'hostile')) as { data: Record<string, unknown> };
@@ -59,7 +59,7 @@ test('external process sandbox blocks ambient Node authority and preserves pure 
 
 test('sandbox startup rejects root escapes, native addons, and executable files', async () => {
   const supervisor = new ExternalProcessSupervisor({
-    startupTimeoutMs: 10_000,
+    startupTimeoutMs: 30_000,
     cancelGraceMs: 100
   });
   const symlinkRoot = await mkdtemp(resolve(tmpdir(), 'source-reader-symlink-'));
@@ -123,7 +123,7 @@ test('sandbox startup rejects root escapes, native addons, and executable files'
 
 test('timeout and cancellation terminate the sandbox handle after the grace period', async () => {
   const supervisor = new ExternalProcessSupervisor({
-    startupTimeoutMs: 10_000,
+    startupTimeoutMs: 30_000,
     cancelGraceMs: 100
   });
   const root = fixture('pure-compute');

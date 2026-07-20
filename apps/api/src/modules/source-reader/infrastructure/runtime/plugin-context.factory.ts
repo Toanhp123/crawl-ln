@@ -110,7 +110,7 @@ export class PluginContextFactory implements PluginContextFactoryPort {
                 text: (childSelector) =>
                   childSelector ? document.nodeText(node, childSelector) : document.nodeText(node),
                 attr: (name) => document.nodeAttr(node, name),
-                html: () => ''
+                html: (selector) => document.nodeHtml(node, selector)
               }))
           };
         }

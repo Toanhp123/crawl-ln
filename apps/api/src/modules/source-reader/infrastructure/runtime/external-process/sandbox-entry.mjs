@@ -76,14 +76,31 @@ const createContext = (requestId, payload) => {
   return harden({
     http: harden({ get: (url, options) => call('http', 'get', [url, options]) }),
     html: harden({
-      load: (source) =>
-        harden({
-          text: (selector) => call('html', 'text', [source, selector]),
-          attr: (selector, name) => call('html', 'attr', [source, selector, name]),
-          html: (selector) => call('html', 'html', [source, selector]),
-          all: () => [],
-          remove: () => undefined
-        })
+      load: (source) => {
+        const documentId = call('html', 'load', [source]);
+        const documentCall = async (method, args = []) =>
+          call('html', method, [await documentId, ...args]);
+        const nodeProxy = (nodeId) =>
+          harden({
+            text: (selector) =>
+              selector === undefined
+                ? call('html', 'nodeText', [nodeId])
+                : call('html', 'nodeText', [nodeId, selector]),
+            attr: (name) => call('html', 'nodeAttr', [nodeId, name]),
+            html: (selector) =>
+              selector === undefined
+                ? call('html', 'nodeHtml', [nodeId])
+                : call('html', 'nodeHtml', [nodeId, selector])
+          });
+        return harden({
+          text: (selector) => documentCall('text', [selector]),
+          attr: (selector, name) => documentCall('attr', [selector, name]),
+          html: (selector) => documentCall('html', [selector]),
+          all: async (selector) =>
+            (await documentCall('all', [selector])).map((nodeId) => nodeProxy(nodeId)),
+          remove: (selector) => documentCall('remove', [selector])
+        });
+      }
     }),
     url: harden({
       normalize: (value) => call('url', 'normalize', [value]),
@@ -93,6 +110,19 @@ const createContext = (requestId, payload) => {
       get: (key) => call('cache', 'get', [key]),
       set: (key, value, ttlMs) => call('cache', 'set', [key, value, ttlMs])
     }),
+    ...(contextData.browserAvailable === true
+      ? {
+          browser: harden({
+            open: (url) => call('browser', 'open', [url]),
+            waitFor: (selector) => call('browser', 'waitFor', [selector]),
+            text: (selector) => call('browser', 'text', [selector]),
+            html: (selector) => call('browser', 'html', [selector]),
+            click: (selector) => call('browser', 'click', [selector]),
+            fillSecret: (selector, handle) => call('browser', 'fillSecret', [selector, handle]),
+            cookies: () => call('browser', 'cookies', [])
+          })
+        }
+      : {}),
     logger: harden({
       info: (message, metadata) => call('logger', 'info', [message, metadata]),
       warn: (message, metadata) => call('logger', 'warn', [message, metadata])

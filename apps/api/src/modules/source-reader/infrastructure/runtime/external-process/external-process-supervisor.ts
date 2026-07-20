@@ -19,9 +19,11 @@ import { hostToSandboxFrameSchema, sandboxToHostFrameSchema } from './sandbox-pr
 import { minimumSupportedNodeVersion, sandboxEntryPath } from './sandbox-bootstrap.js';
 import { validateSandboxPackage } from './sandbox-module-loader.js';
 import type { SourceReaderStructuredLogger } from '../../../application/services/source-reader-structured-logger.js';
+import { OpaqueHtmlHandleStore } from './opaque-html-handle.store.js';
 
 interface PendingRequest {
   host?: ExternalPluginHostBridge;
+  htmlHandles?: OpaqueHtmlHandleStore;
   resolve(value: unknown): void;
   reject(error: unknown): void;
   timer: NodeJS.Timeout;
@@ -74,17 +76,48 @@ async function dispatchHostCall(
         if (!context) throw new Error('HTTP host context is unavailable');
         value = await context.http.get(String(first), (second ?? undefined) as never);
         break;
+      case 'html.load':
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        value = pending.htmlHandles.load(String(first));
+        break;
       case 'html.text':
-        if (!context) throw new Error('HTML host context is unavailable');
-        value = context.html.load(String(first)).text(String(second));
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        value = pending.htmlHandles.text(String(first), String(second));
         break;
       case 'html.attr':
-        if (!context) throw new Error('HTML host context is unavailable');
-        value = context.html.load(String(first)).attr(String(second), String(third));
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        value = pending.htmlHandles.attr(String(first), String(second), String(third));
         break;
       case 'html.html':
-        if (!context) throw new Error('HTML host context is unavailable');
-        value = context.html.load(String(first)).html(String(second));
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        value = pending.htmlHandles.html(String(first), String(second));
+        break;
+      case 'html.all':
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        value = pending.htmlHandles.all(String(first), String(second));
+        break;
+      case 'html.remove':
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        pending.htmlHandles.remove(String(first), String(second));
+        value = undefined;
+        break;
+      case 'html.nodeText':
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        value = pending.htmlHandles.nodeText(
+          String(first),
+          typeof second === 'string' ? second : undefined
+        );
+        break;
+      case 'html.nodeAttr':
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        value = pending.htmlHandles.nodeAttr(String(first), String(second));
+        break;
+      case 'html.nodeHtml':
+        if (!pending?.htmlHandles) throw new Error('HTML host context is unavailable');
+        value = pending.htmlHandles.nodeHtml(
+          String(first),
+          typeof second === 'string' ? second : undefined
+        );
         break;
       case 'url.normalize':
         if (!context) throw new Error('URL host context is unavailable');
@@ -112,6 +145,41 @@ async function dispatchHostCall(
         if (!context) throw new Error('Logger host context is unavailable');
         context.logger.warn(String(first), second as Record<string, unknown> | undefined);
         value = undefined;
+        break;
+      case 'browser.open':
+        if (!context?.browser) throw new Error('Browser host context is unavailable');
+        await context.browser.open(String(first));
+        value = undefined;
+        break;
+      case 'browser.waitFor':
+        if (!context?.browser) throw new Error('Browser host context is unavailable');
+        await context.browser.waitFor(String(first));
+        value = undefined;
+        break;
+      case 'browser.text':
+        if (!context?.browser) throw new Error('Browser host context is unavailable');
+        value = await context.browser.text(String(first));
+        break;
+      case 'browser.html':
+        if (!context?.browser) throw new Error('Browser host context is unavailable');
+        value = await context.browser.html(String(first));
+        break;
+      case 'browser.click':
+        if (!context?.browser) throw new Error('Browser host context is unavailable');
+        await context.browser.click(String(first));
+        value = undefined;
+        break;
+      case 'browser.fillSecret':
+        if (!context?.browser) throw new Error('Browser host context is unavailable');
+        await context.browser.fillSecret(
+          String(first),
+          second as { credentialId: string; field: string }
+        );
+        value = undefined;
+        break;
+      case 'browser.cookies':
+        if (!context?.browser) throw new Error('Browser host context is unavailable');
+        value = await context.browser.cookies();
         break;
       default:
         throw new Error(`Sandbox host call is not allowed: ${frame.service}.${frame.method}`);
@@ -196,7 +264,9 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
     const timeoutMs = Math.max(0, Date.parse(request.deadlineAt) - Date.now());
     return new Promise((resolveRequest, rejectRequest) => {
       const completeAfterTermination = async (error: SourceReaderError, reason: string) => {
-        if (!this.pending.has(request.requestId)) return;
+        const pending = this.pending.get(request.requestId);
+        if (!pending) return;
+        pending.htmlHandles?.release();
         this.pending.delete(request.requestId);
         send(this.child, {
           protocolVersion: SANDBOX_PROTOCOL_VERSION,
@@ -229,6 +299,7 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
         );
       this.pending.set(request.requestId, {
         host,
+        ...(host?.context ? { htmlHandles: new OpaqueHtmlHandleStore(host.context.html) } : {}),
         resolve: resolveRequest,
         reject: rejectRequest,
         timer,
@@ -281,6 +352,7 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
     }
     if (!pending) return;
     this.pending.delete(frame.requestId);
+    pending.htmlHandles?.release();
     clearTimeout(pending.timer);
     pending.signal.removeEventListener('abort', pending.onAbort);
     if (frame.ok) pending.resolve(frame.value);
@@ -289,6 +361,7 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
 
   private failAll(error: unknown): void {
     for (const pending of this.pending.values()) {
+      pending.htmlHandles?.release();
       clearTimeout(pending.timer);
       pending.signal.removeEventListener('abort', pending.onAbort);
       pending.reject(error);

@@ -74,6 +74,11 @@ export class CheerioHtmlDocument implements HtmlDocumentPort {
     return this.$(node as never).attr(name);
   }
 
+  nodeHtml(node: HtmlNode, selector?: string) {
+    const root = this.$(node as never);
+    return (selector ? root.find(selector).first().html() : root.html()) ?? '';
+  }
+
   remove(selector: string) {
     this.$(selector).remove();
   }

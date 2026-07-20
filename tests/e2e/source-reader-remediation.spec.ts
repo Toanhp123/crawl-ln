@@ -107,7 +107,7 @@ test('remediated Sources UI shows safe quarantine and diagnostics without secret
   await expect(
     page.getByText(/Không thể cập nhật nguồn truyện|Unable to update source/i)
   ).toBeVisible();
-  await expect(page.getByText(/Yêu cầu thất bại|Request failed/i)).toBeVisible();
+  await expect(page.getByText(/^(Yêu cầu thất bại\.?|Request failed\.?)$/i)).toBeVisible();
   await expect(page.getByText(secret)).toHaveCount(0);
 
   const screenshot = await page.screenshot();

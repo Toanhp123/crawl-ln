@@ -44,14 +44,38 @@ export interface SandboxResponseFrame {
   error?: { name: string; message: string; code?: string };
 }
 
-export interface SandboxHostCallFrame {
+interface SandboxHostCallBase {
   protocolVersion: 1;
   type: 'host-call';
   requestId: string;
   callId: string;
-  service: 'clock' | 'http' | 'html' | 'url' | 'cache' | 'logger';
-  method: string;
-  args: unknown[];
 }
+
+export type SandboxHostCallFrame = SandboxHostCallBase &
+  (
+    | { service: 'clock'; method: 'now'; args: [] }
+    | { service: 'http'; method: 'get'; args: [string, unknown?] }
+    | { service: 'html'; method: 'load'; args: [string] }
+    | { service: 'html'; method: 'text'; args: [string, string] }
+    | { service: 'html'; method: 'attr'; args: [string, string, string] }
+    | { service: 'html'; method: 'html'; args: [string, string] }
+    | { service: 'html'; method: 'all'; args: [string, string] }
+    | { service: 'html'; method: 'remove'; args: [string, string] }
+    | { service: 'html'; method: 'nodeText'; args: [string, string?] }
+    | { service: 'html'; method: 'nodeAttr'; args: [string, string] }
+    | { service: 'html'; method: 'nodeHtml'; args: [string, string?] }
+    | { service: 'url'; method: 'normalize'; args: [string] }
+    | { service: 'url'; method: 'resolve'; args: [string, string] }
+    | { service: 'cache'; method: 'get'; args: [string] }
+    | { service: 'cache'; method: 'set'; args: [string, unknown, number] }
+    | { service: 'logger'; method: 'info' | 'warn'; args: [string, unknown?] }
+    | { service: 'browser'; method: 'open' | 'waitFor' | 'text' | 'html' | 'click'; args: [string] }
+    | {
+        service: 'browser';
+        method: 'fillSecret';
+        args: [string, { credentialId: string; field: string }];
+      }
+    | { service: 'browser'; method: 'cookies'; args: [] }
+  );
 
 export type SandboxToHostFrame = SandboxHelloFrame | SandboxResponseFrame | SandboxHostCallFrame;

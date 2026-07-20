@@ -8,6 +8,7 @@ export interface HtmlDocumentPort {
   nodeText(node: HtmlNode): string;
   nodeText(node: HtmlNode, selector: string): string;
   nodeAttr(node: HtmlNode, name: string): string | undefined;
+  nodeHtml(node: HtmlNode, selector?: string): string;
   remove(selector: string): void;
 }
 

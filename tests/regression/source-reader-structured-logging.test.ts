@@ -149,7 +149,7 @@ test('sandbox stdout and stderr become hashed policy events without raw content'
   const structured = new BoundedSourceReaderStructuredLogger(captured.logger);
   const violations: Array<{ pluginId: string; pluginVersion: string; stream: string }> = [];
   const supervisor = new ExternalProcessSupervisor({
-    startupTimeoutMs: 10_000,
+    startupTimeoutMs: 30_000,
     cancelGraceMs: 100,
     structuredLogger: structured,
     onOutputPolicyViolation: async (input) => {

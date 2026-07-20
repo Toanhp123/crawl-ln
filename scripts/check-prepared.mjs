@@ -71,8 +71,10 @@ const isMain =
   process.argv[1] !== undefined && pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
 
 if (isMain) {
-  runPreparedChecks().catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  });
+  runPreparedChecks({ skipTypeScript: process.argv.includes('--skip-typescript') }).catch(
+    (error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    }
+  );
 }

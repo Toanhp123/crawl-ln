@@ -6,19 +6,15 @@ test('verify runner executes canonical gates without nested npm test scripts', a
 
   assert.deepEqual(
     verificationSteps.map((step) =>
-      step.type === 'command'
-        ? `${step.args[1]}`
-        : step.type === 'suite'
-          ? `suite:${step.name}`
-          : `module:${step.name}`
+      step.type === 'command' ? `command:${step.name}` : `suite:${step.name}`
     ),
     [
-      'check:lockfile',
-      'prepare:shared',
+      'command:check:lockfile',
+      'command:prepare:shared',
+      'command:check:prepared',
+      'command:build:prepared',
       'suite:regression',
-      'suite:integration',
-      'module:check:prepared',
-      'module:build:prepared'
+      'suite:integration'
     ]
   );
 });

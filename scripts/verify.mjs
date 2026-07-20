@@ -1,23 +1,37 @@
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { runPreparedBuild } from './build-prepared.mjs';
-import { runPreparedChecks } from './check-prepared.mjs';
 import { runSuite } from './run-test-files.mjs';
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 export const verificationSteps = [
-  { type: 'command', command: npmCommand, args: ['run', 'check:lockfile'] },
-  { type: 'command', command: npmCommand, args: ['run', 'prepare:shared'] },
-  { type: 'suite', name: 'regression' },
-  { type: 'suite', name: 'integration' },
   {
-    type: 'module',
-    name: 'check:prepared',
-    run: () => runPreparedChecks({ skipTypeScript: true })
+    type: 'command',
+    name: 'check:lockfile',
+    command: npmCommand,
+    args: ['run', 'check:lockfile']
   },
-  { type: 'module', name: 'build:prepared', run: runPreparedBuild }
+  {
+    type: 'command',
+    name: 'prepare:shared',
+    command: npmCommand,
+    args: ['run', 'prepare:shared']
+  },
+  {
+    type: 'command',
+    name: 'check:prepared',
+    command: process.execPath,
+    args: ['scripts/check-prepared.mjs', '--skip-typescript']
+  },
+  {
+    type: 'command',
+    name: 'build:prepared',
+    command: process.execPath,
+    args: ['scripts/build-prepared.mjs']
+  },
+  { type: 'suite', name: 'regression' },
+  { type: 'suite', name: 'integration' }
 ];
 
 function runCommand(command, args) {
@@ -45,10 +59,8 @@ export async function runVerification() {
   for (const step of verificationSteps) {
     if (step.type === 'command') {
       await runCommand(step.command, step.args);
-    } else if (step.type === 'suite') {
-      await runSuite(step.name);
     } else {
-      await step.run();
+      await runSuite(step.name);
     }
   }
 }

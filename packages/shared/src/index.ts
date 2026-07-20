@@ -354,6 +354,240 @@ export type BackupRestoreResult = {
   safetyBackupPath: string | null;
 };
 
+export type SourceReaderOwnerType = 'system' | 'user';
+export type SourceReaderCredentialStrategy =
+  'cookie-import' | 'bearer-token' | 'basic-auth' | 'form-login' | 'custom';
+
+export interface SourceReaderCredentialMetadata {
+  id: string;
+  ownerType: SourceReaderOwnerType;
+  ownerId?: string;
+  pluginId?: string;
+  domain?: string;
+  name: string;
+  strategy: SourceReaderCredentialStrategy;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SourceReaderCredentialCreateRequest {
+  ownerType: SourceReaderOwnerType;
+  pluginId?: string;
+  domain?: string;
+  name: string;
+  strategy: SourceReaderCredentialStrategy;
+  secret: Record<string, unknown>;
+}
+
+export interface SourceReaderCredentialSecretRequest {
+  secret: Record<string, unknown>;
+}
+
+export interface SourceReaderCredentialLoginRequest {
+  networkProfileId?: string;
+}
+
+export type SourceReaderAuthenticationResult =
+  | { status: 'authenticated' }
+  | {
+      status: 'challenge-required';
+      challenge: {
+        id: string;
+        type: 'otp' | 'captcha' | 'approval' | 'browser-interaction';
+        expiresAt: string;
+        userInstructions?: string;
+      };
+    };
+
+export type SourceReaderNetworkRouteType =
+  'direct' | 'http-proxy' | 'https-proxy' | 'socks-proxy' | 'vpn-gateway';
+
+export interface SourceReaderNetworkProfileMetadata {
+  id: string;
+  ownerType: SourceReaderOwnerType;
+  ownerId?: string;
+  name: string;
+  routeType: SourceReaderNetworkRouteType;
+  regions: string[];
+  tags: string[];
+  healthStatus: 'unknown' | 'healthy' | 'degraded' | 'offline';
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SourceReaderNetworkProfileCreateRequest {
+  ownerType: SourceReaderOwnerType;
+  name: string;
+  routeType: Exclude<SourceReaderNetworkRouteType, 'vpn-gateway'>;
+  regions: string[];
+  tags: string[];
+  config?: Record<string, unknown>;
+}
+
+export type SourceReaderNetworkProfileUpdateRequest = Partial<
+  Omit<SourceReaderNetworkProfileCreateRequest, 'ownerType'> & { enabled: boolean }
+>;
+
+export interface SourceReaderNetworkTestResult {
+  status: 'healthy' | 'degraded' | 'offline';
+  region?: string;
+  latencyMs: number;
+  checkedAt: string;
+}
+
+export interface SourceReaderAuthChallenge {
+  id: string;
+  pluginId: string;
+  credentialProfileId?: string;
+  networkProfileId?: string;
+  ownerId?: string;
+  type: 'otp' | 'captcha' | 'approval' | 'browser-interaction';
+  status: 'pending' | 'completed' | 'expired' | 'cancelled' | 'failed';
+  expiresAt: string;
+}
+
+export type SourceReaderAuthChallengeResponse =
+  | { type: 'otp'; code: string }
+  | { type: 'approval'; approved: boolean }
+  | { type: 'browser-interaction'; completed: boolean };
+
+export interface SourceReaderPluginPermission {
+  pluginId?: string;
+  pluginVersion?: string;
+  permission?: string;
+  scope?: string;
+  status?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  details?: Record<string, unknown>;
+}
+
+export interface SourceReaderPluginInstallResult {
+  pluginId?: string;
+  version?: string;
+  status?: string;
+  permissionsPending?: boolean;
+  warnings?: Array<{ code: string; message: string }>;
+  [key: string]: unknown;
+}
+
+export interface SourceReaderPluginHealthResult {
+  status: string;
+  checkedAt?: string;
+  failureCode?: string;
+  details?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface SourceReaderPluginTestResult {
+  status?: string;
+  checkedAt?: string;
+  details?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export type SourceReaderCapability =
+  | 'identify'
+  | 'metadata'
+  | 'chapter-list'
+  | 'chapter-content'
+  | 'search'
+  | 'latest-updates'
+  | 'authentication';
+
+export type SourceReaderInspectOperation = Exclude<SourceReaderCapability, 'authentication'>;
+
+export interface SourceReaderRequestOptions {
+  credentialProfileId?: string;
+  networkProfileId?: string;
+  freshOnly?: boolean;
+  timeoutMs?: number;
+}
+
+export interface SourceReaderUrlRequest extends SourceReaderRequestOptions {
+  url: string;
+}
+
+export interface SourceReaderChapterListRequest extends SourceReaderUrlRequest {
+  cursor?: string;
+  limit?: number;
+}
+
+export interface SourceReaderSearchRequest extends SourceReaderChapterListRequest {
+  query: string;
+}
+
+export interface SourceReaderPage<T> {
+  items: T[];
+  nextCursor?: string;
+  hasMore: boolean;
+}
+
+export interface SourceReaderIdentity {
+  normalizedUrl: string;
+  domain: string;
+  pageType: 'novel' | 'chapter' | 'search' | 'latest' | 'unknown';
+}
+
+export interface SourceReaderNovelMetadata {
+  title: string;
+  sourceUrl: string;
+  sourceName: string;
+  author?: string;
+  coverUrl?: string;
+  description?: string;
+  status?: 'ongoing' | 'completed' | 'hiatus' | 'cancelled' | 'unknown';
+}
+
+export interface SourceReaderChapterSummary {
+  index: number;
+  title: string;
+  url: string;
+  publishedAt?: string;
+}
+
+export interface SourceReaderChapterContent {
+  title: string;
+  url: string;
+  rawText: string;
+  cleanText: string;
+}
+
+export interface SourceReaderNovelSearchResult {
+  title: string;
+  url: string;
+  author?: string;
+  coverUrl?: string;
+}
+
+export interface SourceReaderLatestUpdate {
+  novelTitle: string;
+  novelUrl: string;
+  chapterTitle?: string;
+  chapterUrl?: string;
+  updatedAt?: string;
+}
+
+export interface SourceReaderWarning {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface SourceReaderResult<T> {
+  data: T;
+  source: {
+    pluginId: string;
+    pluginVersion: string;
+    domain: string;
+    capability: SourceReaderCapability;
+  };
+  extensions?: Record<string, { version: number; data: unknown }>;
+  warnings?: SourceReaderWarning[];
+}
+
 export interface SourceReaderPluginDescriptor {
   id: string;
   name: string;

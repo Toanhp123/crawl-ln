@@ -6,6 +6,7 @@ import type { SourceReaderActor } from '../../ports/source-reader-actor.port.js'
 import type { SourceReaderAuthorizationPolicy } from '../../policies/source-reader-authorization.policy.js';
 import type { AuthChallengeService } from '../../services/auth-challenge.service.js';
 import { SourceReaderError } from '../../../domain/errors/source-reader.error.js';
+import { toPublicAuthenticationResult } from '../../services/public-authentication-result.js';
 
 export interface AuthChallengeAdministrationRepository extends AuthChallengeRepository {
   listPending(ownerId?: string): Promise<AuthChallengeHandle[]>;
@@ -66,11 +67,13 @@ export class RespondAuthChallengeUseCase {
     response: Record<string, unknown>;
   }) {
     this.authorization.requireRole(input.actor, 'source-manager');
-    return this.challenges.respond({
-      challengeId: input.challengeId,
-      ownerId: input.actor.id,
-      response: input.response
-    });
+    return this.challenges
+      .respond({
+        challengeId: input.challengeId,
+        ownerId: input.actor.id,
+        response: input.response
+      })
+      .then(toPublicAuthenticationResult);
   }
 }
 

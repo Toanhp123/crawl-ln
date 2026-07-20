@@ -137,7 +137,7 @@ export class SqliteNetworkProfileRepository implements NetworkProfileRepository 
     const row = this.database.connection
       .prepare(
         `SELECT encrypted_config, encryption_metadata_json
-                FROM source_reader_network_profiles WHERE id=? AND enabled=1`
+                FROM source_reader_network_profiles WHERE id=?`
       )
       .get(handle.id) as
       { encrypted_config: Uint8Array | null; encryption_metadata_json: string | null } | undefined;
@@ -188,6 +188,22 @@ export class SqliteNetworkProfileRepository implements NetworkProfileRepository 
     return handle;
   }
 
+  async requireStoredHandle(id: string): Promise<NetworkProfileHandle> {
+    const row = this.database.connection
+      .prepare(
+        `SELECT id, owner_type, owner_id, route_type, regions_json, tags_json, health_status
+         FROM source_reader_network_profiles WHERE id=?`
+      )
+      .get(id) as NetworkRow | undefined;
+    if (!row) {
+      throw new SourceReaderError('NETWORK_ROUTE_OFFLINE', 'Network profile is unavailable', {
+        retryable: false,
+        fallbackAllowed: false
+      });
+    }
+    return toHandle(row);
+  }
+
   async update(
     id: string,
     patch: Partial<{
@@ -200,7 +216,7 @@ export class SqliteNetworkProfileRepository implements NetworkProfileRepository 
     }>,
     updatedAt: string
   ): Promise<void> {
-    const handle = await this.requireHandle(id);
+    const handle = await this.requireStoredHandle(id);
     const row = this.database.connection
       .prepare(`SELECT name, enabled, created_at FROM source_reader_network_profiles WHERE id=?`)
       .get(id) as { name: string; enabled: number; created_at: string } | undefined;

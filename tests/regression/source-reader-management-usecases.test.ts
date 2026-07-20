@@ -7,6 +7,7 @@ import {
 } from '../../apps/api/src/modules/source-reader/application/use-cases/plugins/manage-source-plugins.usecase.ts';
 import {
   CreateCredentialUseCase,
+  LoginCredentialUseCase,
   UpdateCredentialSecretUseCase
 } from '../../apps/api/src/modules/source-reader/application/use-cases/credentials/manage-credentials.usecase.ts';
 import {
@@ -115,7 +116,7 @@ test('credential, network, and plugin mutations invalidate only after persistenc
   await new UpdateNetworkProfileUseCase(
     { assertNetworkAccess: () => calls.push('network:authorize') } as never,
     {
-      requireHandle: async () => ({ id: 'n1', ownerType: 'user', ownerId: 'user-1' }),
+      requireStoredHandle: async () => ({ id: 'n1', ownerType: 'user', ownerId: 'user-1' }),
       update: async () => calls.push('network:update')
     } as never,
     clock,
@@ -171,6 +172,38 @@ test('network profile creation enforces ownership and returns metadata only', as
   assert.equal('config' in result, false);
 });
 
+test('credential login returns public authentication metadata without session material', async () => {
+  const result = await new LoginCredentialUseCase(
+    { requireRole: () => undefined } as never,
+    {
+      credentials: {
+        requireHandle: async () => ({
+          id: 'c1',
+          ownerType: 'user',
+          ownerId: 'user-1',
+          pluginId: 'demo',
+          strategy: 'bearer-token'
+        })
+      },
+      plugins: { findActive: async () => ({ version: '1.0.0' }) },
+      networks: { findHandleById: async () => undefined },
+      authentication: {
+        login: async () => ({
+          status: 'authenticated',
+          session: {
+            kind: 'headers',
+            headers: { authorization: 'Bearer top-secret' },
+            networkBinding: 'none'
+          }
+        })
+      }
+    } as never
+  ).execute({ actor, credentialId: 'c1' });
+
+  assert.deepEqual(result, { status: 'authenticated' });
+  assert.equal(JSON.stringify(result).includes('top-secret'), false);
+});
+
 test('challenge response uses actor ownership and source-manager role', async () => {
   const calls: unknown[] = [];
   const result = await new RespondAuthChallengeUseCase(
@@ -178,7 +211,14 @@ test('challenge response uses actor ownership and source-manager role', async ()
     {
       respond: async (input: unknown) => {
         calls.push(input);
-        return { status: 'authenticated' };
+        return {
+          status: 'authenticated',
+          session: {
+            kind: 'cookies',
+            cookies: [{ name: 'session', value: 'top-secret' }],
+            networkBinding: 'none'
+          }
+        };
       }
     } as never
   ).execute({ actor, challengeId: 'ch1', response: { type: 'otp', code: '123456' } });

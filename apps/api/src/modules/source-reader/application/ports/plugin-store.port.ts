@@ -89,6 +89,10 @@ export interface PluginStorePort {
       status: PluginStatus;
       activeVersion?: string;
       enabled: boolean;
+      capabilities: string[];
+      domains: string[];
+      permissionsPending: boolean;
+      health?: { status: 'healthy' | 'degraded' | 'failed'; lastCheckedAt?: string };
       installedAt: string;
       updatedAt: string;
     }>

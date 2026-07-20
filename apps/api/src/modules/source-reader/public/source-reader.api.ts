@@ -71,6 +71,18 @@ export interface SourceReaderPluginDiagnostics {
   policy: { processStartTimeoutMs: number; violationThreshold: number };
 }
 
+export type SourceReaderAuthenticationResult =
+  | { status: 'authenticated' }
+  | {
+      status: 'challenge-required';
+      challenge: {
+        id: string;
+        type: 'otp' | 'captcha' | 'approval' | 'browser-interaction';
+        expiresAt: string;
+        userInstructions?: string;
+      };
+    };
+
 export type SourceReaderRole = 'reader' | 'source-manager' | 'source-admin' | 'system-admin';
 
 export interface SourceReaderActor {
@@ -134,17 +146,23 @@ export interface SourceReaderManagementApi {
       secret: Record<string, unknown>;
     }>;
     remove: SourceReaderExecutor<{ actor: SourceReaderActor; credentialId: string }>;
-    login: SourceReaderExecutor<{
-      actor: SourceReaderActor;
-      credentialId: string;
-      networkProfileId?: string;
-    }>;
+    login: SourceReaderExecutor<
+      {
+        actor: SourceReaderActor;
+        credentialId: string;
+        networkProfileId?: string;
+      },
+      SourceReaderAuthenticationResult
+    >;
     logout: SourceReaderExecutor<{ actor: SourceReaderActor; credentialId: string }>;
-    test: SourceReaderExecutor<{
-      actor: SourceReaderActor;
-      credentialId: string;
-      networkProfileId?: string;
-    }>;
+    test: SourceReaderExecutor<
+      {
+        actor: SourceReaderActor;
+        credentialId: string;
+        networkProfileId?: string;
+      },
+      SourceReaderAuthenticationResult
+    >;
   };
   networkProfiles: {
     create: SourceReaderExecutor<{
@@ -168,11 +186,14 @@ export interface SourceReaderManagementApi {
   challenges: {
     list: SourceReaderExecutor<{ actor: SourceReaderActor }, unknown[]>;
     get: SourceReaderExecutor<{ actor: SourceReaderActor; challengeId: string }>;
-    respond: SourceReaderExecutor<{
-      actor: SourceReaderActor;
-      challengeId: string;
-      response: Record<string, unknown>;
-    }>;
+    respond: SourceReaderExecutor<
+      {
+        actor: SourceReaderActor;
+        challengeId: string;
+        response: Record<string, unknown>;
+      },
+      SourceReaderAuthenticationResult
+    >;
     cancel: SourceReaderExecutor<{ actor: SourceReaderActor; challengeId: string }>;
   };
 }

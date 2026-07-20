@@ -186,3 +186,43 @@ test('incompatible installation is quarantined with persisted deterministic diag
   assert.deepEqual(JSON.parse(row.activated_extensions_json), {});
   assert.equal(row.sandbox_protocol_version, 1);
 });
+
+test('installed plugin descriptors include manifest capabilities, domains and pending permissions', async () => {
+  const descriptorManifest = {
+    ...manifest,
+    id: 'descriptor-demo',
+    name: 'Descriptor Demo',
+    version: '1.0.0',
+    capabilities: ['metadata', 'chapter-list'] as const,
+    contracts: { metadata: 1, 'chapter-list': 1 },
+    matchers: [
+      { hosts: ['reader.example', 'mirror.example'], priority: 20 },
+      { hosts: ['reader.example'], priority: 10 }
+    ]
+  };
+  await store.upsertPluginVersion({
+    pluginId: descriptorManifest.id,
+    name: descriptorManifest.name,
+    version: descriptorManifest.version,
+    trustLevel: 'local-unverified',
+    status: 'pending-approval',
+    packagePath: join(root, 'installed', descriptorManifest.id, descriptorManifest.version),
+    checksum: 'descriptor-checksum',
+    signatureStatus: 'unsigned',
+    manifestJson: JSON.stringify(descriptorManifest),
+    sdkRange: descriptorManifest.engines.sourceReader,
+    installedAt: '2026-07-20T00:00:00.000Z'
+  });
+  await store.replaceRequestedPermissions({
+    pluginId: descriptorManifest.id,
+    pluginVersion: descriptorManifest.version,
+    permissions: [{ permission: 'network', scopeJson: JSON.stringify(['reader.example']) }]
+  });
+
+  const descriptor = (await store.listInstalled()).find(
+    (plugin) => plugin.pluginId === descriptorManifest.id
+  );
+  assert.deepEqual(descriptor?.capabilities, ['metadata', 'chapter-list']);
+  assert.deepEqual(descriptor?.domains, ['reader.example', 'mirror.example']);
+  assert.equal(descriptor?.permissionsPending, true);
+});

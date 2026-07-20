@@ -9,6 +9,7 @@ import type { SourceReaderInvalidationPort } from '../../ports/source-reader-inv
 import type { SourceReaderAuthorizationPolicy } from '../../policies/source-reader-authorization.policy.js';
 import type { AuthenticationOrchestratorService } from '../../services/authentication-orchestrator.service.js';
 import { SourceReaderError } from '../../../domain/errors/source-reader.error.js';
+import { toPublicAuthenticationResult } from '../../services/public-authentication-result.js';
 
 export type CredentialAdministrationRepository = CredentialRepository;
 
@@ -170,7 +171,9 @@ export class LoginCredentialUseCase {
     networkProfileId?: string;
   }) {
     this.authorization.requireRole(input.actor, 'source-manager');
-    return this.dependencies.authentication.login(await loginInput(this.dependencies, input));
+    return toPublicAuthenticationResult(
+      await this.dependencies.authentication.login(await loginInput(this.dependencies, input))
+    );
   }
 }
 

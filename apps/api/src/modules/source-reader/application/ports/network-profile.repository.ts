@@ -39,6 +39,7 @@ export interface NetworkProfileRepository {
     >
   >;
   requireHandle(id: string): Promise<NetworkProfileHandle>;
+  requireStoredHandle(id: string): Promise<NetworkProfileHandle>;
   update(
     id: string,
     patch: Partial<{

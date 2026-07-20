@@ -211,3 +211,39 @@ test('sessions and challenges enforce binding, expiry, and credential revocation
     undefined
   );
 });
+
+test('disabled network profiles remain administrable without becoming runtime candidates', async (t) => {
+  const fixture = await createFixture(t);
+  await fixture.networkProfiles.save({
+    id: 'disabled-profile',
+    ownerType: 'user',
+    ownerId: 'u1',
+    routeType: 'http-proxy',
+    regions: ['US'],
+    tags: [],
+    healthStatus: 'unknown',
+    name: 'Disabled proxy',
+    secretConfig: { endpoint: 'http://proxy.example:8080' },
+    enabled: false,
+    createdAt: timestamp,
+    updatedAt: timestamp
+  });
+
+  assert.equal(await fixture.networkProfiles.findHandleById('disabled-profile'), undefined);
+  assert.equal(
+    (await fixture.networkProfiles.requireStoredHandle('disabled-profile')).id,
+    'disabled-profile'
+  );
+
+  await fixture.networkProfiles.update(
+    'disabled-profile',
+    { enabled: true, name: 'Enabled proxy' },
+    '2026-07-20T00:00:00.000Z'
+  );
+
+  const enabled = await fixture.networkProfiles.findHandleById('disabled-profile');
+  assert.equal(enabled?.id, 'disabled-profile');
+  assert.deepEqual(await fixture.networkProfiles.resolveConfig(enabled!), {
+    endpoint: 'http://proxy.example:8080'
+  });
+});

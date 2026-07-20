@@ -88,7 +88,7 @@ export class UpdateNetworkProfileUseCase {
     private readonly authorization: SourceReaderAuthorizationPolicy,
     private readonly profiles: Pick<
       NetworkProfileAdministrationRepository,
-      'requireHandle' | 'update'
+      'requireStoredHandle' | 'update'
     >,
     private readonly clock: ClockPort,
     private readonly invalidation?: SourceReaderInvalidationPort
@@ -98,7 +98,7 @@ export class UpdateNetworkProfileUseCase {
     profileId: string;
     patch: Parameters<NetworkProfileAdministrationRepository['update']>[1];
   }) {
-    const current = await this.profiles.requireHandle(input.profileId);
+    const current = await this.profiles.requireStoredHandle(input.profileId);
     this.authorization.assertNetworkAccess(input.actor, current);
     await this.profiles.update(input.profileId, input.patch, this.clock.now().toISOString());
     await this.invalidation?.invalidate({
@@ -113,13 +113,13 @@ export class DeleteNetworkProfileUseCase {
     private readonly authorization: SourceReaderAuthorizationPolicy,
     private readonly profiles: Pick<
       NetworkProfileAdministrationRepository,
-      'requireHandle' | 'delete'
+      'requireStoredHandle' | 'delete'
     >,
     private readonly sessions: { revokeByNetworkProfile(profileId: string): Promise<void> },
     private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: { actor: SourceReaderActor; profileId: string }) {
-    const current = await this.profiles.requireHandle(input.profileId);
+    const current = await this.profiles.requireStoredHandle(input.profileId);
     this.authorization.assertNetworkAccess(input.actor, current);
     if (!this.invalidation) await this.sessions.revokeByNetworkProfile(input.profileId);
     await this.profiles.delete(input.profileId);

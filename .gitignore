@@ -12,3 +12,5 @@ test-results/
 !apps/api/.env.termux.example
 .DS_Store
 apps/api/storage/
+
+/storage/

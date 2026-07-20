@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 process.env.NODE_ENV = 'test';
-process.env.STORAGE_DIR = './storage/test-realtime-events';
+const storageDir = await mkdtemp(join(tmpdir(), 'novel-tool-realtime-events-'));
+process.env.STORAGE_DIR = storageDir;
 
 const { createAppRuntime } = await import('../../apps/api/src/app.ts');
 
@@ -82,5 +86,6 @@ test('SSE endpoint streams scheduler changes after a successful mutation', async
         server.close((error) => (error ? reject(error) : resolve()))
       );
     }
+    await rm(storageDir, { recursive: true, force: true });
   }
 });

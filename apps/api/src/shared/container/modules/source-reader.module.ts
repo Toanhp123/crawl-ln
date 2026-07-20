@@ -54,7 +54,7 @@ import { StaticTrustStore } from '../../../modules/source-reader/infrastructure/
 import { InMemoryPluginRegistry } from '../../../modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.js';
 import { InProcessPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.js';
 import { BrowserRuntimeCoordinator } from '../../../modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.js';
-import { IsolatedWorkerPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/isolated-worker/isolated-worker-plugin.runtime.js';
+import { ExternalProcessSupervisor } from '../../../modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.js';
 import { RuntimeRouter } from '../../../modules/source-reader/infrastructure/runtime/runtime-router.js';
 import { LocalEncryptedVault } from '../../../modules/source-reader/infrastructure/secrets/local-encrypted.vault.js';
 import { SqliteAuthChallengeRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-auth-challenge.repository.js';
@@ -162,7 +162,8 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     registry,
     new RuntimeRouter(
       new InProcessPluginRuntime(),
-      new IsolatedWorkerPluginRuntime({ defaultTimeoutMs: env.requestTimeoutMs })
+      new ExternalProcessSupervisor({ startupTimeoutMs: env.requestTimeoutMs, cancelGraceMs: 100 }),
+      env.requestTimeoutMs
     ),
     pluginContexts,
     cache,

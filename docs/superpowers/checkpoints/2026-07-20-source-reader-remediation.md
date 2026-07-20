@@ -47,7 +47,7 @@
     Commit: `43ecb22 refactor(source-reader): lock down remediated runtime boundaries`
 
 12. **Task 12 — Add final behavioral acceptance and prove the entire repository**
-    Commit: recorded by the final acceptance commit and checkpoint metadata update.
+    Commit: `446d86d test(source-reader): complete security remediation acceptance`.
 
 ## Verified behavior
 
@@ -99,7 +99,7 @@
 - Remaining forbidden-name matches are limited to architecture enforcement and regression assertions.
 - Raw Node authority imports in the external-process directory are limited to host-owned package inspection, sandbox bootstrap, and child-process supervision; plugin execution code has no direct network or process authority.
 - Node permission controls remain defense in depth; the deny-by-default loader and SES compartment are the language-level authority boundary.
-- Final recoverable ZIP verification is recorded after the acceptance and metadata commits.
+- Final recoverable ZIP verification is recorded by the final checkpoint metadata commit and completion report.
 
 ## Completion state
 

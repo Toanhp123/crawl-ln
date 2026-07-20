@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { lstat, readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type {
@@ -6,6 +6,9 @@ import type {
   StoredPluginVersion
 } from '../../../application/ports/plugin-store.port.js';
 import type { RegisteredPlugin } from '../../../application/ports/plugin-registry.port.js';
+import type { ExternalPluginSupervisorPort } from '../../../application/ports/external-plugin-supervisor.port.js';
+import type { PluginLifecycle } from '../../../domain/plugin/plugin-lifecycle.js';
+import { SANDBOX_PROTOCOL_VERSION } from '../../runtime/external-process/sandbox-protocol.js';
 
 const INTEGRITY_FAILURE = 'PACKAGE_INTEGRITY_FAILED';
 const UNCHECKED_FILES = new Set(['checksums.json', 'signature.json']);
@@ -91,8 +94,18 @@ async function verifyInstalledPackage(version: StoredPluginVersion): Promise<voi
   }
 }
 
+interface ExternalLoaderOptions {
+  supervisor: ExternalPluginSupervisorPort;
+  timeoutMs: number;
+  now(): Date;
+  randomId?(): string;
+}
+
 export class ExternalPluginLoader {
-  constructor(private readonly store: PluginStorePort) {}
+  constructor(
+    private readonly store: PluginStorePort,
+    private readonly options?: ExternalLoaderOptions
+  ) {}
 
   async loadActive(): Promise<RegisteredPlugin[]> {
     const registrations: RegisteredPlugin[] = [];
@@ -104,7 +117,10 @@ export class ExternalPluginLoader {
         continue;
       }
       registrations.push({
-        plugin: { manifest: version.manifest },
+        plugin: {
+          manifest: version.manifest,
+          ...(this.options ? { lifecycle: this.lifecycle(version) } : {})
+        },
         trustLevel: version.trustLevel,
         executionMode:
           version.trustLevel === 'local-unverified'
@@ -115,5 +131,49 @@ export class ExternalPluginLoader {
       });
     }
     return registrations;
+  }
+
+  private lifecycle(version: StoredPluginVersion): PluginLifecycle {
+    const options = this.options;
+    if (!options) throw new Error('External lifecycle options are unavailable');
+    const request = async (
+      operation: 'initialize' | 'healthCheck' | 'shutdown',
+      payload: Record<string, unknown>
+    ) => {
+      const handle =
+        options.supervisor.get(version.pluginId, version.version) ??
+        (await options.supervisor.start({
+          pluginId: version.pluginId,
+          pluginVersion: version.version,
+          packageRoot: version.packagePath,
+          entryPath: join(version.packagePath, 'dist/index.js')
+        }));
+      return handle.request(
+        {
+          requestId: options.randomId?.() ?? randomUUID(),
+          operation,
+          deadlineAt: new Date(options.now().getTime() + options.timeoutMs).toISOString(),
+          payload
+        },
+        new AbortController().signal
+      );
+    };
+    return {
+      initialize: async (context) => {
+        await request('initialize', { ...context, protocolVersion: SANDBOX_PROTOCOL_VERSION });
+      },
+      healthCheck: async () =>
+        (await request('healthCheck', {})) as {
+          status: 'healthy' | 'degraded';
+          details?: Record<string, string>;
+        },
+      shutdown: async (reason) => {
+        try {
+          await request('shutdown', { reason });
+        } finally {
+          await options.supervisor.stop(version.pluginId, version.version, reason);
+        }
+      }
+    };
   }
 }

@@ -1,6 +1,7 @@
 import type {
   PluginCandidate,
   PluginRegistryPort,
+  PreparedPluginRegistrySnapshot,
   RegisteredPlugin
 } from '../../../application/ports/plugin-registry.port.js';
 import {
@@ -11,7 +12,7 @@ import type { SourceReaderPlugin } from '../../../domain/plugin/source-plugin.js
 import type { SourceCapability } from '../../../public/source-reader.models.js';
 
 export class InMemoryPluginRegistry implements PluginRegistryPort {
-  private readonly registrations = new Map<string, RegisteredPlugin>();
+  private registrations = new Map<string, RegisteredPlugin>();
 
   register(
     plugin: SourceReaderPlugin,
@@ -20,28 +21,51 @@ export class InMemoryPluginRegistry implements PluginRegistryPort {
     if (this.registrations.has(plugin.manifest.id)) {
       throw new Error(`Duplicate source plugin id: ${plugin.manifest.id}`);
     }
-    this.registrations.set(plugin.manifest.id, this.registration(plugin, options));
+    const prepared = this.prepareRegistration(
+      this.registrations,
+      this.registration(plugin, options)
+    );
+    this.publishPrepared(prepared);
   }
 
   replaceExternal(registrations: RegisteredPlugin[]): void {
-    const next = new Map(
+    let next = new Map(
       [...this.registrations].filter(([, registration]) => registration.trustLevel === 'built-in')
     );
     for (const registration of registrations) {
       const pluginId = registration.plugin.manifest.id;
       if (next.has(pluginId)) throw new Error(`Duplicate source plugin id: ${pluginId}`);
-      next.set(
-        pluginId,
-        this.registration(registration.plugin, {
-          trustLevel: registration.trustLevel,
-          executionMode: registration.executionMode,
-          enabled: registration.enabled,
-          packagePath: registration.packagePath
-        })
-      );
+      const prepared = this.prepareRegistration(next, registration);
+      next = new Map(prepared.registrations);
     }
-    this.registrations.clear();
-    for (const [pluginId, registration] of next) this.registrations.set(pluginId, registration);
+    this.publishPrepared({ registrations: next });
+  }
+
+  snapshot(): ReadonlyMap<string, RegisteredPlugin> {
+    return new Map(this.registrations);
+  }
+
+  prepareRegistration(
+    snapshot: ReadonlyMap<string, RegisteredPlugin>,
+    registration: RegisteredPlugin
+  ): PreparedPluginRegistrySnapshot {
+    const normalized = this.registration(registration.plugin, {
+      trustLevel: registration.trustLevel,
+      executionMode: registration.executionMode,
+      enabled: registration.enabled,
+      packagePath: registration.packagePath
+    });
+    const pluginId = normalized.plugin.manifest.id;
+    if (!pluginId || normalized.plugin.manifest.matchers.length === 0) {
+      throw new Error('Plugin registration is invalid');
+    }
+    const next = new Map(snapshot);
+    next.set(pluginId, normalized);
+    return { registrations: next };
+  }
+
+  publishPrepared(snapshot: PreparedPluginRegistrySnapshot): void {
+    this.registrations = new Map(snapshot.registrations);
   }
 
   private registration(
@@ -58,7 +82,9 @@ export class InMemoryPluginRegistry implements PluginRegistryPort {
   }
 
   unregister(pluginId: string): void {
-    this.registrations.delete(pluginId);
+    const next = new Map(this.registrations);
+    next.delete(pluginId);
+    this.registrations = next;
   }
 
   findById(pluginId: string): RegisteredPlugin | undefined {

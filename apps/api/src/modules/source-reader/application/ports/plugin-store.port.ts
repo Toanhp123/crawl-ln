@@ -53,6 +53,18 @@ export interface PluginStorePort {
   }): Promise<void>;
   permissionsApproved(pluginId: string, version: string): Promise<boolean>;
   activate(pluginId: string, version: string, activatedAt: string): Promise<void>;
+  activateCandidateAtomically(
+    pluginId: string,
+    version: string,
+    activatedAt: string
+  ): Promise<void>;
+  recordActivationFailure(input: {
+    pluginId: string;
+    version: string;
+    phase: string;
+    message: string;
+  }): Promise<void>;
+  findVersion(pluginId: string, version: string): Promise<StoredPluginVersion | undefined>;
   findActive(pluginId: string): Promise<StoredPluginVersion | undefined>;
   listActive(): Promise<StoredPluginVersion[]>;
   listInstalled(): Promise<

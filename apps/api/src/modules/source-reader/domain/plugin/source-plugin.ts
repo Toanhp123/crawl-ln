@@ -1,4 +1,5 @@
 import type { AuthExecutionResult } from '../auth/authentication.js';
+import type { PluginLifecycle } from './plugin-lifecycle.js';
 import type {
   ChapterContent,
   ChapterSummary,
@@ -153,6 +154,7 @@ export interface AuthenticationExtension {
 
 export interface SourceReaderPlugin {
   manifest: SourcePluginManifest;
+  lifecycle?: PluginLifecycle;
   authentication?: AuthenticationExtension;
   canHandle?(request: PluginMatchRequest, context: PluginContext): boolean | Promise<boolean>;
   identify?(

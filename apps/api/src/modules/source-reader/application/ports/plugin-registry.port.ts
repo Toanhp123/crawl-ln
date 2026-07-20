@@ -19,10 +19,20 @@ export interface PluginCandidate extends RegisteredPlugin {
   domain: string;
 }
 
+export interface PreparedPluginRegistrySnapshot {
+  registrations: ReadonlyMap<string, RegisteredPlugin>;
+}
+
 export interface PluginRegistryPort {
   register(plugin: SourceReaderPlugin, options?: Partial<Omit<RegisteredPlugin, 'plugin'>>): void;
   unregister(pluginId: string): void;
   findById(pluginId: string): RegisteredPlugin | undefined;
+  snapshot(): ReadonlyMap<string, RegisteredPlugin>;
+  prepareRegistration(
+    snapshot: ReadonlyMap<string, RegisteredPlugin>,
+    registration: RegisteredPlugin
+  ): PreparedPluginRegistrySnapshot;
+  publishPrepared(snapshot: PreparedPluginRegistrySnapshot): void;
   listCandidates(request: {
     url: string;
     capability: SourceCapability;

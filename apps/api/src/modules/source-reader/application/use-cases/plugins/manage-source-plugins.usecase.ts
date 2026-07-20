@@ -27,6 +27,12 @@ interface PluginHealthAdministration {
   describePlugin(pluginId: string): Promise<unknown>;
 }
 
+interface PluginActivationAdministration {
+  activate(input: { pluginId: string; version: string; signal: AbortSignal }): Promise<unknown>;
+  disable(pluginId: string): Promise<void>;
+  quarantine(pluginId: string, version: string, reason: string): Promise<void>;
+}
+
 export class InstallSourcePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
@@ -97,23 +103,26 @@ export class ListPluginPermissionsUseCase {
 export class EnablePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
-    private readonly store: Pick<PluginAdministrationStore, 'activate'>,
-    private readonly clock: ClockPort
+    private readonly activation: Pick<PluginActivationAdministration, 'activate'>
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string; version: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
-    await this.store.activate(input.pluginId, input.version, this.clock.now().toISOString());
+    return this.activation.activate({
+      pluginId: input.pluginId,
+      version: input.version,
+      signal: new AbortController().signal
+    });
   }
 }
 
 export class DisablePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
-    private readonly store: Pick<PluginAdministrationStore, 'disable'>
+    private readonly activation: Pick<PluginActivationAdministration, 'disable'>
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
-    await this.store.disable(input.pluginId);
+    await this.activation.disable(input.pluginId);
   }
 }
 
@@ -153,7 +162,7 @@ export class GetPluginHealthUseCase {
 export class QuarantinePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
-    private readonly store: Pick<PluginAdministrationStore, 'quarantine'>
+    private readonly activation: Pick<PluginActivationAdministration, 'quarantine'>
   ) {}
   async execute(input: {
     actor: SourceReaderActor;
@@ -162,6 +171,6 @@ export class QuarantinePluginUseCase {
     reason: string;
   }) {
     this.authorization.requireRole(input.actor, 'source-admin');
-    await this.store.quarantine(input.pluginId, input.version, input.reason);
+    await this.activation.quarantine(input.pluginId, input.version, input.reason);
   }
 }

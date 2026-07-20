@@ -175,6 +175,14 @@ export class SqlitePluginStore implements PluginStorePort {
   }
 
   async activate(pluginId: string, version: string, activatedAt: string): Promise<void> {
+    await this.activateCandidateAtomically(pluginId, version, activatedAt);
+  }
+
+  async activateCandidateAtomically(
+    pluginId: string,
+    version: string,
+    activatedAt: string
+  ): Promise<void> {
     this.database.transactionSync(() => {
       const candidate = this.database.connection
         .prepare(
@@ -230,6 +238,33 @@ export class SqlitePluginStore implements PluginStorePort {
         throw new Error(`Plugin version ${pluginId}@${version} activation failed`);
       }
     });
+  }
+
+  async recordActivationFailure(input: {
+    pluginId: string;
+    version: string;
+    phase: string;
+    message: string;
+  }): Promise<void> {
+    this.database.connection
+      .prepare(
+        `UPDATE source_reader_plugin_versions
+         SET quarantine_reason=?
+         WHERE plugin_id=? AND version=?`
+      )
+      .run(`${input.phase}: ${input.message}`.slice(0, 1000), input.pluginId, input.version);
+  }
+
+  async findVersion(pluginId: string, version: string): Promise<StoredPluginVersion | undefined> {
+    const row = this.database.connection
+      .prepare(
+        `SELECT plugin_id, version, trust_level, status, package_path,
+                checksum, signature_status, manifest_json
+         FROM source_reader_plugin_versions
+         WHERE plugin_id=? AND version=?`
+      )
+      .get(pluginId, version) as StoredVersionRow | undefined;
+    return row ? storedVersion(row) : undefined;
   }
 
   async findActive(pluginId: string): Promise<StoredPluginVersion | undefined> {

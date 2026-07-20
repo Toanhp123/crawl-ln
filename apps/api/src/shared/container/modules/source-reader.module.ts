@@ -2,6 +2,7 @@ import { AuthChallengeService } from '../../../modules/source-reader/application
 import { AuthenticationOrchestratorService } from '../../../modules/source-reader/application/services/authentication-orchestrator.service.js';
 import { PluginHealthService } from '../../../modules/source-reader/application/services/plugin-health.service.js';
 import { PluginInstallationService } from '../../../modules/source-reader/application/services/plugin-installation.service.js';
+import { PluginActivationService } from '../../../modules/source-reader/application/services/plugin-activation.service.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
 import { SourceReaderService } from '../../../modules/source-reader/application/services/source-reader.service.js';
@@ -94,7 +95,16 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
   const sessions = new SqliteSessionRepository(infrastructure.database, vault);
   const challenges = new SqliteAuthChallengeRepository(infrastructure.database, vault);
   const pluginStore = new SqlitePluginStore(infrastructure.database);
-  const externalLoader = new ExternalPluginLoader(pluginStore);
+  const externalSupervisor = new ExternalProcessSupervisor({
+    startupTimeoutMs: env.requestTimeoutMs,
+    cancelGraceMs: 100
+  });
+  const externalLoader = new ExternalPluginLoader(pluginStore, {
+    supervisor: externalSupervisor,
+    timeoutMs: env.requestTimeoutMs,
+    now: () => infrastructure.clock.now(),
+    randomId: () => infrastructure.ids.randomId()
+  });
   const installer = new PluginInstallationService(
     new SourcePluginPackageVerifier(new StaticTrustStore(env.sourceReaderTrustedKeys)),
     pluginStore,
@@ -168,13 +178,18 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     () => infrastructure.clock.now()
   );
 
+  const pluginActivation = new PluginActivationService(
+    pluginStore,
+    registry,
+    externalSupervisor,
+    infrastructure.clock,
+    infrastructure.ids,
+    env.requestTimeoutMs
+  );
+
   const api = new SourceReaderService(
     registry,
-    new RuntimeRouter(
-      new InProcessPluginRuntime(),
-      new ExternalProcessSupervisor({ startupTimeoutMs: env.requestTimeoutMs, cancelGraceMs: 100 }),
-      env.requestTimeoutMs
-    ),
+    new RuntimeRouter(new InProcessPluginRuntime(), externalSupervisor, env.requestTimeoutMs),
     pluginContexts,
     cache,
     new HmacCursorCodec(
@@ -206,7 +221,15 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     },
     async runPluginHealthCheck(pluginId: string) {
       const installed = await this.describePlugin(pluginId);
-      return { ...installed, checkedAt: infrastructure.clock.now().toISOString() };
+      const lifecycle = registry.findById(pluginId)?.plugin.lifecycle;
+      const lifecycleHealth = lifecycle
+        ? await lifecycle.healthCheck()
+        : { status: 'healthy' as const };
+      return {
+        ...installed,
+        lifecycle: lifecycleHealth,
+        checkedAt: infrastructure.clock.now().toISOString()
+      };
     }
   };
   const loginDependencies = {
@@ -235,8 +258,8 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
       ),
       denyPermissions: new DenyPluginPermissionsUseCase(authorization, pluginStore),
       listPermissions: new ListPluginPermissionsUseCase(authorization, pluginStore),
-      enable: new EnablePluginUseCase(authorization, pluginStore, infrastructure.clock),
-      disable: new DisablePluginUseCase(authorization, pluginStore),
+      enable: new EnablePluginUseCase(authorization, pluginActivation),
+      disable: new DisablePluginUseCase(authorization, pluginActivation),
       remove: new RemovePluginUseCase(authorization, pluginStore),
       test: new TestPluginUseCase(authorization, healthAdministration),
       health: new GetPluginHealthUseCase(authorization, healthAdministration)
@@ -298,6 +321,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
         maintenance.start();
       },
       async stop() {
+        await pluginActivation.stopAll();
         await maintenance.stop();
       }
     }

@@ -1,75 +1,85 @@
 # E2E Test Checklist
 
-Use this before testing a full crawl on Android/Termux.
+Use a source you are authorized to access. Start with a small chapter limit and explicit allowlist.
 
-## 1. Configure safe env
+## 1. Prepare environment
 
 ```bash
-cd apps/api
-cp .env.termux.example .env
+cp apps/api/.env.example apps/api/.env
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 ```
 
-Edit `.env`:
+Set at least:
 
 ```env
 SOURCE_ALLOWLIST=your-allowed-domain.example
-SOURCE_READER_MASTER_KEY=<base64-32-byte-key>
+SOURCE_READER_MASTER_KEY=<generated-base64-key>
 MAX_CHAPTERS_PER_RUN=5
 CRAWLER_CONCURRENCY=1
 CRAWLER_DELAY_MS=1200
-MIN_CHAPTER_CONTENT_CHARS=200
-GENERIC_HTML_ADAPTER_ENABLED=false
 ```
 
-## 2. Configure source profile
-
-Install or enable the required Source Reader plugin, then verify:
-
-- replace the host;
-- set `enabled` to `true`;
-- update selectors for title, chapter links, chapter title, chapter content, and removed noise nodes.
-
-## 3. Dry-run analyze first
+## 2. Start and check health
 
 ```bash
-curl -X POST http://localhost:3000/api/crawl/analyze \
+npm run dev
+curl http://127.0.0.1:3000/health
+curl http://127.0.0.1:3000/api/source-reader/plugins
+```
+
+In `/sources`, verify the required plugin is installed, compatible, enabled and healthy. Approve only the exact permissions it needs. Configure credential or network profiles only when the source requires them.
+
+## 3. Inspect the source before saving
+
+Use the Source Inspector in `/sources`, or call:
+
+```bash
+curl -X POST http://127.0.0.1:3000/api/source-reader/metadata \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://your-allowed-domain.example/novel-page","freshOnly":true}'
+
+curl -X POST http://127.0.0.1:3000/api/source-reader/chapter-list \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://your-allowed-domain.example/novel-page","limit":10,"freshOnly":true}'
+```
+
+Confirm metadata is correct and chapter items are real source URLs. If the list is empty, debug the plugin parser or upstream challenge rather than changing crawler core.
+
+## 4. Analyze and create a crawl job
+
+```bash
+curl -X POST http://127.0.0.1:3000/api/novels/analyze \
   -H 'Content-Type: application/json' \
   -d '{"url":"https://your-allowed-domain.example/novel-page"}'
 ```
 
-Confirm:
-
-- title is correct;
-- `diagnostics.chapterCount` is greater than 0;
-- `diagnostics.firstChapterUrls` are real chapter URLs.
-
-## 4. Save novel only after dry-run passes
+Copy the returned novel id, then:
 
 ```bash
-curl -X POST http://localhost:3000/api/novels/analyze \
-  -H 'Content-Type: application/json' \
-  -d '{"url":"https://your-allowed-domain.example/novel-page"}'
-```
-
-Copy the returned `id`.
-
-## 5. Crawl a small batch
-
-```bash
-curl -X POST http://localhost:3000/api/crawl/jobs \
+curl -X POST http://127.0.0.1:3000/api/crawl/jobs \
   -H 'Content-Type: application/json' \
   -d '{"novelId":"PASTE_NOVEL_ID"}'
 ```
 
-## 6. Check task and chapters
+## 5. Verify persistence
 
 ```bash
-curl http://localhost:3000/api/novels/PASTE_NOVEL_ID/task
-curl http://localhost:3000/api/novels/PASTE_NOVEL_ID/chapters
+curl http://127.0.0.1:3000/api/novels/PASTE_NOVEL_ID/task
+curl http://127.0.0.1:3000/api/novels/PASTE_NOVEL_ID/chapters
 ```
 
-## 7. Export after success
+Check task progress, chapter order, titles and content. Retry/pause/resume/cancel behavior should preserve persisted progress.
+
+## 6. Verify web and export
+
+Open Library, novel detail and Reader at mobile and desktop widths. Confirm loading, empty, error and offline-safe states. Create an EPUB or TXT export from the novel detail screen and verify the downloaded file opens correctly.
+
+## 7. Automated gates
 
 ```bash
-curl -L 'http://localhost:3000/api/novels/PASTE_NOVEL_ID/export?format=md' -o novel.md
+npm run check
+npm run test:regression
+npm run test:integration
+npm run build
+npm run test:e2e
 ```

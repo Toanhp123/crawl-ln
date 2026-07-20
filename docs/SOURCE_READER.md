@@ -158,9 +158,9 @@ The platform does not provide CAPTCHA bypass, forced execution, or raw-secret AP
 
 ```bash
 npm run check
+npm run build
 npm run test:regression
 npm run test:integration
-npm run build
 npm run verify
 npm run test:e2e
 ```

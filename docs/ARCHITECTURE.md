@@ -1,15 +1,14 @@
 # Architecture
 
-Novel Tool is an npm monorepo with a TypeScript modular-monolith API and a React Feature-Sliced frontend.
+Novel Tool is an npm monorepo with a TypeScript modular-monolith API and a React frontend organized by Feature-Sliced Design.
 
 ## Runtime layout
 
 ```text
-apps/api          Express API, background crawl queue, SQLite
-apps/web          React, Vite, Tailwind, TanStack Query
-packages/shared   Public API contracts and Zod request schemas
-sources           Dynamic source plugins
-tests             Regression, integration, and browser smoke tests
+apps/api          Express API, SQLite, crawl queue and Source Reader
+apps/web          React, Vite, Tailwind and TanStack Query
+packages/shared   Zod request schemas and public transport types
+tests             Regression, integration and browser E2E
 ```
 
 ## Backend modules
@@ -20,36 +19,61 @@ chapters
 crawler
 export
 novels
-plugin
 scheduler
 search
+source-reader
 task
 ```
 
-Each backend module owns its application, domain, infrastructure, and presentation code where applicable. Direct imports between bounded modules are forbidden. Shared technical ports and public transport contracts live outside feature modules. The composition root under `apps/api/src/shared/container` wires module public APIs.
+Each module owns its domain, application, infrastructure and presentation code where applicable. Cross-module calls use public façades or narrow ports passed by `apps/api/src/shared/container`. Feature modules do not import another module's internal folders.
 
-Task queries are owned by `/api/tasks`. Crawl creation, control, and events are owned by `/api/crawl/jobs`. Novel analysis and library queries are owned by `/api/novels`. EPUB/TXT export is owned only by `/api/exports`.
+Key ownership rules:
 
-## Frontend layers
+- `source-reader` owns website/plugin execution, credential/session/network/browser runtime and normalized source results.
+- `crawler` orchestrates analysis and chapter fetching through the Source Reader public port.
+- `novels`, `chapters` and `task` own persisted library/crawl state.
+- `scheduler` initiates updates through public novel/crawler APIs.
+- `search` and `export` consume already persisted data.
+- `backup` controls maintenance windows but does not own business records.
+
+## Frontend
 
 ```text
-app -> pages -> widgets -> features -> entities -> shared
+app → pages → widgets → features → entities → shared
 ```
 
-The frontend uses strict `/api/*` routes and the shared response envelope. Reader-specific state and cache behavior live under `apps/web/src/modules/reader`.
+Pages compose route screens. Widgets combine independent features and entities. Features own user actions and mutations. Entities own domain queries, public display models and entity UI. Shared owns transport, configuration, utilities, theme and reusable UI primitives.
 
-## Persistence and lifecycle
+The isolated `modules/reader` public façade contains the reader engine contract; FSD slices consume only its public index.
 
-SQLite connections are runtime-owned and closed after queue and scheduler shutdown. Schema changes run through ordered migrations. Crawl start, chapter progress, and finalization use synchronous SQLite transaction bodies. Backup replace/merge validates compatibility and restores inside a maintenance window.
+## Data flow
+
+```text
+Website
+  ↓
+Source Reader plugin/runtime
+  ↓
+Crawler
+  ↓
+Novels + Chapters + Tasks in SQLite
+  ↓
+Library + Reader + Search + Export
+```
+
+A Source Reader outage blocks new ingestion but does not block reading, searching or exporting content already stored locally.
+
+## Lifecycle and persistence
+
+SQLite is opened by shared infrastructure and closed only after queue, scheduler and Source Reader shutdown. Ordered migrations own schema changes. Multi-record operations use synchronous SQLite transaction bodies. Backup/restore enters maintenance mode before replacing or merging storage.
 
 ## Verification
 
 ```bash
 npm run check
+npm run build
 npm run test:regression
 npm run test:integration
-npm run build
 npm run verify
 ```
 
-`npm run check` includes architecture, crawler, frontend-contract, formatting, and TypeScript gates.
+`npm run check` includes API/crawler/FSD/HTTP-contract/documentation guards, formatting and TypeScript checks.

@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 import { logger } from '../../shared/logger/logger.js';
 import { SourceReaderError } from '../../modules/source-reader/domain/errors/source-reader.error.js';
 import type { SourceReaderErrorCode } from '../../modules/source-reader/domain/errors/source-reader.error.js';
+import { redactSourceReaderValue } from '../../modules/source-reader/infrastructure/observability/source-reader-observability.js';
 import { fail } from '../../shared/http/api-response.js';
 
 type ApplicationFailureKind = 'validation' | 'bad_request' | 'forbidden' | 'not_found' | 'conflict';
@@ -80,7 +81,7 @@ export const errorMiddleware: ErrorRequestHandler = (error, _req, res, _next) =>
       ...(res.locals.sourceReaderRequestId
         ? { requestId: String(res.locals.sourceReaderRequestId) }
         : {}),
-      ...(error.details ? { details: error.details } : {})
+      ...(error.details ? { details: redactSourceReaderValue(error.details) } : {})
     });
   }
 

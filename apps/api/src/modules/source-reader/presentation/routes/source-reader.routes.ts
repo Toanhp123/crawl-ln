@@ -5,6 +5,7 @@ import type { SourceReaderRole } from '../../public/source-reader.api.js';
 import type { SourceReaderAdminController } from '../controllers/source-reader-admin.controller.js';
 import type { SourceReaderController } from '../controllers/source-reader.controller.js';
 import { sourceReaderActorMiddleware } from '../source-reader-actor.middleware.js';
+import { sourceReaderRequestIdMiddleware } from '../source-reader-request-id.middleware.js';
 
 export interface SourceReaderPresentation {
   reader: SourceReaderController;
@@ -23,6 +24,7 @@ const upload = multer({
 export function createSourceReaderRoutes(presentation: SourceReaderPresentation) {
   const router = Router();
   const { reader, admin } = presentation;
+  router.use(sourceReaderRequestIdMiddleware);
   router.use(sourceReaderActorMiddleware(presentation.actorOptions));
 
   router.post('/identify', asyncHandler(reader.identify));

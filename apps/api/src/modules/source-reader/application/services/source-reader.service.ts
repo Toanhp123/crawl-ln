@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { ClockPort } from '../../../../shared/ports/clock.port.js';
 import type { BrowserRuntimePort } from '../ports/browser-runtime.port.js';
 import type { CursorCodecPort, CursorPayload } from '../ports/cursor-codec.port.js';
@@ -6,6 +6,7 @@ import type { PluginContextFactoryPort } from '../ports/plugin-context-factory.p
 import type { PluginCandidate, PluginRegistryPort } from '../ports/plugin-registry.port.js';
 import type { PluginRuntimePort } from '../ports/plugin-runtime.port.js';
 import type { ReaderCachePort } from '../ports/reader-cache.port.js';
+import type { SourceReaderObservabilityPort } from '../ports/source-reader-observability.port.js';
 import type {
   ResolvedRuntimeContext,
   RuntimeContextResolverPort
@@ -33,6 +34,8 @@ import type {
 } from '../../public/source-reader.models.js';
 import type { SourceReaderApi } from '../../public/source-reader.api.js';
 import { validatePluginResult } from './plugin-result-validator.js';
+import { SourceReaderCircuitBreaker } from './source-reader-circuit-breaker.js';
+import type { SourceReaderRateLimiterPort } from './source-reader-rate-limiter.js';
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
@@ -50,6 +53,7 @@ type PagedCapability = 'chapter-list' | 'search' | 'latest-updates';
 
 interface ExecutableRequest {
   url: string;
+  requestId?: string;
   signal?: AbortSignal;
   freshOnly?: boolean;
   cursor?: string;
@@ -104,6 +108,19 @@ const alwaysHealthy: PluginHealthPolicy = {
   async recordFailure() {}
 };
 
+const noObservability: SourceReaderObservabilityPort = {
+  invocationStarted() {},
+  invocationFinished() {},
+  cacheHit() {},
+  fallback() {}
+};
+
+const unlimitedRateLimiter: SourceReaderRateLimiterPort = {
+  async enter() {
+    return () => undefined;
+  }
+};
+
 function isPagedCapability(
   capability: Exclude<SourceCapability, 'authentication'>
 ): capability is PagedCapability {
@@ -122,7 +139,13 @@ export class SourceReaderService implements SourceReaderApi {
     private readonly clock: ClockPort,
     private readonly runtimeContexts: RuntimeContextResolverPort = anonymousRuntimeContexts,
     private readonly health: PluginHealthPolicy = alwaysHealthy,
-    private readonly browser?: BrowserRuntimePort
+    private readonly browser?: BrowserRuntimePort,
+    private readonly observability: SourceReaderObservabilityPort = noObservability,
+    private readonly circuit: SourceReaderCircuitBreaker = new SourceReaderCircuitBreaker({
+      failureThreshold: 5,
+      openMs: 60_000
+    }),
+    private readonly rateLimiter: SourceReaderRateLimiterPort = unlimitedRateLimiter
   ) {}
 
   identify(request: IdentifyRequest) {
@@ -203,6 +226,10 @@ export class SourceReaderService implements SourceReaderApi {
       );
       this.validateCursorBinding(cursorPayload, capability, candidate, requestFingerprint);
       let invocationStartedAt: number | undefined;
+      let observedInvocationId: string | undefined;
+      let observedStartedAt: number | undefined;
+      let circuitKey: string | undefined;
+      let leaveRateLimit: (() => void) | undefined;
 
       try {
         const runtimeContext = await this.runtimeContexts.resolve({
@@ -242,13 +269,38 @@ export class SourceReaderService implements SourceReaderApi {
             const cached = await this.cache.get<SourceReaderResult<T>>(
               this.cacheKey(capability, candidate, request, runtimeContext, scope)
             );
-            if (cached && cached.expiresAt > this.clock.now().getTime()) return cached.value;
+            if (cached && cached.expiresAt > this.clock.now().getTime()) {
+              this.observability.cacheHit({
+                pluginId: candidate.plugin.manifest.id,
+                capability,
+                stale: false
+              });
+              return cached.value;
+            }
           }
         }
         if (!(await this.healthEligible(candidate, capability))) continue;
 
         invocationStartedAt = this.clock.now().getTime();
         const signal = request.signal ?? new AbortController().signal;
+        circuitKey = `${candidate.plugin.manifest.id}:${capability}:${candidate.domain}:${
+          runtimeContext.networkRoute?.routeType ?? 'direct'
+        }`;
+        if (!this.circuit.allow(circuitKey, invocationStartedAt)) continue;
+        const rateKey = `${candidate.domain}:${runtimeContext.credential?.id ?? 'anonymous'}:${
+          runtimeContext.networkRoute?.id ?? 'direct'
+        }`;
+        leaveRateLimit = await this.rateLimiter.enter(rateKey, signal);
+        observedInvocationId = randomUUID();
+        observedStartedAt = this.clock.now().getTime();
+        this.observability.invocationStarted({
+          requestId: request.requestId ?? 'untracked',
+          invocationId: observedInvocationId,
+          pluginId: candidate.plugin.manifest.id,
+          capability,
+          domain: candidate.domain,
+          runtimeMode: candidate.executionMode
+        });
         let browserSession;
         if (runtimeContext.browserRequired) {
           if (!candidate.plugin.manifest.permissions.browser) {
@@ -297,7 +349,19 @@ export class SourceReaderService implements SourceReaderApi {
             },
             context
           );
-          if (!accepted) continue;
+          if (!accepted) {
+            this.observability.invocationFinished({
+              requestId: request.requestId ?? 'untracked',
+              invocationId: observedInvocationId,
+              pluginId: candidate.plugin.manifest.id,
+              capability,
+              runtimeMode: candidate.executionMode,
+              result: 'skipped',
+              durationMs: Math.max(0, this.clock.now().getTime() - observedStartedAt)
+            });
+            observedInvocationId = undefined;
+            continue;
+          }
         }
 
         const operation = (await this.runtime.invoke({
@@ -329,6 +393,17 @@ export class SourceReaderService implements SourceReaderApi {
           extensions: operation.extensions,
           warnings: operation.warnings
         };
+        this.circuit.recordSuccess(circuitKey);
+        this.observability.invocationFinished({
+          requestId: request.requestId ?? 'untracked',
+          invocationId: observedInvocationId,
+          pluginId: candidate.plugin.manifest.id,
+          capability,
+          runtimeMode: candidate.executionMode,
+          result: 'success',
+          durationMs: Math.max(0, this.clock.now().getTime() - observedStartedAt)
+        });
+        observedInvocationId = undefined;
         await this.recordHealthSuccess(candidate, capability, invocationStartedAt);
         invocationStartedAt = undefined;
         const ttlMs = Math.max(
@@ -367,11 +442,35 @@ export class SourceReaderService implements SourceReaderApi {
         }
         return result;
       } catch (error) {
+        if (observedInvocationId && observedStartedAt !== undefined) {
+          const failureCode =
+            error instanceof SourceReaderError ? error.code : 'SOURCE_READER_INTERNAL_ERROR';
+          if (circuitKey) {
+            this.circuit.recordFailure(circuitKey, failureCode, this.clock.now().getTime());
+          }
+          this.observability.invocationFinished({
+            requestId: request.requestId ?? 'untracked',
+            invocationId: observedInvocationId,
+            pluginId: candidate.plugin.manifest.id,
+            capability,
+            runtimeMode: candidate.executionMode,
+            result: 'failed',
+            durationMs: Math.max(0, this.clock.now().getTime() - observedStartedAt),
+            failureCode
+          });
+        }
         if (invocationStartedAt !== undefined) {
           await this.recordHealthFailure(candidate, capability, invocationStartedAt, error);
         }
         lastError = error;
         if (!(error instanceof SourceReaderError) || !error.fallbackAllowed) throw error;
+        this.observability.fallback({
+          pluginId: candidate.plugin.manifest.id,
+          capability,
+          failureCode: error.code
+        });
+      } finally {
+        leaveRateLimit?.();
       }
     }
 

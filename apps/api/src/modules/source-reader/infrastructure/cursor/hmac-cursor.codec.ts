@@ -1,9 +1,13 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { ClockPort } from '../../../../shared/ports/clock.port.js';
 import type { CursorCodecPort, CursorPayload } from '../../application/ports/cursor-codec.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 
 export class HmacCursorCodec implements CursorCodecPort {
-  constructor(private readonly key: Buffer) {
+  constructor(
+    private readonly key: Buffer,
+    private readonly clock: ClockPort
+  ) {
     if (key.length < 32) throw new Error('Cursor key must be at least 32 bytes');
   }
 
@@ -33,7 +37,7 @@ export class HmacCursorCodec implements CursorCodecPort {
         (payload.pluginCursor !== undefined && typeof payload.pluginCursor !== 'string') ||
         !Number.isInteger(payload.offset) ||
         typeof payload.expiresAt !== 'number' ||
-        payload.expiresAt <= Date.now()
+        payload.expiresAt <= this.clock.now().getTime()
       ) {
         return this.invalid();
       }

@@ -54,7 +54,7 @@ function createService(
     new InProcessPluginRuntime(),
     contextFactory,
     new MemoryReaderCache(100),
-    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901')),
+    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901'), clock),
     clock
   );
 }
@@ -232,7 +232,9 @@ test('service resolves runtime context before invoking a plugin', async () => {
       }
     } as never,
     new MemoryReaderCache(100),
-    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901')),
+    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901'), {
+      now: () => new Date('2026-07-19T00:00:00.000Z')
+    }),
     { now: () => new Date('2026-07-19T00:00:00.000Z') },
     {
       resolve: async (input: Record<string, unknown>) => {
@@ -278,7 +280,9 @@ test('service skips a capability candidate while its health circuit is open', as
     new InProcessPluginRuntime(),
     contextFactory,
     new MemoryReaderCache(100),
-    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901')),
+    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901'), {
+      now: () => new Date('2026-07-20T00:00:00.000Z')
+    }),
     { now: () => new Date('2026-07-20T00:00:00.000Z') },
     undefined,
     {

@@ -13,6 +13,7 @@ const roles = new Set<SourceReaderRole>([
 
 export interface SourceReaderRequest extends Request {
   sourceReaderActor?: SourceReaderActor;
+  sourceReaderRequestId?: string;
 }
 
 export function sourceReaderActorMiddleware(options: {

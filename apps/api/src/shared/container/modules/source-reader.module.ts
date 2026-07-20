@@ -5,6 +5,8 @@ import { PluginInstallationService } from '../../../modules/source-reader/applic
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
 import { SourceReaderService } from '../../../modules/source-reader/application/services/source-reader.service.js';
+import { SourceReaderCircuitBreaker } from '../../../modules/source-reader/application/services/source-reader-circuit-breaker.js';
+import { SourceReaderRateLimiter } from '../../../modules/source-reader/application/services/source-reader-rate-limiter.js';
 import { StandardAuthenticationService } from '../../../modules/source-reader/application/services/standard-authentication.service.js';
 import { SourceReaderAuthorizationPolicy } from '../../../modules/source-reader/application/policies/source-reader-authorization.policy.js';
 import {
@@ -62,6 +64,7 @@ import { SqlitePluginHealthRepository } from '../../../modules/source-reader/inf
 import { SqlitePluginStore } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.js';
 import { SqliteSessionRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-session.repository.js';
 import { PluginContextFactory } from '../../../modules/source-reader/infrastructure/runtime/plugin-context.factory.js';
+import { InProcessSourceReaderObservability } from '../../../modules/source-reader/infrastructure/observability/source-reader-observability.js';
 import { SourceReaderAdminController } from '../../../modules/source-reader/presentation/controllers/source-reader-admin.controller.js';
 import { SourceReaderController } from '../../../modules/source-reader/presentation/controllers/source-reader.controller.js';
 import type {
@@ -163,11 +166,17 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     ),
     pluginContexts,
     cache,
-    new HmacCursorCodec(Buffer.from(env.sourceReaderCursorKey.padEnd(32, '0').slice(0, 32))),
+    new HmacCursorCodec(
+      Buffer.from(env.sourceReaderCursorKey.padEnd(32, '0').slice(0, 32)),
+      infrastructure.clock
+    ),
     infrastructure.clock,
     runtimeContexts,
     health,
-    browser
+    browser,
+    new InProcessSourceReaderObservability(infrastructure.logger),
+    new SourceReaderCircuitBreaker({ failureThreshold: 5, openMs: 60_000 }),
+    new SourceReaderRateLimiter({ maxConcurrent: 2, minimumDelayMs: 100 }, infrastructure.clock)
   ) satisfies SourceReaderApi;
 
   const authorization = new SourceReaderAuthorizationPolicy();

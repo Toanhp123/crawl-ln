@@ -13,7 +13,11 @@ export class SourceReaderController {
   constructor(private readonly api: SourceReaderApi) {}
 
   private withActor<T extends Record<string, unknown>>(req: SourceReaderRequest, input: T) {
-    return { ...input, userId: req.sourceReaderActor?.id };
+    return {
+      ...input,
+      userId: req.sourceReaderActor?.id,
+      requestId: req.sourceReaderRequestId
+    };
   }
 
   identify = async (req: SourceReaderRequest, res: Response) =>

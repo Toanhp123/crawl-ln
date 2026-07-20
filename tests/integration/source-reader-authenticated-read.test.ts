@@ -61,7 +61,7 @@ function createReader(input: {
     new InProcessPluginRuntime(),
     input.contextFactory ?? (fallbackFactory as never),
     new MemoryReaderCache(20),
-    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901')),
+    new HmacCursorCodec(Buffer.from('01234567890123456789012345678901'), { now: () => now }),
     { now: () => now },
     { resolve: async () => input.runtimeContext } as never,
     undefined,

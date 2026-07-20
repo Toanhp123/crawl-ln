@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { lstat, readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type {
@@ -6,17 +6,7 @@ import type {
   StoredPluginVersion
 } from '../../../application/ports/plugin-store.port.js';
 import type { RegisteredPlugin } from '../../../application/ports/plugin-registry.port.js';
-import type { ExternalPluginSupervisorPort } from '../../../application/ports/external-plugin-supervisor.port.js';
-import type { PluginLifecycle } from '../../../domain/plugin/plugin-lifecycle.js';
-import type { SourceReaderPlugin } from '../../../domain/plugin/source-plugin.js';
-import type { AuthExecutionResult } from '../../../domain/auth/authentication.js';
-import type {
-  ExternalLoginRequest,
-  ExternalProbeRequest,
-  ExternalResumeChallengeRequest
-} from '../../../domain/plugin/external-auth-rpc.js';
-import { SANDBOX_PROTOCOL_VERSION } from '../../runtime/external-process/sandbox-protocol.js';
-import { loadActivatedExtensionContracts } from '../../../application/services/plugin-extension-validator.js';
+import { ExternalPluginRegistrationFactory } from '../../../application/services/external-plugin-registration.factory.js';
 
 const INTEGRITY_FAILURE = 'PACKAGE_INTEGRITY_FAILED';
 const UNCHECKED_FILES = new Set(['checksums.json', 'signature.json']);
@@ -107,17 +97,10 @@ export async function inspectInstalledPluginPackage(
   return contents;
 }
 
-interface ExternalLoaderOptions {
-  supervisor: ExternalPluginSupervisorPort;
-  timeoutMs: number;
-  now(): Date;
-  randomId?(): string;
-}
-
 export class ExternalPluginLoader {
   constructor(
     private readonly store: PluginStorePort,
-    private readonly options?: ExternalLoaderOptions
+    private readonly registrationFactory: ExternalPluginRegistrationFactory
   ) {}
 
   async loadActive(): Promise<RegisteredPlugin[]> {
@@ -129,116 +112,8 @@ export class ExternalPluginLoader {
         await this.store.quarantine(version.pluginId, version.version, INTEGRITY_FAILURE);
         continue;
       }
-      registrations.push({
-        plugin: await this.plugin(version),
-        trustLevel: version.trustLevel,
-        executionMode:
-          version.trustLevel === 'local-unverified'
-            ? 'isolated'
-            : version.manifest.runtime.preferredMode,
-        enabled: true,
-        packagePath: version.packagePath,
-        activatedExtensionContracts: await loadActivatedExtensionContracts(
-          version.packagePath,
-          version.activatedExtensions ?? {}
-        )
-      });
+      registrations.push(await this.registrationFactory.create(version));
     }
     return registrations;
-  }
-
-  private async plugin(version: StoredPluginVersion): Promise<SourceReaderPlugin> {
-    const manifest = {
-      ...version.manifest,
-      extensionContracts: version.activatedExtensions ?? version.manifest.extensionContracts ?? {}
-    };
-    if (!this.options) return { manifest };
-    return {
-      manifest,
-      lifecycle: this.lifecycle(version),
-      canHandle: async (request) =>
-        Boolean(
-          await this.request(version, 'probeCanHandle', {
-            normalizedUrl: request.normalizedUrl,
-            domain: request.domain,
-            capability: request.capability
-          } satisfies ExternalProbeRequest)
-        ),
-      ...(manifest.capabilities.includes('authentication')
-        ? {
-            authentication: {
-              login: async (request) =>
-                (await this.request(version, 'login', {
-                  strategy: 'custom',
-                  fields: request.fields ?? {},
-                  routeIdentity: request.routeIdentity ?? 'direct'
-                } satisfies ExternalLoginRequest)) as AuthExecutionResult,
-              resumeChallenge: async (request) => {
-                const response = Object.fromEntries(
-                  Object.entries(request.response).flatMap(([key, value]) =>
-                    typeof value === 'string' ? [[key, value]] : []
-                  )
-                );
-                return (await this.request(version, 'resumeChallenge', {
-                  challengeType: request.challengeType ?? 'unknown',
-                  response,
-                  opaqueState: request.opaqueState ?? {},
-                  routeIdentity: request.routeIdentity ?? 'direct'
-                } satisfies ExternalResumeChallengeRequest)) as AuthExecutionResult;
-              }
-            }
-          }
-        : {})
-    };
-  }
-
-  private lifecycle(version: StoredPluginVersion): PluginLifecycle {
-    return {
-      initialize: async (context) => {
-        await this.request(version, 'initialize', {
-          ...context,
-          protocolVersion: SANDBOX_PROTOCOL_VERSION
-        });
-      },
-      healthCheck: async () =>
-        (await this.request(version, 'healthCheck', {})) as {
-          status: 'healthy' | 'degraded';
-          details?: Record<string, string>;
-        },
-      shutdown: async (reason) => {
-        try {
-          await this.request(version, 'shutdown', { reason });
-        } finally {
-          await this.options?.supervisor.stop(version.pluginId, version.version, reason);
-        }
-      }
-    };
-  }
-
-  private async request(
-    version: StoredPluginVersion,
-    operation:
-      'initialize' | 'healthCheck' | 'shutdown' | 'probeCanHandle' | 'login' | 'resumeChallenge',
-    payload: Record<string, unknown>
-  ): Promise<unknown> {
-    const options = this.options;
-    if (!options) throw new Error('External plugin supervisor is unavailable');
-    const handle =
-      options.supervisor.get(version.pluginId, version.version) ??
-      (await options.supervisor.start({
-        pluginId: version.pluginId,
-        pluginVersion: version.version,
-        packageRoot: version.packagePath,
-        entryPath: join(version.packagePath, 'dist/index.js')
-      }));
-    return handle.request(
-      {
-        requestId: options.randomId?.() ?? randomUUID(),
-        operation,
-        deadlineAt: new Date(options.now().getTime() + options.timeoutMs).toISOString(),
-        payload
-      },
-      new AbortController().signal
-    );
   }
 }

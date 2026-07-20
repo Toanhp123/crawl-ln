@@ -8,10 +8,9 @@ import type {
 } from '../ports/plugin-registry.port.js';
 import type { PluginStorePort, StoredPluginVersion } from '../ports/plugin-store.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
-import { loadActivatedExtensionContracts } from './plugin-extension-validator.js';
+import type { ExternalPluginRegistrationFactory } from './external-plugin-registration.factory.js';
 import type {
   PluginActivationResult,
-  PluginLifecycle,
   PluginShutdownReason
 } from '../../domain/plugin/plugin-lifecycle.js';
 
@@ -51,6 +50,7 @@ export class PluginActivationService {
     private readonly store: ActivationStore,
     private readonly registry: ActivationRegistry,
     private readonly supervisor: ExternalPluginSupervisorPort,
+    private readonly registrationFactory: ExternalPluginRegistrationFactory,
     private readonly clock: ClockPort,
     private readonly ids: { randomId(): string },
     private readonly timeoutMs: number
@@ -126,14 +126,10 @@ export class PluginActivationService {
       )) as { status?: unknown };
       if (health?.status !== 'healthy') throw new Error('Candidate health check is not healthy');
       phase = 'registry';
-      const activatedExtensionContracts = await loadActivatedExtensionContracts(
-        candidate.packagePath,
-        candidate.activatedExtensions ?? {}
-      );
       const previousRegistry = this.registry.snapshot();
       const prepared = this.registry.prepareRegistration(
         previousRegistry,
-        this.registration(candidate, this.lifecycleProxy(candidate), activatedExtensionContracts)
+        await this.registrationFactory.create(candidate)
       );
       phase = 'publish';
       const publishedAt = this.clock.now().toISOString();
@@ -239,69 +235,6 @@ export class PluginActivationService {
     } catch {
       // Best-effort rollback. The original lifecycle error remains the primary failure.
     }
-  }
-
-  private registration(
-    version: StoredPluginVersion,
-    lifecycle: PluginLifecycle,
-    activatedExtensionContracts: RegisteredPlugin['activatedExtensionContracts']
-  ): RegisteredPlugin {
-    return {
-      plugin: {
-        manifest: {
-          ...version.manifest,
-          extensionContracts: version.activatedExtensions ?? {}
-        },
-        lifecycle
-      },
-      trustLevel: version.trustLevel,
-      executionMode: 'isolated',
-      enabled: true,
-      packagePath: version.packagePath,
-      activatedExtensionContracts
-    };
-  }
-
-  private lifecycleProxy(version: StoredPluginVersion): PluginLifecycle {
-    return {
-      initialize: async (context) => {
-        const handle = await this.handleFor(version);
-        await handle.request(
-          {
-            requestId: this.ids.randomId(),
-            operation: 'initialize',
-            deadlineAt: this.deadline(),
-            payload: { ...context }
-          },
-          new AbortController().signal
-        );
-      },
-      healthCheck: async () => {
-        const handle = await this.handleFor(version);
-        return (await handle.request(
-          {
-            requestId: this.ids.randomId(),
-            operation: 'healthCheck',
-            deadlineAt: this.deadline(),
-            payload: {}
-          },
-          new AbortController().signal
-        )) as { status: 'healthy' | 'degraded'; details?: Record<string, string> };
-      },
-      shutdown: async (reason) => this.shutdownVersion(version, reason)
-    };
-  }
-
-  private async handleFor(version: StoredPluginVersion) {
-    return (
-      this.supervisor.get(version.pluginId, version.version) ??
-      this.supervisor.start({
-        pluginId: version.pluginId,
-        pluginVersion: version.version,
-        packageRoot: version.packagePath,
-        entryPath: join(version.packagePath, 'dist/index.js')
-      })
-    );
   }
 
   private async shutdownVersion(

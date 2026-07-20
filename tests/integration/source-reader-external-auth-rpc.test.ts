@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { AuthenticationOrchestratorService } from '../../apps/api/src/modules/source-reader/application/services/authentication-orchestrator.service.ts';
 import { StandardAuthenticationService } from '../../apps/api/src/modules/source-reader/application/services/standard-authentication.service.ts';
+import { ExternalPluginRegistrationFactory } from '../../apps/api/src/modules/source-reader/application/services/external-plugin-registration.factory.ts';
 import type { ExternalPluginRequest } from '../../apps/api/src/modules/source-reader/application/ports/external-plugin-supervisor.port.ts';
 import type { StoredPluginVersion } from '../../apps/api/src/modules/source-reader/application/ports/plugin-store.port.ts';
 import { ExternalPluginLoader } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts';
@@ -82,7 +83,7 @@ test.after(async () => {
 
 test('external probe, login, and challenge use dedicated bounded RPC DTOs', async () => {
   requests.length = 0;
-  const loader = new ExternalPluginLoader({ listActive: async () => [stored] } as never, {
+  const registrationFactory = new ExternalPluginRegistrationFactory({
     supervisor: {
       start: async () => handle,
       get: () => handle,
@@ -90,8 +91,13 @@ test('external probe, login, and challenge use dedicated bounded RPC DTOs', asyn
     },
     timeoutMs: 5_000,
     now: () => new Date('2026-07-20T00:00:00.000Z'),
-    randomId: () => `rpc-${requests.length + 1}`
+    randomId: () => `rpc-${requests.length + 1}`,
+    protocolVersion: 1
   });
+  const loader = new ExternalPluginLoader(
+    { listActive: async () => [stored] } as never,
+    registrationFactory
+  );
   const [registration] = await loader.loadActive();
   assert.ok(registration);
 

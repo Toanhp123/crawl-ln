@@ -6,6 +6,7 @@ import { PluginCompatibilityService } from '../../../modules/source-reader/appli
 import { ExternalPluginRevalidationService } from '../../../modules/source-reader/application/services/external-plugin-revalidation.service.js';
 import { SOURCE_READER_HOST_COMPATIBILITY } from '../../../modules/source-reader/domain/plugin/source-reader-host-compatibility.js';
 import { PluginActivationService } from '../../../modules/source-reader/application/services/plugin-activation.service.js';
+import { ExternalPluginRegistrationFactory } from '../../../modules/source-reader/application/services/external-plugin-registration.factory.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
 import { SourceReaderInvalidationService } from '../../../modules/source-reader/application/services/source-reader-invalidation.service.js';
@@ -65,6 +66,7 @@ import { InMemoryPluginRegistry } from '../../../modules/source-reader/infrastru
 import { InProcessPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.js';
 import { BrowserRuntimeCoordinator } from '../../../modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.js';
 import { ExternalProcessSupervisor } from '../../../modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.js';
+import { SANDBOX_PROTOCOL_VERSION } from '../../../modules/source-reader/infrastructure/runtime/external-process/sandbox-protocol.js';
 import { RuntimeRouter } from '../../../modules/source-reader/infrastructure/runtime/runtime-router.js';
 import { LocalEncryptedVault } from '../../../modules/source-reader/infrastructure/secrets/local-encrypted.vault.js';
 import { SqliteAuthChallengeRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-auth-challenge.repository.js';
@@ -122,12 +124,14 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     structuredLogger,
     onOutputPolicyViolation: (input) => health.recordPolicyViolation(input)
   });
-  const externalLoader = new ExternalPluginLoader(pluginStore, {
+  const externalRegistrationFactory = new ExternalPluginRegistrationFactory({
     supervisor: externalSupervisor,
     timeoutMs: env.requestTimeoutMs,
     now: () => infrastructure.clock.now(),
-    randomId: () => infrastructure.ids.randomId()
+    randomId: () => infrastructure.ids.randomId(),
+    protocolVersion: SANDBOX_PROTOCOL_VERSION
   });
+  const externalLoader = new ExternalPluginLoader(pluginStore, externalRegistrationFactory);
   const compatibility = new PluginCompatibilityService(SOURCE_READER_HOST_COMPATIBILITY);
   const installer = new PluginInstallationService(
     new SourcePluginPackageVerifier(new StaticTrustStore(env.sourceReaderTrustedKeys)),
@@ -217,6 +221,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     pluginStore,
     registry,
     externalSupervisor,
+    externalRegistrationFactory,
     infrastructure.clock,
     infrastructure.ids,
     env.requestTimeoutMs

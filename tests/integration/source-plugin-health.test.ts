@@ -102,7 +102,11 @@ test('tampered active package is quarantined instead of loaded', async () => {
 
   await writeFile(join(packagePath, 'dist', 'index.js'), 'tampered');
 
-  const loaded = await new ExternalPluginLoader(store).loadActive();
+  const loaded = await new ExternalPluginLoader(store, {
+    create: async () => {
+      throw new Error('tampered package must not reach registration');
+    }
+  } as never).loadActive();
   assert.equal(
     loaded.some((candidate) => candidate.plugin.manifest.id === pluginId),
     false

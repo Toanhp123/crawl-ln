@@ -84,7 +84,15 @@ test.after(async () => {
 test('approved external plugin overrides one capability without replacing built-in metadata', async () => {
   const registry = new InMemoryPluginRegistry();
   registry.register(novelCoolPlugin, { trustLevel: 'built-in', executionMode: 'in-process' });
-  const loader = new ExternalPluginLoader(store);
+  const loader = new ExternalPluginLoader(store, {
+    create: async (version) => ({
+      plugin: { manifest: version.manifest },
+      trustLevel: version.trustLevel,
+      executionMode: 'isolated',
+      enabled: true,
+      packagePath: version.packagePath
+    })
+  } as never);
   registry.replaceExternal(await loader.loadActive());
 
   const metadata = await registry.listCandidates({

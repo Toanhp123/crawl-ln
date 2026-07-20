@@ -182,6 +182,7 @@ function fixture(
     store,
     registry,
     supervisor,
+    { create: async (version: StoredPluginVersion) => registration(version.version) } as never,
     { now: () => new Date('2026-07-20T00:00:00.000Z') },
     { randomId: () => 'request-1' },
     5_000

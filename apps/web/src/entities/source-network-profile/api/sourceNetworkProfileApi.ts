@@ -1,5 +1,6 @@
 import type {
   SourceReaderNetworkProfileCreateRequest,
+  SourceReaderNetworkProfileCreateResult,
   SourceReaderNetworkProfileMetadata,
   SourceReaderNetworkProfileUpdateRequest,
   SourceReaderNetworkTestResult
@@ -11,7 +12,7 @@ import { queryKeys } from '@/shared/api/queryKeys';
 export const listSourceNetworkProfiles = (signal?: AbortSignal) =>
   http<SourceReaderNetworkProfileMetadata[]>('/api/source-reader/network-profiles', { signal });
 export const createSourceNetworkProfile = (input: SourceReaderNetworkProfileCreateRequest) =>
-  http<Record<string, unknown>>('/api/source-reader/network-profiles', {
+  http<SourceReaderNetworkProfileCreateResult>('/api/source-reader/network-profiles', {
     method: 'POST',
     body: JSON.stringify(input)
   });

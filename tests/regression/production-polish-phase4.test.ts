@@ -40,6 +40,8 @@ test('reader shell provides a focusable main landmark', () => {
   const viewport = read('apps/web/src/shared/ui/layout/ScrollViewport.tsx');
   assert.match(shell, /<ScrollViewport/);
   assert.match(shell, /id="reader-scroll-root"/);
-  assert.match(viewport, /<main/);
+  assert.match(viewport, /as = 'main'/);
+  assert.match(viewport, /const Component = as/);
+  assert.doesNotMatch(shell, /as=/);
   assert.match(viewport, /tabIndex=\{-1\}/);
 });

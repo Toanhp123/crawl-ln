@@ -1,6 +1,7 @@
 import type { SourceReaderResult } from '@novel-tool/shared';
-import { Badge, Panel, Text } from '@/shared/ui';
-import { sourceReaderResultJson } from '../model/sourceReaderResult';
+import { Badge, Panel, ScrollViewport, Text } from '@/shared/ui';
+import { sourceReaderResultJson } from '../model/sourceInspector';
+
 export function SourceReaderResultView({
   result,
   rawLabel = 'Raw JSON'
@@ -32,12 +33,15 @@ export function SourceReaderResultView({
         </Panel>
       ))}
       <Panel tone="default">
-        <pre
-          className="max-h-[32rem] overflow-auto whitespace-pre-wrap type-metadata text-text"
-          aria-label={rawLabel}
+        <ScrollViewport
+          as="div"
+          id="source-reader-inspector-result"
+          className="max-h-[var(--bottom-sheet-height)]"
         >
-          {sourceReaderResultJson(result)}
-        </pre>
+          <pre className="whitespace-pre-wrap p-4 type-metadata text-text" aria-label={rawLabel}>
+            {sourceReaderResultJson(result)}
+          </pre>
+        </ScrollViewport>
       </Panel>
     </div>
   );

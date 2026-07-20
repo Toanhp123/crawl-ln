@@ -7,18 +7,21 @@ export function ScrollViewport({
   children,
   id,
   className,
-  viewportRef
+  viewportRef,
+  as = 'main'
 }: {
   children: ReactNode;
   id: string;
   className?: string;
   viewportRef?: MutableRefObject<HTMLElement | null>;
+  as?: 'main' | 'div';
 }) {
   const internalRef = useRef<HTMLElement | null>(null);
   const resolvedRef = viewportRef ?? internalRef;
+  const Component = as;
   return (
     <ScrollViewportContext.Provider value={resolvedRef}>
-      <main
+      <Component
         ref={(node) => {
           resolvedRef.current = node;
         }}
@@ -27,7 +30,7 @@ export function ScrollViewport({
         className={cn('min-h-0 overflow-y-auto overscroll-y-contain', className)}
       >
         {children}
-      </main>
+      </Component>
     </ScrollViewportContext.Provider>
   );
 }

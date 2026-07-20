@@ -380,6 +380,14 @@ export interface SourceReaderCredentialCreateRequest {
   secret: Record<string, unknown>;
 }
 
+export interface SourceReaderCredentialCreateResult {
+  id: string;
+  name: string;
+  ownerType: SourceReaderOwnerType;
+  ownerId?: string;
+  strategy: SourceReaderCredentialStrategy;
+}
+
 export interface SourceReaderCredentialSecretRequest {
   secret: Record<string, unknown>;
 }
@@ -424,6 +432,14 @@ export interface SourceReaderNetworkProfileCreateRequest {
   regions: string[];
   tags: string[];
   config?: Record<string, unknown>;
+}
+
+export interface SourceReaderNetworkProfileCreateResult {
+  id: string;
+  name: string;
+  ownerType: SourceReaderOwnerType;
+  ownerId?: string;
+  routeType: Exclude<SourceReaderNetworkRouteType, 'vpn-gateway'>;
 }
 
 export type SourceReaderNetworkProfileUpdateRequest = Partial<
@@ -471,6 +487,13 @@ export interface SourceReaderPluginInstallResult {
   permissionsPending?: boolean;
   warnings?: Array<{ code: string; message: string }>;
   [key: string]: unknown;
+}
+
+export interface SourceReaderPluginActivationResult {
+  pluginId: string;
+  version: string;
+  status: 'active';
+  warnings: Array<{ code: string; message: string }>;
 }
 
 export interface SourceReaderPluginHealthResult {

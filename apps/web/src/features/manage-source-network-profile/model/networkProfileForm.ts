@@ -1,4 +1,5 @@
 import type {
+  SourceReaderNetworkProfileMetadata,
   SourceReaderNetworkProfileUpdateRequest,
   SourceReaderNetworkRouteType,
   SourceReaderOwnerType
@@ -22,6 +23,19 @@ export const createEmptyNetworkProfileForm = (): NetworkProfileFormState => ({
   routeType: 'direct',
   regions: '',
   tags: '',
+  proxyUrl: '',
+  proxyUsername: '',
+  proxyPassword: ''
+});
+
+export const networkProfileFormFromProfile = (
+  profile: SourceReaderNetworkProfileMetadata
+): NetworkProfileFormState => ({
+  name: profile.name,
+  ownerType: profile.ownerType,
+  routeType: profile.routeType === 'vpn-gateway' ? 'direct' : profile.routeType,
+  regions: profile.regions.join(', '),
+  tags: profile.tags.join(', '),
   proxyUrl: '',
   proxyUsername: '',
   proxyPassword: ''

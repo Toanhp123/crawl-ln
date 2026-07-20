@@ -1,6 +1,7 @@
 import type {
   SourceReaderAuthenticationResult,
   SourceReaderCredentialCreateRequest,
+  SourceReaderCredentialCreateResult,
   SourceReaderCredentialLoginRequest,
   SourceReaderCredentialMetadata,
   SourceReaderCredentialSecretRequest
@@ -12,7 +13,7 @@ import { queryKeys } from '@/shared/api/queryKeys';
 export const listSourceCredentials = (signal?: AbortSignal) =>
   http<SourceReaderCredentialMetadata[]>('/api/source-reader/credentials', { signal });
 export const createSourceCredential = (input: SourceReaderCredentialCreateRequest) =>
-  http<Record<string, unknown>>('/api/source-reader/credentials', {
+  http<SourceReaderCredentialCreateResult>('/api/source-reader/credentials', {
     method: 'POST',
     body: JSON.stringify(input)
   });

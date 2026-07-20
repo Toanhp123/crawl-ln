@@ -1,7 +1,7 @@
 import type {
+  SourceReaderPluginActivationResult,
   SourceReaderPluginDescriptor,
   SourceReaderPluginDiagnostics,
-  SourceReaderPluginHealthResult,
   SourceReaderPluginInstallResult,
   SourceReaderPluginPermission,
   SourceReaderPluginTestResult
@@ -44,7 +44,7 @@ export const getSourcePluginDiagnostics = (id: string, signal?: AbortSignal) =>
   });
 
 export const getSourcePluginHealth = (id: string, signal?: AbortSignal) =>
-  http<SourceReaderPluginDiagnostics | SourceReaderPluginHealthResult>(
+  http<SourceReaderPluginDiagnostics>(
     `/api/source-reader/plugins/${encodeURIComponent(id)}/health`,
     { signal }
   );
@@ -62,10 +62,13 @@ export async function installSourcePlugin(file: File) {
 }
 
 export const enableSourcePlugin = (id: string, version: string) =>
-  http<Record<string, unknown>>(`/api/source-reader/plugins/${encodeURIComponent(id)}/enable`, {
-    method: 'POST',
-    body: JSON.stringify({ version })
-  });
+  http<SourceReaderPluginActivationResult>(
+    `/api/source-reader/plugins/${encodeURIComponent(id)}/enable`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ version })
+    }
+  );
 
 export const disableSourcePlugin = (id: string) =>
   httpVoid(`/api/source-reader/plugins/${encodeURIComponent(id)}/disable`, { method: 'POST' });

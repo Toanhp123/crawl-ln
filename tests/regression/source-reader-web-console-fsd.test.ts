@@ -28,8 +28,7 @@ test('Source Reader console has entity, feature and widget slices', async () => 
     'source-plugin',
     'source-credential',
     'source-network-profile',
-    'source-auth-challenge',
-    'source-reader-result'
+    'source-auth-challenge'
   ])
     assert.equal(await exists(`apps/web/src/entities/${slice}/index.ts`), true, slice);
 
@@ -62,4 +61,16 @@ test('entity slices do not import upward FSD layers', async () => {
     const source = await readFile(file, 'utf8');
     assert.doesNotMatch(source, /@\/(features|widgets|pages|app)\//, file);
   }
+});
+
+test('inspection transport and result UI belong to the inspect-source-url feature', async () => {
+  assert.equal(await exists('apps/web/src/entities/source-reader-result/index.ts'), false);
+  for (const file of [
+    'apps/web/src/features/inspect-source-url/api/sourceReaderInspectionApi.ts',
+    'apps/web/src/features/inspect-source-url/model/sourceInspector.ts',
+    'apps/web/src/features/inspect-source-url/model/useSourceInspector.ts',
+    'apps/web/src/features/inspect-source-url/ui/SourceInspectorForm.tsx',
+    'apps/web/src/features/inspect-source-url/ui/SourceReaderResultView.tsx'
+  ])
+    assert.equal(await exists(file), true, file);
 });

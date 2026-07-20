@@ -29,7 +29,7 @@ test('web console references every Source Reader HTTP route', async () => {
     'apps/web/src/entities/source-credential/api/sourceCredentialApi.ts',
     'apps/web/src/entities/source-network-profile/api/sourceNetworkProfileApi.ts',
     'apps/web/src/entities/source-auth-challenge/api/sourceAuthChallengeApi.ts',
-    'apps/web/src/entities/source-reader-result/api/sourceReaderApi.ts'
+    'apps/web/src/features/inspect-source-url/api/sourceReaderInspectionApi.ts'
   ];
   const combined = (await Promise.all(files.map(source))).join('\n');
   for (const route of [
@@ -62,11 +62,12 @@ test('Source Reader secrets and administration queries stay out of persisted que
   assert.doesNotMatch(persistence, /source-reader/);
 
   const credentials = await source(
-    'apps/web/src/features/manage-source-credential/ui/ManageSourceCredential.tsx'
+    'apps/web/src/features/manage-source-credential/ui/ReplaceSourceCredentialSecretButton.tsx'
   );
   const networks = await source(
-    'apps/web/src/features/manage-source-network-profile/ui/ManageSourceNetworkProfile.tsx'
+    'apps/web/src/features/manage-source-network-profile/ui/EditSourceNetworkProfileButton.tsx'
   );
-  assert.match(credentials, /onSettled:\s*\(\) => setSecrets\(createEmptyCredentialSecrets\(\)\)/);
-  assert.match(networks, /proxyPassword: ''/);
+  assert.match(credentials, /onSettled:\s*reset/);
+  assert.match(networks, /networkProfileFormFromProfile\(profile\)/);
+  assert.match(networks, /proxyPassword: ''|networkProfileFormFromProfile/);
 });

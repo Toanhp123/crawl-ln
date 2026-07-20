@@ -80,3 +80,65 @@ test('credential forms require the secret fields needed by each strategy', () =>
     password: 'secret'
   });
 });
+
+test('network edit form resets from current metadata without hydrating write-only proxy values', async () => {
+  const model =
+    await import('../../apps/web/src/features/manage-source-network-profile/model/networkProfileForm.ts');
+  assert.equal(typeof model.networkProfileFormFromProfile, 'function');
+  const form = model.networkProfileFormFromProfile({
+    id: 'network-1',
+    ownerType: 'user',
+    ownerId: 'user-1',
+    name: 'Current proxy',
+    routeType: 'https-proxy',
+    regions: ['EU', 'US'],
+    tags: ['premium'],
+    healthStatus: 'healthy',
+    enabled: true,
+    createdAt: '2026-07-20T00:00:00.000Z',
+    updatedAt: '2026-07-20T01:00:00.000Z'
+  });
+  assert.deepEqual(form, {
+    name: 'Current proxy',
+    ownerType: 'user',
+    routeType: 'https-proxy',
+    regions: 'EU, US',
+    tags: 'premium',
+    proxyUrl: '',
+    proxyUsername: '',
+    proxyPassword: ''
+  });
+});
+
+test('credential create model builds a trimmed request and resets all fields', async () => {
+  const model =
+    await import('../../apps/web/src/features/manage-source-credential/model/credentialForm.ts');
+  assert.equal(typeof model.createEmptyCredentialForm, 'function');
+  assert.equal(typeof model.buildCredentialCreateRequest, 'function');
+  assert.deepEqual(model.createEmptyCredentialForm(), {
+    ownerType: 'user',
+    strategy: 'cookie-import',
+    name: '',
+    pluginId: '',
+    domain: '',
+    secrets: createEmptyCredentialSecrets()
+  });
+  assert.deepEqual(
+    model.buildCredentialCreateRequest({
+      ownerType: 'system',
+      strategy: 'bearer-token',
+      name: '  Premium  ',
+      pluginId: ' demo ',
+      domain: ' example.com ',
+      secrets: { ...createEmptyCredentialSecrets(), token: ' token ' }
+    }),
+    {
+      ownerType: 'system',
+      strategy: 'bearer-token',
+      name: 'Premium',
+      pluginId: 'demo',
+      domain: 'example.com',
+      secret: { token: 'token' }
+    }
+  );
+});

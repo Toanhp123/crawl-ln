@@ -1,16 +1,53 @@
 import { AuthChallengeService } from '../../../modules/source-reader/application/services/auth-challenge.service.js';
 import { AuthenticationOrchestratorService } from '../../../modules/source-reader/application/services/authentication-orchestrator.service.js';
 import { PluginHealthService } from '../../../modules/source-reader/application/services/plugin-health.service.js';
+import { PluginInstallationService } from '../../../modules/source-reader/application/services/plugin-installation.service.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
 import { SourceReaderService } from '../../../modules/source-reader/application/services/source-reader.service.js';
 import { StandardAuthenticationService } from '../../../modules/source-reader/application/services/standard-authentication.service.js';
+import { SourceReaderAuthorizationPolicy } from '../../../modules/source-reader/application/policies/source-reader-authorization.policy.js';
+import {
+  ApprovePluginPermissionsUseCase,
+  DenyPluginPermissionsUseCase,
+  DisablePluginUseCase,
+  EnablePluginUseCase,
+  GetPluginHealthUseCase,
+  InstallSourcePluginUseCase,
+  ListPluginPermissionsUseCase,
+  ListPluginsUseCase,
+  RemovePluginUseCase,
+  TestPluginUseCase
+} from '../../../modules/source-reader/application/use-cases/plugins/manage-source-plugins.usecase.js';
+import {
+  CreateCredentialUseCase,
+  DeleteCredentialUseCase,
+  ListCredentialsUseCase,
+  LoginCredentialUseCase,
+  LogoutCredentialUseCase,
+  TestCredentialUseCase,
+  UpdateCredentialSecretUseCase
+} from '../../../modules/source-reader/application/use-cases/credentials/manage-credentials.usecase.js';
+import {
+  CreateNetworkProfileUseCase,
+  DeleteNetworkProfileUseCase,
+  ListNetworkProfilesUseCase,
+  TestNetworkProfileUseCase,
+  UpdateNetworkProfileUseCase
+} from '../../../modules/source-reader/application/use-cases/network/manage-network-profiles.usecase.js';
+import {
+  CancelAuthChallengeUseCase,
+  GetAuthChallengeUseCase,
+  ListAuthChallengesUseCase,
+  RespondAuthChallengeUseCase
+} from '../../../modules/source-reader/application/use-cases/auth-challenges/manage-auth-challenges.usecase.js';
 import { MemoryReaderCache } from '../../../modules/source-reader/infrastructure/cache/memory-reader.cache.js';
 import { SqliteReaderCache } from '../../../modules/source-reader/infrastructure/cache/sqlite-reader.cache.js';
 import { TieredReaderCache } from '../../../modules/source-reader/infrastructure/cache/tiered-reader.cache.js';
 import { HmacCursorCodec } from '../../../modules/source-reader/infrastructure/cursor/hmac-cursor.codec.js';
 import { novelCoolPlugin } from '../../../modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.js';
 import { ExternalPluginLoader } from '../../../modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.js';
+import { SourcePluginPackageVerifier } from '../../../modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.js';
 import { StaticTrustStore } from '../../../modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.js';
 import { InMemoryPluginRegistry } from '../../../modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.js';
 import { InProcessPluginRuntime } from '../../../modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.js';
@@ -25,8 +62,13 @@ import { SqlitePluginHealthRepository } from '../../../modules/source-reader/inf
 import { SqlitePluginStore } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.js';
 import { SqliteSessionRepository } from '../../../modules/source-reader/infrastructure/sqlite/sqlite-session.repository.js';
 import { PluginContextFactory } from '../../../modules/source-reader/infrastructure/runtime/plugin-context.factory.js';
+import { SourceReaderAdminController } from '../../../modules/source-reader/presentation/controllers/source-reader-admin.controller.js';
 import { SourceReaderController } from '../../../modules/source-reader/presentation/controllers/source-reader.controller.js';
-import type { SourceReaderApi } from '../../../modules/source-reader/public/source-reader.api.js';
+import type {
+  SourceReaderApi,
+  SourceReaderManagementApi
+} from '../../../modules/source-reader/public/source-reader.api.js';
+import { SourceReaderError } from '../../../modules/source-reader/domain/errors/source-reader.error.js';
 import { env } from '../../config/env.js';
 import { CheerioHtmlParserAdapter } from '../../infrastructure/html/cheerio-html-parser.adapter.js';
 import { AxiosHttpClientAdapter } from '../../infrastructure/http/axios-http-client.adapter.js';
@@ -47,6 +89,13 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
   const challenges = new SqliteAuthChallengeRepository(infrastructure.database, vault);
   const pluginStore = new SqlitePluginStore(infrastructure.database);
   const externalLoader = new ExternalPluginLoader(pluginStore);
+  const installer = new PluginInstallationService(
+    new SourcePluginPackageVerifier(new StaticTrustStore(env.sourceReaderTrustedKeys)),
+    pluginStore,
+    env.sourceReaderPluginDir,
+    infrastructure.ids,
+    infrastructure.clock
+  );
   const health = new PluginHealthService(
     new SqlitePluginHealthRepository(infrastructure.database),
     infrastructure.clock,
@@ -121,10 +170,126 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     browser
   ) satisfies SourceReaderApi;
 
+  const authorization = new SourceReaderAuthorizationPolicy();
+  const healthAdministration = {
+    async describePlugin(pluginId: string) {
+      const installed = (await pluginStore.listInstalled()).find(
+        (item) => item.pluginId === pluginId
+      );
+      if (!installed) {
+        throw new SourceReaderError('PLUGIN_UNAVAILABLE', 'Plugin is unavailable', {
+          retryable: false,
+          fallbackAllowed: false
+        });
+      }
+      return installed;
+    },
+    async runPluginHealthCheck(pluginId: string) {
+      const installed = await this.describePlugin(pluginId);
+      return { ...installed, checkedAt: infrastructure.clock.now().toISOString() };
+    }
+  };
+  const loginDependencies = {
+    authentication,
+    credentials,
+    plugins: pluginStore,
+    networks
+  };
+  const networkTester = {
+    async test(profileId: string, ownerId?: string) {
+      const profile = await networks.requireHandle(profileId);
+      if (profile.ownerType === 'user' && profile.ownerId !== ownerId) {
+        throw new SourceReaderError(
+          'PLUGIN_PERMISSION_DENIED',
+          'Network profile belongs to another user',
+          {
+            retryable: false,
+            fallbackAllowed: false
+          }
+        );
+      }
+      return {
+        status:
+          profile.healthStatus === 'offline'
+            ? ('offline' as const)
+            : profile.healthStatus === 'degraded'
+              ? ('degraded' as const)
+              : ('healthy' as const),
+        ...(profile.regions[0] ? { region: profile.regions[0] } : {}),
+        latencyMs: 0,
+        checkedAt: infrastructure.clock.now().toISOString()
+      };
+    }
+  };
+
+  const management = {
+    plugins: {
+      list: new ListPluginsUseCase(authorization, pluginStore),
+      install: new InstallSourcePluginUseCase(authorization, installer),
+      approvePermissions: new ApprovePluginPermissionsUseCase(
+        authorization,
+        pluginStore,
+        infrastructure.clock
+      ),
+      denyPermissions: new DenyPluginPermissionsUseCase(authorization, pluginStore),
+      listPermissions: new ListPluginPermissionsUseCase(authorization, pluginStore),
+      enable: new EnablePluginUseCase(authorization, pluginStore, infrastructure.clock),
+      disable: new DisablePluginUseCase(authorization, pluginStore),
+      remove: new RemovePluginUseCase(authorization, pluginStore),
+      test: new TestPluginUseCase(authorization, healthAdministration),
+      health: new GetPluginHealthUseCase(authorization, healthAdministration)
+    },
+    credentials: {
+      create: new CreateCredentialUseCase(
+        authorization,
+        credentials,
+        infrastructure.ids,
+        infrastructure.clock
+      ),
+      list: new ListCredentialsUseCase(authorization, credentials),
+      updateSecret: new UpdateCredentialSecretUseCase(
+        authorization,
+        credentials,
+        sessions,
+        infrastructure.clock
+      ),
+      remove: new DeleteCredentialUseCase(authorization, credentials, sessions),
+      login: new LoginCredentialUseCase(authorization, loginDependencies),
+      logout: new LogoutCredentialUseCase(authorization, authentication),
+      test: new TestCredentialUseCase(authorization, loginDependencies)
+    },
+    networkProfiles: {
+      create: new CreateNetworkProfileUseCase(
+        authorization,
+        networks,
+        infrastructure.ids,
+        infrastructure.clock
+      ),
+      list: new ListNetworkProfilesUseCase(authorization, networks),
+      update: new UpdateNetworkProfileUseCase(authorization, networks, infrastructure.clock),
+      remove: new DeleteNetworkProfileUseCase(authorization, networks, sessions),
+      test: new TestNetworkProfileUseCase(authorization, networkTester)
+    },
+    challenges: {
+      list: new ListAuthChallengesUseCase(authorization, challenges),
+      get: new GetAuthChallengeUseCase(authorization, challenges),
+      respond: new RespondAuthChallengeUseCase(authorization, challengeService),
+      cancel: new CancelAuthChallengeUseCase(authorization, challengeService)
+    }
+  } satisfies SourceReaderManagementApi;
+
   return {
     api,
+    management,
     application: { authentication, challenges: challengeService },
-    presentation: { controller: new SourceReaderController(api) },
+    presentation: {
+      reader: new SourceReaderController(api),
+      admin: new SourceReaderAdminController(management),
+      actorOptions: {
+        defaultRoles: env.sourceReaderDefaultRoles,
+        trustRoleHeaders: env.sourceReaderTrustRoleHeaders
+      }
+    },
     lifecycle: {
       async start() {
         registry.replaceExternal(await externalLoader.loadActive());

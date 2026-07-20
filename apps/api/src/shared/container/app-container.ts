@@ -90,7 +90,7 @@ export function createAppContainer() {
       exports: exports.presentation.controller,
       backups: backups.presentation.controller,
       search: search.presentation.controller,
-      sourceReader: sourceReader.presentation.controller
+      sourceReader: sourceReader.presentation
     }
   };
 }

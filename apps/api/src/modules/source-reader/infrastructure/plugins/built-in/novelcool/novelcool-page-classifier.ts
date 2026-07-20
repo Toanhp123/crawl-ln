@@ -36,14 +36,14 @@ const challengeBodyMarkers = [
   'cf-chl-widget'
 ];
 
-const challengeSelectors = [
+const strongChallengeSelectors = [
   '#challenge-form',
   '.cf-challenge',
   '[id^="cf-chl"]',
-  'form[action*="/cdn-cgi/"]',
-  'iframe[src*="captcha"]',
-  '[data-sitekey]'
+  'form[action*="/cdn-cgi/"]'
 ] as const;
+
+const interactiveChallengeSelectors = ['iframe[src*="captcha"]', '[data-sitekey]'] as const;
 
 function redactedTitle(document: PluginHtmlDocument): string {
   return cleanSourceText(document.text('title')).slice(0, 160);
@@ -72,9 +72,12 @@ export function classifyNovelCoolPage(input: {
     Boolean(cleanSourceText(input.document.text('.bookinfo h1'))) ||
     Boolean(cleanSourceText(input.document.text('.chapter-title'))) ||
     Object.values(selectorCounts).some((count) => count > 0);
-  const hasChallengeStructure = challengeSelectors.some(
+  const hasStrongChallengeStructure = strongChallengeSelectors.some(
     (selector) => input.document.all(selector).length > 0
   );
+  const hasInteractiveChallengeStructure =
+    !hasReadableContent &&
+    interactiveChallengeSelectors.some((selector) => input.document.all(selector).length > 0);
   const hasChallengeTitle = challengeTitleMarkers.some((marker) =>
     normalizedTitle.includes(marker)
   );
@@ -82,7 +85,12 @@ export function classifyNovelCoolPage(input: {
     !hasReadableContent && challengeBodyMarkers.some((marker) => normalizedBody.includes(marker));
 
   let pageClassification: NovelCoolPageClassification = 'unknown';
-  if (hasChallengeStructure || hasChallengeTitle || hasChallengeBody) {
+  if (
+    hasStrongChallengeStructure ||
+    hasInteractiveChallengeStructure ||
+    hasChallengeTitle ||
+    hasChallengeBody
+  ) {
     pageClassification = 'challenge';
   } else if (/\/login(?:\.html)?(?:[/?#]|$)/i.test(finalUrl) || /\blog\s*in\b/i.test(title)) {
     pageClassification = 'login';

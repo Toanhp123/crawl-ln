@@ -4,6 +4,7 @@ import type {
   StoredPluginVersion
 } from '../../application/ports/plugin-store.port.js';
 import type { PluginStatus, PluginTrustLevel } from '../../domain/plugin/source-plugin.js';
+import type { CompatibilityIssue } from '../../domain/plugin/source-reader-host-compatibility.js';
 import { parseSourcePluginManifest } from '../../domain/plugin/source-plugin-manifest.schema.js';
 
 interface StoredVersionRow {
@@ -15,6 +16,9 @@ interface StoredVersionRow {
   checksum: string;
   signature_status: StoredPluginVersion['signatureStatus'];
   manifest_json: string;
+  compatibility_issues_json: string;
+  activated_extensions_json: string;
+  sandbox_protocol_version: number | null;
 }
 
 function storedVersion(row: StoredVersionRow): StoredPluginVersion {
@@ -26,7 +30,15 @@ function storedVersion(row: StoredVersionRow): StoredPluginVersion {
     packagePath: row.package_path,
     checksum: row.checksum,
     signatureStatus: row.signature_status,
-    manifest: parseSourcePluginManifest(JSON.parse(row.manifest_json) as unknown)
+    manifest: parseSourcePluginManifest(JSON.parse(row.manifest_json) as unknown),
+    compatibilityIssues: JSON.parse(row.compatibility_issues_json) as CompatibilityIssue[],
+    activatedExtensions: JSON.parse(row.activated_extensions_json) as Record<
+      string,
+      { version: number; schema: string; required: boolean }
+    >,
+    ...(row.sandbox_protocol_version === null
+      ? {}
+      : { sandboxProtocolVersion: row.sandbox_protocol_version })
   };
 }
 
@@ -98,8 +110,9 @@ export class SqlitePluginStore implements PluginStorePort {
           `
           INSERT INTO source_reader_plugin_versions(
             plugin_id, version, trust_level, status, package_path, checksum,
-            signature_status, manifest_json, sdk_range, installed_at
-          ) VALUES(?,?,?,?,?,?,?,?,?,?)
+            signature_status, manifest_json, sdk_range, installed_at,
+            compatibility_issues_json, activated_extensions_json, sandbox_protocol_version
+          ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT(plugin_id, version) DO UPDATE SET
             trust_level=excluded.trust_level,
             status=CASE
@@ -110,7 +123,10 @@ export class SqlitePluginStore implements PluginStorePort {
             checksum=excluded.checksum,
             signature_status=excluded.signature_status,
             manifest_json=excluded.manifest_json,
-            sdk_range=excluded.sdk_range
+            sdk_range=excluded.sdk_range,
+            compatibility_issues_json=excluded.compatibility_issues_json,
+            activated_extensions_json=excluded.activated_extensions_json,
+            sandbox_protocol_version=excluded.sandbox_protocol_version
         `
         )
         .run(
@@ -123,7 +139,10 @@ export class SqlitePluginStore implements PluginStorePort {
           input.signatureStatus,
           input.manifestJson,
           input.sdkRange,
-          input.installedAt
+          input.installedAt,
+          input.compatibilityIssuesJson ?? '[]',
+          input.activatedExtensionsJson ?? '{}',
+          input.sandboxProtocolVersion ?? null
         );
     });
   }
@@ -259,7 +278,8 @@ export class SqlitePluginStore implements PluginStorePort {
     const row = this.database.connection
       .prepare(
         `SELECT plugin_id, version, trust_level, status, package_path,
-                checksum, signature_status, manifest_json
+                checksum, signature_status, manifest_json, compatibility_issues_json,
+                activated_extensions_json, sandbox_protocol_version
          FROM source_reader_plugin_versions
          WHERE plugin_id=? AND version=?`
       )
@@ -271,7 +291,9 @@ export class SqlitePluginStore implements PluginStorePort {
     const row = this.database.connection
       .prepare(
         `SELECT v.plugin_id, v.version, v.trust_level, v.status, v.package_path,
-                v.checksum, v.signature_status, v.manifest_json
+                v.checksum, v.signature_status, v.manifest_json,
+                v.compatibility_issues_json, v.activated_extensions_json,
+                v.sandbox_protocol_version
          FROM source_reader_plugins p
          JOIN source_reader_plugin_versions v
            ON v.plugin_id=p.id AND v.version=p.active_version
@@ -285,7 +307,9 @@ export class SqlitePluginStore implements PluginStorePort {
     const rows = this.database.connection
       .prepare(
         `SELECT v.plugin_id, v.version, v.trust_level, v.status, v.package_path,
-                v.checksum, v.signature_status, v.manifest_json
+                v.checksum, v.signature_status, v.manifest_json,
+                v.compatibility_issues_json, v.activated_extensions_json,
+                v.sandbox_protocol_version
          FROM source_reader_plugins p
          JOIN source_reader_plugin_versions v
            ON v.plugin_id=p.id AND v.version=p.active_version

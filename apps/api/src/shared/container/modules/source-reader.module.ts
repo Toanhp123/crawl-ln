@@ -2,6 +2,8 @@ import { AuthChallengeService } from '../../../modules/source-reader/application
 import { AuthenticationOrchestratorService } from '../../../modules/source-reader/application/services/authentication-orchestrator.service.js';
 import { PluginHealthService } from '../../../modules/source-reader/application/services/plugin-health.service.js';
 import { PluginInstallationService } from '../../../modules/source-reader/application/services/plugin-installation.service.js';
+import { PluginCompatibilityService } from '../../../modules/source-reader/application/services/plugin-compatibility.service.js';
+import { SOURCE_READER_HOST_COMPATIBILITY } from '../../../modules/source-reader/domain/plugin/source-reader-host-compatibility.js';
 import { PluginActivationService } from '../../../modules/source-reader/application/services/plugin-activation.service.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
 import { SourceReaderMaintenanceService } from '../../../modules/source-reader/application/services/source-reader-maintenance.service.js';
@@ -105,12 +107,14 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     now: () => infrastructure.clock.now(),
     randomId: () => infrastructure.ids.randomId()
   });
+  const compatibility = new PluginCompatibilityService(SOURCE_READER_HOST_COMPATIBILITY);
   const installer = new PluginInstallationService(
     new SourcePluginPackageVerifier(new StaticTrustStore(env.sourceReaderTrustedKeys)),
     pluginStore,
     env.sourceReaderPluginDir,
     infrastructure.ids,
-    infrastructure.clock
+    infrastructure.clock,
+    compatibility
   );
   const health = new PluginHealthService(
     new SqlitePluginHealthRepository(infrastructure.database),

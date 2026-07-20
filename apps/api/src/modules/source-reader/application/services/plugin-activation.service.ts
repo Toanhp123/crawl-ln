@@ -67,6 +67,17 @@ export class PluginActivationService {
         details: { pluginId: input.pluginId, version: input.version }
       });
     }
+    const fatalCompatibility = candidate.compatibilityIssues?.find(
+      (issue) => issue.severity === 'fatal'
+    );
+    if (fatalCompatibility) {
+      throw new SourceReaderError(fatalCompatibility.code, fatalCompatibility.message, {
+        retryable: false,
+        fallbackAllowed: false,
+        details: { path: fatalCompatibility.path }
+      });
+    }
+
     if (!(await this.store.permissionsApproved(input.pluginId, input.version))) {
       throw new SourceReaderError(
         'PLUGIN_PERMISSION_DENIED',
@@ -181,7 +192,13 @@ export class PluginActivationService {
 
   private registration(version: StoredPluginVersion, lifecycle: PluginLifecycle): RegisteredPlugin {
     return {
-      plugin: { manifest: version.manifest, lifecycle },
+      plugin: {
+        manifest: {
+          ...version.manifest,
+          extensionContracts: version.activatedExtensions ?? {}
+        },
+        lifecycle
+      },
       trustLevel: version.trustLevel,
       executionMode: 'isolated',
       enabled: true,

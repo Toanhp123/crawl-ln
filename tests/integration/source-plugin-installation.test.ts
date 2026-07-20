@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import type { VerifiedPluginPackage } from '../../apps/api/src/modules/source-reader/application/ports/plugin-package-verifier.port.ts';
+import { PluginCompatibilityService } from '../../apps/api/src/modules/source-reader/application/services/plugin-compatibility.service.ts';
 import { PluginInstallationService } from '../../apps/api/src/modules/source-reader/application/services/plugin-installation.service.ts';
+import { SOURCE_READER_HOST_COMPATIBILITY } from '../../apps/api/src/modules/source-reader/domain/plugin/source-reader-host-compatibility.ts';
 import { SqlitePluginStore } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.ts';
 import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
 
@@ -128,4 +130,59 @@ test('installation service stages verified files and records pending approval', 
     .prepare('SELECT status FROM source_reader_installations WHERE id=?')
     .get('install-service-1') as { status: string };
   assert.equal(row.status, 'pending-approval');
+});
+
+test('incompatible installation is quarantined with persisted deterministic diagnostics', async () => {
+  const incompatibleManifest = {
+    ...manifest,
+    id: 'demo-incompatible',
+    name: 'Demo Incompatible',
+    version: '9.0.0',
+    engines: { sourceReader: '>=99.0.0' }
+  };
+  const verified: VerifiedPluginPackage = {
+    manifest: incompatibleManifest,
+    files: new Map([
+      ['manifest.json', Buffer.from(JSON.stringify(incompatibleManifest))],
+      ['dist/index.js', Buffer.from('export default () => ({})')],
+      ['checksums.json', Buffer.from('{}')]
+    ]),
+    packageChecksum: 'incompatible-checksum',
+    signatureStatus: 'unsigned',
+    trustLevel: 'local-unverified',
+    executionMode: 'isolated'
+  };
+  const service = new PluginInstallationService(
+    { verify: async () => verified },
+    store,
+    join(root, 'plugins'),
+    { randomId: () => 'install-incompatible' },
+    { now: () => new Date('2026-07-19T02:00:00.000Z') },
+    new PluginCompatibilityService(SOURCE_READER_HOST_COMPATIBILITY)
+  );
+
+  const result = await service.install({
+    bytes: Buffer.from('package-incompatible'),
+    originalName: 'demo-incompatible.source-plugin'
+  });
+
+  assert.equal(result.status, 'quarantined');
+  const row = database.connection
+    .prepare(
+      `SELECT status, compatibility_issues_json, activated_extensions_json, sandbox_protocol_version
+       FROM source_reader_plugin_versions WHERE plugin_id=? AND version=?`
+    )
+    .get('demo-incompatible', '9.0.0') as {
+    status: string;
+    compatibility_issues_json: string;
+    activated_extensions_json: string;
+    sandbox_protocol_version: number;
+  };
+  assert.equal(row.status, 'quarantined');
+  assert.equal(
+    (JSON.parse(row.compatibility_issues_json) as Array<{ code: string }>)[0]?.code,
+    'PLUGIN_RUNTIME_INCOMPATIBLE'
+  );
+  assert.deepEqual(JSON.parse(row.activated_extensions_json), {});
+  assert.equal(row.sandbox_protocol_version, 1);
 });

@@ -520,6 +520,16 @@ const migrations: Migration[] = [
           ON source_reader_health_checks(plugin_id, plugin_version, capability, checked_at DESC);
       `);
     }
+  },
+  {
+    version: 20,
+    up(db) {
+      addColumns(db, 'source_reader_plugin_versions', [
+        ['compatibility_issues_json', "TEXT NOT NULL DEFAULT '[]'"],
+        ['activated_extensions_json', "TEXT NOT NULL DEFAULT '{}'"],
+        ['sandbox_protocol_version', 'INTEGER']
+      ]);
+    }
   }
 ];
 

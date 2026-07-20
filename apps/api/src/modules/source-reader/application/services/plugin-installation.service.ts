@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import type { PluginPackageVerifierPort } from '../ports/plugin-package-verifier.port.js';
 import type { PluginStorePort } from '../ports/plugin-store.port.js';
 import type { SourcePluginManifest } from '../../domain/plugin/source-plugin.js';
+import type { PluginCompatibilityService } from './plugin-compatibility.service.js';
 
 function permissionRows(
   permissions: SourcePluginManifest['permissions']
@@ -33,7 +34,8 @@ export class PluginInstallationService {
     private readonly store: PluginStorePort,
     private readonly pluginRoot: string,
     private readonly ids: { randomId(): string },
-    private readonly clock: { now(): Date }
+    private readonly clock: { now(): Date },
+    private readonly compatibility?: PluginCompatibilityService
   ) {}
 
   async install(input: { bytes: Uint8Array; originalName: string }) {
@@ -57,6 +59,11 @@ export class PluginInstallationService {
         throw new Error('External plugin package must use the .source-plugin extension');
       }
       const verified = await this.verifier.verify(input.bytes);
+      const compatibility = this.compatibility?.evaluate(verified.manifest, verified.files) ?? {
+        compatible: true,
+        issues: [],
+        activatedExtensions: {}
+      };
       const versionRoot = join(
         this.pluginRoot,
         'installed',
@@ -76,7 +83,9 @@ export class PluginInstallationService {
       installedPath = versionRoot;
       stagingPath = undefined;
 
-      const status = 'pending-approval' as const;
+      const status = compatibility.compatible
+        ? ('pending-approval' as const)
+        : ('quarantined' as const);
       await this.store.upsertPluginVersion({
         pluginId: verified.manifest.id,
         name: verified.manifest.name,
@@ -88,13 +97,24 @@ export class PluginInstallationService {
         signatureStatus: verified.signatureStatus,
         manifestJson: JSON.stringify(verified.manifest),
         sdkRange: verified.manifest.engines.sourceReader,
-        installedAt: createdAt
+        installedAt: createdAt,
+        compatibilityIssuesJson: JSON.stringify(compatibility.issues),
+        activatedExtensionsJson: JSON.stringify(compatibility.activatedExtensions),
+        sandboxProtocolVersion: 1
       });
       await this.store.replaceRequestedPermissions({
         pluginId: verified.manifest.id,
         pluginVersion: verified.manifest.version,
         permissions: permissionRows(verified.manifest.permissions)
       });
+      if (!compatibility.compatible) {
+        const fatal = compatibility.issues.find((issue) => issue.severity === 'fatal');
+        await this.store.quarantine(
+          verified.manifest.id,
+          verified.manifest.version,
+          fatal?.code ?? 'PLUGIN_CONTRACT_INCOMPATIBLE'
+        );
+      }
       await this.store.recordInstallation({
         id: installationId,
         pluginId: verified.manifest.id,

@@ -1,3 +1,4 @@
+import type { CompatibilityIssue } from '../../domain/plugin/source-reader-host-compatibility.js';
 import type {
   PluginStatus,
   PluginTrustLevel,
@@ -13,6 +14,9 @@ export interface StoredPluginVersion {
   checksum: string;
   signatureStatus: 'built-in' | 'valid' | 'unsigned' | 'invalid';
   manifest: SourcePluginManifest;
+  compatibilityIssues?: CompatibilityIssue[];
+  activatedExtensions?: Record<string, { version: number; schema: string; required: boolean }>;
+  sandboxProtocolVersion?: number;
 }
 
 export interface PluginStorePort {
@@ -39,6 +43,9 @@ export interface PluginStorePort {
     manifestJson: string;
     sdkRange: string;
     installedAt: string;
+    compatibilityIssuesJson?: string;
+    activatedExtensionsJson?: string;
+    sandboxProtocolVersion?: number;
   }): Promise<void>;
   replaceRequestedPermissions(input: {
     pluginId: string;

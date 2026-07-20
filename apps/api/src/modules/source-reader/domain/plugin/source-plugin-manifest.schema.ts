@@ -17,7 +17,7 @@ const manifestSchema = z
     name: z.string().min(1),
     version: z.string().regex(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/),
     description: z.string().optional(),
-    engines: z.object({ sourceReader: z.string().min(1) }),
+    engines: z.object({ sourceReader: z.string().min(1) }).strict(),
     capabilities: z.array(capability).min(1),
     contracts: z.record(capability, z.number().int().positive()).default({}),
     matchers: z
@@ -31,17 +31,21 @@ const manifestSchema = z
         })
       )
       .min(1),
-    runtime: z.object({
-      preferredMode: z.enum(['in-process', 'isolated']),
-      requiresBrowser: z.boolean().optional()
-    }),
-    permissions: z.object({
-      network: z.object({ hosts: z.array(z.string().min(1)).min(1) }),
-      browser: z.boolean().optional(),
-      authentication: z.boolean().optional(),
-      persistentCache: z.boolean().optional(),
-      externalAssets: z.array(z.string().min(1)).optional()
-    }),
+    runtime: z
+      .object({
+        preferredMode: z.enum(['in-process', 'isolated']),
+        requiresBrowser: z.boolean().optional()
+      })
+      .strict(),
+    permissions: z
+      .object({
+        network: z.object({ hosts: z.array(z.string().min(1)).min(1) }).strict(),
+        browser: z.boolean().optional(),
+        authentication: z.boolean().optional(),
+        persistentCache: z.boolean().optional(),
+        externalAssets: z.array(z.string().min(1)).optional()
+      })
+      .strict(),
     runtimeRequirements: z
       .object({
         authentication: z

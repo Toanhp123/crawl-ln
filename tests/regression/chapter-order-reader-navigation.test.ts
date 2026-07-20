@@ -8,7 +8,9 @@ test('NovelCool built-in normalizes newest-first source chapters before indexing
   const plugin = read(
     'apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts'
   );
-  assert.match(plugin, /\.filter\(\(chapter\) => chapter\.url\.length > 0\)/);
+  assert.match(plugin, /if \(!href\) continue/);
+  assert.match(plugin, /if \(!isChapterUrl\(resolved, finalUrl\)\) continue/);
+  assert.match(plugin, /if \(seen\.has\(normalizedUrl\)\) continue/);
   assert.match(plugin, /\.reverse\(\)/);
   assert.match(plugin, /index: index \+ 1/);
 });

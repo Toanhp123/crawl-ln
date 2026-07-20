@@ -73,6 +73,7 @@ export const errorMiddleware: ErrorRequestHandler = (error, _req, res, _next) =>
       SOURCE_RATE_LIMITED: 429,
       SOURCE_REQUEST_TIMEOUT: 504,
       SOURCE_TEMPORARILY_UNAVAILABLE: 502,
+      UPSTREAM_CHALLENGE_DETECTED: 502,
       PLUGIN_UNAVAILABLE: 503,
       PLUGIN_DISABLED: 503,
       PLUGIN_QUARANTINED: 503,

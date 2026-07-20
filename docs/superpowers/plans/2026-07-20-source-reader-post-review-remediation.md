@@ -97,4 +97,4 @@
 - [x] Run all Source Reader regression and integration tests.
 - [x] Run `npm run check` and `npm run build`.
 - [x] Inspect `git diff --check` and repository status.
-- [ ] Commit remediation changes and create a ZIP excluding `node_modules` and build outputs.
+- [x] Commit remediation changes and create a ZIP excluding `node_modules` and build outputs.

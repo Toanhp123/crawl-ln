@@ -3,6 +3,7 @@
 **Date:** 2026-07-20  
 **Branch:** `feat/source-reader`  
 **Runtime remediation commit:** `8d9be8a`  
+**Documentation reconciliation commit:** `9506b68`  
 **Plan:** `docs/superpowers/plans/2026-07-20-source-reader-post-review-remediation.md`
 
 ## Scope closed
@@ -78,6 +79,13 @@ Verification was performed from the repository root after the runtime commit and
 - The unsharded `npm run verify` completed lockfile, architecture, formatting, and TypeScript checks, then exceeded the environment's 15-minute command limit while Node oversubscribed the full regression glob. The same complete regression set passed as four shards, and the remaining integration and build stages passed independently.
 - Playwright E2E could not execute application assertions because the system Chromium enterprise policy returned `net::ERR_BLOCKED_BY_ADMINISTRATOR` for `http://127.0.0.1:4173`. All six tests failed at navigation before application code ran. No system policy was modified during this remediation.
 - The browser-runtime integration test remains conditionally skipped when `CHROMIUM_PATH` is not supplied.
+
+## Handoff packaging
+
+- The source handoff is generated from Git-tracked files plus `.git` history, so tracked plugin fixture bundles under `dist/` are preserved while generated workspace build output and `node_modules` are excluded.
+- ZIP integrity is checked with `unzip -t`.
+- The restored repository is checked with `git fsck --full`, a clean `git status`, the expected branch/HEAD, and explicit presence checks for tracked external-plugin fixture bundles.
+- A SHA-256 sidecar is generated for the final archive outside the repository.
 
 ## Current acceptance state
 

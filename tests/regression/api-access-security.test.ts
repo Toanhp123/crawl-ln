@@ -18,17 +18,11 @@ test('loopback detection accepts IPv4, IPv6, and IPv4-mapped loopback only', () 
 test('environment defaults to loopback and rejects unsafe remote configuration', () => {
   const local = createEnvironment({});
   assert.equal(local.host, '127.0.0.1');
-  assert.deepEqual(local.apiCorsOrigins, [
-    'http://127.0.0.1:5173',
-    'http://localhost:5173'
-  ]);
+  assert.deepEqual(local.apiCorsOrigins, ['http://127.0.0.1:5173', 'http://localhost:5173']);
   assert.equal(local.apiRemoteToken, undefined);
   assert.equal(local.sourceReaderLocalAdmin, false);
 
-  assert.throws(
-    () => createEnvironment({ HOST: '0.0.0.0' }),
-    /API_REMOTE_TOKEN.*32 characters/i
-  );
+  assert.throws(() => createEnvironment({ HOST: '0.0.0.0' }), /API_REMOTE_TOKEN.*32 characters/i);
   assert.throws(
     () => createEnvironment({ HOST: '0.0.0.0', API_REMOTE_TOKEN: 'too-short' }),
     /API_REMOTE_TOKEN.*32 characters/i

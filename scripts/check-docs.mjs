@@ -9,7 +9,7 @@ const RETIRED_PATTERNS = [
   /\bSOURCE_PROFILES_FILE\b/,
   /\bsource-profiles\.json\b/i
 ];
-const LINK_ENTRYPOINTS = ['README.md', 'docs/README.md'];
+const REQUIRED_ENTRYPOINTS = ['README.md', 'docs/README.md'];
 const SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules']);
 
 async function exists(path) {
@@ -62,23 +62,26 @@ export async function checkDocumentation(projectRoot = process.cwd()) {
     }
   }
 
-  for (const entrypoint of LINK_ENTRYPOINTS) {
-    const absolute = join(root, entrypoint);
-    if (!(await exists(absolute))) {
+  for (const entrypoint of REQUIRED_ENTRYPOINTS) {
+    if (!(await exists(join(root, entrypoint)))) {
       errors.push(`Missing canonical documentation entrypoint: ${entrypoint}`);
-      continue;
-    }
-    const content = await readFile(absolute, 'utf8');
-    for (const link of localMarkdownLinks(content)) {
-      const target = resolve(dirname(absolute), link);
-      if (!(await exists(target))) {
-        errors.push(`Broken Markdown link in ${entrypoint}: ${link}`);
-      }
     }
   }
 
   const markdownFiles = [];
   await collectMarkdown(root, root, markdownFiles);
+
+  for (const path of markdownFiles.sort()) {
+    const absolute = join(root, path);
+    const content = await readFile(absolute, 'utf8');
+    for (const link of localMarkdownLinks(content)) {
+      const target = resolve(dirname(absolute), link);
+      if (!(await exists(target))) {
+        errors.push(`Broken Markdown link in ${path}: ${link}`);
+      }
+    }
+  }
+
   const hashes = new Map();
 
   for (const path of markdownFiles.sort()) {

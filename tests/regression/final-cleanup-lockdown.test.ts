@@ -42,3 +42,23 @@ test('known dead production artifacts are absent', () => {
   ];
   for (const path of paths) assert.equal(existsSync(path), false, `${path} should be removed`);
 });
+
+test('production safety configuration has one canonical API env surface', () => {
+  assert.equal(existsSync('.env.example'), false);
+  const apiEnv = read('apps/api/.env.example');
+  const termuxEnv = read('apps/api/.env.termux.example');
+  for (const content of [apiEnv, termuxEnv]) {
+    assert.match(content, /^HOST=127\.0\.0\.1$/m);
+    assert.match(content, /^API_CORS_ORIGINS=http:\/\/127\.0\.0\.1:5173,http:\/\/localhost:5173$/m);
+    assert.match(content, /^API_REMOTE_TOKEN=$/m);
+    assert.match(content, /^SOURCE_READER_LOCAL_ADMIN=true$/m);
+    assert.doesNotMatch(content, /SOURCE_READER_DEFAULT_ROLES_JSON/);
+  }
+});
+
+test('web build metadata has no stale dated fallback', () => {
+  const vite = read('apps/web/vite.config.ts');
+  assert.doesNotMatch(vite, /2026\.07\.16-frontend-contract-sync/);
+  assert.match(vite, /APP_BUILD/);
+  assert.match(vite, /git/);
+});

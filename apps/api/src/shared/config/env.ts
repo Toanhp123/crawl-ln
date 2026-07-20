@@ -35,10 +35,7 @@ function lowerListEnv(source: NodeJS.ProcessEnv, name: string) {
 
 function corsOrigins(source: NodeJS.ProcessEnv): string[] {
   const raw = source.API_CORS_ORIGINS;
-  const values = (raw === undefined
-    ? 'http://127.0.0.1:5173,http://localhost:5173'
-    : raw
-  )
+  const values = (raw === undefined ? 'http://127.0.0.1:5173,http://localhost:5173' : raw)
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
@@ -98,8 +95,7 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env) {
     ),
     sourceReaderLocalAdmin: boolEnv(source, 'SOURCE_READER_LOCAL_ADMIN', false),
     sourceReaderTrustRoleHeaders: boolEnv(source, 'SOURCE_READER_TRUST_ROLE_HEADERS', false),
-    sourceReaderPluginDir:
-      source.SOURCE_READER_PLUGIN_DIR ?? resolve(storageDir, 'source-plugins'),
+    sourceReaderPluginDir: source.SOURCE_READER_PLUGIN_DIR ?? resolve(storageDir, 'source-plugins'),
     sourceReaderTrustedKeys: jsonEnv<
       Array<{ id: string; algorithm: 'ed25519'; publicKeyPem: string }>
     >(source, 'SOURCE_READER_TRUSTED_KEYS_JSON', [])

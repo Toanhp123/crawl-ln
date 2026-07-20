@@ -59,7 +59,7 @@ SOURCE_READER_MASTER_KEY=<base64-32-byte-key>
 
 Credentials, network secrets, sessions, and challenge state use AES-256-GCM with record-bound additional authenticated data. When `SOURCE_READER_MASTER_KEY` is absent, non-secret public reading can still operate, but secret-backed operations fail with `SECRET_VAULT_UNAVAILABLE`. Rotating the key requires migrating encrypted records; replacing it without migration makes existing records unreadable.
 
-Other relevant settings are `SOURCE_READER_CURSOR_KEY`, `SOURCE_READER_MEMORY_CACHE_ENTRIES`, `SOURCE_READER_PLUGIN_DIR`, `SOURCE_READER_TRUSTED_KEYS_JSON`, `SOURCE_READER_BROWSER_EXECUTABLE`, `SOURCE_READER_DEFAULT_ROLES_JSON`, and `SOURCE_READER_TRUST_ROLE_HEADERS`.
+Other relevant settings are `SOURCE_READER_CURSOR_KEY`, `SOURCE_READER_MEMORY_CACHE_ENTRIES`, `SOURCE_READER_PLUGIN_DIR`, `SOURCE_READER_TRUSTED_KEYS_JSON`, `SOURCE_READER_BROWSER_EXECUTABLE`, `SOURCE_READER_LOCAL_ADMIN`, and `SOURCE_READER_TRUST_ROLE_HEADERS`.
 
 ## Authentication strategies and challenges
 
@@ -119,7 +119,7 @@ Requests may include `credentialProfileId`, `networkProfileId`, `freshOnly`, and
 - network profile list/create/update/delete/test endpoints
 - auth challenge list/get/respond/cancel endpoints
 
-Role and ownership checks run before repository, vault, runtime, or browser access. Responses expose metadata only; they never return credential values, proxy endpoints, browser cookies, filesystem paths, or raw stack traces.
+The API binds to loopback by default. Local administration is enabled only with `SOURCE_READER_LOCAL_ADMIN=true`; otherwise actors receive the `reader` role. Remote API access requires the configured bearer token, and role headers remain disabled unless explicitly trusted. Role and ownership checks run before repository, vault, runtime, or browser access. Responses expose metadata only; they never return credential values, proxy endpoints, browser cookies, filesystem paths, or raw stack traces.
 
 ## Web administration console
 
@@ -137,7 +137,7 @@ The console exposes five user-facing sections:
 
 ## Error codes
 
-Common typed codes include `SOURCE_NOT_SUPPORTED`, `CAPABILITY_NOT_SUPPORTED`, `PLUGIN_UNAVAILABLE`, `PLUGIN_DISABLED`, `PLUGIN_QUARANTINED`, `PLUGIN_CONTRACT_INCOMPATIBLE`, `PLUGIN_PERMISSION_DENIED`, `PLUGIN_NETWORK_PERMISSION_DENIED`, `PLUGIN_RESULT_INVALID`, `PLUGIN_PACKAGE_INVALID`, `PLUGIN_RPC_PROTOCOL_INVALID`, `AUTHENTICATION_REQUIRED`, `AUTHENTICATION_FAILED`, `CREDENTIAL_NOT_CONFIGURED`, `SESSION_EXPIRED`, `SESSION_NETWORK_MISMATCH`, `AUTH_CHALLENGE_REQUIRED`, `NETWORK_ROUTE_REQUIRED`, `NETWORK_ROUTE_UNSUPPORTED`, `NETWORK_REGION_UNAVAILABLE`, `SOURCE_REQUEST_TIMEOUT`, `SOURCE_RATE_LIMITED`, `SOURCE_TEMPORARILY_UNAVAILABLE`, `CURSOR_INVALID`, `SECRET_VAULT_UNAVAILABLE`, and `SOURCE_READER_INTERNAL_ERROR`.
+Common typed codes include `SOURCE_NOT_SUPPORTED`, `CAPABILITY_NOT_SUPPORTED`, `PLUGIN_UNAVAILABLE`, `PLUGIN_DISABLED`, `PLUGIN_QUARANTINED`, `PLUGIN_CONTRACT_INCOMPATIBLE`, `PLUGIN_PERMISSION_DENIED`, `PLUGIN_NETWORK_PERMISSION_DENIED`, `PLUGIN_RESULT_INVALID`, `PLUGIN_PACKAGE_INVALID`, `PLUGIN_RPC_PROTOCOL_INVALID`, `AUTHENTICATION_REQUIRED`, `AUTHENTICATION_FAILED`, `CREDENTIAL_NOT_CONFIGURED`, `SESSION_EXPIRED`, `SESSION_NETWORK_MISMATCH`, `AUTH_CHALLENGE_REQUIRED`, `NETWORK_ROUTE_REQUIRED`, `NETWORK_ROUTE_UNSUPPORTED`, `NETWORK_REGION_UNAVAILABLE`, `SOURCE_REQUEST_TIMEOUT`, `SOURCE_RATE_LIMITED`, `SOURCE_TEMPORARILY_UNAVAILABLE`, `UPSTREAM_CHALLENGE_DETECTED`, `CURSOR_INVALID`, `SECRET_VAULT_UNAVAILABLE`, and `SOURCE_READER_INTERNAL_ERROR`.
 
 Errors carry retry and fallback policy internally. Public details are redacted and observability labels are bounded; URLs, actor ids, credentials, and route identifiers are not metric labels.
 

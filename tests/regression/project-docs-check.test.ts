@@ -15,7 +15,11 @@ test('documentation check reports dead links, retired terminology, history direc
   try {
     await write(root, 'README.md', '# Project\n\n[Missing](docs/MISSING.md)\n');
     await write(root, 'docs/README.md', '# Docs\n');
-    await write(root, 'docs/ARCHITECTURE.md', 'Configure the JSON source profile for crawling.\n');
+    await write(
+      root,
+      'docs/ARCHITECTURE.md',
+      'Configure the JSON source profile for crawling.\n\n[Missing nested](MISSING-NESTED.md)\n'
+    );
     await write(root, 'docs/archive/old.md', '# Old\n');
     const duplicate =
       '# Duplicate\n\nThis document contains enough repeated content to be treated as a real duplicate.\n';
@@ -27,6 +31,7 @@ test('documentation check reports dead links, retired terminology, history direc
 
     assert.equal(result.ok, false);
     assert.ok(result.errors.some((error: string) => error.includes('docs/MISSING.md')));
+    assert.ok(result.errors.some((error: string) => error.includes('MISSING-NESTED.md')));
     assert.ok(result.errors.some((error: string) => error.includes('retired source-profile')));
     assert.ok(result.errors.some((error: string) => error.includes('docs/archive')));
     assert.ok(result.errors.some((error: string) => error.includes('duplicate Markdown')));

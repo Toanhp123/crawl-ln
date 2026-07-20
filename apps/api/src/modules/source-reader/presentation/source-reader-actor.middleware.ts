@@ -5,12 +5,7 @@ import type {
   SourceReaderRole
 } from '../application/ports/source-reader-actor.port.js';
 
-const allRoles: SourceReaderRole[] = [
-  'reader',
-  'source-manager',
-  'source-admin',
-  'system-admin'
-];
+const allRoles: SourceReaderRole[] = ['reader', 'source-manager', 'source-admin', 'system-admin'];
 const roleSet = new Set<SourceReaderRole>(allRoles);
 
 export interface SourceReaderRequest extends Request, ApiAccessRequest {
@@ -41,11 +36,7 @@ export function sourceReaderActorMiddleware(options: {
       requested?.length
     ) {
       effective = [...new Set(requested)];
-    } else if (
-      options.trustRoleHeaders &&
-      access.isLocal &&
-      requested?.length
-    ) {
+    } else if (options.trustRoleHeaders && access.isLocal && requested?.length) {
       const allowed = new Set(effective);
       const selected = requested.filter((role) => allowed.has(role));
       effective = selected.length ? selected : ['reader'];

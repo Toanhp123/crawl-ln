@@ -26,11 +26,7 @@ test('only source-admin or system-admin can perform source-admin operations', ()
   policy.requireRole({ id: 'root-1', roles: ['system-admin'] }, 'source-admin');
 });
 
-function actorRequest(options: {
-  isLocal: boolean;
-  authenticated?: boolean;
-  roles?: string;
-}) {
+function actorRequest(options: { isLocal: boolean; authenticated?: boolean; roles?: string }) {
   return {
     apiAccess: {
       isLocal: options.isLocal,

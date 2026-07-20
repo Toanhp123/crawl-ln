@@ -83,6 +83,25 @@ SOURCE_READER_MEMORY_CACHE_ENTRIES=500
 
 `SOURCE_READER_MASTER_KEY` chỉ bắt buộc cho credential, session, proxy secret và challenge state. Public reading có thể chạy ở degraded mode khi chưa cấu hình key.
 
+### Chế độ local an toàn
+
+API mặc định bind `127.0.0.1` và chỉ chấp nhận origin local được khai báo trong `API_CORS_ORIGINS`. File `apps/api/.env.example` bật `SOURCE_READER_LOCAL_ADMIN=true` để console quản trị hoạt động sau khi bạn chủ động copy file cấu hình. Nếu không có `.env`, Source Reader chỉ cấp quyền đọc.
+
+### Truy cập LAN có chủ đích
+
+Để bind ra LAN, đặt một host không phải loopback và token tối thiểu 32 ký tự:
+
+```env
+HOST=0.0.0.0
+API_CORS_ORIGINS=http://192.168.1.50:5173
+API_REMOTE_TOKEN=replace-with-at-least-32-random-characters
+SOURCE_READER_TRUST_ROLE_HEADERS=false
+```
+
+Startup sẽ từ chối cấu hình LAN thiếu token mạnh. Mọi request trực tiếp từ máy khác tới `/api/*` phải gửi `Authorization: Bearer <API_REMOTE_TOKEN>`; `/health` vẫn công khai cho process supervisor. Không đặt token trong URL hoặc log. Web UI hiện được thiết kế cho local mode và không tự lưu bearer token. Client LAN phải tự thêm header. Nếu đặt reverse proxy trước API loopback, proxy đó phải tự xác thực người dùng vì backend sẽ nhìn thấy kết nối từ loopback.
+
+Bearer token chỉ mở ranh giới API; Source Reader remote vẫn giữ role `reader` theo mặc định. Chỉ bật `SOURCE_READER_TRUST_ROLE_HEADERS=true` cho client quản trị đã tin cậy, rồi gửi `x-source-reader-roles`. Không bật tùy chọn này cho client công cộng.
+
 ## Web routes
 
 - `/crawl` — phân tích URL và tạo crawl job.

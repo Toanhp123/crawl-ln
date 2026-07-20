@@ -3,7 +3,7 @@
 **Date:** 2026-07-20
 **Branch:** `feat/source-reader`
 **Plan:** `docs/superpowers/plans/2026-07-20-source-reader-security-remediation.md`
-**Progress:** **9/12 remediation tasks complete**
+**Progress:** **12/12 remediation tasks complete**
 
 ## Completed batch 1
 
@@ -37,6 +37,17 @@
 
 9. **Task 9 — Route host and plugin logs through a bounded structured redaction boundary**
    Commit: `4ecfd8b fix(source-reader): enforce structured redacted logging`
+
+## Completed batch 4
+
+10. **Task 10 — Migrate existing external plugins, sessions, and cache fail-closed**
+    Commit: `38ce9e3 feat(source-reader): migrate external plugins fail closed`
+
+11. **Task 11 — Wire diagnostics, remove legacy worker runtime, and strengthen architecture gates**
+    Commit: `43ecb22 refactor(source-reader): lock down remediated runtime boundaries`
+
+12. **Task 12 — Add final behavioral acceptance and prove the entire repository**
+    Commit: recorded by the final acceptance commit and checkpoint metadata update.
 
 ## Verified behavior
 
@@ -74,18 +85,22 @@
   - `source-reader-auth-challenge.test.ts`
 - Working tree after Task 9 commit: clean before checkpoint metadata update
 
-## Exact continuation point
+## Final acceptance evidence
 
-Resume at:
+- Focused remediation regression: **22/22 pass**.
+- Focused remediation integration: **23/23 pass**.
+- Exact `npm run verify`: **exit code 0**.
+  - Full regression: **380/380 pass**, 0 fail, 0 skip.
+  - Full integration: **86 pass, 1 conditional browser skip, 0 fail**.
+  - Lockfile portability, architecture, crawler, frontend architecture/contracts, Prettier, Shared/API/Web TypeScript, and Shared/API/Web production build: pass.
+- Exact `npm run test:e2e`: **exit code 0, 6/6 pass** using `/usr/bin/chromium`.
+- Chromium enterprise URL blocking was removed only for the test process and restored successfully after execution.
+- Production runtime scan contains no isolated-worker implementation, permissive `authScope`, direct-fallback route, permissive search/latest item schema, or synthetic `latencyMs: 0` behavior.
+- Remaining forbidden-name matches are limited to architecture enforcement and regression assertions.
+- Raw Node authority imports in the external-process directory are limited to host-owned package inspection, sandbox bootstrap, and child-process supervision; plugin execution code has no direct network or process authority.
+- Node permission controls remain defense in depth; the deny-by-default loader and SES compartment are the language-level authority boundary.
+- Final recoverable ZIP verification is recorded after the acceptance and metadata commits.
 
-```text
-Task 10 — Migrate Existing External Plugins, Sessions, and Cache Fail-Closed
-```
+## Completion state
 
-Do not repeat Tasks 1–9. Continue test-first from:
-
-```text
-tests/integration/source-reader-fail-closed-migration.test.ts
-```
-
-The next execution batch is Tasks **10–12**. Stop immediately after Task 12 for final verification and the final remediation checkpoint ZIP.
+All twelve remediation tasks are implemented. No further implementation task may begin before final verification, acceptance commit, checkpoint metadata commit, and final ZIP packaging are complete.

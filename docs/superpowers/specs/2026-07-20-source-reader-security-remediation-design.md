@@ -762,3 +762,21 @@ Subsequent batches cover lifecycle/compatibility, external authentication and ex
 - Logging policy covers plugin output and host metadata.
 - Behavioral security tests are required, not optional.
 - Three-task checkpoint packaging is part of the delivery process.
+
+
+## 20. Implemented Remediation Evidence
+
+The approved design is implemented on branch `feat/source-reader` through twelve test-first tasks.
+
+Security boundary evidence:
+
+- external plugins execute in supervised Node.js 22+ child processes with the deny-by-default module loader and SES compartment;
+- Node permission controls are defense in depth, while SES and the loader are the language-level authority boundary;
+- HTTP and Chromium traffic use resolved HTTP/HTTPS/SOCKS route identities with no direct fallback when routing is required;
+- cache keys separate public, account, user, and session identity and bind plugin, contract, extension, request, and network identities;
+- lifecycle activation publishes only after initialize and health-check success;
+- compatibility, extension schemas, package formats, dedicated authentication RPC, session bindings, centralized invalidation, and structured redaction are behaviorally tested;
+- migration 22 disables all previously active external plugins, revokes their sessions, deletes their cache, and requires integrity revalidation before reactivation;
+- the legacy worker-thread plugin runtime has been deleted and architecture gates prevent its return.
+
+Final acceptance requires exact exit code 0 from `npm run verify` and `npm run test:e2e`, plus a recoverable final ZIP with Git history and SHA-256 checksum. Exact counts and commit identifiers are recorded in `docs/superpowers/checkpoints/2026-07-20-source-reader-remediation.md`.

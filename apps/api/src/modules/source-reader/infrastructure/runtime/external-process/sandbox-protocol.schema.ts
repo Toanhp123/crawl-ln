@@ -2,6 +2,21 @@ import { z } from 'zod';
 
 const protocolVersion = z.literal(1);
 const safeId = z.string().min(1).max(160);
+
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+const boundedJsonValue: z.ZodType<JsonValue> = z.lazy(() =>
+  z.union([
+    z.string().max(200_000),
+    z.number().finite(),
+    z.boolean(),
+    z.null(),
+    z.array(boundedJsonValue).max(256),
+    z
+      .record(boundedJsonValue)
+      .refine((value) => Object.keys(value).length <= 128, 'Too many object properties')
+  ])
+);
+
 const safeError = z
   .object({
     name: z.string().min(1).max(80),
@@ -26,7 +41,7 @@ export const hostToSandboxFrameSchema = z.discriminatedUnion('type', [
         'invokeCapability'
       ]),
       deadlineAt: z.string().datetime(),
-      payload: z.record(z.unknown())
+      payload: z.record(boundedJsonValue)
     })
     .strict(),
   z
@@ -44,7 +59,7 @@ export const hostToSandboxFrameSchema = z.discriminatedUnion('type', [
       requestId: safeId,
       callId: safeId,
       ok: z.boolean(),
-      value: z.unknown().optional(),
+      value: boundedJsonValue.optional(),
       error: safeError.optional()
     })
     .strict()
@@ -58,7 +73,7 @@ export const sandboxToHostFrameSchema = z.discriminatedUnion('type', [
       type: z.literal('response'),
       requestId: safeId,
       ok: z.boolean(),
-      value: z.unknown().optional(),
+      value: boundedJsonValue.optional(),
       error: safeError.optional()
     })
     .strict(),
@@ -70,7 +85,7 @@ export const sandboxToHostFrameSchema = z.discriminatedUnion('type', [
       callId: safeId,
       service: z.enum(['clock', 'http', 'html', 'url', 'cache', 'logger']),
       method: z.string().min(1).max(80),
-      args: z.array(z.unknown()).max(8)
+      args: z.array(boundedJsonValue).max(8)
     })
     .strict()
 ]);

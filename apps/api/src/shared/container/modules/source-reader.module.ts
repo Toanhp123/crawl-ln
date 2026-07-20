@@ -3,6 +3,7 @@ import { AuthenticationOrchestratorService } from '../../../modules/source-reade
 import { PluginHealthService } from '../../../modules/source-reader/application/services/plugin-health.service.js';
 import { PluginInstallationService } from '../../../modules/source-reader/application/services/plugin-installation.service.js';
 import { PluginCompatibilityService } from '../../../modules/source-reader/application/services/plugin-compatibility.service.js';
+import { ExternalPluginRevalidationService } from '../../../modules/source-reader/application/services/external-plugin-revalidation.service.js';
 import { SOURCE_READER_HOST_COMPATIBILITY } from '../../../modules/source-reader/domain/plugin/source-reader-host-compatibility.js';
 import { PluginActivationService } from '../../../modules/source-reader/application/services/plugin-activation.service.js';
 import { RuntimeContextResolverService } from '../../../modules/source-reader/application/services/runtime-context-resolver.service.js';
@@ -53,7 +54,10 @@ import { SqliteReaderCache } from '../../../modules/source-reader/infrastructure
 import { TieredReaderCache } from '../../../modules/source-reader/infrastructure/cache/tiered-reader.cache.js';
 import { HmacCursorCodec } from '../../../modules/source-reader/infrastructure/cursor/hmac-cursor.codec.js';
 import { novelCoolPlugin } from '../../../modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.js';
-import { ExternalPluginLoader } from '../../../modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.js';
+import {
+  ExternalPluginLoader,
+  inspectInstalledPluginPackage
+} from '../../../modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.js';
 import { SourcePluginPackageVerifier } from '../../../modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.js';
 import { StaticTrustStore } from '../../../modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.js';
 import { InMemoryPluginRegistry } from '../../../modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.js';
@@ -212,6 +216,12 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     infrastructure.ids,
     env.requestTimeoutMs
   );
+  const externalRevalidation = new ExternalPluginRevalidationService(
+    pluginStore,
+    { inspect: inspectInstalledPluginPackage },
+    compatibility,
+    pluginActivation
+  );
 
   const api = new SourceReaderService(
     registry,
@@ -352,6 +362,7 @@ export function createSourceReaderModule(infrastructure: InfrastructureModule) {
     lifecycle: {
       async start() {
         registry.replaceExternal(await externalLoader.loadActive());
+        await externalRevalidation.revalidateAll(new AbortController().signal);
         maintenance.start();
       },
       async stop() {

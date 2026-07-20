@@ -17,6 +17,7 @@ export type PluginExecutionMode = 'in-process' | 'isolated';
 export type PluginTrustLevel = 'built-in' | 'signed' | 'local-unverified' | 'blocked';
 export type PluginStatus =
   | 'installed'
+  | 'installed-pending-revalidation'
   | 'pending-approval'
   | 'initializing'
   | 'active'

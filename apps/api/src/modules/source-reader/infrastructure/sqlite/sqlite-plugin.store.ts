@@ -321,6 +321,24 @@ export class SqlitePluginStore implements PluginStorePort {
     return rows.map(storedVersion);
   }
 
+  async listPendingRevalidation(): Promise<StoredPluginVersion[]> {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT v.plugin_id, v.version, v.trust_level, v.status, v.package_path,
+                v.checksum, v.signature_status, v.manifest_json,
+                v.compatibility_issues_json, v.activated_extensions_json,
+                v.sandbox_protocol_version
+         FROM source_reader_plugin_versions v
+         JOIN source_reader_plugins p ON p.id=v.plugin_id
+         WHERE v.status='installed-pending-revalidation'
+           AND v.trust_level!='built-in'
+           AND p.status='installed-pending-revalidation'
+         ORDER BY v.plugin_id, v.version`
+      )
+      .all() as unknown as StoredVersionRow[];
+    return rows.map(storedVersion);
+  }
+
   async listInstalled() {
     const rows = this.database.connection
       .prepare(

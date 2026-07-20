@@ -556,6 +556,31 @@ const migrations: Migration[] = [
            WHERE json_each.type='text';
       `);
     }
+  },
+  {
+    version: 22,
+    up(db) {
+      db.exec(`
+        UPDATE source_reader_plugin_versions
+           SET status='installed-pending-revalidation', activated_at=NULL
+         WHERE trust_level!='built-in' AND status='active';
+
+        UPDATE source_reader_plugins
+           SET active_version=NULL, enabled=0, status='installed-pending-revalidation'
+         WHERE trust_level!='built-in';
+
+        UPDATE source_reader_sessions
+           SET status='revoked'
+         WHERE plugin_id IN (
+           SELECT id FROM source_reader_plugins WHERE trust_level!='built-in'
+         );
+
+        DELETE FROM source_reader_cache_entries
+         WHERE plugin_id IN (
+           SELECT id FROM source_reader_plugins WHERE trust_level!='built-in'
+         );
+      `);
+    }
   }
 ];
 

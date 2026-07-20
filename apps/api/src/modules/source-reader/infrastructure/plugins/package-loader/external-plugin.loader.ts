@@ -64,7 +64,9 @@ function parseChecksums(value: unknown): Record<string, string> {
   return checksums;
 }
 
-async function verifyInstalledPackage(version: StoredPluginVersion): Promise<void> {
+export async function inspectInstalledPluginPackage(
+  version: StoredPluginVersion
+): Promise<ReadonlyMap<string, Uint8Array>> {
   const rootStat = await lstat(version.packagePath);
   if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) {
     throw new Error('Installed plugin root is not a regular directory');
@@ -100,6 +102,9 @@ async function verifyInstalledPackage(version: StoredPluginVersion): Promise<voi
   if (manifest.id !== version.pluginId || manifest.version !== version.version) {
     throw new Error('Installed manifest identity does not match persisted plugin version');
   }
+  const contents = new Map<string, Uint8Array>();
+  for (const path of files) contents.set(path, await readFile(join(version.packagePath, path)));
+  return contents;
 }
 
 interface ExternalLoaderOptions {
@@ -119,7 +124,7 @@ export class ExternalPluginLoader {
     const registrations: RegisteredPlugin[] = [];
     for (const version of await this.store.listActive()) {
       try {
-        await verifyInstalledPackage(version);
+        await inspectInstalledPluginPackage(version);
       } catch {
         await this.store.quarantine(version.pluginId, version.version, INTEGRITY_FAILURE);
         continue;

@@ -74,6 +74,7 @@ export interface PluginStorePort {
   findVersion(pluginId: string, version: string): Promise<StoredPluginVersion | undefined>;
   findActive(pluginId: string): Promise<StoredPluginVersion | undefined>;
   listActive(): Promise<StoredPluginVersion[]>;
+  listPendingRevalidation(): Promise<StoredPluginVersion[]>;
   listInstalled(): Promise<
     Array<{
       pluginId: string;

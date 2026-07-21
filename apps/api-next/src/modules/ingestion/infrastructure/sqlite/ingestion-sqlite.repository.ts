@@ -4,7 +4,12 @@ import { IngestionJobEntity } from '../../domain/entities/ingestion-job.entity.j
 import { IngestionError } from '../../domain/errors/ingestion.error.js';
 import type { IngestionRepository } from '../../domain/repositories/ingestion.repository.js';
 import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
-import { ingestionJobChapterRowSchema, mapIngestionJobRow } from './ingestion-row.schemas.js';
+import {
+  ingestionCommandReceiptRowSchema,
+  ingestionJobChapterRowSchema,
+  mapIngestionJobRow,
+  parseIngestionJob
+} from './ingestion-row.schemas.js';
 
 const activeStatuses = "'queued','running','pausing','paused','resuming'";
 const interruptedStatuses = "'queued','running','pausing','resuming'";
@@ -15,35 +20,60 @@ export class IngestionSqliteRepository implements IngestionRepository {
   async create(job: IngestionJob, chapterIds: readonly string[] = []): Promise<void> {
     const value = IngestionJobEntity.fromPrimitives(job).toPrimitives();
     try {
-      this.database.transactionSync(() => {
+      this.database.transactionSync(() => this.insertJob(value, chapterIds));
+    } catch (error) {
+      this.throwCreateError(error, value.novelId);
+    }
+  }
+
+  async createForCommand(
+    commandId: string,
+    job: IngestionJob,
+    chapterIds: readonly string[] = []
+  ): Promise<{ job: IngestionJob; created: boolean }> {
+    if (typeof commandId !== 'string' || commandId.trim().length === 0) {
+      throw IngestionError.validation('commandId must not be blank');
+    }
+    const value = IngestionJobEntity.fromPrimitives(job).toPrimitives();
+    try {
+      return this.database.transactionSync(() => {
+        const receiptInput = this.database.connection
+          .prepare('SELECT * FROM ingestion_command_receipts WHERE command_id = ?')
+          .get(commandId);
+        if (receiptInput) {
+          const receipt = ingestionCommandReceiptRowSchema.parse(receiptInput);
+          if (receipt.command_type !== 'create-ingestion-job' || receipt.result_json === null) {
+            throw new IngestionError(
+              'INGESTION_CONFLICT',
+              `Command ID ${commandId} belongs to another Ingestion operation`
+            );
+          }
+          return { job: parseIngestionJob(JSON.parse(receipt.result_json)), created: false };
+        }
+
+        this.insertJob(value, chapterIds);
+        const resultJson = JSON.stringify(value);
+        const stored = parseIngestionJob(JSON.parse(resultJson));
         this.database.connection
           .prepare(
-            `INSERT INTO ingestion_jobs
-              (id, novel_id, status, outcome, total_chapters, fetched_chapters, failed_chapters,
-               error_message, started_at, finished_at, paused_at, total_paused_ms, current_speed,
-               average_speed, eta_seconds, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO ingestion_outbox(id, type, occurred_at, payload_json)
+             VALUES (?, 'ingestion.job-created', ?, ?)`
           )
-          .run(...this.toJobValues(value));
-        const insertChapter = this.database.connection.prepare(
-          `INSERT INTO ingestion_job_chapters
-            (job_id, chapter_id, position, status, attempt_count, error_message, updated_at)
-           VALUES (?, ?, ?, 'pending', 0, NULL, ?)`
-        );
-        chapterIds.forEach((chapterId, position) => {
-          insertChapter.run(value.id, chapterId, position, value.createdAt);
-        });
+          .run(
+            `ingestion.job-created:${commandId}`,
+            value.createdAt,
+            JSON.stringify({ commandId, job: stored, chapterIds })
+          );
+        this.database.connection
+          .prepare(
+            `INSERT INTO ingestion_command_receipts(command_id, command_type, result_json, created_at)
+             VALUES (?, 'create-ingestion-job', ?, ?)`
+          )
+          .run(commandId, resultJson, value.createdAt);
+        return { job: stored, created: true };
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes('UNIQUE constraint failed: ingestion_jobs.novel_id')) {
-        throw new IngestionError(
-          'INGESTION_ACTIVE_JOB_CONFLICT',
-          'Novel already has an active ingestion job',
-          { novelId: value.novelId }
-        );
-      }
-      throw error;
+      this.throwCreateError(error, value.novelId);
     }
   }
 
@@ -170,6 +200,38 @@ export class IngestionSqliteRepository implements IngestionRepository {
         )
         .get(novelId)
     );
+  }
+
+  private insertJob(job: IngestionJob, chapterIds: readonly string[]): void {
+    this.database.connection
+      .prepare(
+        `INSERT INTO ingestion_jobs
+          (id, novel_id, status, outcome, total_chapters, fetched_chapters, failed_chapters,
+           error_message, started_at, finished_at, paused_at, total_paused_ms, current_speed,
+           average_speed, eta_seconds, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(...this.toJobValues(job));
+    const insertChapter = this.database.connection.prepare(
+      `INSERT INTO ingestion_job_chapters
+        (job_id, chapter_id, position, status, attempt_count, error_message, updated_at)
+       VALUES (?, ?, ?, 'pending', 0, NULL, ?)`
+    );
+    chapterIds.forEach((chapterId, position) => {
+      insertChapter.run(job.id, chapterId, position, job.createdAt);
+    });
+  }
+
+  private throwCreateError(error: unknown, novelId: string): never {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('UNIQUE constraint failed: ingestion_jobs.novel_id')) {
+      throw new IngestionError(
+        'INGESTION_ACTIVE_JOB_CONFLICT',
+        'Novel already has an active ingestion job',
+        { novelId }
+      );
+    }
+    throw error;
   }
 
   private toJobValues(job: IngestionJob): readonly SQLInputValue[] {

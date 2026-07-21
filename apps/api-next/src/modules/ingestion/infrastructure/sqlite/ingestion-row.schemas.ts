@@ -13,13 +13,36 @@ const jobStatus = z.enum([
   'failed',
   'cancelled'
 ]);
+const jobOutcome = z.enum(['success', 'partial', 'failure']);
+
+const ingestionJobModelSchema = z
+  .object({
+    id: z.string().min(1),
+    novelId: z.string().min(1),
+    status: jobStatus,
+    outcome: jobOutcome.optional(),
+    totalChapters: z.number().int().nonnegative(),
+    fetchedChapters: z.number().int().nonnegative(),
+    failedChapters: z.number().int().nonnegative(),
+    errorMessage: z.string().optional(),
+    startedAt: isoTimestamp.optional(),
+    finishedAt: isoTimestamp.optional(),
+    pausedAt: isoTimestamp.optional(),
+    totalPausedMs: z.number().int().nonnegative(),
+    currentSpeed: z.number().nonnegative(),
+    averageSpeed: z.number().nonnegative(),
+    etaSeconds: z.number().int().nonnegative().optional(),
+    createdAt: isoTimestamp,
+    updatedAt: isoTimestamp
+  })
+  .strict();
 
 const ingestionJobRowSchema = z
   .object({
     id: z.string().min(1),
     novel_id: z.string().min(1),
     status: jobStatus,
-    outcome: z.enum(['success', 'partial', 'failure']).nullable(),
+    outcome: jobOutcome.nullable(),
     total_chapters: z.coerce.number().int().nonnegative(),
     fetched_chapters: z.coerce.number().int().nonnegative(),
     failed_chapters: z.coerce.number().int().nonnegative(),
@@ -33,6 +56,15 @@ const ingestionJobRowSchema = z
     eta_seconds: z.coerce.number().int().nonnegative().nullable(),
     created_at: isoTimestamp,
     updated_at: isoTimestamp
+  })
+  .strict();
+
+export const ingestionCommandReceiptRowSchema = z
+  .object({
+    command_id: z.string().min(1),
+    command_type: z.string().min(1),
+    result_json: z.string().nullable(),
+    created_at: isoTimestamp
   })
   .strict();
 
@@ -69,4 +101,8 @@ export function mapIngestionJobRow(input: unknown): IngestionJob {
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }).toPrimitives();
+}
+
+export function parseIngestionJob(input: unknown): IngestionJob {
+  return IngestionJobEntity.fromPrimitives(ingestionJobModelSchema.parse(input)).toPrimitives();
 }

@@ -94,3 +94,31 @@ test('repository rejects invalid persisted rows through strict schemas', async (
 
   await assert.rejects(() => repository.findById('job-1'));
 });
+
+test('repository replays create-job receipts without duplicate jobs or events', async (context) => {
+  const { database, repository } = createHarness(context);
+  const firstJob = queued('job-1', 'novel-1', 1);
+
+  const first = await repository.createForCommand('create-1', firstJob, ['chapter-1']);
+  const repeated = await repository.createForCommand(
+    'create-1',
+    queued('replacement-job', 'novel-1', 1),
+    ['replacement-chapter']
+  );
+
+  assert.equal(first.created, true);
+  assert.equal(repeated.created, false);
+  assert.deepEqual(repeated.job, first.job);
+  const count = (table: string) =>
+    Number(
+      (
+        database.connection.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as {
+          count: number;
+        }
+      ).count
+    );
+  assert.equal(count('ingestion_jobs'), 1);
+  assert.equal(count('ingestion_job_chapters'), 1);
+  assert.equal(count('ingestion_command_receipts'), 1);
+  assert.equal(count('ingestion_outbox'), 1);
+});

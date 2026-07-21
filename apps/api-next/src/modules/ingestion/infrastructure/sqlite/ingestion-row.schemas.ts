@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { IngestionJobEntity } from '../../domain/entities/ingestion-job.entity.js';
-import type { IngestionJob } from '../../domain/ingestion.models.js';
+import type {
+  IngestionEvent,
+  IngestionJob,
+  IngestionJobChapter
+} from '../../domain/ingestion.models.js';
+import type { ApplicationEvent } from '../../../../platform/events/application-event.js';
 
 const isoTimestamp = z.string().datetime({ offset: true });
 const jobStatus = z.enum([
@@ -68,6 +73,18 @@ export const ingestionCommandReceiptRowSchema = z
   })
   .strict();
 
+const ingestionOutboxRowSchema = z
+  .object({
+    id: z.string().min(1),
+    type: z.string().min(1),
+    occurred_at: isoTimestamp,
+    payload_json: z.string(),
+    claimed_at: isoTimestamp.nullable(),
+    delivered_at: isoTimestamp.nullable(),
+    delivery_attempts: z.coerce.number().int().nonnegative()
+  })
+  .strict();
+
 export const ingestionJobChapterRowSchema = z
   .object({
     job_id: z.string().min(1),
@@ -77,6 +94,36 @@ export const ingestionJobChapterRowSchema = z
     attempt_count: z.coerce.number().int().nonnegative(),
     error_message: z.string().nullable(),
     updated_at: isoTimestamp
+  })
+  .strict();
+
+const ingestionEventRowSchema = z
+  .object({
+    id: z.string().min(1),
+    job_id: z.string().min(1),
+    type: z.enum([
+      'job_created',
+      'started',
+      'chapter_started',
+      'chapter_succeeded',
+      'chapter_failed',
+      'chapter_retry',
+      'pause_requested',
+      'paused',
+      'resume_requested',
+      'resumed',
+      'cancelled',
+      'completed',
+      'failed',
+      'recovered_paused'
+    ]),
+    level: z.enum(['info', 'success', 'warning', 'error']),
+    message: z.string(),
+    chapter_id: z.string().nullable(),
+    chapter_index: z.coerce.number().int().nonnegative().nullable(),
+    chapter_title: z.string().nullable(),
+    attempt: z.coerce.number().int().nonnegative().nullable(),
+    created_at: isoTimestamp
   })
   .strict();
 
@@ -105,4 +152,43 @@ export function mapIngestionJobRow(input: unknown): IngestionJob {
 
 export function parseIngestionJob(input: unknown): IngestionJob {
   return IngestionJobEntity.fromPrimitives(ingestionJobModelSchema.parse(input)).toPrimitives();
+}
+
+export function mapIngestionJobChapterRow(input: unknown): IngestionJobChapter {
+  const row = ingestionJobChapterRowSchema.parse(input);
+  return {
+    jobId: row.job_id,
+    chapterId: row.chapter_id,
+    position: row.position,
+    status: row.status,
+    attemptCount: row.attempt_count,
+    ...(row.error_message === null ? {} : { errorMessage: row.error_message }),
+    updatedAt: row.updated_at
+  };
+}
+
+export function mapIngestionEventRow(input: unknown): IngestionEvent {
+  const row = ingestionEventRowSchema.parse(input);
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    type: row.type,
+    level: row.level,
+    message: row.message,
+    ...(row.chapter_id === null ? {} : { chapterId: row.chapter_id }),
+    ...(row.chapter_index === null ? {} : { chapterIndex: row.chapter_index }),
+    ...(row.chapter_title === null ? {} : { chapterTitle: row.chapter_title }),
+    ...(row.attempt === null ? {} : { attempt: row.attempt }),
+    createdAt: row.created_at
+  };
+}
+
+export function mapIngestionOutboxRow(input: unknown): ApplicationEvent {
+  const row = ingestionOutboxRowSchema.parse(input);
+  return {
+    id: row.id,
+    type: row.type,
+    occurredAt: row.occurred_at,
+    payload: JSON.parse(row.payload_json) as unknown
+  };
 }

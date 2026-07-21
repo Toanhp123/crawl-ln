@@ -2,6 +2,7 @@ export type IngestionJobStatus =
   'queued' | 'running' | 'pausing' | 'paused' | 'resuming' | 'completed' | 'failed' | 'cancelled';
 
 export type IngestionJobOutcome = 'success' | 'partial' | 'failure';
+export type IngestionJobChapterStatus = 'pending' | 'fetched' | 'failed';
 export type IngestionEventLevel = 'info' | 'success' | 'warning' | 'error';
 export type IngestionEventType =
   | 'job_created'
@@ -50,6 +51,16 @@ export interface IngestionEvent {
   chapterTitle?: string;
   attempt?: number;
   createdAt: string;
+}
+
+export interface IngestionJobChapter {
+  jobId: string;
+  chapterId: string;
+  position: number;
+  status: IngestionJobChapterStatus;
+  attemptCount: number;
+  errorMessage?: string;
+  updatedAt: string;
 }
 
 export interface IngestionSummary {

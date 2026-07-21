@@ -4,6 +4,8 @@ import { CreateIngestionJobCommandHandler } from '../../apps/api-next/src/module
 import type { IngestionSourceReaderPort } from '../../apps/api-next/src/modules/ingestion/application/ports/source-reader.port.ts';
 import { AnalyzeNovelWorkflow } from '../../apps/api-next/src/modules/ingestion/application/services/analyze-novel.workflow.ts';
 import { SourcePolicyService } from '../../apps/api-next/src/modules/ingestion/application/services/source-policy.service.ts';
+import { RefreshNovelWorkflow } from '../../apps/api-next/src/modules/ingestion/application/services/refresh-novel.workflow.ts';
+import { IngestionJobEntity } from '../../apps/api-next/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
 import { IngestionError } from '../../apps/api-next/src/modules/ingestion/domain/errors/ingestion.error.ts';
 import type { LibraryNovelDetail } from '../../apps/api-next/src/modules/library/public/library.api.ts';
 
@@ -311,4 +313,62 @@ test('create job rejects a missing novel or a novel without pending source chapt
       }),
     (error: unknown) => error instanceof IngestionError && error.code === 'INGESTION_CONFLICT'
   );
+});
+
+test('refresh novel reanalyzes its source and creates a job with derived command IDs', async () => {
+  const calls: unknown[] = [];
+  const workflow = new RefreshNovelWorkflow(
+    {
+      getNovel: async () => ({
+        novel: {
+          id: 'novel-1',
+          title: 'Novel',
+          sourceUrl: normalizedUrl,
+          sourceName: 'Example',
+          status: 'completed',
+          createdAt: now,
+          updatedAt: now
+        },
+        chapters: []
+      }),
+      listNovels: async () => {
+        throw new Error('not used');
+      },
+      getChapter: async () => {
+        throw new Error('not used');
+      },
+      getStats: async () => {
+        throw new Error('not used');
+      }
+    },
+    {
+      async execute(command) {
+        calls.push(command);
+        return {} as never;
+      }
+    },
+    {
+      async execute(command) {
+        calls.push(command);
+        return IngestionJobEntity.createQueued({
+          id: 'job-1',
+          novelId: command.novelId,
+          totalChapters: 1,
+          now: command.requestedAt
+        }).toPrimitives();
+      }
+    }
+  );
+
+  const result = await workflow.execute({
+    commandId: 'refresh-1',
+    novelId: 'novel-1',
+    requestedAt: now
+  });
+
+  assert.equal(result?.id, 'job-1');
+  assert.deepEqual(calls, [
+    { commandId: 'refresh-1:analysis', url: normalizedUrl, requestedAt: now },
+    { commandId: 'refresh-1:job', novelId: 'novel-1', requestedAt: now }
+  ]);
 });

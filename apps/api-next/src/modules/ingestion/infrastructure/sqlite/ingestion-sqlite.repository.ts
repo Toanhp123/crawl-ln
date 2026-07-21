@@ -1,5 +1,10 @@
 import type { SQLInputValue } from 'node:sqlite';
-import type { IngestionJob, IngestionJobStatus } from '../../domain/ingestion.models.js';
+import type {
+  IngestionEvent,
+  IngestionJob,
+  IngestionJobChapter,
+  IngestionJobStatus
+} from '../../domain/ingestion.models.js';
 import { IngestionJobEntity } from '../../domain/entities/ingestion-job.entity.js';
 import { IngestionError } from '../../domain/errors/ingestion.error.js';
 import type { IngestionRepository } from '../../domain/repositories/ingestion.repository.js';
@@ -7,6 +12,8 @@ import type { SqliteDatabase } from '../../../../platform/database/sqlite-databa
 import {
   ingestionCommandReceiptRowSchema,
   ingestionJobChapterRowSchema,
+  mapIngestionEventRow,
+  mapIngestionJobChapterRow,
   mapIngestionJobRow,
   parseIngestionJob
 } from './ingestion-row.schemas.js';
@@ -56,6 +63,19 @@ export class IngestionSqliteRepository implements IngestionRepository {
         const stored = parseIngestionJob(JSON.parse(resultJson));
         this.database.connection
           .prepare(
+            `INSERT INTO ingestion_events
+              (id, job_id, type, level, message, chapter_id, chapter_index, chapter_title,
+               attempt, created_at)
+             VALUES (?, ?, 'job_created', 'info', ?, NULL, NULL, NULL, NULL, ?)`
+          )
+          .run(
+            `ingestion.event:${commandId}`,
+            stored.id,
+            'Ingestion job created and added to the queue',
+            stored.createdAt
+          );
+        this.database.connection
+          .prepare(
             `INSERT INTO ingestion_outbox(id, type, occurred_at, payload_json)
              VALUES (?, 'ingestion.job-created', ?, ?)`
           )
@@ -77,8 +97,83 @@ export class IngestionSqliteRepository implements IngestionRepository {
     }
   }
 
+  async hasCommandReceipt(commandId: string, commandType: string): Promise<boolean> {
+    const input = this.database.connection
+      .prepare('SELECT * FROM ingestion_command_receipts WHERE command_id = ?')
+      .get(commandId);
+    if (!input) return false;
+    const receipt = ingestionCommandReceiptRowSchema.parse(input);
+    if (receipt.command_type !== commandType || receipt.result_json !== null) {
+      throw new IngestionError(
+        'INGESTION_CONFLICT',
+        `Command ID ${commandId} belongs to another Ingestion operation`
+      );
+    }
+    return true;
+  }
+
+  async recordCommandReceipt(
+    commandId: string,
+    commandType: string,
+    createdAt: string
+  ): Promise<void> {
+    try {
+      this.database.connection
+        .prepare(
+          `INSERT INTO ingestion_command_receipts(command_id, command_type, result_json, created_at)
+           VALUES (?, ?, NULL, ?)`
+        )
+        .run(commandId, commandType, createdAt);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('UNIQUE constraint failed: ingestion_command_receipts.command_id')) {
+        await this.hasCommandReceipt(commandId, commandType);
+        return;
+      }
+      throw error;
+    }
+  }
+
   async update(job: IngestionJob): Promise<void> {
     const value = IngestionJobEntity.fromPrimitives(job).toPrimitives();
+    this.updateJob(value);
+  }
+
+  async saveJobWithEvent(job: IngestionJob, event: IngestionEvent): Promise<void> {
+    const value = IngestionJobEntity.fromPrimitives(job).toPrimitives();
+    this.database.transactionSync(() => {
+      this.updateJob(value);
+      this.insertEvent(event);
+    });
+  }
+
+  async recordChapterResult(
+    job: IngestionJob,
+    chapter: IngestionJobChapter,
+    event: IngestionEvent
+  ): Promise<void> {
+    const value = IngestionJobEntity.fromPrimitives(job).toPrimitives();
+    this.database.transactionSync(() => {
+      this.updateJob(value);
+      this.database.connection
+        .prepare(
+          `UPDATE ingestion_job_chapters
+              SET status = ?, attempt_count = ?, error_message = ?, updated_at = ?
+            WHERE job_id = ? AND chapter_id = ?`
+        )
+        .run(
+          chapter.status,
+          chapter.attemptCount,
+          chapter.errorMessage ?? null,
+          chapter.updatedAt,
+          chapter.jobId,
+          chapter.chapterId
+        );
+      this.insertEvent(event);
+    });
+  }
+
+  private updateJob(value: IngestionJob): void {
     this.database.connection
       .prepare(
         `UPDATE ingestion_jobs
@@ -124,6 +219,31 @@ export class IngestionSqliteRepository implements IngestionRepository {
       )
       .all(jobId) as Record<string, unknown>[];
     return rows.map((input) => ingestionJobChapterRowSchema.parse(input).chapter_id);
+  }
+
+  async findJobChapters(jobId: string): Promise<IngestionJobChapter[]> {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT *
+           FROM ingestion_job_chapters
+          WHERE job_id = ?
+          ORDER BY position ASC`
+      )
+      .all(jobId) as Record<string, unknown>[];
+    return rows.map(mapIngestionJobChapterRow);
+  }
+
+  async findEvents(jobId: string, limit = 100): Promise<IngestionEvent[]> {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT *
+           FROM ingestion_events
+          WHERE job_id = ?
+          ORDER BY created_at DESC, id DESC
+          LIMIT ?`
+      )
+      .all(jobId, limit) as Record<string, unknown>[];
+    return rows.map(mapIngestionEventRow);
   }
 
   async findByNovelId(novelId: string): Promise<IngestionJob | null> {
@@ -220,6 +340,34 @@ export class IngestionSqliteRepository implements IngestionRepository {
     chapterIds.forEach((chapterId, position) => {
       insertChapter.run(job.id, chapterId, position, job.createdAt);
     });
+  }
+
+  private insertEvent(event: IngestionEvent): void {
+    this.database.connection
+      .prepare(
+        `INSERT INTO ingestion_events
+          (id, job_id, type, level, message, chapter_id, chapter_index, chapter_title,
+           attempt, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        event.id,
+        event.jobId,
+        event.type,
+        event.level,
+        event.message,
+        event.chapterId ?? null,
+        event.chapterIndex ?? null,
+        event.chapterTitle ?? null,
+        event.attempt ?? null,
+        event.createdAt
+      );
+    this.database.connection
+      .prepare(
+        `INSERT INTO ingestion_outbox(id, type, occurred_at, payload_json)
+         VALUES (?, 'ingestion.audit-recorded', ?, ?)`
+      )
+      .run(`ingestion.audit:${event.id}`, event.createdAt, JSON.stringify(event));
   }
 
   private throwCreateError(error: unknown, novelId: string): never {

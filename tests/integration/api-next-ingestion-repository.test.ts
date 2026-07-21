@@ -122,3 +122,15 @@ test('repository replays create-job receipts without duplicate jobs or events', 
   assert.equal(count('ingestion_command_receipts'), 1);
   assert.equal(count('ingestion_outbox'), 1);
 });
+
+test('repository stores typed void command receipts and rejects cross-command reuse', async (context) => {
+  const { repository } = createHarness(context);
+
+  assert.equal(await repository.hasCommandReceipt('pause-1', 'pause-job'), false);
+  await repository.recordCommandReceipt('pause-1', 'pause-job', now);
+  assert.equal(await repository.hasCommandReceipt('pause-1', 'pause-job'), true);
+  await assert.rejects(
+    () => repository.hasCommandReceipt('pause-1', 'cancel-job'),
+    (error: unknown) => error instanceof IngestionError && error.code === 'INGESTION_CONFLICT'
+  );
+});

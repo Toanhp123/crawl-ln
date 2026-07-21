@@ -2,6 +2,7 @@
 
 ## Unreleased - Source Reader Platform
 
+- Added the official zero-runtime-dependency `@novel-tool/source-plugin-sdk` workspace package as the canonical external plugin contract, including asynchronous sandbox context types, manifest/models, lifecycle and authentication operations, capability mapping, and allowlisted typed errors preserved across process isolation.
 - Defaulted the API to loopback-only binding with strict CORS, required a strong bearer token for intentional LAN exposure, and removed implicit Source Reader administration roles.
 - Isolated every regression and integration file in its own temporary process, storage directory, and plugin directory; removed forced test exits and shared module-cache/environment state.
 - Split API emit, Web type-check, and Vite production build into short cross-platform child processes to reduce peak memory and removed stale root environment configuration.

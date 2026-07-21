@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-const root = new URL('../../', import.meta.url).pathname;
+import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('../../', import.meta.url));
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 test('appearance settings expose a persisted app-wide font size', () => {
   const provider = read('apps/web/src/shared/theme/runtime/ThemeProvider.tsx');

@@ -26,6 +26,7 @@
     "check:api-next-arch": "node scripts/check-api-next-architecture.mjs",
     "check:web": "npm run prepare:packages && npm run check -w @novel-tool/web",
     "check:web-next": "npm run prepare:packages && npm run check -w @novel-tool/web-next",
+    "check:web-next-arch": "node scripts/check-web-next-architecture.mjs",
     "check:sdk": "npm run check -w @novel-tool/source-plugin-sdk",
     "check:arch": "node scripts/check-api-architecture.mjs",
     "check:crawler": "node scripts/check-crawler-platform.mjs",

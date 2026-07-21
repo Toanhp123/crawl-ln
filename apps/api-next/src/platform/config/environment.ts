@@ -18,6 +18,50 @@ export interface NextEnvironment {
   databasePath: string;
   outboxBatchSize: number;
   outboxIntervalMs: number;
+  apiRemoteToken?: string;
+  requestTimeoutMs?: number;
+  sourceReaderCursorKey?: string;
+  sourceReaderMasterKey?: Buffer;
+  sourceReaderBrowserExecutable?: string;
+  sourceReaderNetworkDiagnosticUrl?: string;
+  sourceReaderExternalProcessStartTimeoutMs?: number;
+  sourceReaderPluginPolicyViolationThreshold?: number;
+  sourceReaderLocalAdmin?: boolean;
+  sourceReaderTrustRoleHeaders?: boolean;
+  sourceReaderPluginDir?: string;
+  sourceReaderTrustedKeys?: Array<{
+    id: string;
+    algorithm: 'ed25519';
+    publicKeyPem: string;
+  }>;
+}
+
+function boolEnv(source: NodeJS.ProcessEnv, name: string, fallback: boolean): boolean {
+  const value = source[name];
+  if (value === undefined) return fallback;
+  return value === '1' || value.toLowerCase() === 'true';
+}
+
+function numberEnv(source: NodeJS.ProcessEnv, name: string, fallback: number): number {
+  const value = Number(source[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function optionalBase64Key(source: NodeJS.ProcessEnv, name: string): Buffer | undefined {
+  const value = source[name];
+  if (!value) return undefined;
+  const decoded = Buffer.from(value, 'base64');
+  if (decoded.length !== 32) throw new Error(`${name} must be base64 for exactly 32 bytes`);
+  return decoded;
+}
+
+function trustedKeys(
+  source: NodeJS.ProcessEnv
+): NonNullable<NextEnvironment['sourceReaderTrustedKeys']> {
+  const value = source.SOURCE_READER_TRUSTED_KEYS_JSON;
+  return value
+    ? (JSON.parse(value) as NonNullable<NextEnvironment['sourceReaderTrustedKeys']>)
+    : [];
 }
 
 export function createEnvironment(source: NodeJS.ProcessEnv = process.env): NextEnvironment {
@@ -31,7 +75,30 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Next
       ? resolve(parsed.NEXT_DATABASE_PATH)
       : resolve(storageDirectory, 'novel-tool.sqlite'),
     outboxBatchSize: parsed.NEXT_OUTBOX_BATCH_SIZE,
-    outboxIntervalMs: parsed.NEXT_OUTBOX_INTERVAL_MS
+    outboxIntervalMs: parsed.NEXT_OUTBOX_INTERVAL_MS,
+    apiRemoteToken: source.API_REMOTE_TOKEN?.trim() || undefined,
+    requestTimeoutMs: numberEnv(source, 'REQUEST_TIMEOUT_MS', 15_000),
+    sourceReaderCursorKey:
+      source.SOURCE_READER_CURSOR_KEY ?? 'development-only-source-reader-cursor-key-32-bytes',
+    sourceReaderMasterKey: optionalBase64Key(source, 'SOURCE_READER_MASTER_KEY'),
+    sourceReaderBrowserExecutable: source.SOURCE_READER_BROWSER_EXECUTABLE || undefined,
+    sourceReaderNetworkDiagnosticUrl:
+      source.SOURCE_READER_NETWORK_DIAGNOSTIC_URL ?? 'https://example.com/',
+    sourceReaderExternalProcessStartTimeoutMs: numberEnv(
+      source,
+      'SOURCE_READER_EXTERNAL_PROCESS_START_TIMEOUT_MS',
+      10_000
+    ),
+    sourceReaderPluginPolicyViolationThreshold: numberEnv(
+      source,
+      'SOURCE_READER_PLUGIN_POLICY_VIOLATION_THRESHOLD',
+      3
+    ),
+    sourceReaderLocalAdmin: boolEnv(source, 'SOURCE_READER_LOCAL_ADMIN', false),
+    sourceReaderTrustRoleHeaders: boolEnv(source, 'SOURCE_READER_TRUST_ROLE_HEADERS', false),
+    sourceReaderPluginDir:
+      source.SOURCE_READER_PLUGIN_DIR ?? resolve(storageDirectory, 'source-plugins'),
+    sourceReaderTrustedKeys: trustedKeys(source)
   };
 }
 

@@ -2,6 +2,10 @@ export interface ClockPort {
   now(): Date;
 }
 
+export interface IdGeneratorPort {
+  randomId(): string;
+}
+
 export interface LoggerPort {
   info(message: string): void;
   warn(message: string): void;

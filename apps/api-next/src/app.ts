@@ -1,4 +1,6 @@
 import express, { type Express } from 'express';
+import { createAppContainer } from './bootstrap/app-container.js';
+import { environment, type NextEnvironment } from './platform/config/environment.js';
 import { errorMiddleware } from './platform/http/error.middleware.js';
 import { notFoundMiddleware } from './platform/http/not-found.middleware.js';
 import { ok } from './platform/http/api-response.js';
@@ -9,8 +11,12 @@ export interface NextAppRuntime {
   lifecycle: { stop(): Promise<void> };
 }
 
-export function createNextAppRuntime(): NextAppRuntime {
+export function createNextAppRuntime(
+  options: { environment?: NextEnvironment } = {}
+): NextAppRuntime {
   const app = express();
+  const container = createAppContainer(options.environment ?? environment);
+  const ready = container.lifecycle.start();
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_request, response) => ok(response, { ok: true, name: 'novel-tool' }));
   app.use('/api', notFoundMiddleware);
@@ -18,7 +24,7 @@ export function createNextAppRuntime(): NextAppRuntime {
 
   return {
     app,
-    ready: Promise.resolve(),
-    lifecycle: { stop: async () => undefined }
+    ready,
+    lifecycle: container.lifecycle
   };
 }

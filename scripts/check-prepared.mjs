@@ -62,6 +62,7 @@ export async function runPreparedChecks({ skipTypeScript = false } = {}) {
 
   await checkFormatting();
   if (!skipTypeScript) {
+    checkTypeScriptProject(join(projectRoot, 'packages', 'source-plugin-sdk', 'tsconfig.json'));
     checkTypeScriptProject(join(projectRoot, 'apps', 'api', 'tsconfig.json'));
     checkTypeScriptProject(join(projectRoot, 'apps', 'web', 'tsconfig.json'));
   }

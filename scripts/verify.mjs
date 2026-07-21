@@ -12,9 +12,9 @@ export const verificationSteps = [
   },
   {
     type: 'command',
-    name: 'prepare:shared',
+    name: 'prepare:packages',
     command: process.execPath,
-    args: ['scripts/prepare-shared.mjs']
+    args: ['scripts/prepare-packages.mjs']
   },
   {
     type: 'command',

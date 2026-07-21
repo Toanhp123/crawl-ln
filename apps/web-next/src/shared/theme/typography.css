@@ -1,0 +1,170 @@
+:root {
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --type-caption-size: 10.5px;
+  --type-caption-line: 13px;
+  --type-label-size: 11.5px;
+  --type-label-line: 15px;
+  --type-supporting-size: 12px;
+  --type-supporting-line: 15px;
+  --type-metadata-size: 11px;
+  --type-metadata-line: 13px;
+  --type-body-sm-size: 12.5px;
+  --type-body-sm-line: 17px;
+  --type-body-size: 14px;
+  --type-body-line: 20px;
+  --type-title-sm-size: 14px;
+  --type-title-sm-line: 18px;
+  --type-title-size: 15px;
+  --type-title-line: 19px;
+  --type-headline-size: 18px;
+  --type-headline-line: 23px;
+  --type-display-size: 22px;
+  --type-display-line: 27px;
+  --type-metric-sm-size: 18px;
+  --type-metric-sm-line: 22px;
+  --type-metric-lg-size: 26px;
+  --type-metric-lg-line: 30px;
+
+  --tracking-eyebrow: 0.1em;
+  --tracking-section: 0.06em;
+  --tracking-tight-title: -0.015em;
+}
+
+:root[data-app-font='small'] {
+  --type-caption-size: 10.5px;
+  --type-caption-line: 13px;
+  --type-label-size: 11px;
+  --type-label-line: 14px;
+  --type-supporting-size: 11px;
+  --type-supporting-line: 14px;
+  --type-metadata-size: 10.5px;
+  --type-metadata-line: 13px;
+  --type-body-sm-size: 12px;
+  --type-body-sm-line: 16px;
+  --type-body-size: 13px;
+  --type-body-line: 18px;
+  --type-title-sm-size: 14px;
+  --type-title-sm-line: 18px;
+  --type-title-size: 15px;
+  --type-title-line: 19px;
+  --type-headline-size: 18px;
+  --type-headline-line: 23px;
+  --type-display-size: 22px;
+  --type-display-line: 27px;
+  --type-metric-sm-size: 18px;
+  --type-metric-sm-line: 22px;
+  --type-metric-lg-size: 26px;
+  --type-metric-lg-line: 30px;
+}
+
+:root[data-app-font='large'] {
+  --type-caption-size: 12px;
+  --type-caption-line: 15px;
+  --type-label-size: 13px;
+  --type-label-line: 17px;
+  --type-supporting-size: 13px;
+  --type-supporting-line: 17px;
+  --type-metadata-size: 12px;
+  --type-metadata-line: 15px;
+  --type-body-sm-size: 14px;
+  --type-body-sm-line: 19px;
+  --type-body-size: 15px;
+  --type-body-line: 22px;
+  --type-title-sm-size: 16px;
+  --type-title-sm-line: 21px;
+  --type-title-size: 17px;
+  --type-title-line: 22px;
+  --type-headline-size: 21px;
+  --type-headline-line: 27px;
+  --type-display-size: 26px;
+  --type-display-line: 32px;
+  --type-metric-sm-size: 22px;
+  --type-metric-sm-line: 26px;
+  --type-metric-lg-size: 30px;
+  --type-metric-lg-line: 34px;
+}
+
+:root[data-app-font='extra-large'] {
+  --type-caption-size: 13px;
+  --type-caption-line: 17px;
+  --type-label-size: 14px;
+  --type-label-line: 18px;
+  --type-supporting-size: 14px;
+  --type-supporting-line: 18px;
+  --type-metadata-size: 13px;
+  --type-metadata-line: 17px;
+  --type-body-sm-size: 15px;
+  --type-body-sm-line: 21px;
+  --type-body-size: 16px;
+  --type-body-line: 23px;
+  --type-title-sm-size: 17px;
+  --type-title-sm-line: 22px;
+  --type-title-size: 18px;
+  --type-title-line: 23px;
+  --type-headline-size: 23px;
+  --type-headline-line: 29px;
+  --type-display-size: 28px;
+  --type-display-line: 34px;
+  --type-metric-sm-size: 24px;
+  --type-metric-sm-line: 28px;
+  --type-metric-lg-size: 32px;
+  --type-metric-lg-line: 36px;
+}
+
+/*
+ * Semantic application typography utilities intentionally avoid the `text-*`
+ * namespace. `tailwind-merge` treats unknown `text-*` classes as text-color
+ * utilities and would remove them when a tone such as `text-secondary` is
+ * present. These classes keep font size and color as independent concerns.
+ */
+@layer utilities {
+  .type-display {
+    font-size: var(--type-display-size);
+    line-height: var(--type-display-line);
+  }
+  .type-headline {
+    font-size: var(--type-headline-size);
+    line-height: var(--type-headline-line);
+  }
+  .type-title {
+    font-size: var(--type-title-size);
+    line-height: var(--type-title-line);
+  }
+  .type-title-sm {
+    font-size: var(--type-title-sm-size);
+    line-height: var(--type-title-sm-line);
+  }
+  .type-body {
+    font-size: var(--type-body-size);
+    line-height: var(--type-body-line);
+  }
+  .type-body-sm {
+    font-size: var(--type-body-sm-size);
+    line-height: var(--type-body-sm-line);
+  }
+  .type-label {
+    font-size: var(--type-label-size);
+    line-height: var(--type-label-line);
+  }
+  .type-supporting {
+    font-size: var(--type-supporting-size);
+    line-height: var(--type-supporting-line);
+  }
+  .type-metadata {
+    font-size: var(--type-metadata-size);
+    line-height: var(--type-metadata-line);
+  }
+  .type-caption {
+    font-size: var(--type-caption-size);
+    line-height: var(--type-caption-line);
+  }
+  .type-metric-sm {
+    font-size: var(--type-metric-sm-size);
+    line-height: var(--type-metric-sm-line);
+  }
+  .type-metric-lg {
+    font-size: var(--type-metric-lg-size);
+    line-height: var(--type-metric-lg-line);
+  }
+}

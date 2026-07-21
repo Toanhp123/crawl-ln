@@ -1,3 +1,7 @@
+import {
+  SOURCE_PLUGIN_ERROR_CODES,
+  type SourcePluginErrorCode
+} from '@novel-tool/source-plugin-sdk';
 import { createHash, randomUUID } from 'node:crypto';
 import { fork, type ChildProcess } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -48,6 +52,24 @@ interface SupervisorOptions {
 function key(pluginId: string, pluginVersion: string): string {
   return `${pluginId}@${pluginVersion}`;
 }
+
+const sourcePluginErrorCodes = new Set<string>(SOURCE_PLUGIN_ERROR_CODES);
+
+const sourcePluginErrorPolicy = {
+  AUTHENTICATION_REQUIRED: { retryable: false, fallbackAllowed: false },
+  AUTHENTICATION_FAILED: { retryable: false, fallbackAllowed: false },
+  NETWORK_ACCESS_BLOCKED: { retryable: false, fallbackAllowed: true },
+  SOURCE_RESPONSE_TOO_LARGE: { retryable: false, fallbackAllowed: true },
+  SOURCE_RATE_LIMITED: { retryable: true, fallbackAllowed: true },
+  SOURCE_TEMPORARILY_UNAVAILABLE: { retryable: true, fallbackAllowed: true },
+  UPSTREAM_CHALLENGE_DETECTED: { retryable: true, fallbackAllowed: true },
+  CURSOR_INVALID: { retryable: false, fallbackAllowed: false },
+  PLUGIN_RESULT_INVALID: { retryable: false, fallbackAllowed: true },
+  SOURCE_READER_CANCELLED: { retryable: false, fallbackAllowed: false }
+} as const satisfies Record<
+  SourcePluginErrorCode,
+  { retryable: boolean; fallbackAllowed: boolean }
+>;
 
 function safeError(error: unknown): { name: string; message: string; code?: string } {
   return {
@@ -356,7 +378,7 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
     clearTimeout(pending.timer);
     pending.signal.removeEventListener('abort', pending.onAbort);
     if (frame.ok) pending.resolve(frame.value);
-    else pending.reject(this.unavailable(frame.error?.message ?? 'Plugin sandbox failed'));
+    else pending.reject(this.pluginFailure(frame.error));
   }
 
   private failAll(error: unknown): void {
@@ -367,6 +389,15 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
       pending.reject(error);
     }
     this.pending.clear();
+  }
+
+  private pluginFailure(error: { message: string; code?: string } | undefined): SourceReaderError {
+    const message = (error?.message ?? 'Plugin sandbox failed').slice(0, 1_000);
+    if (error?.code && sourcePluginErrorCodes.has(error.code)) {
+      const code = error.code as SourcePluginErrorCode;
+      return new SourceReaderError(code, message, sourcePluginErrorPolicy[code]);
+    }
+    return this.unavailable(message);
   }
 
   private unavailable(message: string, cause?: unknown): SourceReaderError {

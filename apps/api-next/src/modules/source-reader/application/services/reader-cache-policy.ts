@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import type { CacheScope, SourceReaderResult } from '../../public/source-reader.models.js';
 import type {
   ExecutableSourceCapability,
@@ -10,6 +9,7 @@ import type {
   SourceReaderRefreshPort,
   SourceReaderRuntimeContext
 } from '../source-reader.ports.js';
+import { buildSourceReaderCacheKey, resolveCacheScopeIdentity } from './source-reader-cache-key.js';
 
 interface CacheInput {
   capability: ExecutableSourceCapability;
@@ -19,6 +19,10 @@ interface CacheInput {
 }
 
 const noRefresh: SourceReaderRefreshPort = { schedule() {} };
+
+function hash(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
 
 export class ReaderCachePolicy {
   constructor(
@@ -76,7 +80,16 @@ export class ReaderCachePolicy {
       `plugin-version:${input.candidate.pluginId}@${input.candidate.pluginVersion}`,
       `domain:${input.candidate.domain}`,
       `capability:${input.capability}`,
+      ...(input.context.credentialId ? [`credential:${input.context.credentialId}`] : []),
+      ...(input.context.cacheIdentity.user ? [`user:${input.context.cacheIdentity.user}`] : []),
+      ...(input.context.sessionId ? [`session:${input.context.sessionId}`] : []),
       `network:${input.context.cacheIdentity.network}`,
+      ...(input.context.networkProfileId
+        ? [`network-profile:${input.context.networkProfileId}`]
+        : []),
+      ...(input.capability === 'chapter-list'
+        ? [`chapter-list:${input.candidate.pluginId}:${input.candidate.normalizedUrl}`]
+        : []),
       ...(input.cacheHints?.tags ?? [])
     ];
     const entry: SourceReaderCacheEntry<SourceReaderResult<T>> = {
@@ -85,7 +98,19 @@ export class ReaderCachePolicy {
       ...(scope === 'public' && input.cacheHints?.staleWhileRevalidateMs
         ? { staleUntil: now + ttlMs + input.cacheHints.staleWhileRevalidateMs }
         : {}),
-      metadata: { scope, tags }
+      metadata: {
+        pluginId: input.candidate.pluginId,
+        pluginVersion: input.candidate.pluginVersion,
+        capability: input.capability,
+        contractVersion: String(input.candidate.contractVersion),
+        extensionContractVersions: this.extensionVersions(input.candidate),
+        requestFingerprint: this.requestFingerprint(input),
+        normalizedUrl: input.candidate.normalizedUrl,
+        scope,
+        scopeIdentityHash: hash(this.scopeIdentity(input.context, scope)),
+        networkIdentityHash: hash(input.context.cacheIdentity.network),
+        tags
+      }
     };
     await this.cache.set(this.key(input, scope), entry);
   }
@@ -110,37 +135,44 @@ export class ReaderCachePolicy {
   }
 
   private key(input: CacheInput, scope: Exclude<CacheScope, 'none'>): string {
-    const scopeIdentity =
-      scope === 'public' ? input.context.cacheIdentity.public : input.context.cacheIdentity[scope];
-    if (!scopeIdentity) {
-      throw new SourceReaderError(
-        'CACHE_SCOPE_IDENTITY_MISSING',
-        `Cache identity is unavailable for ${scope} scope`,
-        { retryable: false, fallbackAllowed: false, details: { scope } }
-      );
-    }
-    const fingerprint = createHash('sha256')
-      .update(
-        JSON.stringify({
-          pluginId: input.candidate.pluginId,
-          pluginVersion: input.candidate.pluginVersion,
-          capability: input.capability,
-          contractVersion: input.candidate.contractVersion,
-          extensionContractVersions: Object.entries(
-            input.candidate.extensionContractVersions ?? {}
-          ).sort(([left], [right]) => left.localeCompare(right)),
-          normalizedUrl: input.candidate.normalizedUrl,
-          request: {
-            cursor: input.request.cursor,
-            limit: input.request.limit,
-            query: input.request.query
-          },
-          network: input.context.cacheIdentity.network,
-          scope,
-          scopeIdentity
-        })
+    return `source-reader:${buildSourceReaderCacheKey({
+      pluginId: input.candidate.pluginId,
+      pluginVersion: input.candidate.pluginVersion,
+      capability: input.capability,
+      contractVersion: String(input.candidate.contractVersion),
+      extensionContractVersions: this.extensionVersions(input.candidate),
+      normalizedRequestFingerprint: this.requestFingerprint(input),
+      networkIdentity: input.context.cacheIdentity.network,
+      scope,
+      scopeIdentity: this.scopeIdentity(input.context, scope)
+    })}`;
+  }
+
+  private scopeIdentity(
+    context: SourceReaderRuntimeContext,
+    scope: Exclude<CacheScope, 'none'>
+  ): string {
+    return resolveCacheScopeIdentity(context.cacheIdentity, scope);
+  }
+
+  private requestFingerprint(input: CacheInput): string {
+    return hash(
+      JSON.stringify({
+        normalizedUrl: input.candidate.normalizedUrl,
+        requestParameters: {
+          cursor: input.request.cursor,
+          limit: input.request.limit,
+          query: input.request.query
+        }
+      })
+    );
+  }
+
+  private extensionVersions(candidate: SourceReaderCandidate): Record<string, string> {
+    return Object.fromEntries(
+      Object.entries(candidate.extensionContractVersions ?? {}).sort(([left], [right]) =>
+        left.localeCompare(right)
       )
-      .digest('hex');
-    return `source-reader:${fingerprint}`;
+    );
   }
 }

@@ -5,6 +5,8 @@ import type {
   SourceReaderWarning,
   VersionedExtensionValue
 } from '../public/source-reader.models.js';
+import type { SourcePluginManifest } from '../domain/plugin/source-plugin.js';
+import type { ReaderCacheEntry, ReaderCachePort } from './ports/reader-cache.port.js';
 
 export type ExecutableSourceCapability = Exclude<SourceCapability, 'authentication'>;
 
@@ -37,6 +39,9 @@ export interface SourceReaderCandidate {
   extensionContractVersions?: Record<string, string>;
   extensionContracts?: Record<string, SourceReaderExtensionContract>;
   matcher?: SourceReaderMatcher;
+  allowedHosts?: string[];
+  runtimeRequirements?: SourcePluginManifest['runtimeRequirements'];
+  requiresBrowser?: boolean;
 }
 
 export interface SourceReaderExecutableRequest {
@@ -65,6 +70,7 @@ export interface SourceReaderRuntimeContext {
   sessionId?: string;
   networkProfileId?: string;
   browserRequired?: boolean;
+  requestId?: string;
   runtime?: unknown;
 }
 
@@ -129,17 +135,9 @@ export interface SourceReaderResultValidatorPort {
   };
 }
 
-export interface SourceReaderCacheEntry<T> {
-  value: T;
-  expiresAt: number;
-  staleUntil?: number;
-  metadata: { scope: Exclude<CacheScope, 'none'>; tags: string[] };
-}
+export type SourceReaderCacheEntry<T> = ReaderCacheEntry<T>;
 
-export interface SourceReaderCachePort {
-  get<T>(key: string): Promise<SourceReaderCacheEntry<T> | undefined>;
-  set<T>(key: string, entry: SourceReaderCacheEntry<T>): Promise<void>;
-}
+export interface SourceReaderCachePort extends Pick<ReaderCachePort, 'get' | 'set'> {}
 
 export interface SourceReaderRefreshPort {
   schedule(key: string, refresh: () => Promise<unknown>): void;

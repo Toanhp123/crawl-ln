@@ -12,23 +12,25 @@ async function readPackage(path: string): Promise<PackageJson> {
   ) as PackageJson;
 }
 
-test('root build prepares shared once and workspace builds remain local', async () => {
+test('root build prepares shared and SDK once while workspace builds remain local', async () => {
   const [root, api, web] = await Promise.all([
     readPackage('package.json'),
     readPackage('apps/api/package.json'),
     readPackage('apps/web/package.json')
   ]);
 
-  assert.equal(root.scripts.build, 'npm run build:shared && npm run build:prepared');
+  assert.equal(root.scripts.build, 'npm run prepare:packages && npm run build:prepared');
+  assert.equal(root.scripts['prepare:packages'], 'node scripts/prepare-packages.mjs');
   assert.equal(root.scripts['build:shared'], 'node scripts/prepare-shared.mjs');
+  assert.equal(root.scripts['build:sdk'], 'node scripts/prepare-sdk.mjs');
   assert.equal(root.scripts['build:prepared'], 'node scripts/build-prepared.mjs');
   assert.equal(
     root.scripts['build:api'],
-    'npm run build:shared && npm run build -w @novel-tool/api'
+    'npm run prepare:packages && npm run build -w @novel-tool/api'
   );
   assert.equal(
     root.scripts['build:web'],
-    'npm run build:shared && npm run build -w @novel-tool/web'
+    'npm run prepare:packages && npm run build -w @novel-tool/web'
   );
 
   assert.equal(api.scripts.build, 'node scripts/build.mjs');
@@ -39,23 +41,24 @@ test('root build prepares shared once and workspace builds remain local', async 
   }
 });
 
-test('root check prepares shared once and workspace checks remain local', async () => {
+test('root check prepares shared and SDK once while workspace checks remain local', async () => {
   const [root, api, web] = await Promise.all([
     readPackage('package.json'),
     readPackage('apps/api/package.json'),
     readPackage('apps/web/package.json')
   ]);
 
-  assert.equal(root.scripts.check, 'npm run prepare:shared && npm run check:prepared');
+  assert.equal(root.scripts.check, 'npm run prepare:packages && npm run check:prepared');
   assert.equal(root.scripts['prepare:shared'], 'node scripts/prepare-shared.mjs');
+  assert.equal(root.scripts['prepare:sdk'], 'node scripts/prepare-sdk.mjs');
   assert.equal(root.scripts['check:prepared'], 'node scripts/check-prepared.mjs');
   assert.equal(
     root.scripts['check:api'],
-    'npm run prepare:shared && npm run check -w @novel-tool/api'
+    'npm run prepare:packages && npm run check -w @novel-tool/api'
   );
   assert.equal(
     root.scripts['check:web'],
-    'npm run prepare:shared && npm run check -w @novel-tool/web'
+    'npm run prepare:packages && npm run check -w @novel-tool/web'
   );
 
   assert.equal(api.scripts.build, 'node scripts/build.mjs');
@@ -70,10 +73,17 @@ test('verify reuses prepared integration output and maintenance commands are can
   const root = await readPackage('package.json');
 
   assert.equal(root.scripts.verify, 'node scripts/verify.mjs');
-  assert.equal(root.scripts['test:regression'], 'node scripts/run-test-files.mjs regression');
+  assert.equal(
+    root.scripts['test:regression'],
+    'npm run prepare:packages && npm run test:regression:prepared'
+  );
+  assert.equal(
+    root.scripts['test:regression:prepared'],
+    'node scripts/run-test-files.mjs regression'
+  );
   assert.equal(
     root.scripts['test:integration'],
-    'npm run build:shared && npm run test:integration:prepared'
+    'npm run prepare:packages && npm run test:integration:prepared'
   );
   assert.equal(
     root.scripts['test:integration:prepared'],

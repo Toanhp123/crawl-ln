@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { dirname } from 'node:path';
+import { createBackupModule } from '../modules/backup/backup.module.js';
 import { createExportModule } from '../modules/export/export.module.js';
 import { createIngestionModule } from '../modules/ingestion/ingestion.module.js';
 import {
@@ -63,6 +65,16 @@ export function createAppContainer(environment: NextEnvironment) {
     maxSourceBytes: environment.maxExportSourceBytes
   });
   modules.register(library, sourceReader, ingestion, scheduler, search, exports);
+  const backups = createBackupModule({
+    database,
+    databasePath: environment.databasePath,
+    storageDirectory: environment.storageDirectory ?? dirname(environment.databasePath),
+    contributors: modules.backupContributors(),
+    clock,
+    appVersion: environment.appVersion ?? '2.9.6',
+    schemaVersion: 1
+  });
+  modules.register(backups);
   const migrations = modules.migrationRegistry();
   const outbox = new OutboxDispatcher(modules.outboxSources(), events, clock, logger, {
     batchSize: environment.outboxBatchSize
@@ -82,7 +94,8 @@ export function createAppContainer(environment: NextEnvironment) {
     sourceReader: sourceReader.presentation,
     scheduler: scheduler.presentation,
     search: search.presentation,
-    exports: exports.presentation
+    exports: exports.presentation,
+    backups: backups.api
   });
 
   return { lifecycle, presentation };

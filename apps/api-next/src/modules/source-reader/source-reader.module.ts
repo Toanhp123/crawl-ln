@@ -62,6 +62,7 @@ import { SourceResultValidator } from './application/services/source-result-vali
 import { SourceReaderFacade } from './application/source-reader.facade.js';
 import { SOURCE_READER_HOST_COMPATIBILITY } from './domain/plugin/source-reader-host-compatibility.js';
 import { BrowserRuntimeCoordinator } from './infrastructure/browser/browser-runtime.coordinator.js';
+import { SourceReaderBackupContributor } from './infrastructure/backup/source-reader-backup.contributor.js';
 import { sourceReaderMigrations } from './infrastructure/migrations/001-source-reader-schema.js';
 import { NetworkRouteResolver } from './infrastructure/network/network-route.resolver.js';
 import { ProxyAgentFactory } from './infrastructure/network/proxy-agent.factory.js';
@@ -356,6 +357,7 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
     name: 'source-reader',
     migrations: sourceReaderMigrations,
     api,
+    backup: new SourceReaderBackupContributor(database),
     management,
     presentation: {
       reader: new SourceReaderController(api),

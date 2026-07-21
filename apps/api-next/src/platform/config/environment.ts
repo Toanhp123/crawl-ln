@@ -16,6 +16,8 @@ export interface NextEnvironment {
   host: string;
   port: number;
   databasePath: string;
+  storageDirectory?: string;
+  appVersion?: string;
   outboxBatchSize: number;
   outboxIntervalMs: number;
   crawlerDelayMs: number;
@@ -84,6 +86,8 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Next
     databasePath: parsed.NEXT_DATABASE_PATH
       ? resolve(parsed.NEXT_DATABASE_PATH)
       : resolve(storageDirectory, 'novel-tool.sqlite'),
+    storageDirectory: resolve(storageDirectory),
+    appVersion: source.APP_VERSION ?? '2.9.6',
     outboxBatchSize: parsed.NEXT_OUTBOX_BATCH_SIZE,
     outboxIntervalMs: parsed.NEXT_OUTBOX_INTERVAL_MS,
     crawlerDelayMs: numberEnv(source, 'CRAWLER_DELAY_MS', 600),

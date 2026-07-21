@@ -9,6 +9,7 @@ import { RebuildSearchIndexCommandHandler } from './application/commands/rebuild
 import { SearchQueryService } from './application/queries/search-query.service.js';
 import { LibrarySearchProjectionService } from './application/services/library-search-projection.service.js';
 import { LibrarySearchEventHandler } from './infrastructure/events/library-search-event.handler.js';
+import { SearchBackupContributor } from './infrastructure/backup/search-backup.contributor.js';
 import { LibraryQuerySearchSourceAdapter } from './infrastructure/library/library-query-search-source.adapter.js';
 import { searchMigrations } from './infrastructure/migrations/001-search-schema.js';
 import { SearchSqliteRepository } from './infrastructure/sqlite/search-sqlite.repository.js';
@@ -44,6 +45,7 @@ export function createSearchModule(options: SearchModuleOptions) {
     name: 'search',
     migrations: searchMigrations,
     api,
+    backup: new SearchBackupContributor(api.commands),
     presentation: { controller: new SearchController(api) },
     async start() {
       if (unsubscribers.length > 0) return;

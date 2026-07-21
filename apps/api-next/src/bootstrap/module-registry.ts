@@ -1,10 +1,12 @@
 import { MigrationRegistry } from '../platform/database/migration-registry.js';
 import type { ModuleMigration } from '../platform/database/module-migration.js';
+import type { BackupContributor } from '../platform/backup/backup-contributor.js';
 import type { OutboxSource } from '../platform/events/outbox-source.js';
 
 export interface RegisteredModule {
   name: string;
   migrations: ModuleMigration[];
+  backup?: BackupContributor;
   outbox?: OutboxSource;
   start?(): Promise<void>;
   stop?(): Promise<void>;
@@ -31,5 +33,11 @@ export class ModuleRegistry {
     return this.modules
       .map((module) => module.outbox)
       .filter((source): source is OutboxSource => source !== undefined);
+  }
+
+  backupContributors(): BackupContributor[] {
+    return this.modules
+      .map((module) => module.backup)
+      .filter((contributor): contributor is BackupContributor => contributor !== undefined);
   }
 }

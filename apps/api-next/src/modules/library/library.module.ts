@@ -4,6 +4,7 @@ import { SaveChapterContentCommandHandler } from './application/commands/save-ch
 import { SetIngestionStateCommandHandler } from './application/commands/set-ingestion-state.command.js';
 import { LibraryQueriesService } from './application/queries/library-queries.service.js';
 import { libraryMigrations } from './index.js';
+import { LibraryBackupContributor } from './infrastructure/backup/library-backup.contributor.js';
 import { LibrarySqliteOutboxSource } from './infrastructure/sqlite/library-sqlite.outbox-source.js';
 import { LibrarySqliteRepository } from './infrastructure/sqlite/library-sqlite.repository.js';
 import { LibrarySqliteUnitOfWork } from './infrastructure/sqlite/library-sqlite.unit-of-work.js';
@@ -32,6 +33,7 @@ export function createLibraryModule(database: SqliteDatabase) {
     name: 'library',
     migrations: libraryMigrations,
     api,
+    backup: new LibraryBackupContributor(database),
     outbox: new LibrarySqliteOutboxSource(database)
   };
 }

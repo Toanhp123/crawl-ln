@@ -18,6 +18,7 @@ import {
   type SourceAccessPolicyPort
 } from './application/services/source-policy.service.js';
 import { IngestionSqliteOutboxSource } from './infrastructure/sqlite/ingestion-sqlite.outbox-source.js';
+import { IngestionBackupContributor } from './infrastructure/backup/ingestion-backup.contributor.js';
 import { IngestionSqliteRepository } from './infrastructure/sqlite/ingestion-sqlite.repository.js';
 import { ingestionMigrations } from './index.js';
 import type { IngestionApi } from './public/ingestion.api.js';
@@ -41,6 +42,7 @@ interface IngestionModuleBase {
 
 interface CompleteIngestionModule extends IngestionModuleBase {
   api: IngestionApi;
+  backup: IngestionBackupContributor;
   outbox: IngestionSqliteOutboxSource;
   start(): Promise<void>;
   stop(): Promise<void>;
@@ -110,6 +112,7 @@ export function createIngestionModule(
     name: 'ingestion',
     migrations: ingestionMigrations,
     api,
+    backup: new IngestionBackupContributor(options.database),
     outbox: new IngestionSqliteOutboxSource(options.database, options.clock),
     start: async () => {
       await queue.recoverInterrupted();

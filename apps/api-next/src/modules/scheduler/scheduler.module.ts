@@ -12,6 +12,7 @@ import { RecordSchedulerDiagnosticHandler } from './application/handlers/record-
 import { SchedulerQueriesService } from './application/queries/scheduler-queries.service.js';
 import { SchedulerTickService } from './application/services/scheduler-tick.service.js';
 import { EventBusSchedulerDiagnosticPublisher } from './infrastructure/events/event-bus-scheduler-diagnostic.publisher.js';
+import { SchedulerBackupContributor } from './infrastructure/backup/scheduler-backup.contributor.js';
 import { schedulerMigrations } from './infrastructure/migrations/001-scheduler-schema.js';
 import { SchedulerSqliteRepository } from './infrastructure/sqlite/scheduler-sqlite.repository.js';
 import { SchedulerController } from './presentation/scheduler.controller.js';
@@ -61,6 +62,7 @@ export function createSchedulerModule(options: SchedulerModuleOptions) {
     name: 'scheduler',
     migrations: schedulerMigrations,
     api,
+    backup: new SchedulerBackupContributor(options.database),
     presentation: { controller: new SchedulerController(api) },
     async start() {
       unsubscribe ??= options.events.subscribe<SchedulerDiagnosticRecordedPayload>(

@@ -1,18 +1,11 @@
 import type {
-  ChapterContent,
-  ChapterSummary,
   IdentifyRequest as PluginIdentifyRequest,
-  LatestUpdate,
   LatestUpdatesRequest as PluginLatestUpdatesRequest,
-  NovelMetadata,
-  NovelSearchResult,
-  Page,
   ReadChapterContentRequest as PluginReadChapterContentRequest,
   ReadChapterListRequest as PluginReadChapterListRequest,
   ReadMetadataRequest as PluginReadMetadataRequest,
   SearchSourceRequest as PluginSearchSourceRequest,
   SourceCapability,
-  SourceIdentity,
   SourceReaderWarning,
   VersionedExtensionValue
 } from '@novel-tool/source-plugin-sdk';
@@ -80,11 +73,3 @@ export interface SourceReaderResult<TData> {
   extensions?: Record<string, VersionedExtensionValue>;
   warnings?: SourceReaderWarning[];
 }
-
-export type SourceReaderData =
-  | SourceIdentity
-  | NovelMetadata
-  | Page<ChapterSummary>
-  | ChapterContent
-  | Page<NovelSearchResult>
-  | Page<LatestUpdate>;

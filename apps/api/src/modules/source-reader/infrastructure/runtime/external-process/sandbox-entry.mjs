@@ -162,15 +162,7 @@ const compartment = new Compartment({
 
 const { namespace } = await compartment.import(pathToFileURL(entryPath).href);
 
-const methodByCapability = {
-  identify: 'identify',
-  metadata: 'readMetadata',
-  'chapter-list': 'readChapterList',
-  'chapter-content': 'readChapterContent',
-  search: 'search',
-  'latest-updates': 'latestUpdates',
-  authentication: 'authenticate'
-};
+const methodByCapability = harden(JSON.parse(process.env.SOURCE_READER_CAPABILITY_METHODS ?? '{}'));
 
 const execute = async (frame) => {
   const context = createContext(frame.requestId, frame.payload);

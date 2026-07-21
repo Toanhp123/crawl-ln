@@ -17,10 +17,15 @@ test('public commands prepare shared and SDK packages before API work', () => {
     'build:api',
     'check',
     'check:api',
+    'test:regression',
     'test:integration'
   ]) {
     assert.match(rootPackage.scripts[script], /prepare:packages/);
   }
+  assert.equal(
+    rootPackage.scripts['test:regression:prepared'],
+    'node scripts/run-test-files.mjs regression'
+  );
 });
 
 test('package preparation compiles shared and SDK without nested npm', () => {

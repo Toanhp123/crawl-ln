@@ -18,6 +18,7 @@ test('API depends on and re-exports canonical source plugin SDK contracts', () =
   assert.doesNotMatch(models, /export interface NovelMetadata/);
   assert.doesNotMatch(models, /export interface ChapterSummary/);
   assert.doesNotMatch(models, /export type SourceCapability/);
+  assert.doesNotMatch(models, /SourceReaderData/);
 });
 
 test('internal plugin domain imports manifest and operation result from SDK', () => {
@@ -26,6 +27,7 @@ test('internal plugin domain imports manifest and operation result from SDK', ()
   assert.doesNotMatch(plugin, /export interface SourcePluginManifest/);
   assert.doesNotMatch(plugin, /export interface PluginOperationResult/);
   assert.doesNotMatch(plugin, /export interface PluginMatcher/);
+  assert.doesNotMatch(plugin, /SourcePluginExecutionMode/);
 });
 
 test('manifest validation uses SDK capability constants', () => {
@@ -48,4 +50,22 @@ test('authentication lifecycle and external RPC contracts are re-exported from S
   assert.doesNotMatch(auth, /export interface AuthSessionMaterial/);
   assert.doesNotMatch(lifecycle, /export interface PluginLifecycleContext/);
   assert.doesNotMatch(rpc, /export interface ExternalProbeRequest/);
+});
+
+test('sandbox dispatch receives the SDK capability method mapping from the host', () => {
+  const sandbox = read(
+    'apps/api/src/modules/source-reader/infrastructure/runtime/external-process/sandbox-entry.mjs'
+  );
+  const supervisor = read(
+    'apps/api/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts'
+  );
+
+  assert.match(supervisor, /SOURCE_CAPABILITY_METHODS/);
+  assert.match(
+    supervisor,
+    /SOURCE_READER_CAPABILITY_METHODS:\s*JSON\.stringify\(SOURCE_CAPABILITY_METHODS\)/
+  );
+  assert.match(sandbox, /process\.env\.SOURCE_READER_CAPABILITY_METHODS/);
+  assert.doesNotMatch(sandbox, /authentication:\s*'authenticate'/);
+  assert.doesNotMatch(sandbox, /from '@novel-tool\/source-plugin-sdk'/);
 });

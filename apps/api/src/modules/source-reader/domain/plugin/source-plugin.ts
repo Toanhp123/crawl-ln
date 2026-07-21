@@ -6,7 +6,6 @@ import type {
   NovelMetadata,
   NovelSearchResult,
   Page,
-  PluginExecutionMode,
   PluginHttpResponse,
   PluginOperationResult,
   SourceCapability,
@@ -144,5 +143,3 @@ export interface SourceReaderPlugin {
     context: PluginContext
   ): Promise<PluginOperationResult<Page<LatestUpdate>>>;
 }
-
-export type SourcePluginExecutionMode = PluginExecutionMode;

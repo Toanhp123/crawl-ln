@@ -1,4 +1,5 @@
 import {
+  SOURCE_CAPABILITY_METHODS,
   SOURCE_PLUGIN_ERROR_CODES,
   type SourcePluginErrorCode
 } from '@novel-tool/source-plugin-sdk';
@@ -447,7 +448,8 @@ export class ExternalProcessSupervisor implements ExternalPluginSupervisorPort {
         SOURCE_READER_PLUGIN_ID: input.pluginId,
         SOURCE_READER_PLUGIN_VERSION: input.pluginVersion,
         SOURCE_READER_PLUGIN_ROOT: verified.packageRoot,
-        SOURCE_READER_PLUGIN_ENTRY: verified.entryPath
+        SOURCE_READER_PLUGIN_ENTRY: verified.entryPath,
+        SOURCE_READER_CAPABILITY_METHODS: JSON.stringify(SOURCE_CAPABILITY_METHODS)
       },
       stdio: ['ignore', 'pipe', 'pipe', 'ipc']
     });

@@ -49,3 +49,9 @@ test('external plugin fixture type-checks against asynchronous sdk context', () 
   );
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
+
+test('capability method mapping excludes authentication orchestration', () => {
+  const source = readFileSync(join(sdkRoot, 'src/capabilities.ts'), 'utf8');
+  assert.match(source, /SourceDataCapability/);
+  assert.doesNotMatch(source, /authentication:\s*'authenticate'/);
+});

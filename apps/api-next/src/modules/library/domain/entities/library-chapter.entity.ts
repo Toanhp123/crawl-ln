@@ -60,18 +60,25 @@ export class LibraryChapterEntity {
     });
   }
 
-  saveContent(rawText: string | undefined, cleanText: string | undefined, savedAt: string) {
+  saveContent(
+    rawText: string | undefined,
+    cleanText: string | undefined,
+    savedAt: string,
+    title = this.props.title
+  ) {
     if (rawText === undefined && cleanText === undefined) return this;
 
     const nextRawText = rawText ?? this.props.rawText;
     const nextCleanText = cleanText ?? this.props.cleanText;
     const contentChanged =
       nextRawText !== this.props.rawText || nextCleanText !== this.props.cleanText;
+    const metadataChanged = title !== this.props.title;
     const stateChanged = this.props.status !== 'fetched' || this.props.errorMessage !== undefined;
-    if (!contentChanged && !stateChanged) return this;
+    if (!contentChanged && !metadataChanged && !stateChanged) return this;
 
     return LibraryChapterEntity.create({
       ...this.props,
+      title,
       rawText: nextRawText,
       cleanText: nextCleanText,
       status: 'fetched',

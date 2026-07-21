@@ -6,6 +6,7 @@ import type {
   LibraryNovel,
   LibraryNovelDetail
 } from '../../domain/library.models.js';
+import type { ApplicationEvent } from '../../../../platform/events/application-event.js';
 
 const isoTimestamp = z.string().datetime({ offset: true });
 const novelStatus = z.enum(['analyzed', 'crawling', 'completed', 'failed']);
@@ -99,6 +100,18 @@ export const libraryCommandReceiptRowSchema = z
   })
   .strict();
 
+export const libraryOutboxRowSchema = z
+  .object({
+    id: z.string().min(1),
+    type: z.string().min(1),
+    occurred_at: isoTimestamp,
+    payload_json: z.string(),
+    claimed_at: isoTimestamp.nullable(),
+    delivered_at: isoTimestamp.nullable(),
+    delivery_attempts: z.coerce.number().int().nonnegative()
+  })
+  .strict();
+
 export function mapLibraryNovelRow(input: unknown): LibraryNovel {
   const row = libraryNovelRowSchema.parse(input);
   return LibraryNovelEntity.create({
@@ -148,5 +161,20 @@ export function parseLibraryNovelDetail(input: unknown): LibraryNovelDetail {
   return {
     novel: LibraryNovelEntity.create(detail.novel).toPrimitives(),
     chapters: detail.chapters.map((chapter) => LibraryChapterEntity.create(chapter).toPrimitives())
+  };
+}
+
+export function parseLibraryChapter(input: unknown): LibraryChapter {
+  const chapter = libraryChapterModelSchema.parse(input);
+  return LibraryChapterEntity.create(chapter).toPrimitives();
+}
+
+export function mapLibraryOutboxRow(input: unknown): ApplicationEvent {
+  const row = libraryOutboxRowSchema.parse(input);
+  return {
+    id: row.id,
+    type: row.type,
+    occurredAt: row.occurred_at,
+    payload: JSON.parse(row.payload_json) as unknown
   };
 }

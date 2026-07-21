@@ -1,16 +1,30 @@
 import { LibraryChapterEntity } from '../../domain/entities/library-chapter.entity.js';
 import { LibraryNovelEntity } from '../../domain/entities/library-novel.entity.js';
 import { LibraryError } from '../../domain/errors/library.error.js';
-import type { ReconcileAnalysisCommand } from '../../domain/library.contracts.js';
-import type { LibraryNovelDetail } from '../../domain/library.models.js';
+import type {
+  DeleteLibraryNovelCommand,
+  ReconcileAnalysisCommand,
+  SaveChapterContentCommand,
+  SetLibraryIngestionStateCommand
+} from '../../domain/library.contracts.js';
+import type { LibraryChapter, LibraryNovelDetail } from '../../domain/library.models.js';
 import type { LibraryUnitOfWork } from '../../domain/repositories/library.repository.js';
 import { chapterSourceUrlKey } from '../../domain/url/chapter-source-url-key.js';
 import { assertNonBlank, assertTimestamp } from '../../domain/library.validation.js';
 import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
-import { libraryCommandReceiptRowSchema, parseLibraryNovelDetail } from './library-row.schemas.js';
+import {
+  libraryCommandReceiptRowSchema,
+  parseLibraryChapter,
+  parseLibraryNovelDetail
+} from './library-row.schemas.js';
 import { LibrarySqliteRepository } from './library-sqlite.repository.js';
 
-const commandType = 'reconcile-analysis';
+const commandTypes = {
+  reconcileAnalysis: 'reconcile-analysis',
+  saveChapterContent: 'save-chapter-content',
+  setIngestionState: 'set-ingestion-state',
+  deleteNovel: 'delete-novel'
+} as const;
 
 function canonicalDetail(detail: LibraryNovelDetail): {
   detail: LibraryNovelDetail;
@@ -20,7 +34,15 @@ function canonicalDetail(detail: LibraryNovelDetail): {
   return { detail: parseLibraryNovelDetail(JSON.parse(json)), json };
 }
 
-export class LibrarySqliteUnitOfWork implements Pick<LibraryUnitOfWork, 'reconcileAnalysis'> {
+function canonicalChapter(chapter: LibraryChapter): {
+  chapter: LibraryChapter;
+  json: string;
+} {
+  const json = JSON.stringify(chapter);
+  return { chapter: parseLibraryChapter(JSON.parse(json)), json };
+}
+
+export class LibrarySqliteUnitOfWork implements LibraryUnitOfWork {
   private readonly repository: LibrarySqliteRepository;
 
   constructor(
@@ -32,17 +54,9 @@ export class LibrarySqliteUnitOfWork implements Pick<LibraryUnitOfWork, 'reconci
 
   reconcileAnalysis(command: ReconcileAnalysisCommand): LibraryNovelDetail {
     return this.database.transactionSync(() => {
-      const receiptInput = this.database.connection
-        .prepare('SELECT * FROM library_command_receipts WHERE command_id = ?')
-        .get(command.commandId);
-      if (receiptInput) {
-        const receipt = libraryCommandReceiptRowSchema.parse(receiptInput);
-        if (receipt.command_type !== commandType || receipt.result_json === null) {
-          throw new LibraryError(
-            'LIBRARY_CONFLICT',
-            `Command ID ${command.commandId} belongs to another Library operation`
-          );
-        }
+      const receipt = this.readReceipt(command.commandId, commandTypes.reconcileAnalysis);
+      if (receipt) {
+        if (receipt.result_json === null) this.throwReceiptConflict(command.commandId);
         return parseLibraryNovelDetail(JSON.parse(receipt.result_json));
       }
 
@@ -206,24 +220,198 @@ export class LibrarySqliteUnitOfWork implements Pick<LibraryUnitOfWork, 'reconci
       if (!stored)
         throw new LibraryError('LIBRARY_NOT_FOUND', 'Reconciled novel was not persisted');
       const result = canonicalDetail(stored);
-      const payloadJson = JSON.stringify({
-        commandId: command.commandId,
-        novel: result.detail.novel,
-        chapters: result.detail.chapters
-      });
-      this.database.connection
-        .prepare(
-          `INSERT INTO library_outbox(id, type, occurred_at, payload_json)
-           VALUES (?, 'library.analysis-reconciled', ?, ?)`
-        )
-        .run(`library.analysis-reconciled:${command.commandId}`, command.analyzedAt, payloadJson);
-      this.database.connection
-        .prepare(
-          `INSERT INTO library_command_receipts(command_id, command_type, result_json, created_at)
-           VALUES (?, ?, ?, ?)`
-        )
-        .run(command.commandId, commandType, result.json, command.analyzedAt);
+      this.appendEvent(
+        'library.analysis-reconciled',
+        command.commandId,
+        command.analyzedAt,
+        JSON.stringify({
+          commandId: command.commandId,
+          novel: result.detail.novel,
+          chapters: result.detail.chapters
+        })
+      );
+      this.recordReceipt(
+        command.commandId,
+        commandTypes.reconcileAnalysis,
+        result.json,
+        command.analyzedAt
+      );
       return result.detail;
     });
+  }
+
+  saveChapterContent(command: SaveChapterContentCommand): LibraryChapter {
+    return this.database.transactionSync(() => {
+      const receipt = this.readReceipt(command.commandId, commandTypes.saveChapterContent);
+      if (receipt) {
+        if (receipt.result_json === null) this.throwReceiptConflict(command.commandId);
+        return parseLibraryChapter(JSON.parse(receipt.result_json));
+      }
+
+      assertNonBlank(command.commandId, 'commandId');
+      assertNonBlank(command.novelId, 'novelId');
+      assertNonBlank(command.chapterId, 'chapterId');
+      assertTimestamp(command.savedAt, 'savedAt');
+      const current = this.repository.readChapterById(command.novelId, command.chapterId);
+      if (!current) {
+        throw new LibraryError('LIBRARY_NOT_FOUND', 'Library chapter was not found', {
+          novelId: command.novelId,
+          chapterId: command.chapterId
+        });
+      }
+      const chapter = LibraryChapterEntity.create(current)
+        .saveContent(command.rawText, command.cleanText, command.savedAt, command.title)
+        .toPrimitives();
+      this.database.connection
+        .prepare(
+          `UPDATE library_chapters
+              SET title = ?, raw_text = ?, clean_text = ?, status = ?, error_message = ?,
+                  content_version = ?, updated_at = ?
+            WHERE id = ? AND novel_id = ? AND source_available = 1`
+        )
+        .run(
+          chapter.title,
+          chapter.rawText ?? null,
+          chapter.cleanText ?? null,
+          chapter.status,
+          chapter.errorMessage ?? null,
+          chapter.contentVersion,
+          chapter.updatedAt,
+          chapter.id,
+          chapter.novelId
+        );
+
+      const result = canonicalChapter(chapter);
+      this.appendEvent(
+        'library.chapter-content-saved',
+        command.commandId,
+        command.savedAt,
+        JSON.stringify({ commandId: command.commandId, chapter: result.chapter })
+      );
+      this.recordReceipt(
+        command.commandId,
+        commandTypes.saveChapterContent,
+        result.json,
+        command.savedAt
+      );
+      return result.chapter;
+    });
+  }
+
+  setIngestionState(command: SetLibraryIngestionStateCommand): void {
+    this.database.transactionSync(() => {
+      const receipt = this.readReceipt(command.commandId, commandTypes.setIngestionState);
+      if (receipt) {
+        if (receipt.result_json !== null) this.throwReceiptConflict(command.commandId);
+        return;
+      }
+
+      assertNonBlank(command.commandId, 'commandId');
+      assertNonBlank(command.novelId, 'novelId');
+      assertTimestamp(command.updatedAt, 'updatedAt');
+      const current = this.repository.readNovelById(command.novelId);
+      if (!current) {
+        throw new LibraryError('LIBRARY_NOT_FOUND', 'Library novel was not found', {
+          novelId: command.novelId
+        });
+      }
+      const novel = LibraryNovelEntity.create(current.novel)
+        .setIngestionState(command.status, command.updatedAt)
+        .toPrimitives();
+      this.database.connection
+        .prepare('UPDATE library_novels SET status = ?, updated_at = ? WHERE id = ?')
+        .run(novel.status, novel.updatedAt, novel.id);
+      this.appendEvent(
+        'library.ingestion-state-changed',
+        command.commandId,
+        command.updatedAt,
+        JSON.stringify({
+          commandId: command.commandId,
+          novelId: novel.id,
+          status: novel.status,
+          ...(command.errorMessage === undefined ? {} : { errorMessage: command.errorMessage })
+        })
+      );
+      this.recordReceipt(
+        command.commandId,
+        commandTypes.setIngestionState,
+        null,
+        command.updatedAt
+      );
+    });
+  }
+
+  deleteNovel(command: DeleteLibraryNovelCommand): void {
+    this.database.transactionSync(() => {
+      const receipt = this.readReceipt(command.commandId, commandTypes.deleteNovel);
+      if (receipt) {
+        if (receipt.result_json !== null) this.throwReceiptConflict(command.commandId);
+        return;
+      }
+
+      assertNonBlank(command.commandId, 'commandId');
+      assertNonBlank(command.novelId, 'novelId');
+      assertTimestamp(command.deletedAt, 'deletedAt');
+      if (!this.repository.readNovelById(command.novelId)) {
+        throw new LibraryError('LIBRARY_NOT_FOUND', 'Library novel was not found', {
+          novelId: command.novelId
+        });
+      }
+      this.database.connection
+        .prepare('DELETE FROM library_novels WHERE id = ?')
+        .run(command.novelId);
+      this.appendEvent(
+        'library.novel-deleted',
+        command.commandId,
+        command.deletedAt,
+        JSON.stringify({ commandId: command.commandId, novelId: command.novelId })
+      );
+      this.recordReceipt(command.commandId, commandTypes.deleteNovel, null, command.deletedAt);
+    });
+  }
+
+  private readReceipt(commandId: string, expectedType: string) {
+    const input = this.database.connection
+      .prepare('SELECT * FROM library_command_receipts WHERE command_id = ?')
+      .get(commandId);
+    if (!input) return undefined;
+    const receipt = libraryCommandReceiptRowSchema.parse(input);
+    if (receipt.command_type !== expectedType) this.throwReceiptConflict(commandId);
+    return receipt;
+  }
+
+  private recordReceipt(
+    commandId: string,
+    type: string,
+    resultJson: string | null,
+    createdAt: string
+  ): void {
+    this.database.connection
+      .prepare(
+        `INSERT INTO library_command_receipts(command_id, command_type, result_json, created_at)
+         VALUES (?, ?, ?, ?)`
+      )
+      .run(commandId, type, resultJson, createdAt);
+  }
+
+  private appendEvent(
+    type: string,
+    commandId: string,
+    occurredAt: string,
+    payloadJson: string
+  ): void {
+    this.database.connection
+      .prepare(
+        `INSERT INTO library_outbox(id, type, occurred_at, payload_json)
+         VALUES (?, ?, ?, ?)`
+      )
+      .run(`${type}:${commandId}`, type, occurredAt, payloadJson);
+  }
+
+  private throwReceiptConflict(commandId: string): never {
+    throw new LibraryError(
+      'LIBRARY_CONFLICT',
+      `Command ID ${commandId} belongs to another Library operation`
+    );
   }
 }

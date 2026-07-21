@@ -13,7 +13,7 @@ import { ModuleRegistry } from './module-registry.js';
 export function createAppContainer(environment: NextEnvironment) {
   const database = new SqliteDatabase(environment.databasePath, { open: false });
   const modules = new ModuleRegistry();
-  modules.register(createLibraryModule(), createIngestionModule());
+  modules.register(createLibraryModule(database), createIngestionModule());
   const migrations = modules.migrationRegistry();
   const events = new InMemoryEventBus();
   const outbox = new OutboxDispatcher(

@@ -85,7 +85,7 @@ SOURCE_READER_MEMORY_CACHE_ENTRIES=500
 
 ### Chế độ local an toàn
 
-API mặc định bind `127.0.0.1` và chỉ chấp nhận origin local được khai báo trong `API_CORS_ORIGINS`. File `apps/api/.env.example` bật `SOURCE_READER_LOCAL_ADMIN=true` để console quản trị hoạt động sau khi bạn chủ động copy file cấu hình. Nếu không có `.env`, Source Reader chỉ cấp quyền đọc.
+API mặc định bind `127.0.0.1` và chỉ chấp nhận origin local được khai báo trong `API_CORS_ORIGINS`. File `apps/api/.env.example` bật `SOURCE_READER_LOCAL_ADMIN=true` để console quản trị hoạt động sau khi bạn chủ động copy file cấu hình. Nếu không có `.env`, Source Reader chỉ cấp quyền đọc. Request local không gửi `x-source-reader-user-id` dùng actor ID ổn định `local-user` làm owner mặc định.
 
 ### Truy cập LAN có chủ đích
 
@@ -100,7 +100,7 @@ SOURCE_READER_TRUST_ROLE_HEADERS=false
 
 Startup sẽ từ chối cấu hình LAN thiếu token mạnh. Mọi request trực tiếp từ máy khác tới `/api/*` phải gửi `Authorization: Bearer <API_REMOTE_TOKEN>`; `/health` vẫn công khai cho process supervisor. Không đặt token trong URL hoặc log. Web UI hiện được thiết kế cho local mode và không tự lưu bearer token. Client LAN phải tự thêm header. Nếu đặt reverse proxy trước API loopback, proxy đó phải tự xác thực người dùng vì backend sẽ nhìn thấy kết nối từ loopback.
 
-Bearer token chỉ mở ranh giới API; Source Reader remote vẫn giữ role `reader` theo mặc định. Chỉ bật `SOURCE_READER_TRUST_ROLE_HEADERS=true` cho client quản trị đã tin cậy, rồi gửi `x-source-reader-roles`. Không bật tùy chọn này cho client công cộng.
+Bearer token chỉ mở ranh giới API; Source Reader remote vẫn giữ role `reader` và bỏ qua actor ID do client khai báo theo mặc định. Chỉ bật `SOURCE_READER_TRUST_ROLE_HEADERS=true` cho client quản trị đã tin cậy. Sau khi bearer token được xác thực, tùy chọn này cho phép client gửi cả `x-source-reader-user-id` và `x-source-reader-roles`; không bật nó cho client công cộng.
 
 ## Web routes
 

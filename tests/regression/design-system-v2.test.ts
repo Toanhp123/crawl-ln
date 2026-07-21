@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-const root = new URL('../../', import.meta.url).pathname;
+import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('../../', import.meta.url));
 const read = (x: string) => readFileSync(join(root, x), 'utf8');
 test('design system v2 token layers exist', () => {
   for (const f of ['motion.css', 'z-index.css', 'opacity.css', 'elevation.css'])

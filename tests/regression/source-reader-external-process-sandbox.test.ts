@@ -68,7 +68,12 @@ test('sandbox startup rejects root escapes, native addons, and executable files'
     resolve(symlinkRoot, 'dist/index.js'),
     'export const invokeCapability = () => ({ data: {} });'
   );
-  await symlink('/etc/hostname', resolve(symlinkRoot, 'escape'));
+  const escapeTarget = await mkdtemp(resolve(tmpdir(), 'source-reader-symlink-target-'));
+  await symlink(
+    escapeTarget,
+    resolve(symlinkRoot, 'escape'),
+    process.platform === 'win32' ? 'junction' : 'dir'
+  );
   await assert.rejects(
     () =>
       supervisor.start({
@@ -106,8 +111,11 @@ test('sandbox startup rejects root escapes, native addons, and executable files'
     resolve(executableRoot, 'dist/index.js'),
     'export const invokeCapability = () => ({ data: {} });'
   );
-  await writeFile(resolve(executableRoot, 'tool.js'), 'export default 1;');
-  await chmod(resolve(executableRoot, 'tool.js'), 0o755);
+  const executableName = process.platform === 'win32' ? 'tool.exe' : 'tool.js';
+  await writeFile(resolve(executableRoot, executableName), 'export default 1;');
+  if (process.platform !== 'win32') {
+    await chmod(resolve(executableRoot, executableName), 0o755);
+  }
   await assert.rejects(
     () =>
       supervisor.start({

@@ -19,7 +19,13 @@ export function sourceReaderActorMiddleware(options: {
 }) {
   return (request: SourceReaderRequest, _response: Response, next: NextFunction): void => {
     const access = request.apiAccess ?? { isLocal: false, authenticated: false };
-    const id = request.header('x-source-reader-user-id') || undefined;
+    const requestedId = request.header('x-source-reader-user-id') || undefined;
+    const trustedRemoteActor = !access.isLocal && options.trustRoleHeaders && access.authenticated;
+    const id = access.isLocal
+      ? (requestedId ?? 'local-user')
+      : trustedRemoteActor
+        ? requestedId
+        : undefined;
     const requested = request
       .header('x-source-reader-roles')
       ?.split(',')
@@ -29,12 +35,7 @@ export function sourceReaderActorMiddleware(options: {
     let effective: SourceReaderRole[] = ['reader'];
     if (access.isLocal && options.localAdminEnabled) {
       effective = [...allRoles];
-    } else if (
-      options.trustRoleHeaders &&
-      access.authenticated &&
-      !access.isLocal &&
-      requested?.length
-    ) {
+    } else if (trustedRemoteActor && requested?.length) {
       effective = [...new Set(requested)];
     } else if (options.trustRoleHeaders && access.isLocal && requested?.length) {
       const allowed = new Set(effective);

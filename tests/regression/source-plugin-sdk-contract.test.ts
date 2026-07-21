@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
-const root = resolve(new URL('../..', import.meta.url).pathname);
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const sdkRoot = join(root, 'packages/source-plugin-sdk');
 
 function sourceFiles(directory: string): string[] {

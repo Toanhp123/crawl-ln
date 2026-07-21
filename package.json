@@ -33,6 +33,7 @@
     "test:regression:prepared": "node scripts/run-test-files.mjs regression",
     "test:integration": "npm run prepare:packages && npm run test:integration:prepared",
     "test:integration:prepared": "node scripts/run-test-files.mjs integration",
+    "test:contract": "npm run prepare:packages && node scripts/run-test-files.mjs contract",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
     "verify": "node scripts/verify.mjs",

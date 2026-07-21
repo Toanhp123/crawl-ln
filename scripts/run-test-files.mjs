@@ -24,6 +24,12 @@ const suites = {
     timeoutMs: Number(process.env.INTEGRATION_TEST_FILE_TIMEOUT_MS ?? 45_000),
     directory: join(projectRoot, 'tests', 'integration'),
     nodeArgs: ['--experimental-sqlite', '--import', 'tsx', '--test', '--test-reporter=tap']
+  },
+  contract: {
+    concurrency: Number(process.env.CONTRACT_TEST_CONCURRENCY ?? 3),
+    timeoutMs: Number(process.env.CONTRACT_TEST_FILE_TIMEOUT_MS ?? 45_000),
+    directory: join(projectRoot, 'tests', 'contract'),
+    nodeArgs: ['--experimental-sqlite', '--import', 'tsx', '--test', '--test-reporter=tap']
   }
 };
 

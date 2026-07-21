@@ -14,6 +14,16 @@ export type {
   SaveChapterContentCommand,
   SetLibraryIngestionStateCommand
 } from './library.contracts.js';
+export {
+  LIBRARY_ANALYSIS_RECONCILED,
+  LIBRARY_CHAPTER_CONTENT_SAVED,
+  LIBRARY_NOVEL_DELETED
+} from './library.events.js';
+export type {
+  LibraryAnalysisReconciledPayload,
+  LibraryChapterContentSavedPayload,
+  LibraryNovelDeletedPayload
+} from './library.events.js';
 export type {
   LibraryChapter,
   LibraryChapterStatus,

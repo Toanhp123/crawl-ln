@@ -68,6 +68,13 @@ export class LibrarySqliteRepository implements LibraryRepository {
     return row ? mapLibraryChapterRow(row) : null;
   }
 
+  readNovelTitleById(id: string): string | null {
+    const row = this.database.connection
+      .prepare('SELECT title FROM library_novels WHERE id = ?')
+      .get(id) as { title: string } | undefined;
+    return row?.title ?? null;
+  }
+
   findNovelById(id: string): Promise<LibraryNovelDetail | null> {
     return Promise.resolve(this.readNovelById(id));
   }

@@ -11,6 +11,14 @@ import type { LibraryChapter, LibraryNovelDetail } from '../../domain/library.mo
 import type { LibraryUnitOfWork } from '../../domain/repositories/library.repository.js';
 import { chapterSourceUrlKey } from '../../domain/url/chapter-source-url-key.js';
 import { assertNonBlank, assertTimestamp } from '../../domain/library.validation.js';
+import {
+  LIBRARY_ANALYSIS_RECONCILED,
+  LIBRARY_CHAPTER_CONTENT_SAVED,
+  LIBRARY_NOVEL_DELETED,
+  type LibraryAnalysisReconciledPayload,
+  type LibraryChapterContentSavedPayload,
+  type LibraryNovelDeletedPayload
+} from '../../public/library.events.js';
 import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import {
   libraryCommandReceiptRowSchema,
@@ -221,14 +229,14 @@ export class LibrarySqliteUnitOfWork implements LibraryUnitOfWork {
         throw new LibraryError('LIBRARY_NOT_FOUND', 'Reconciled novel was not persisted');
       const result = canonicalDetail(stored);
       this.appendEvent(
-        'library.analysis-reconciled',
+        LIBRARY_ANALYSIS_RECONCILED,
         command.commandId,
         command.analyzedAt,
         JSON.stringify({
           commandId: command.commandId,
           novel: result.detail.novel,
           chapters: result.detail.chapters
-        })
+        } satisfies LibraryAnalysisReconciledPayload)
       );
       this.recordReceipt(
         command.commandId,
@@ -259,6 +267,12 @@ export class LibrarySqliteUnitOfWork implements LibraryUnitOfWork {
           chapterId: command.chapterId
         });
       }
+      const novelTitle = this.repository.readNovelTitleById(command.novelId);
+      if (!novelTitle) {
+        throw new LibraryError('LIBRARY_NOT_FOUND', 'Library novel was not found', {
+          novelId: command.novelId
+        });
+      }
       const chapter = LibraryChapterEntity.create(current)
         .saveContent(command.rawText, command.cleanText, command.savedAt, command.title)
         .toPrimitives();
@@ -283,10 +297,14 @@ export class LibrarySqliteUnitOfWork implements LibraryUnitOfWork {
 
       const result = canonicalChapter(chapter);
       this.appendEvent(
-        'library.chapter-content-saved',
+        LIBRARY_CHAPTER_CONTENT_SAVED,
         command.commandId,
         command.savedAt,
-        JSON.stringify({ commandId: command.commandId, chapter: result.chapter })
+        JSON.stringify({
+          commandId: command.commandId,
+          novelTitle,
+          chapter: result.chapter
+        } satisfies LibraryChapterContentSavedPayload)
       );
       this.recordReceipt(
         command.commandId,
@@ -361,10 +379,13 @@ export class LibrarySqliteUnitOfWork implements LibraryUnitOfWork {
         .prepare('DELETE FROM library_novels WHERE id = ?')
         .run(command.novelId);
       this.appendEvent(
-        'library.novel-deleted',
+        LIBRARY_NOVEL_DELETED,
         command.commandId,
         command.deletedAt,
-        JSON.stringify({ commandId: command.commandId, novelId: command.novelId })
+        JSON.stringify({
+          commandId: command.commandId,
+          novelId: command.novelId
+        } satisfies LibraryNovelDeletedPayload)
       );
       this.recordReceipt(command.commandId, commandTypes.deleteNovel, null, command.deletedAt);
     });

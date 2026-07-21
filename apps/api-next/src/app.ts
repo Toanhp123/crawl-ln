@@ -4,6 +4,7 @@ import {
   createSchedulerNovelRoutes,
   createSchedulerRoutes
 } from './modules/scheduler/presentation/scheduler.routes.js';
+import { createSearchRoutes } from './modules/search/presentation/search.routes.js';
 import { createSourceReaderRoutes } from './modules/source-reader/presentation/source-reader.routes.js';
 import { environment, type NextEnvironment } from './platform/config/environment.js';
 import { apiAccessMiddleware } from './platform/http/api-access.middleware.js';
@@ -29,6 +30,7 @@ export function createNextAppRuntime(
   app.use('/api', apiAccessMiddleware({ remoteToken: runtimeEnvironment.apiRemoteToken }));
   app.use('/api/scheduler', createSchedulerRoutes(container.presentation.scheduler.controller));
   app.use('/api/novels', createSchedulerNovelRoutes(container.presentation.scheduler.controller));
+  app.use('/api/search', createSearchRoutes(container.presentation.search.controller));
   app.use('/api/source-reader', createSourceReaderRoutes(container.presentation.sourceReader));
   app.use('/api', notFoundMiddleware);
   app.use(errorMiddleware);

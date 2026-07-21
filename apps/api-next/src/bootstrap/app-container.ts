@@ -6,6 +6,7 @@ import {
 } from '../modules/ingestion/infrastructure/robots-txt-access-policy.adapter.js';
 import { createLibraryModule } from '../modules/library/library.module.js';
 import { createSchedulerModule } from '../modules/scheduler/scheduler.module.js';
+import { createSearchModule } from '../modules/search/search.module.js';
 import { createSourceReaderModule } from '../modules/source-reader/source-reader.module.js';
 import type { NextEnvironment } from '../platform/config/environment.js';
 import { runRegisteredMigrations } from '../platform/database/migration-runner.js';
@@ -50,7 +51,13 @@ export function createAppContainer(environment: NextEnvironment) {
     ids,
     logger
   });
-  modules.register(library, sourceReader, ingestion, scheduler);
+  const search = createSearchModule({
+    database,
+    library: library.api.queries,
+    events,
+    clock
+  });
+  modules.register(library, sourceReader, ingestion, scheduler, search);
   const migrations = modules.migrationRegistry();
   const outbox = new OutboxDispatcher(modules.outboxSources(), events, clock, logger, {
     batchSize: environment.outboxBatchSize
@@ -68,7 +75,8 @@ export function createAppContainer(environment: NextEnvironment) {
     library: Object.freeze({ routePrefix: '/api/novels' }),
     ingestion: Object.freeze({ routePrefix: '/api/crawl' }),
     sourceReader: sourceReader.presentation,
-    scheduler: scheduler.presentation
+    scheduler: scheduler.presentation,
+    search: search.presentation
   });
 
   return { lifecycle, presentation };

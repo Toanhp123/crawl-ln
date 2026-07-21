@@ -12,8 +12,8 @@ export class IngestionQueriesService implements IngestionQueries {
     return this.repository.findById(id);
   }
 
-  getJobEvents(id: string) {
-    return this.repository.findEvents(id);
+  getJobEvents(id: string, limit?: number) {
+    return this.repository.findEvents(id, limit);
   }
 
   getNovelJob(novelId: string) {

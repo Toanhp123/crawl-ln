@@ -7,6 +7,8 @@ export type IngestionErrorCode =
   | 'INGESTION_CONFLICT';
 
 export class IngestionError extends Error {
+  readonly kind: 'bad_request' | 'forbidden' | 'not_found' | 'conflict';
+
   constructor(
     readonly code: IngestionErrorCode,
     message: string,
@@ -14,6 +16,14 @@ export class IngestionError extends Error {
   ) {
     super(message);
     this.name = 'IngestionError';
+    this.kind =
+      code === 'INGESTION_VALIDATION_ERROR'
+        ? 'bad_request'
+        : code === 'INGESTION_SOURCE_POLICY_DENIED'
+          ? 'forbidden'
+          : code === 'INGESTION_NOT_FOUND'
+            ? 'not_found'
+            : 'conflict';
   }
 
   static validation(message: string, details?: unknown): IngestionError {

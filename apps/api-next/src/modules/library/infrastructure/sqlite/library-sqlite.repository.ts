@@ -1,12 +1,14 @@
 import type { SQLInputValue } from 'node:sqlite';
-import type { ListLibraryNovelsQuery } from '../../domain/library.contracts.js';
 import type {
   LibraryChapter,
   LibraryNovelDetail,
   LibraryStats,
   PaginatedLibraryNovels
 } from '../../domain/library.models.js';
-import type { LibraryRepository } from '../../domain/repositories/library.repository.js';
+import type {
+  LibraryCatalogQuery,
+  LibraryRepository
+} from '../../domain/repositories/library.repository.js';
 import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import { mapLibraryChapterRow, mapLibraryNovelRow } from './library-row.schemas.js';
 
@@ -83,7 +85,7 @@ export class LibrarySqliteRepository implements LibraryRepository {
     return Promise.resolve(this.readNovelBySourceUrl(sourceUrl));
   }
 
-  listNovels(query: ListLibraryNovelsQuery): Promise<PaginatedLibraryNovels> {
+  listNovels(query: LibraryCatalogQuery): Promise<PaginatedLibraryNovels> {
     const where: string[] = [];
     const values: SQLInputValue[] = [];
     const keyword = query.q?.trim();
@@ -94,6 +96,8 @@ export class LibrarySqliteRepository implements LibraryRepository {
     }
     if (query.status === 'active') {
       where.push("n.status <> 'completed'");
+    } else if (query.status === 'importing') {
+      where.push("n.status IN ('analyzed', 'crawling')");
     } else if (query.status && query.status !== 'all') {
       where.push('n.status = ?');
       values.push(query.status);

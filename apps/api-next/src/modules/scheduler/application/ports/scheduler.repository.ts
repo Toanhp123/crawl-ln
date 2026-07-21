@@ -14,6 +14,7 @@ export interface SchedulerRepository {
     now: string;
   }): Promise<SchedulerPolicy>;
   findPolicy(novelId: string): Promise<SchedulerPolicy | null>;
+  findPolicies(novelIds: string[]): Promise<SchedulerPolicy[]>;
   listDue(now: string, limit: number): Promise<SchedulerPolicy[]>;
   countMonitored(): Promise<number>;
   countDue(now: string): Promise<number>;

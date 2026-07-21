@@ -42,6 +42,7 @@
     "test:e2e:install": "playwright install --with-deps chromium",
     "verify": "node scripts/verify.mjs",
     "verify:v3:foundation": "npm run check:api-next-arch && npm run check:api-next && npm run test:contract && node --experimental-sqlite --import tsx --test tests/integration/api-next-*.test.ts",
+    "verify:v3:backend": "npm run check:api-next-arch && npm run check:api-next && npm run build:api-next && npm run test:contract && npm run test:regression && npm run test:integration",
     "format": "prettier --write \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
     "build:prepared": "node scripts/build-prepared.mjs",

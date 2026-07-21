@@ -15,6 +15,8 @@ export interface IngestionSourceMetadata {
   sourceName: string;
   author?: string;
   coverUrl?: string;
+  description?: string;
+  status?: 'ongoing' | 'completed' | 'hiatus' | 'cancelled' | 'unknown';
 }
 
 export interface IngestionSourceChapter {

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { resolve } from 'node:path';
 import { z } from 'zod';
+import { isLoopbackAddress } from '../http/network-address.js';
 
 const environmentSchema = z.object({
   NEXT_API_HOST: z.string().trim().min(1).default('127.0.0.1'),
@@ -8,6 +9,7 @@ const environmentSchema = z.object({
   NEXT_DATABASE_PATH: z.string().trim().min(1).optional(),
   NEXT_STORAGE_DIR: z.string().trim().min(1).optional(),
   STORAGE_DIR: z.string().trim().min(1).optional(),
+  API_CORS_ORIGINS: z.string().optional(),
   NEXT_OUTBOX_BATCH_SIZE: z.coerce.number().int().min(1).default(50),
   NEXT_OUTBOX_INTERVAL_MS: z.coerce.number().int().min(1).default(1_000)
 });
@@ -18,6 +20,7 @@ export interface NextEnvironment {
   databasePath: string;
   storageDirectory?: string;
   appVersion?: string;
+  apiCorsOrigins?: string[];
   outboxBatchSize: number;
   outboxIntervalMs: number;
   crawlerDelayMs: number;
@@ -59,6 +62,22 @@ function lowerListEnv(source: NodeJS.ProcessEnv, name: string): string[] {
     .filter(Boolean);
 }
 
+function corsOrigins(value?: string): string[] {
+  const origins = (value === undefined ? 'http://127.0.0.1:5173,http://localhost:5173' : value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (origins.length === 0) throw new Error('API_CORS_ORIGINS must not be empty');
+  if (origins.includes('*')) throw new Error('API_CORS_ORIGINS wildcard is not allowed');
+  for (const origin of origins) {
+    const parsed = new URL(origin);
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.origin !== origin) {
+      throw new Error(`API_CORS_ORIGINS contains an invalid origin: ${origin}`);
+    }
+  }
+  return [...new Set(origins)];
+}
+
 function optionalBase64Key(source: NodeJS.ProcessEnv, name: string): Buffer | undefined {
   const value = source[name];
   if (!value) return undefined;
@@ -78,6 +97,10 @@ function trustedKeys(
 
 export function createEnvironment(source: NodeJS.ProcessEnv = process.env): NextEnvironment {
   const parsed = environmentSchema.parse(source);
+  const apiRemoteToken = source.API_REMOTE_TOKEN?.trim() || undefined;
+  if (!isLoopbackAddress(parsed.NEXT_API_HOST) && (!apiRemoteToken || apiRemoteToken.length < 32)) {
+    throw new Error('API_REMOTE_TOKEN must contain at least 32 characters for non-loopback HOST');
+  }
   const storageDirectory =
     parsed.NEXT_STORAGE_DIR ?? parsed.STORAGE_DIR ?? './apps/api-next/storage';
   return {
@@ -88,12 +111,13 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Next
       : resolve(storageDirectory, 'novel-tool.sqlite'),
     storageDirectory: resolve(storageDirectory),
     appVersion: source.APP_VERSION ?? '2.9.6',
+    apiCorsOrigins: corsOrigins(parsed.API_CORS_ORIGINS),
     outboxBatchSize: parsed.NEXT_OUTBOX_BATCH_SIZE,
     outboxIntervalMs: parsed.NEXT_OUTBOX_INTERVAL_MS,
     crawlerDelayMs: numberEnv(source, 'CRAWLER_DELAY_MS', 600),
     maxExportSourceBytes: numberEnv(source, 'MAX_EXPORT_SOURCE_BYTES', 128 * 1024 * 1024),
     sourceAllowlist: lowerListEnv(source, 'SOURCE_ALLOWLIST'),
-    apiRemoteToken: source.API_REMOTE_TOKEN?.trim() || undefined,
+    apiRemoteToken,
     requestTimeoutMs: numberEnv(source, 'REQUEST_TIMEOUT_MS', 15_000),
     sourceReaderCursorKey:
       source.SOURCE_READER_CURSOR_KEY ?? 'development-only-source-reader-cursor-key-32-bytes',

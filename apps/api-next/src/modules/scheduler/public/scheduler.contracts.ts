@@ -2,6 +2,7 @@ import type {
   AutoUpdateInterval,
   ScheduledNovel,
   SchedulerDiagnostic,
+  SchedulerPolicy,
   SchedulerStatus
 } from '../domain/scheduler.models.js';
 
@@ -17,6 +18,8 @@ export interface SchedulerCommands {
 
 export interface SchedulerQueries {
   status(): Promise<SchedulerStatus>;
+  getPolicy(novelId: string): Promise<SchedulerPolicy | null>;
+  getPolicies(novelIds: string[]): Promise<SchedulerPolicy[]>;
   listDiagnostics(novelId: string): Promise<SchedulerDiagnostic[]>;
 }
 

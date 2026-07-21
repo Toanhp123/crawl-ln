@@ -12,10 +12,14 @@ import type {
   PaginatedLibraryNovels
 } from '../library.models.js';
 
+export type LibraryCatalogQuery = Omit<ListLibraryNovelsQuery, 'status'> & {
+  status?: NonNullable<ListLibraryNovelsQuery['status']> | 'importing';
+};
+
 export interface LibraryRepository {
   findNovelById(id: string): Promise<LibraryNovelDetail | null>;
   findNovelBySourceUrl(sourceUrl: string): Promise<LibraryNovelDetail | null>;
-  listNovels(query: ListLibraryNovelsQuery): Promise<PaginatedLibraryNovels>;
+  listNovels(query: LibraryCatalogQuery): Promise<PaginatedLibraryNovels>;
   getStats(): Promise<LibraryStats>;
   getChapter(novelId: string, chapterIndex: number): Promise<LibraryChapter | null>;
 }

@@ -24,12 +24,16 @@ export class IngestionQueueService {
   private readonly controllers = new Map<string, AbortController>();
   private readonly processes = new Map<string, Promise<void>>();
   private stopping = false;
+  private maintenance = false;
 
   constructor(private readonly options: QueueOptions) {}
 
   enqueue(jobId: string): void {
     if (this.stopping)
       throw new IngestionError('INGESTION_CONFLICT', 'Ingestion queue is stopping');
+    if (this.maintenance) {
+      throw new IngestionError('INGESTION_CONFLICT', 'Ingestion queue is in maintenance mode');
+    }
     if (this.enqueued.has(jobId) || this.running.has(jobId)) return;
     this.enqueued.add(jobId);
     this.cancelled.delete(jobId);
@@ -114,6 +118,23 @@ export class IngestionQueueService {
       }
     }
     return recovered;
+  }
+
+  beginMaintenance(): void {
+    if (this.maintenance) {
+      throw new IngestionError('INGESTION_CONFLICT', 'Ingestion queue is in maintenance mode');
+    }
+    if (this.processes.size > 0 || this.enqueued.size > 0 || this.running.size > 0) {
+      throw new IngestionError(
+        'INGESTION_CONFLICT',
+        'Wait for active crawl tasks to finish before restoring a backup'
+      );
+    }
+    this.maintenance = true;
+  }
+
+  endMaintenance(): void {
+    this.maintenance = false;
   }
 
   async stop(): Promise<void> {

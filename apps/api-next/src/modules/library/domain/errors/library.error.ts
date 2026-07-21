@@ -5,6 +5,8 @@ export type LibraryErrorCode =
   | 'LIBRARY_CONFLICT';
 
 export class LibraryError extends Error {
+  readonly kind: 'validation' | 'not_found' | 'conflict';
+
   constructor(
     readonly code: LibraryErrorCode,
     message: string,
@@ -12,6 +14,12 @@ export class LibraryError extends Error {
   ) {
     super(message);
     this.name = 'LibraryError';
+    this.kind =
+      code === 'LIBRARY_VALIDATION_ERROR'
+        ? 'validation'
+        : code === 'LIBRARY_NOT_FOUND'
+          ? 'not_found'
+          : 'conflict';
   }
 
   static validation(message: string, details?: unknown): LibraryError {

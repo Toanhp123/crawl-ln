@@ -103,6 +103,17 @@ export class SchedulerSqliteRepository implements SchedulerRepository {
     return row ? mapPolicy(row) : null;
   }
 
+  async findPolicies(novelIds: string[]): Promise<SchedulerPolicy[]> {
+    if (novelIds.length === 0) return [];
+    return this.database.connection
+      .prepare(
+        `SELECT * FROM scheduler_policies
+         WHERE novel_id IN (${novelIds.map(() => '?').join(', ')})`
+      )
+      .all(...novelIds)
+      .map(mapPolicy);
+  }
+
   async listDue(now: string, limit: number): Promise<SchedulerPolicy[]> {
     return this.database.connection
       .prepare(

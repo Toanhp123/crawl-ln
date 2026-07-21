@@ -2,6 +2,7 @@ import { DeleteLibraryNovelCommandHandler } from './application/commands/delete-
 import { ReconcileAnalysisCommandHandler } from './application/commands/reconcile-analysis.command.js';
 import { SaveChapterContentCommandHandler } from './application/commands/save-chapter-content.command.js';
 import { SetIngestionStateCommandHandler } from './application/commands/set-ingestion-state.command.js';
+import { LibraryCatalogQueryService } from './application/queries/library-catalog.query.js';
 import { LibraryQueriesService } from './application/queries/library-queries.service.js';
 import { libraryMigrations } from './index.js';
 import { LibraryBackupContributor } from './infrastructure/backup/library-backup.contributor.js';
@@ -19,6 +20,7 @@ export function createLibraryModule(database: SqliteDatabase) {
   const setIngestionState = new SetIngestionStateCommandHandler(unitOfWork);
   const deleteNovel = new DeleteLibraryNovelCommandHandler(unitOfWork);
   const queries = new LibraryQueriesService(repository);
+  const catalog = new LibraryCatalogQueryService(repository);
   const api: LibraryApi = {
     commands: {
       reconcileAnalysis: (command) => reconcileAnalysis.execute(command),
@@ -33,6 +35,7 @@ export function createLibraryModule(database: SqliteDatabase) {
     name: 'library',
     migrations: libraryMigrations,
     api,
+    application: { catalog },
     backup: new LibraryBackupContributor(database),
     outbox: new LibrarySqliteOutboxSource(database)
   };

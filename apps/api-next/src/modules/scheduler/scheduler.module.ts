@@ -3,6 +3,7 @@ import type { LibraryQueries } from '../library/public/library.api.js';
 import type { SqliteDatabase } from '../../platform/database/sqlite-database.js';
 import type { ApplicationEvent } from '../../platform/events/application-event.js';
 import type { EventBus } from '../../platform/events/event-bus.js';
+import type { RealtimeEventPublisher } from '../../platform/realtime/realtime-event.js';
 import { UpdateSchedulerPolicyCommandHandler } from './application/commands/update-scheduler-policy.command.js';
 import {
   SCHEDULER_DIAGNOSTIC_RECORDED,
@@ -26,6 +27,7 @@ interface SchedulerModuleOptions {
   clock: { now(): Date };
   ids: { randomId(): string };
   logger: { error(message: string): void };
+  realtime?: RealtimeEventPublisher;
   tickIntervalMs?: number;
 }
 
@@ -52,6 +54,8 @@ export function createSchedulerModule(options: SchedulerModuleOptions) {
     commands: { updatePolicy: (command) => updatePolicy.execute(command) },
     queries: {
       status: () => scheduler.status(),
+      getPolicy: (novelId) => queries.getPolicy(novelId),
+      getPolicies: (novelIds) => queries.getPolicies(novelIds),
       listDiagnostics: (novelId) => queries.listDiagnostics(novelId)
     },
     lifecycle: { tick: () => scheduler.tick() }
@@ -63,7 +67,7 @@ export function createSchedulerModule(options: SchedulerModuleOptions) {
     migrations: schedulerMigrations,
     api,
     backup: new SchedulerBackupContributor(options.database),
-    presentation: { controller: new SchedulerController(api) },
+    presentation: { controller: new SchedulerController(api, options.realtime) },
     async start() {
       unsubscribe ??= options.events.subscribe<SchedulerDiagnosticRecordedPayload>(
         SCHEDULER_DIAGNOSTIC_RECORDED,

@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '../../i18n';
 import { Button } from '../actions/Button';
 
 export function Pagination({

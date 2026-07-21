@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '../../lib/cn';
 export function StickyActionBar({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div

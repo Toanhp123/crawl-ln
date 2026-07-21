@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '../../lib/cn';
 
 const variants = cva('border border-border text-text', {
   variants: {

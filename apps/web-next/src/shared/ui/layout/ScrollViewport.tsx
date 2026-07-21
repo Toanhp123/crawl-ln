@@ -1,5 +1,5 @@
 import { createContext, type MutableRefObject, type ReactNode, useContext, useRef } from 'react';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '../../lib/cn';
 
 const ScrollViewportContext = createContext<MutableRefObject<HTMLElement | null> | null>(null);
 

@@ -1,8 +1,8 @@
 import { Search, X } from 'lucide-react';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '../../i18n';
 import { Input } from './Input';
 import { IconButton } from '../actions/IconButton';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '../../lib/cn';
 
 export function SearchInput({
   value,

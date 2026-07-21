@@ -41,7 +41,9 @@ function testEnvironment(): NextEnvironment {
     port: 3100,
     databasePath: ':memory:',
     outboxBatchSize: 10,
-    outboxIntervalMs: 1_000
+    outboxIntervalMs: 1_000,
+    crawlerDelayMs: 600,
+    sourceAllowlist: []
   };
 }
 

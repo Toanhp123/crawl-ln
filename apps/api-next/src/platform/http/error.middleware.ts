@@ -5,9 +5,46 @@ import type { SourceReaderErrorCode } from '../../modules/source-reader/domain/e
 import { redactStructuredValue } from '../../modules/source-reader/application/services/source-reader-structured-logger.js';
 import { fail } from './api-response.js';
 
+type ApplicationFailureKind = 'validation' | 'bad_request' | 'forbidden' | 'not_found' | 'conflict';
+
+type ApplicationFailure = Error & {
+  readonly kind: ApplicationFailureKind;
+  readonly details?: unknown;
+};
+
+function isApplicationFailure(error: unknown): error is ApplicationFailure {
+  if (!(error instanceof Error) || !('kind' in error)) return false;
+  return ['validation', 'bad_request', 'forbidden', 'not_found', 'conflict'].includes(
+    String(error.kind)
+  );
+}
+
+function applicationFailureResponse(error: ApplicationFailure): {
+  status: number;
+  code: Parameters<typeof fail>[2];
+} {
+  switch (error.kind) {
+    case 'validation':
+      return { status: 400, code: 'VALIDATION_ERROR' };
+    case 'bad_request':
+      return { status: 400, code: 'BAD_REQUEST' };
+    case 'forbidden':
+      return { status: 403, code: 'FORBIDDEN' };
+    case 'not_found':
+      return { status: 404, code: 'NOT_FOUND' };
+    case 'conflict':
+      return { status: 409, code: 'CONFLICT' };
+  }
+}
+
 export const errorMiddleware: ErrorRequestHandler = (error, _request, response, _next) => {
   if (error instanceof ZodError) {
     return fail(response, 400, 'VALIDATION_ERROR', 'Validation failed', error.issues);
+  }
+
+  if (isApplicationFailure(error)) {
+    const mapped = applicationFailureResponse(error);
+    return fail(response, mapped.status, mapped.code, error.message, error.details);
   }
 
   if (error instanceof SourceReaderError) {

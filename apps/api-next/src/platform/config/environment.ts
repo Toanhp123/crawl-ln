@@ -18,6 +18,8 @@ export interface NextEnvironment {
   databasePath: string;
   outboxBatchSize: number;
   outboxIntervalMs: number;
+  crawlerDelayMs: number;
+  sourceAllowlist: string[];
   apiRemoteToken?: string;
   requestTimeoutMs?: number;
   sourceReaderCursorKey?: string;
@@ -45,6 +47,13 @@ function boolEnv(source: NodeJS.ProcessEnv, name: string, fallback: boolean): bo
 function numberEnv(source: NodeJS.ProcessEnv, name: string, fallback: number): number {
   const value = Number(source[name]);
   return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function lowerListEnv(source: NodeJS.ProcessEnv, name: string): string[] {
+  return (source[name] ?? '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 function optionalBase64Key(source: NodeJS.ProcessEnv, name: string): Buffer | undefined {
@@ -76,6 +85,8 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Next
       : resolve(storageDirectory, 'novel-tool.sqlite'),
     outboxBatchSize: parsed.NEXT_OUTBOX_BATCH_SIZE,
     outboxIntervalMs: parsed.NEXT_OUTBOX_INTERVAL_MS,
+    crawlerDelayMs: numberEnv(source, 'CRAWLER_DELAY_MS', 600),
+    sourceAllowlist: lowerListEnv(source, 'SOURCE_ALLOWLIST'),
     apiRemoteToken: source.API_REMOTE_TOKEN?.trim() || undefined,
     requestTimeoutMs: numberEnv(source, 'REQUEST_TIMEOUT_MS', 15_000),
     sourceReaderCursorKey:

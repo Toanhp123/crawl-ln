@@ -1,5 +1,9 @@
 import express, { type Express } from 'express';
 import { createAppContainer } from './bootstrap/app-container.js';
+import {
+  createSchedulerNovelRoutes,
+  createSchedulerRoutes
+} from './modules/scheduler/presentation/scheduler.routes.js';
 import { createSourceReaderRoutes } from './modules/source-reader/presentation/source-reader.routes.js';
 import { environment, type NextEnvironment } from './platform/config/environment.js';
 import { apiAccessMiddleware } from './platform/http/api-access.middleware.js';
@@ -23,6 +27,8 @@ export function createNextAppRuntime(
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_request, response) => ok(response, { ok: true, name: 'novel-tool' }));
   app.use('/api', apiAccessMiddleware({ remoteToken: runtimeEnvironment.apiRemoteToken }));
+  app.use('/api/scheduler', createSchedulerRoutes(container.presentation.scheduler.controller));
+  app.use('/api/novels', createSchedulerNovelRoutes(container.presentation.scheduler.controller));
   app.use('/api/source-reader', createSourceReaderRoutes(container.presentation.sourceReader));
   app.use('/api', notFoundMiddleware);
   app.use(errorMiddleware);

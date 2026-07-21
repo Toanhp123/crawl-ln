@@ -1,5 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import { createIngestionModule } from '../modules/ingestion/ingestion.module.js';
+import {
+  AxiosRobotsTextClient,
+  RobotsTxtAccessPolicyAdapter
+} from '../modules/ingestion/infrastructure/robots-txt-access-policy.adapter.js';
 import { createLibraryModule } from '../modules/library/library.module.js';
+import { createSchedulerModule } from '../modules/scheduler/scheduler.module.js';
 import { createSourceReaderModule } from '../modules/source-reader/source-reader.module.js';
 import type { NextEnvironment } from '../platform/config/environment.js';
 import { runRegisteredMigrations } from '../platform/database/migration-runner.js';
@@ -16,10 +22,36 @@ export function createAppContainer(environment: NextEnvironment) {
   const modules = new ModuleRegistry();
   const clock = new SystemClock();
   const logger = new ConsoleLogger();
-  const sourceReader = createSourceReaderModule({ database, environment, clock, logger });
-  modules.register(createLibraryModule(database), createIngestionModule(), sourceReader);
-  const migrations = modules.migrationRegistry();
+  const ids = { randomId: randomUUID };
   const events = new InMemoryEventBus();
+  const library = createLibraryModule(database);
+  const sourceReader = createSourceReaderModule({ database, environment, clock, logger });
+  const ingestion = createIngestionModule({
+    database,
+    library: library.api,
+    sourceReader: sourceReader.api,
+    sourceAccessPolicy: new RobotsTxtAccessPolicyAdapter({
+      http: new AxiosRobotsTextClient(),
+      sourceAllowlist: environment.sourceAllowlist,
+      defaultCrawlDelayMs: environment.crawlerDelayMs,
+      requestTimeoutMs: environment.requestTimeoutMs ?? 15_000,
+      now: () => clock.now().getTime()
+    }),
+    ids,
+    clock,
+    logger
+  });
+  const scheduler = createSchedulerModule({
+    database,
+    library: library.api.queries,
+    ingestion: ingestion.api.commands,
+    events,
+    clock,
+    ids,
+    logger
+  });
+  modules.register(library, sourceReader, ingestion, scheduler);
+  const migrations = modules.migrationRegistry();
   const outbox = new OutboxDispatcher(modules.outboxSources(), events, clock, logger, {
     batchSize: environment.outboxBatchSize
   });
@@ -35,7 +67,8 @@ export function createAppContainer(environment: NextEnvironment) {
   const presentation = Object.freeze({
     library: Object.freeze({ routePrefix: '/api/novels' }),
     ingestion: Object.freeze({ routePrefix: '/api/crawl' }),
-    sourceReader: sourceReader.presentation
+    sourceReader: sourceReader.presentation,
+    scheduler: scheduler.presentation
   });
 
   return { lifecycle, presentation };

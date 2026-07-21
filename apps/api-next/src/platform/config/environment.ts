@@ -1,7 +1,12 @@
-import 'dotenv/config';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
 import { isLoopbackAddress } from '../http/network-address.js';
+
+const apiNextRootDirectory = fileURLToPath(new URL('../../../', import.meta.url));
+loadDotenv({ path: resolve(apiNextRootDirectory, '.env') });
+const defaultStorageDirectory = resolve(apiNextRootDirectory, 'storage');
 
 const environmentSchema = z.object({
   NEXT_API_HOST: z.string().trim().min(1).default('127.0.0.1'),
@@ -62,6 +67,10 @@ function lowerListEnv(source: NodeJS.ProcessEnv, name: string): string[] {
     .filter(Boolean);
 }
 
+function resolveApiNextPath(value: string): string {
+  return resolve(apiNextRootDirectory, value);
+}
+
 function corsOrigins(value?: string): string[] {
   const origins = (value === undefined ? 'http://127.0.0.1:5173,http://localhost:5173' : value)
     .split(',')
@@ -101,15 +110,17 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Next
   if (!isLoopbackAddress(parsed.NEXT_API_HOST) && (!apiRemoteToken || apiRemoteToken.length < 32)) {
     throw new Error('API_REMOTE_TOKEN must contain at least 32 characters for non-loopback HOST');
   }
-  const storageDirectory =
-    parsed.NEXT_STORAGE_DIR ?? parsed.STORAGE_DIR ?? './apps/api-next/storage';
+  const configuredStorageDirectory = parsed.NEXT_STORAGE_DIR ?? parsed.STORAGE_DIR;
+  const storageDirectory = configuredStorageDirectory
+    ? resolveApiNextPath(configuredStorageDirectory)
+    : defaultStorageDirectory;
   return {
     host: parsed.NEXT_API_HOST,
     port: parsed.NEXT_API_PORT,
     databasePath: parsed.NEXT_DATABASE_PATH
-      ? resolve(parsed.NEXT_DATABASE_PATH)
+      ? resolveApiNextPath(parsed.NEXT_DATABASE_PATH)
       : resolve(storageDirectory, 'novel-tool.sqlite'),
-    storageDirectory: resolve(storageDirectory),
+    storageDirectory,
     appVersion: source.APP_VERSION ?? '2.9.6',
     apiCorsOrigins: corsOrigins(parsed.API_CORS_ORIGINS),
     outboxBatchSize: parsed.NEXT_OUTBOX_BATCH_SIZE,
@@ -137,8 +148,9 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Next
     ),
     sourceReaderLocalAdmin: boolEnv(source, 'SOURCE_READER_LOCAL_ADMIN', false),
     sourceReaderTrustRoleHeaders: boolEnv(source, 'SOURCE_READER_TRUST_ROLE_HEADERS', false),
-    sourceReaderPluginDir:
-      source.SOURCE_READER_PLUGIN_DIR ?? resolve(storageDirectory, 'source-plugins'),
+    sourceReaderPluginDir: source.SOURCE_READER_PLUGIN_DIR
+      ? resolveApiNextPath(source.SOURCE_READER_PLUGIN_DIR)
+      : resolve(storageDirectory, 'source-plugins'),
     sourceReaderTrustedKeys: trustedKeys(source)
   };
 }

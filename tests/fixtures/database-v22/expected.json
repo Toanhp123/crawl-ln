@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 22,
+  "ids": {
+    "novelId": "fixture-novel",
+    "chapterId": "fixture-chapter",
+    "taskId": "fixture-task",
+    "pluginId": "fixture-plugin"
+  },
+  "counts": {
+    "novels": 1,
+    "chapters": 1,
+    "tasks": 1,
+    "plugins": 1
+  }
+}

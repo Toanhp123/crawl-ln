@@ -14,7 +14,7 @@ test('verify runner executes canonical gates without nested npm test scripts', a
     ),
     [
       'command:check:lockfile',
-      'command:prepare:shared',
+      'command:prepare:packages',
       'command:check:prepared',
       'command:build:prepared',
       'suite:regression',

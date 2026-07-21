@@ -21,6 +21,7 @@
     "check": "npm run prepare:packages && npm run check:prepared",
     "check:api": "npm run prepare:packages && npm run check -w @novel-tool/api",
     "check:api-next": "npm run prepare:packages && npm run check -w @novel-tool/api-next",
+    "check:api-next-arch": "node scripts/check-api-next-architecture.mjs",
     "check:web": "npm run prepare:packages && npm run check -w @novel-tool/web",
     "check:sdk": "npm run check -w @novel-tool/source-plugin-sdk",
     "check:arch": "node scripts/check-api-architecture.mjs",

@@ -119,7 +119,7 @@ Requests may include `credentialProfileId`, `networkProfileId`, `freshOnly`, and
 - network profile list/create/update/delete/test endpoints
 - auth challenge list/get/respond/cancel endpoints
 
-The API binds to loopback by default. Local administration is enabled only with `SOURCE_READER_LOCAL_ADMIN=true`; otherwise actors receive the `reader` role. Remote API access requires the configured bearer token, and role headers remain disabled unless explicitly trusted. Role and ownership checks run before repository, vault, runtime, or browser access. Responses expose metadata only; they never return credential values, proxy endpoints, browser cookies, filesystem paths, or raw stack traces.
+The API binds to loopback by default. Local administration is enabled only with `SOURCE_READER_LOCAL_ADMIN=true`; otherwise actors receive the `reader` role. A local request without `x-source-reader-user-id` receives the stable `local-user` identity, which is the default local owner. Remote API access requires the configured bearer token. Remote `x-source-reader-user-id` and `x-source-reader-roles` headers are both ignored unless `SOURCE_READER_TRUST_ROLE_HEADERS=true` and the request is authenticated; enabling that option delegates actor identity and role assertions to the trusted client. Role and ownership checks run before repository, vault, runtime, or browser access. Responses expose metadata only; they never return credential values, proxy endpoints, browser cookies, filesystem paths, or raw stack traces.
 
 ## Web administration console
 

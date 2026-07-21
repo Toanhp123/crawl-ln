@@ -64,6 +64,51 @@ test('actor middleware defaults to reader and grants local administration only w
   });
 });
 
+test('local requests receive a stable actor identity without headers', () => {
+  const request = {
+    apiAccess: { isLocal: true, authenticated: true },
+    header: () => undefined
+  };
+  sourceReaderActorMiddleware({ localAdminEnabled: false, trustRoleHeaders: false })(
+    request as never,
+    {} as never,
+    () => undefined
+  );
+  assert.deepEqual((request as { sourceReaderActor?: unknown }).sourceReaderActor, {
+    id: 'local-user',
+    roles: ['reader']
+  });
+});
+
+test('untrusted remote requests cannot assert a user identity', () => {
+  const request = actorRequest({ isLocal: false, authenticated: true });
+  sourceReaderActorMiddleware({ localAdminEnabled: false, trustRoleHeaders: false })(
+    request as never,
+    {} as never,
+    () => undefined
+  );
+  assert.deepEqual((request as { sourceReaderActor?: unknown }).sourceReaderActor, {
+    roles: ['reader']
+  });
+});
+
+test('trusted authenticated remote requests may assert identity and roles', () => {
+  const request = actorRequest({
+    isLocal: false,
+    authenticated: true,
+    roles: 'source-manager'
+  });
+  sourceReaderActorMiddleware({ localAdminEnabled: false, trustRoleHeaders: true })(
+    request as never,
+    {} as never,
+    () => undefined
+  );
+  assert.deepEqual((request as { sourceReaderActor?: unknown }).sourceReaderActor, {
+    id: 'user-1',
+    roles: ['source-manager']
+  });
+});
+
 test('role headers cannot elevate by default and require authenticated explicit trust remotely', () => {
   const ignored = actorRequest({ isLocal: false, authenticated: true, roles: 'system-admin' });
   sourceReaderActorMiddleware({ localAdminEnabled: true, trustRoleHeaders: false })(
@@ -72,7 +117,6 @@ test('role headers cannot elevate by default and require authenticated explicit 
     () => undefined
   );
   assert.deepEqual((ignored as { sourceReaderActor?: unknown }).sourceReaderActor, {
-    id: 'user-1',
     roles: ['reader']
   });
 
@@ -87,7 +131,6 @@ test('role headers cannot elevate by default and require authenticated explicit 
     () => undefined
   );
   assert.deepEqual((unauthenticated as { sourceReaderActor?: unknown }).sourceReaderActor, {
-    id: 'user-1',
     roles: ['reader']
   });
 

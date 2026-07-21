@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { createExportModule } from '../modules/export/export.module.js';
 import { createIngestionModule } from '../modules/ingestion/ingestion.module.js';
 import {
   AxiosRobotsTextClient,
@@ -57,7 +58,11 @@ export function createAppContainer(environment: NextEnvironment) {
     events,
     clock
   });
-  modules.register(library, sourceReader, ingestion, scheduler, search);
+  const exports = createExportModule({
+    library: library.api.queries,
+    maxSourceBytes: environment.maxExportSourceBytes
+  });
+  modules.register(library, sourceReader, ingestion, scheduler, search, exports);
   const migrations = modules.migrationRegistry();
   const outbox = new OutboxDispatcher(modules.outboxSources(), events, clock, logger, {
     batchSize: environment.outboxBatchSize
@@ -76,7 +81,8 @@ export function createAppContainer(environment: NextEnvironment) {
     ingestion: Object.freeze({ routePrefix: '/api/crawl' }),
     sourceReader: sourceReader.presentation,
     scheduler: scheduler.presentation,
-    search: search.presentation
+    search: search.presentation,
+    exports: exports.presentation
   });
 
   return { lifecycle, presentation };

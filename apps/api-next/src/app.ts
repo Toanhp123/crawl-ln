@@ -1,5 +1,6 @@
 import express, { type Express } from 'express';
 import { createAppContainer } from './bootstrap/app-container.js';
+import { createExportRoutes } from './modules/export/presentation/export.routes.js';
 import {
   createSchedulerNovelRoutes,
   createSchedulerRoutes
@@ -30,6 +31,7 @@ export function createNextAppRuntime(
   app.use('/api', apiAccessMiddleware({ remoteToken: runtimeEnvironment.apiRemoteToken }));
   app.use('/api/scheduler', createSchedulerRoutes(container.presentation.scheduler.controller));
   app.use('/api/novels', createSchedulerNovelRoutes(container.presentation.scheduler.controller));
+  app.use('/api/exports', createExportRoutes(container.presentation.exports.controller));
   app.use('/api/search', createSearchRoutes(container.presentation.search.controller));
   app.use('/api/source-reader', createSourceReaderRoutes(container.presentation.sourceReader));
   app.use('/api', notFoundMiddleware);

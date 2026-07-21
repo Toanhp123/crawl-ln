@@ -19,6 +19,7 @@ export interface NextEnvironment {
   outboxBatchSize: number;
   outboxIntervalMs: number;
   crawlerDelayMs: number;
+  maxExportSourceBytes: number;
   sourceAllowlist: string[];
   apiRemoteToken?: string;
   requestTimeoutMs?: number;
@@ -86,6 +87,7 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Next
     outboxBatchSize: parsed.NEXT_OUTBOX_BATCH_SIZE,
     outboxIntervalMs: parsed.NEXT_OUTBOX_INTERVAL_MS,
     crawlerDelayMs: numberEnv(source, 'CRAWLER_DELAY_MS', 600),
+    maxExportSourceBytes: numberEnv(source, 'MAX_EXPORT_SOURCE_BYTES', 128 * 1024 * 1024),
     sourceAllowlist: lowerListEnv(source, 'SOURCE_ALLOWLIST'),
     apiRemoteToken: source.API_REMOTE_TOKEN?.trim() || undefined,
     requestTimeoutMs: numberEnv(source, 'REQUEST_TIMEOUT_MS', 15_000),

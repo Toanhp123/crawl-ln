@@ -43,6 +43,7 @@ function testEnvironment(): NextEnvironment {
     outboxBatchSize: 10,
     outboxIntervalMs: 1_000,
     crawlerDelayMs: 600,
+    maxExportSourceBytes: 128 * 1024 * 1024,
     sourceAllowlist: []
   };
 }

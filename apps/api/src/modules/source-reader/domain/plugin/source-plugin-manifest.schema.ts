@@ -1,15 +1,7 @@
+import { SOURCE_CAPABILITIES, type SourcePluginManifest } from '@novel-tool/source-plugin-sdk';
 import { z } from 'zod';
-import type { SourcePluginManifest } from './source-plugin.js';
 
-const capability = z.enum([
-  'identify',
-  'metadata',
-  'chapter-list',
-  'chapter-content',
-  'search',
-  'latest-updates',
-  'authentication'
-]);
+const capability = z.enum(SOURCE_CAPABILITIES);
 
 const formLoginSchema = z
   .object({

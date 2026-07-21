@@ -1,19 +1,30 @@
-import type { AuthExecutionResult } from '../auth/authentication.js';
-import type { PluginLifecycle } from './plugin-lifecycle.js';
 import type {
+  AuthExecutionResult,
   ChapterContent,
   ChapterSummary,
   LatestUpdate,
   NovelMetadata,
   NovelSearchResult,
   Page,
+  PluginExecutionMode,
+  PluginHttpResponse,
+  PluginOperationResult,
   SourceCapability,
   SourceIdentity,
-  SourceReaderWarning,
-  VersionedExtensionValue
-} from '../../public/source-reader.models.js';
+  SourcePluginManifest
+} from '@novel-tool/source-plugin-sdk';
+import type { PluginLifecycle } from './plugin-lifecycle.js';
 
-export type PluginExecutionMode = 'in-process' | 'isolated';
+export type {
+  FormLoginManifestConfiguration,
+  PluginAuthenticationManifest,
+  PluginExecutionMode,
+  PluginHttpResponse,
+  PluginMatcher,
+  PluginOperationResult,
+  SourcePluginManifest
+} from '@novel-tool/source-plugin-sdk';
+
 export type PluginTrustLevel = 'built-in' | 'signed' | 'local-unverified' | 'blocked';
 export type PluginStatus =
   | 'installed'
@@ -25,69 +36,6 @@ export type PluginStatus =
   | 'disabled'
   | 'quarantined'
   | 'failed';
-
-export interface PluginMatcher {
-  hosts: string[];
-  include?: string[];
-  exclude?: string[];
-  capabilities?: SourceCapability[];
-  priority: number;
-}
-
-export interface FormLoginManifestConfiguration {
-  loginUrlTemplate: string;
-  method: 'POST';
-  fields: { username: string; password: string };
-  staticFields: Record<string, string>;
-  success: { status?: number[]; selector?: string };
-  failure: { status?: number[]; selector?: string };
-  session: { cookies: boolean; headers: string[] };
-}
-
-export interface PluginAuthenticationManifest {
-  custom?: { fields: string[] };
-  formLogin?: FormLoginManifestConfiguration;
-}
-
-export interface SourcePluginManifest {
-  id: string;
-  name: string;
-  version: string;
-  description?: string;
-  engines: { sourceReader: string };
-  capabilities: SourceCapability[];
-  contracts: Partial<Record<SourceCapability, number>>;
-  matchers: PluginMatcher[];
-  runtime: { preferredMode: PluginExecutionMode; requiresBrowser?: boolean };
-  permissions: {
-    network: { hosts: string[] };
-    browser?: boolean;
-    authentication?: boolean;
-    persistentCache?: boolean;
-    externalAssets?: string[];
-  };
-  runtimeRequirements?: {
-    authentication?: {
-      required: boolean;
-      methods: Array<'cookie-import' | 'bearer-token' | 'basic-auth' | 'form-login' | 'custom'>;
-    };
-    network?: {
-      required: boolean;
-      regions?: string[];
-      routeTags?: string[];
-      allowDirectFallback: boolean;
-    };
-  };
-  extensionContracts?: Record<string, { version: number; schema: string; required?: boolean }>;
-  authentication?: PluginAuthenticationManifest;
-}
-
-export interface PluginHttpResponse {
-  url: string;
-  status: number;
-  headers: Record<string, string>;
-  data: string;
-}
 
 export interface PluginHtmlNode {
   text(selector?: string): string;
@@ -138,19 +86,6 @@ export interface PluginMatchRequest {
   normalizedUrl: string;
   domain: string;
   capability: SourceCapability;
-}
-
-export interface PluginOperationResult<T> {
-  data: T;
-  extensions?: Record<string, VersionedExtensionValue>;
-  warnings?: SourceReaderWarning[];
-  cacheHints?: {
-    scope?: 'public' | 'account' | 'user' | 'session' | 'none';
-    ttlMs?: number;
-    staleWhileRevalidateMs?: number;
-    immutable?: boolean;
-    tags?: string[];
-  };
 }
 
 export interface AuthenticationExtension {
@@ -209,3 +144,5 @@ export interface SourceReaderPlugin {
     context: PluginContext
   ): Promise<PluginOperationResult<Page<LatestUpdate>>>;
 }
+
+export type SourcePluginExecutionMode = PluginExecutionMode;

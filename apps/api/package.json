@@ -12,6 +12,7 @@
   "dependencies": {
     "@endo/compartment-mapper": "^2.3.0",
     "@novel-tool/shared": "file:../../packages/shared",
+    "@novel-tool/source-plugin-sdk": "file:../../packages/source-plugin-sdk",
     "ajv": "^8.20.0",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",

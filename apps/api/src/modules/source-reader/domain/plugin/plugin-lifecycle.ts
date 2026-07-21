@@ -1,16 +1,14 @@
-export interface PluginLifecycleContext {
-  pluginId: string;
-  pluginVersion: string;
-  protocolVersion: number;
-  now: string;
-}
+import type {
+  PluginHealthResult,
+  PluginLifecycleContext,
+  PluginShutdownReason
+} from '@novel-tool/source-plugin-sdk';
 
-export type PluginShutdownReason = 'upgrade' | 'disable' | 'quarantine' | 'application-stop';
-
-export interface PluginHealthResult {
-  status: 'healthy' | 'degraded';
-  details?: Record<string, string>;
-}
+export type {
+  PluginHealthResult,
+  PluginLifecycleContext,
+  PluginShutdownReason
+} from '@novel-tool/source-plugin-sdk';
 
 export interface PluginLifecycle {
   initialize(context: PluginLifecycleContext): Promise<void>;

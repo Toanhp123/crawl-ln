@@ -1,13 +1,35 @@
-export type SourceCapability =
-  | 'identify'
-  | 'metadata'
-  | 'chapter-list'
-  | 'chapter-content'
-  | 'search'
-  | 'latest-updates'
-  | 'authentication';
+import type {
+  ChapterContent,
+  ChapterSummary,
+  IdentifyRequest as PluginIdentifyRequest,
+  LatestUpdate,
+  LatestUpdatesRequest as PluginLatestUpdatesRequest,
+  NovelMetadata,
+  NovelSearchResult,
+  Page,
+  ReadChapterContentRequest as PluginReadChapterContentRequest,
+  ReadChapterListRequest as PluginReadChapterListRequest,
+  ReadMetadataRequest as PluginReadMetadataRequest,
+  SearchSourceRequest as PluginSearchSourceRequest,
+  SourceCapability,
+  SourceIdentity,
+  SourceReaderWarning,
+  VersionedExtensionValue
+} from '@novel-tool/source-plugin-sdk';
 
-export type CacheScope = 'public' | 'account' | 'user' | 'session' | 'none';
+export type {
+  CacheScope,
+  ChapterContent,
+  ChapterSummary,
+  LatestUpdate,
+  NovelMetadata,
+  NovelSearchResult,
+  Page,
+  SourceCapability,
+  SourceIdentity,
+  SourceReaderWarning,
+  VersionedExtensionValue
+} from '@novel-tool/source-plugin-sdk';
 
 export interface SourceReaderRequestContext {
   requestId?: string;
@@ -19,17 +41,13 @@ export interface SourceReaderRequestContext {
   signal?: AbortSignal;
 }
 
-export interface IdentifyRequest extends SourceReaderRequestContext {
-  url: string;
-}
+export interface IdentifyRequest extends SourceReaderRequestContext, PluginIdentifyRequest {}
 
-export interface ReadMetadataRequest extends SourceReaderRequestContext {
-  url: string;
-}
+export interface ReadMetadataRequest
+  extends SourceReaderRequestContext, PluginReadMetadataRequest {}
 
-export interface ReadChapterListRequest extends SourceReaderRequestContext {
-  url: string;
-  cursor?: string;
+export interface ReadChapterListRequest
+  extends SourceReaderRequestContext, Omit<PluginReadChapterListRequest, 'limit'> {
   limit?: number;
 }
 
@@ -38,83 +56,17 @@ export interface StreamChapterListRequest extends SourceReaderRequestContext {
   batchSize?: number;
 }
 
-export interface ReadChapterContentRequest extends SourceReaderRequestContext {
-  url: string;
-}
+export interface ReadChapterContentRequest
+  extends SourceReaderRequestContext, PluginReadChapterContentRequest {}
 
-export interface SearchSourceRequest extends SourceReaderRequestContext {
-  url: string;
-  query: string;
-  cursor?: string;
+export interface SearchSourceRequest
+  extends SourceReaderRequestContext, Omit<PluginSearchSourceRequest, 'limit'> {
   limit?: number;
 }
 
-export interface LatestUpdatesRequest extends SourceReaderRequestContext {
-  url: string;
-  cursor?: string;
+export interface LatestUpdatesRequest
+  extends SourceReaderRequestContext, Omit<PluginLatestUpdatesRequest, 'limit'> {
   limit?: number;
-}
-
-export interface Page<T> {
-  items: T[];
-  nextCursor?: string;
-  hasMore: boolean;
-}
-
-export interface SourceIdentity {
-  normalizedUrl: string;
-  domain: string;
-  pageType: 'novel' | 'chapter' | 'search' | 'latest' | 'unknown';
-}
-
-export interface NovelMetadata {
-  title: string;
-  sourceUrl: string;
-  sourceName: string;
-  author?: string;
-  coverUrl?: string;
-  description?: string;
-  status?: 'ongoing' | 'completed' | 'hiatus' | 'cancelled' | 'unknown';
-}
-
-export interface ChapterSummary {
-  index: number;
-  title: string;
-  url: string;
-  publishedAt?: string;
-}
-
-export interface ChapterContent {
-  title: string;
-  url: string;
-  rawText: string;
-  cleanText: string;
-}
-
-export interface NovelSearchResult {
-  title: string;
-  url: string;
-  author?: string;
-  coverUrl?: string;
-}
-
-export interface LatestUpdate {
-  novelTitle: string;
-  novelUrl: string;
-  chapterTitle?: string;
-  chapterUrl?: string;
-  updatedAt?: string;
-}
-
-export interface VersionedExtensionValue {
-  version: number;
-  data: unknown;
-}
-
-export interface SourceReaderWarning {
-  code: string;
-  message: string;
-  details?: Record<string, unknown>;
 }
 
 export interface SourceReaderResult<TData> {
@@ -128,3 +80,11 @@ export interface SourceReaderResult<TData> {
   extensions?: Record<string, VersionedExtensionValue>;
   warnings?: SourceReaderWarning[];
 }
+
+export type SourceReaderData =
+  | SourceIdentity
+  | NovelMetadata
+  | Page<ChapterSummary>
+  | ChapterContent
+  | Page<NovelSearchResult>
+  | Page<LatestUpdate>;

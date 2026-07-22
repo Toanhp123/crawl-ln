@@ -21,13 +21,13 @@ const ActivityPage = lazy(() =>
   routeLoaders.activity().then((module) => ({ default: module.ActivityPage }))
 );
 const SourcesPage = lazy(() =>
-  routeLoaders.sources().then((module) => ({ default: module.FoundationPage }))
+  routeLoaders.sources().then((module) => ({ default: module.SourcesPage }))
 );
 const SourcePluginPage = lazy(() =>
-  routeLoaders.sourcePlugin().then((module) => ({ default: module.FoundationPage }))
+  routeLoaders.sourcePlugin().then((module) => ({ default: module.SourcePluginPage }))
 );
 const SettingsPage = lazy(() =>
-  routeLoaders.settings().then((module) => ({ default: module.FoundationPage }))
+  routeLoaders.settings().then((module) => ({ default: module.SettingsPage }))
 );
 
 function NovelDetailRouteFrame() {
@@ -52,7 +52,7 @@ export function AppRouter() {
         <Route path="/activity" element={<ActivityPage />} />
         <Route path="/activity/:taskId" element={<TaskDetailPage />} />
         <Route path="/sources" element={<SourcesPage />} />
-        <Route path="/sources/new" element={<SourcePluginPage />} />
+        <Route path="/sources/new" element={<SourcePluginPage mode="create" />} />
         <Route path="/sources/:pluginId" element={<SourcePluginPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/crawl" element={<Navigate to="/activity" replace />} />

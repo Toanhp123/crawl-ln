@@ -18,7 +18,7 @@ const success = (data: unknown) => JSON.stringify({ data, error: null });
 test('source refresh shows stable in-place loading feedback even for a fast request', async ({
   page
 }) => {
-  await page.route('http://127.0.0.1:3000/api/**', async (route) => {
+  await page.route('**/api/**', async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
 
@@ -69,7 +69,7 @@ test('source refresh reports an error phase instead of a success check on failur
   page
 }) => {
   let pluginRequests = 0;
-  await page.route('http://127.0.0.1:3000/api/**', async (route) => {
+  await page.route('**/api/**', async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
 

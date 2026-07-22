@@ -58,7 +58,10 @@
     "check:reader-engine": "npm run check -w @novel-tool/reader-engine",
     "check:reader-engine-arch": "node scripts/check-reader-engine-architecture.mjs",
     "test:reader-engine": "npm run test -w @novel-tool/reader-engine",
-    "prepare:reader-engine": "node scripts/prepare-reader-engine.mjs"
+    "prepare:reader-engine": "node scripts/prepare-reader-engine.mjs",
+    "check:web-next-contracts": "node scripts/check-web-next-contracts.mjs",
+    "test:e2e:web-next": "playwright test --config playwright.web-next.config.ts",
+    "verify:v3:frontend": "npm run prepare:packages && npm run check:web-next-arch && npm run check:web-next-contracts && npm run check:reader-engine-arch && npm run check -w @novel-tool/reader-engine && npm run test -w @novel-tool/reader-engine && npm run check:web-next && npm run build:web && npm run build:web-next && npm run test:regression && npm run test:e2e:web-next"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

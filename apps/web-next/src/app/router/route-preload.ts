@@ -1,9 +1,10 @@
-const foundationPage = () => import('@/pages/foundation');
 const libraryPage = () => import('@/pages/library');
 const activityPage = () => import('@/pages/activity');
 const taskDetailPage = () => import('@/pages/task-detail');
 const novelDetailPage = () => import('@/pages/novel-detail');
 const chapterReaderPage = () => import('@/pages/chapter-reader');
+const sourcesPage = () => import('@/pages/sources');
+const settingsPage = () => import('@/pages/settings');
 
 export const routeLoaders = {
   library: libraryPage,
@@ -11,9 +12,9 @@ export const routeLoaders = {
   reader: chapterReaderPage,
   taskDetail: taskDetailPage,
   activity: activityPage,
-  sources: foundationPage,
-  sourcePlugin: foundationPage,
-  settings: foundationPage
+  sources: sourcesPage,
+  sourcePlugin: sourcesPage,
+  settings: settingsPage
 } as const;
 
 type TopLevelRoute = 'library' | 'activity' | 'sources' | 'settings';

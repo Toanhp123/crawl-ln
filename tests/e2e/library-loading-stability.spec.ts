@@ -21,7 +21,7 @@ test('stale continue-reading history does not shift the library search controls'
     localStorage.setItem('novel-tool-reading-history:v2', JSON.stringify(history));
   }, staleHistory);
 
-  await page.route('http://127.0.0.1:3000/api/novels**', async (route) => {
+  await page.route('**/api/novels**', async (route) => {
     const url = new URL(route.request().url());
 
     if (url.pathname === '/api/novels') {

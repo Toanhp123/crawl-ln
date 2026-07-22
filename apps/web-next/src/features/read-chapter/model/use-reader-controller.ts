@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Chapter } from '../../../entities/chapter';
 import { chapterLoaderAdapter } from '../lib/chapter-loader-adapter';
 import { IndexedDbReaderChapterCache } from '../lib/indexeddb-reader-cache';
+import { isReaderUrlOnlySync } from '../lib/reader-route-sync';
 
 const DEFAULT_WINDOW_LIMIT = 5;
 const memoryCache = new MemoryReaderChapterCache<Chapter>(8);
@@ -77,6 +78,9 @@ export function useReaderController({
   const activeCallback = useRef(onActiveIndexChange);
   const navigateCallback = useRef(onNavigate);
   const lastReportedIndex = useRef<number | null>(null);
+  const snapshotRef = useRef(snapshot);
+  const startedSessionRef = useRef<{ novelId: string; identitySignature: string } | null>(null);
+  snapshotRef.current = snapshot;
 
   useEffect(() => {
     activeCallback.current = onActiveIndexChange;
@@ -86,16 +90,29 @@ export function useReaderController({
   }, [onNavigate]);
 
   useEffect(() => session.subscribe(setSnapshot), [session]);
+  useEffect(() => {
+    startedSessionRef.current = null;
+  }, [session]);
+  useEffect(() => () => session.cancel(), [session]);
 
   useEffect(() => {
-    lastReportedIndex.current = null;
     if (!enabled || !novelId || !Number.isInteger(initialIndex)) {
       session.cancel();
+      startedSessionRef.current = null;
       setSnapshot(initialSnapshot(initialIndex));
       return;
     }
+    const startedSession = startedSessionRef.current;
+    if (
+      startedSession?.novelId === novelId &&
+      startedSession.identitySignature === identitySignature &&
+      isReaderUrlOnlySync(snapshotRef.current, initialIndex)
+    ) {
+      return;
+    }
+    lastReportedIndex.current = null;
+    startedSessionRef.current = { novelId, identitySignature };
     void session.start(novelId, identities, initialIndex).catch(() => undefined);
-    return () => session.cancel();
   }, [enabled, identitySignature, identities, initialIndex, novelId, session]);
 
   useEffect(() => {

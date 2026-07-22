@@ -43,6 +43,10 @@ export {
 } from './model/use-reader-controller';
 export { useReaderProgress } from './model/use-reader-progress';
 export {
+  isReaderUrlOnlySync,
+  type ReaderRouteSyncSnapshot
+} from './lib/reader-route-sync';
+export {
   useSwipeChapterNavigation,
   type SwipeChapterNavigationOptions
 } from './model/use-swipe-chapter-navigation';

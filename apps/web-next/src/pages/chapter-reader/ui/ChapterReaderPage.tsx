@@ -4,6 +4,7 @@ import { ChapterReader } from '@/entities/chapter';
 import {
   captureReadingAnchor,
   isBookmarked,
+  isReaderUrlOnlySync,
   markChapterRead,
   readChapterIds,
   readReadingPosition,
@@ -218,10 +219,11 @@ export function ChapterReaderPage() {
   }, [initialIndex, persistCurrentPosition, viewportRef]);
 
   useEffect(() => {
+    if (isReaderUrlOnlySync(controller, initialIndex ?? -1)) return;
     restored.current = false;
     interactive.current = false;
     viewportRef.current?.scrollTo({ top: 0, behavior: 'auto' });
-  }, [initialIndex, novelId, viewportRef]);
+  }, [controller.activeIndex, controller.chapters, initialIndex, novelId, viewportRef]);
 
   const initialLoaded =
     initialIndex !== null && controller.chapters.some((chapter) => chapter.index === initialIndex);

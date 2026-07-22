@@ -415,6 +415,45 @@ export async function createV22Fixture(root: string): Promise<V22Fixture> {
 
       database
         .prepare(
+          `INSERT INTO crawl_events(
+            id, task_id, type, level, message, chapter_id, chapter_index,
+            chapter_title, attempt, created_at
+          ) VALUES(?,?,?,?,?,?,?,?,?,?)`
+        )
+        .run(
+          'fixture-event',
+          ids.taskId,
+          'chapter-fetched',
+          'success',
+          'Fixture chapter fetched.',
+          ids.chapterId,
+          1,
+          'Fixture Chapter 1',
+          1,
+          completedAt
+        );
+
+      database
+        .prepare(
+          `INSERT INTO novel_update_diagnostics(
+            id, novel_id, source_name, result, message, new_chapter_count,
+            pending_chapter_count, duration_ms, created_at
+          ) VALUES(?,?,?,?,?,?,?,?,?)`
+        )
+        .run(
+          'fixture-diagnostic',
+          ids.novelId,
+          'fixture',
+          'up_to_date',
+          'Fixture scheduler check completed.',
+          0,
+          0,
+          125,
+          completedAt
+        );
+
+      database
+        .prepare(
           `INSERT INTO source_reader_plugins(
             id, name, trust_level, status, active_version, enabled, installed_at, updated_at
           ) VALUES(?,?,?,?,?,?,?,?)`

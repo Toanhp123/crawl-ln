@@ -201,6 +201,10 @@ function completeArtifacts() {
 function refreshAcceptedRollbackLineage(artifacts: ReturnType<typeof completeArtifacts>) {
   artifacts.acceptedRollbackBytes = json(artifacts.acceptedRollback);
   artifacts.canonical.rollbackRehearsalSha256 = hash(artifacts.acceptedRollbackBytes);
+  refreshCanonicalLineage(artifacts);
+}
+
+function refreshCanonicalLineage(artifacts: ReturnType<typeof completeArtifacts>) {
   artifacts.canonicalBytes = json(artifacts.canonical);
   artifacts.acceptance.canonicalCandidateSha256 = hash(artifacts.canonicalBytes);
 }
@@ -279,6 +283,55 @@ test('release evidence rejects a canonical artifact from a different lineage', a
           now: new Date('2026-07-23T09:31:00.000Z')
         }),
       /acceptance|canonical|lineage/i
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('release evidence requires the canonical rollback rehearsal hash', async () => {
+  const { createReleaseEvidence } = await import('../../scripts/v3/release-evidence.mjs');
+  const root = await mkdtemp(join(tmpdir(), 'novel-tool-release-evidence-'));
+  try {
+    const fixture = completeArtifacts();
+    delete (fixture.canonical as { rollbackRehearsalSha256?: string }).rollbackRehearsalSha256;
+    refreshCanonicalLineage(fixture);
+    const paths = await writeFixture(root, fixture);
+    await assert.rejects(
+      () =>
+        createReleaseEvidence({
+          root,
+          artifacts: paths,
+          readHead: async () => currentCommit,
+          isAncestor: async () => true,
+          now: new Date('2026-07-23T09:31:00.000Z')
+        }),
+      /canonical candidate rollback rehearsal hash is required/i
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('release evidence links final migration source storage to rollback evidence', async () => {
+  const { createReleaseEvidence } = await import('../../scripts/v3/release-evidence.mjs');
+  const root = await mkdtemp(join(tmpdir(), 'novel-tool-release-evidence-'));
+  try {
+    const fixture = completeArtifacts();
+    fixture.finalMigration.source.storageManifestSha256 = '2'.repeat(64);
+    fixture.finalMigrationBytes = json(fixture.finalMigration);
+    fixture.finalCandidate.migrationReportSha256 = hash(fixture.finalMigrationBytes);
+    const paths = await writeFixture(root, fixture);
+    await assert.rejects(
+      () =>
+        createReleaseEvidence({
+          root,
+          artifacts: paths,
+          readHead: async () => currentCommit,
+          isAncestor: async () => true,
+          now: new Date('2026-07-23T09:31:00.000Z')
+        }),
+      /final migration report does not match rollback source storage/i
     );
   } finally {
     await rm(root, { recursive: true, force: true });

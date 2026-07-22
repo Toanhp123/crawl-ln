@@ -139,9 +139,10 @@ function assertCanonicalCandidate(canonical, migration, preCandidate, preCandida
   }
   assertBooleanFields(canonical.canonicalSmoke, smokeFields, 'Canonical candidate smoke');
   assertTimestampRange(canonical, 'Canonical candidate');
-  if (canonical.rollbackRehearsalSha256 !== undefined) {
-    assertHash(canonical.rollbackRehearsalSha256, 'Canonical rollback rehearsal');
+  if (canonical.rollbackRehearsalSha256 === undefined) {
+    throw new Error('Canonical candidate rollback rehearsal hash is required');
   }
+  assertHash(canonical.rollbackRehearsalSha256, 'Canonical rollback rehearsal');
 }
 
 function assertAcceptance(acceptance, canonicalCommit, canonicalSha256) {
@@ -398,6 +399,9 @@ export async function createReleaseEvidence({
     throw new Error('Cutover journal hashes do not match rollback rehearsal evidence');
   }
   assertSuccessfulMigration(finalMigration.value);
+  if (finalMigration.value.source.storageManifestSha256 !== rollback.value.sourceManifestSha256) {
+    throw new Error('Final migration report does not match rollback source storage');
+  }
   if (
     finalMigration.value.candidate.storageManifestSha256 !== rollback.value.candidateManifestSha256
   ) {

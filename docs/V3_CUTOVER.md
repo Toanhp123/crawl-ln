@@ -44,6 +44,48 @@ pair, chapter/task/Source Reader/scheduler hashes, `searchRebuilt`, and an empty
 `validation.errors` array. Check that every smoke flag in the candidate manifest
 is `true` and that its commit is the current `HEAD`.
 
+## Prepare rollback runtime
+
+Before removing either legacy workspace or swapping live storage, prepare a
+detached runtime from the commit recorded by the accepted canonical candidate.
+That commit is the reviewed V22-compatible recovery application; the current V3
+checkout is not a substitute. Keep the runtime under the ignored artifact root
+so it is available even after legacy deletion.
+
+PowerShell:
+
+```powershell
+$canonical = Get-Content -Raw .artifacts/v3/canonical-candidate.json | ConvertFrom-Json
+$rollbackRuntime = Join-Path (Get-Location) '.artifacts/v3/rollback-runtime'
+if (Test-Path $rollbackRuntime) { throw "Rollback runtime already exists: $rollbackRuntime" }
+git cat-file -e "$($canonical.commit):apps/api-legacy/package.json"
+git cat-file -e "$($canonical.commit):apps/web-legacy/package.json"
+git worktree add --detach $rollbackRuntime $canonical.commit
+Push-Location $rollbackRuntime
+try {
+  npm ci --ignore-scripts
+  npm run build:legacy
+} finally {
+  Pop-Location
+}
+```
+
+POSIX shells, including Termux:
+
+```sh
+ROLLBACK_RUNTIME="$(pwd)/.artifacts/v3/rollback-runtime"
+ROLLBACK_COMMIT="$(node --input-type=module -e "import { readFile } from 'node:fs/promises'; const value = JSON.parse(await readFile('.artifacts/v3/canonical-candidate.json', 'utf8')); process.stdout.write(value.commit)")"
+test ! -e "$ROLLBACK_RUNTIME"
+git cat-file -e "$ROLLBACK_COMMIT:apps/api-legacy/package.json"
+git cat-file -e "$ROLLBACK_COMMIT:apps/web-legacy/package.json"
+git worktree add --detach "$ROLLBACK_RUNTIME" "$ROLLBACK_COMMIT"
+(cd "$ROLLBACK_RUNTIME" && npm ci --ignore-scripts && npm run build:legacy)
+```
+
+Do not continue unless both legacy builds succeed. Keep the registered worktree,
+its `node_modules`, and its built outputs unchanged through the full acceptance
+and recovery window.
+
 ## Swap
 
 Keep all four directories as siblings. The command writes a prepared journal,

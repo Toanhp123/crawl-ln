@@ -6,10 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const maxCapturedOutputBytes = 4 * 1024 * 1024;
-const exclusiveRegressionFiles = new Set([
-  'source-reader-external-context-parity.test.ts',
-  'source-reader-external-process-sandbox.test.ts'
-]);
+const exclusiveRegressionFiles = new Set([]);
 
 const suites = {
   regression: {

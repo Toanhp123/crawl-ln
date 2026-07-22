@@ -18,13 +18,13 @@ test('clean removes only generated artifacts and is idempotent', async () => {
   try {
     const generated = [
       'packages/shared/dist/index.js',
-      'apps/api-legacy/dist/main.js',
-      'apps/web-legacy/dist/index.html',
+      'apps/api/dist/main.js',
+      'apps/web/dist/index.html',
       'coverage/lcov.info',
       'playwright-report/index.html',
       'test-results/result.json',
       '.nyc_output/out.json',
-      'apps/api-legacy/tsconfig.tsbuildinfo',
+      'apps/api/tsconfig.tsbuildinfo',
       'packages/shared/cache/custom.tsbuildinfo'
     ];
     const protectedPaths = [
@@ -32,7 +32,7 @@ test('clean removes only generated artifacts and is idempotent', async () => {
       'package-lock.json',
       'storage/novel-tool.sqlite',
       'plugins/example/manifest.json',
-      'apps/api-legacy/src/main.ts'
+      'apps/api/src/main.ts'
     ];
 
     for (const path of [...generated, ...protectedPaths]) {
@@ -58,7 +58,7 @@ test('clean removes only generated artifacts and is idempotent', async () => {
 
 test('clean path guard handles POSIX and Windows separators without allowing escapes', async () => {
   const { isSafeCleanTarget } = await import('../../scripts/clean.mjs');
-  assert.equal(isSafeCleanTarget('/repo', '/repo/apps/api-legacy/dist', posix), true);
+  assert.equal(isSafeCleanTarget('/repo', '/repo/apps/api/dist', posix), true);
   assert.equal(isSafeCleanTarget('/repo', '/repo', posix), false);
   assert.equal(isSafeCleanTarget('/repo', '/outside/dist', posix), false);
   assert.equal(isSafeCleanTarget('C:\\repo', 'C:\\repo\\apps\\api\\dist', win32), true);

@@ -5,8 +5,8 @@ import { pathToFileURL } from 'node:url';
 const GENERATED_DIRECTORIES = [
   'packages/shared/dist',
   'packages/source-plugin-sdk/dist',
-  'apps/api-legacy/dist',
-  'apps/web-legacy/dist',
+  'apps/api/dist',
+  'apps/web/dist',
   'coverage',
   'playwright-report',
   'test-results',

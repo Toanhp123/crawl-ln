@@ -39,7 +39,7 @@ test('test runner summarizes isolated TAP results without streaming successful c
   assert.equal(runnerSource.includes("stdio: 'inherit'"), false);
 });
 
-test('external sandbox lifecycle tests run exclusively from other test processes', async () => {
+test('canonical regression files use the regular isolated runner partition', async () => {
   const { partitionTestFiles } = await import('../../scripts/run-test-files.mjs');
   const files = [
     '/repo/tests/regression/a.test.ts',
@@ -47,10 +47,7 @@ test('external sandbox lifecycle tests run exclusively from other test processes
     '/repo/tests/regression/source-reader-external-context-parity.test.ts'
   ];
   assert.deepEqual(partitionTestFiles('regression', files), {
-    regular: ['/repo/tests/regression/a.test.ts'],
-    exclusive: [
-      '/repo/tests/regression/source-reader-external-context-parity.test.ts',
-      '/repo/tests/regression/source-reader-external-process-sandbox.test.ts'
-    ]
+    regular: [...files].sort((left, right) => left.localeCompare(right)),
+    exclusive: []
   });
 });

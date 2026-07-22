@@ -51,7 +51,6 @@ async function checkFormatting() {
 
 export async function runPreparedChecks({ skipTypeScript = false } = {}) {
   await import('./check-api-architecture.mjs');
-  await import('./check-crawler-platform.mjs');
   await import('./check-web-architecture.mjs');
   await import('./check-web-contracts.mjs');
 

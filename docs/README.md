@@ -24,12 +24,6 @@ Tài liệu trong working tree chỉ mô tả hệ thống hiện tại và các
 - [Settings capability matrix](frontend/SETTINGS_CAPABILITY_MATRIX.md)
 - [UI state matrix](frontend/UI_STATE_MATRIX.md)
 
-Code-owned guides remain beside their implementation:
-
-- [Theme guide](../apps/web-legacy/src/shared/theme/README.md)
-- [Visual style guide](../apps/web-legacy/src/shared/theme/VISUAL_STYLE_GUIDE.md)
-- [Shared UI guide](../apps/web-legacy/src/shared/ui/README.md)
-
 ## Historical material
 
 Completed plans, specs, checkpoints, audits and one-off review reports are preserved in Git rather than the active tree:

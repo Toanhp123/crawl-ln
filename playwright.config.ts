@@ -20,11 +20,6 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'npm run preview -w @novel-tool/web-legacy -- --host 127.0.0.1 --port 4174',
-      url: 'http://127.0.0.1:4174',
-      reuseExistingServer: !process.env.CI
-    },
-    {
       command: 'npm run preview -w @novel-tool/web -- --host 127.0.0.1 --port 4173',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: !process.env.CI

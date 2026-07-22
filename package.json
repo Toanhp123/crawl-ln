@@ -21,7 +21,6 @@
     "check:web": "npm run prepare:packages && npm run check -w @novel-tool/web",
     "check:sdk": "npm run check -w @novel-tool/source-plugin-sdk",
     "check:arch": "node scripts/check-api-architecture.mjs",
-    "check:crawler": "node scripts/check-crawler-platform.mjs",
     "check:web-arch": "node scripts/check-web-architecture.mjs",
     "check:web-contracts": "node scripts/check-web-contracts.mjs",
     "check:docs": "node scripts/check-docs.mjs",
@@ -45,7 +44,6 @@
     "cutover:v3:storage": "node --experimental-sqlite scripts/v3/cutover-storage.mjs",
     "rollback:v3:storage": "node --experimental-sqlite scripts/v3/rollback-storage.mjs",
     "rehearse:v3:cutover": "node --experimental-sqlite --import tsx scripts/v3/rehearse-cutover.mjs",
-    "verify:v3:canonical": "node --experimental-sqlite scripts/v3/verify-canonical-candidate.mjs",
     "format": "prettier --write \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
     "build:prepared": "node scripts/build-prepared.mjs",
@@ -57,14 +55,7 @@
     "check:reader-engine": "npm run check -w @novel-tool/reader-engine",
     "check:reader-engine-arch": "node scripts/check-reader-engine-architecture.mjs",
     "test:reader-engine": "npm run test -w @novel-tool/reader-engine",
-    "prepare:reader-engine": "node scripts/prepare-reader-engine.mjs",
-    "verify:v3:frontend": "npm run prepare:packages && npm run check:web-arch && npm run check:web-contracts && npm run check:reader-engine-arch && npm run check -w @novel-tool/reader-engine && npm run test -w @novel-tool/reader-engine && npm run check:web && npm run build:web-legacy && npm run build:web && npm run test:regression && npm run test:e2e",
-    "dev:legacy": "npm run prepare:packages && concurrently -k -n api-legacy,web-legacy \"npm run dev -w @novel-tool/api-legacy\" \"npm run dev -w @novel-tool/web-legacy\"",
-    "dev:api-legacy": "npm run prepare:packages && npm run dev -w @novel-tool/api-legacy",
-    "dev:web-legacy": "npm run prepare:packages && npm run dev -w @novel-tool/web-legacy",
-    "build:legacy": "npm run prepare:packages && npm run build -w @novel-tool/api-legacy && npm run build -w @novel-tool/web-legacy",
-    "check:legacy": "npm run prepare:packages && npm run check -w @novel-tool/api-legacy && npm run check -w @novel-tool/web-legacy && node scripts/check-api-legacy-architecture.mjs && node scripts/check-web-legacy-architecture.mjs && node scripts/check-web-legacy-contracts.mjs",
-    "test:e2e:legacy": "playwright test --config playwright.legacy.config.ts"
+    "prepare:reader-engine": "node scripts/prepare-reader-engine.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

@@ -9,6 +9,11 @@ import {
   scanLegacyReferences,
   validateCoverageMatrix
 } from './legacy-dependency-inventory.mjs';
+import {
+  createRepositoryPathSnapshot,
+  discardRepositoryPathSnapshot,
+  restoreRepositoryPathSnapshot
+} from './repository-path-snapshot.mjs';
 
 const execFileAsync = promisify(execFile);
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -79,7 +84,8 @@ async function validateEvidence({
   acceptance,
   currentCommit,
   canonicalCandidatePath,
-  rollbackRehearsalPath
+  rollbackRehearsalPath,
+  retainedCoveragePath
 }) {
   validateAcceptanceShape(acceptance, currentCommit);
   const canonical = await readJsonWithBytes(canonicalCandidatePath);
@@ -99,6 +105,13 @@ async function validateEvidence({
   }
   if (!SHA256.test(canonical.value.rollbackRehearsalSha256 ?? '')) {
     throw new Error('Canonical candidate rollback rehearsal hash is invalid');
+  }
+  if (!SHA256.test(canonical.value.retainedCoverageSha256 ?? '')) {
+    throw new Error('Canonical candidate retained coverage hash is invalid');
+  }
+  const retainedCoverageBytes = await readFile(resolve(retainedCoveragePath));
+  if (sha256(retainedCoverageBytes) !== canonical.value.retainedCoverageSha256) {
+    throw new Error('Retained coverage matrix does not match the canonical candidate hash');
   }
 
   const rollback = await readJsonWithBytes(rollbackRehearsalPath);
@@ -294,6 +307,17 @@ async function gitHead(root) {
   return stdout.trim();
 }
 
+async function assertGitWorktreeClean(root) {
+  const { stdout } = await execFileAsync(
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=all'],
+    { cwd: root, encoding: 'utf8' }
+  );
+  if (stdout.trim().length > 0) {
+    throw new Error(`Legacy removal requires a clean worktree:\n${stdout.trim()}`);
+  }
+}
+
 export async function removeLegacyApps(
   root = projectRoot,
   acceptance,
@@ -301,7 +325,11 @@ export async function removeLegacyApps(
     currentCommit,
     canonicalCandidatePath = join(root, '.artifacts', 'v3', 'canonical-candidate.json'),
     rollbackRehearsalPath = join(root, '.artifacts', 'v3', 'rollback-rehearsal.json'),
-    regenerateLockfile = () => regeneratePackageLock(root)
+    retainedCoveragePath = join(root, 'specs', 'v3-retained-test-coverage.json'),
+    regenerateLockfile = () => regeneratePackageLock(root),
+    backupParent,
+    restoreSnapshot = restoreRepositoryPathSnapshot,
+    assertCleanWorktree = assertGitWorktreeClean
   } = {}
 ) {
   const resolvedRoot = resolve(root);
@@ -310,38 +338,60 @@ export async function removeLegacyApps(
     acceptance,
     currentCommit: head,
     canonicalCandidatePath,
-    rollbackRehearsalPath
+    rollbackRehearsalPath,
+    retainedCoveragePath
   });
+  await assertCleanWorktree(resolvedRoot);
   const inventory = await buildLegacyDependencyInventory(resolvedRoot);
+  const snapshot = await createRepositoryPathSnapshot(
+    resolvedRoot,
+    [...inventory.deletePaths, ...inventory.rewritePaths, 'package.json', 'package-lock.json'],
+    { backupParent }
+  );
 
-  const removedPaths = [];
-  for (const path of inventory.deletePaths) {
-    const absolute = resolve(resolvedRoot, path);
-    const child = relative(resolvedRoot, absolute);
-    if (child === '' || child.startsWith('..')) {
-      throw new Error(`Refusing to remove outside repository root: ${path}`);
+  try {
+    const removedPaths = [];
+    for (const path of inventory.deletePaths) {
+      const absolute = resolve(resolvedRoot, path);
+      const child = relative(resolvedRoot, absolute);
+      if (child === '' || child.startsWith('..')) {
+        throw new Error(`Refusing to remove outside repository root: ${path}`);
+      }
+      await rm(absolute, { recursive: true, force: true });
+      removedPaths.push(path);
     }
-    await rm(absolute, { recursive: true, force: true });
-    removedPaths.push(path);
-  }
 
-  const rewrittenPaths = await rewriteRepositorySurfaces(resolvedRoot, inventory);
-  await regenerateLockfile();
-  if (await pruneRemovedLockfileEntries(resolvedRoot)) rewrittenPaths.push('package-lock.json');
-  await validateCoverageMatrix(resolvedRoot);
-  const remainingReferences = await findLegacyReferences(resolvedRoot);
-  if (remainingReferences.length > 0) {
-    throw new Error(
-      `Legacy references remain after removal:\n${remainingReferences.map((path) => `- ${path}`).join('\n')}`
-    );
-  }
+    const rewrittenPaths = await rewriteRepositorySurfaces(resolvedRoot, inventory);
+    await regenerateLockfile();
+    if (await pruneRemovedLockfileEntries(resolvedRoot)) rewrittenPaths.push('package-lock.json');
+    await validateCoverageMatrix(resolvedRoot);
+    const remainingReferences = await findLegacyReferences(resolvedRoot);
+    if (remainingReferences.length > 0) {
+      throw new Error(
+        `Legacy references remain after removal:\n${remainingReferences.map((path) => `- ${path}`).join('\n')}`
+      );
+    }
 
-  return {
-    commit: head,
-    removedPaths,
-    rewrittenPaths,
-    deferredReferences: inventory.deferredReferences
-  };
+    const result = {
+      commit: head,
+      removedPaths,
+      rewrittenPaths,
+      deferredReferences: inventory.deferredReferences
+    };
+    await discardRepositoryPathSnapshot(snapshot);
+    return result;
+  } catch (error) {
+    try {
+      await restoreSnapshot(snapshot);
+      await discardRepositoryPathSnapshot(snapshot);
+    } catch (recoveryError) {
+      throw new AggregateError(
+        [error, recoveryError],
+        'Legacy application removal failed and recovery also failed'
+      );
+    }
+    throw error;
+  }
 }
 
 function readOption(args, name) {

@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { promisify } from 'node:util';
 
 const commit = 'a'.repeat(40);
 const legacyApi = ['api', 'legacy'].join('-');
 const legacyWeb = ['web', 'legacy'].join('-');
+const execFileAsync = promisify(execFile);
 
 function sha256(value: Buffer | string): string {
   return createHash('sha256').update(value).digest('hex');
@@ -69,12 +72,11 @@ async function legacyRemovalFixture() {
 
   const { retainedCoverageCapabilities } =
     await import('../../scripts/v3/legacy-dependency-inventory.mjs');
-  await writeJson(
-    join(root, 'specs/v3-retained-test-coverage.json'),
-    Object.fromEntries(
-      retainedCoverageCapabilities.map((capability: string) => [capability, [retainedFile]])
-    )
+  const retainedCoverage = Object.fromEntries(
+    retainedCoverageCapabilities.map((capability: string) => [capability, [retainedFile]])
   );
+  await writeJson(join(root, 'specs/v3-retained-test-coverage.json'), retainedCoverage);
+  const retainedCoverageBytes = await readFile(join(root, 'specs/v3-retained-test-coverage.json'));
   await writeJson(join(root, 'package.json'), {
     name: 'fixture',
     private: true,
@@ -125,6 +127,7 @@ async function legacyRemovalFixture() {
         formatVersion: 1,
         commit,
         rollbackRehearsalSha256: sha256(rollbackBytes),
+        retainedCoverageSha256: sha256(retainedCoverageBytes),
         commands: [{ name: 'verify', passed: true }],
         passed: true
       },
@@ -143,13 +146,15 @@ async function legacyRemovalFixture() {
     legacyRemovalApproved: true as const
   };
   const regenerateLockfile = async () => {};
+  const assertCleanWorktree = async () => {};
 
   return {
     root,
     acceptance,
     canonicalCandidatePath,
     rollbackRehearsalPath,
-    regenerateLockfile
+    regenerateLockfile,
+    assertCleanWorktree
   };
 }
 
@@ -160,7 +165,8 @@ test('legacy removal refuses absent, stale, or unapproved acceptance records', a
     currentCommit: commit,
     canonicalCandidatePath: fixture.canonicalCandidatePath,
     rollbackRehearsalPath: fixture.rollbackRehearsalPath,
-    regenerateLockfile: fixture.regenerateLockfile
+    regenerateLockfile: fixture.regenerateLockfile,
+    assertCleanWorktree: fixture.assertCleanWorktree
   };
 
   try {
@@ -196,7 +202,8 @@ test('approved removal keeps retained coverage and removes legacy dependencies',
       currentCommit: commit,
       canonicalCandidatePath: fixture.canonicalCandidatePath,
       rollbackRehearsalPath: fixture.rollbackRehearsalPath,
-      regenerateLockfile: fixture.regenerateLockfile
+      regenerateLockfile: fixture.regenerateLockfile,
+      assertCleanWorktree: fixture.assertCleanWorktree
     });
 
     assert.equal(await exists(join(fixture.root, 'apps', legacyApi)), false);
@@ -212,6 +219,161 @@ test('approved removal keeps retained coverage and removes legacy dependencies',
       ],
       undefined
     );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('lockfile failure restores deleted and rewritten paths byte-for-byte', async () => {
+  const { removeLegacyApps } = await import('../../scripts/v3/remove-legacy-apps.mjs');
+  const fixture = await legacyRemovalFixture();
+  const backupParent = await mkdtemp(join(tmpdir(), 'novel-tool-v3-removal-backups-'));
+  const restoredPaths = [
+    `apps/${legacyApi}/package.json`,
+    `apps/${legacyApi}/src/main.ts`,
+    `apps/${legacyWeb}/package.json`,
+    `apps/${legacyWeb}/src/main.ts`,
+    'package.json',
+    'package-lock.json'
+  ];
+  const before = new Map(
+    await Promise.all(
+      restoredPaths.map(async (path) => [path, await readFile(join(fixture.root, path))] as const)
+    )
+  );
+  const failure = new Error('injected lockfile regeneration failure');
+
+  try {
+    await assert.rejects(
+      () =>
+        removeLegacyApps(fixture.root, fixture.acceptance, {
+          currentCommit: commit,
+          canonicalCandidatePath: fixture.canonicalCandidatePath,
+          rollbackRehearsalPath: fixture.rollbackRehearsalPath,
+          assertCleanWorktree: fixture.assertCleanWorktree,
+          backupParent,
+          regenerateLockfile: async () => {
+            assert.equal(await exists(join(fixture.root, 'apps', legacyApi)), false);
+            assert.notDeepEqual(
+              await readFile(join(fixture.root, 'package.json')),
+              before.get('package.json')
+            );
+            throw failure;
+          }
+        }),
+      (error) => error === failure
+    );
+
+    for (const path of restoredPaths) {
+      assert.deepEqual(await readFile(join(fixture.root, path)), before.get(path), path);
+    }
+    assert.deepEqual(await readdir(backupParent), []);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+    await rm(backupParent, { recursive: true, force: true });
+  }
+});
+
+test('removal aggregates the original failure when recovery also fails', async () => {
+  const { removeLegacyApps } = await import('../../scripts/v3/remove-legacy-apps.mjs');
+  const fixture = await legacyRemovalFixture();
+  const backupParent = await mkdtemp(join(tmpdir(), 'novel-tool-v3-removal-backups-'));
+  const operationFailure = new Error('injected removal failure');
+  const recoveryFailure = new Error('injected recovery failure');
+
+  try {
+    await assert.rejects(
+      () =>
+        removeLegacyApps(fixture.root, fixture.acceptance, {
+          currentCommit: commit,
+          canonicalCandidatePath: fixture.canonicalCandidatePath,
+          rollbackRehearsalPath: fixture.rollbackRehearsalPath,
+          assertCleanWorktree: fixture.assertCleanWorktree,
+          backupParent,
+          regenerateLockfile: async () => {
+            throw operationFailure;
+          },
+          restoreSnapshot: async () => {
+            throw recoveryFailure;
+          }
+        }),
+      (error) => {
+        assert.ok(error instanceof AggregateError);
+        assert.deepEqual(error.errors, [operationFailure, recoveryFailure]);
+        return true;
+      }
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+    await rm(backupParent, { recursive: true, force: true });
+  }
+});
+
+test('legacy removal rejects a post-acceptance coverage matrix edit before deletion', async () => {
+  const { removeLegacyApps } = await import('../../scripts/v3/remove-legacy-apps.mjs');
+  const fixture = await legacyRemovalFixture();
+  const coveragePath = join(fixture.root, 'specs/v3-retained-test-coverage.json');
+  await writeFile(coveragePath, `${await readFile(coveragePath, 'utf8')}\n`, 'utf8');
+  let mutationStarted = false;
+
+  try {
+    await assert.rejects(
+      () =>
+        removeLegacyApps(fixture.root, fixture.acceptance, {
+          currentCommit: commit,
+          canonicalCandidatePath: fixture.canonicalCandidatePath,
+          rollbackRehearsalPath: fixture.rollbackRehearsalPath,
+          assertCleanWorktree: fixture.assertCleanWorktree,
+          regenerateLockfile: async () => {
+            mutationStarted = true;
+          }
+        }),
+      /retained coverage.*hash|coverage matrix.*canonical candidate/i
+    );
+    assert.equal(mutationStarted, false);
+    assert.equal(await exists(join(fixture.root, 'apps', legacyApi)), true);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('legacy removal rejects a dirty git worktree before deletion', async () => {
+  const { removeLegacyApps } = await import('../../scripts/v3/remove-legacy-apps.mjs');
+  const fixture = await legacyRemovalFixture();
+  let mutationStarted = false;
+
+  try {
+    await execFileAsync('git', ['init'], { cwd: fixture.root });
+    await execFileAsync('git', ['add', '.'], { cwd: fixture.root });
+    await execFileAsync(
+      'git',
+      [
+        '-c',
+        'user.name=Novel Tool Test',
+        '-c',
+        'user.email=novel-tool@example.invalid',
+        'commit',
+        '-m',
+        'fixture'
+      ],
+      { cwd: fixture.root }
+    );
+    await writeFile(join(fixture.root, 'dirty-untracked.txt'), 'dirty\n', 'utf8');
+
+    await assert.rejects(
+      () =>
+        removeLegacyApps(fixture.root, fixture.acceptance, {
+          currentCommit: commit,
+          canonicalCandidatePath: fixture.canonicalCandidatePath,
+          rollbackRehearsalPath: fixture.rollbackRehearsalPath,
+          regenerateLockfile: async () => {
+            mutationStarted = true;
+          }
+        }),
+      /clean worktree|worktree is dirty/i
+    );
+    assert.equal(mutationStarted, false);
+    assert.equal(await exists(join(fixture.root, 'apps', legacyApi)), true);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }

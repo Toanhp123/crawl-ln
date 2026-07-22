@@ -1,11 +1,7 @@
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useNovel } from '@/entities/novel';
-
-interface ReaderRouteState {
-  readerReturnPath?: string;
-  backgroundScrollKey?: string;
-}
+import { readReaderReturnState } from '@/features/read-chapter';
 
 export function useChapterReaderPage(novelId: string) {
   const navigate = useNavigate();
@@ -25,9 +21,8 @@ export function useChapterReaderPage(novelId: string) {
     [location.state, navigate, novelId]
   );
   const openOverview = useCallback(() => {
-    const returnPath = (location.state as ReaderRouteState | null)?.readerReturnPath;
-    const state = location.state as ReaderRouteState | null;
-    navigate(returnPath || `/library/${encodeURIComponent(novelId)}`, {
+    const state = readReaderReturnState(location.state);
+    navigate(state?.readerReturnPath ?? `/library/${encodeURIComponent(novelId)}`, {
       replace: true,
       state: state?.backgroundScrollKey
         ? { backgroundScrollKey: state.backgroundScrollKey }

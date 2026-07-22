@@ -7,7 +7,7 @@ export interface TaskInvalidationApi {
   invalidateSummary(client: QueryClient): Promise<unknown>;
   invalidateDetail(client: QueryClient, taskId: string): Promise<unknown>;
   invalidateEvents(client: QueryClient, taskId: string): Promise<unknown>;
-  invalidateNovel(client: QueryClient, novelId: string): Promise<unknown>;
+  invalidateForNovel(client: QueryClient, novelId: string): Promise<unknown>;
 }
 
 export const taskInvalidation: TaskInvalidationApi = {
@@ -16,5 +16,5 @@ export const taskInvalidation: TaskInvalidationApi = {
   invalidateSummary: (client) => client.invalidateQueries({ queryKey: taskKeys.summary() }),
   invalidateDetail: (client, id) => client.invalidateQueries({ queryKey: taskKeys.detail(id) }),
   invalidateEvents: (client, id) => client.invalidateQueries({ queryKey: taskKeys.events(id) }),
-  invalidateNovel: (client, id) => client.invalidateQueries({ queryKey: taskKeys.novel(id) })
+  invalidateForNovel: (client, id) => client.invalidateQueries({ queryKey: taskKeys.novel(id) })
 };

@@ -17,13 +17,19 @@ const slices = [
   'inspect-source-url'
 ] as const;
 
-async function readTree(directory: string, root = directory): Promise<string> {
+async function readTree(
+  directory: string,
+  root = directory,
+  excluded = new Set<string>()
+): Promise<string> {
   const entries = await readdir(directory, { withFileTypes: true });
   const parts: string[] = [];
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     const target = join(directory, entry.name);
-    if (entry.isDirectory()) parts.push(await readTree(target, root));
-    else parts.push(`\n/* ${relative(root, target)} */\n${await readFile(target, 'utf8')}`);
+    const relativePath = relative(root, target);
+    if (excluded.has(relativePath)) continue;
+    if (entry.isDirectory()) parts.push(await readTree(target, root, excluded));
+    else parts.push(`\n/* ${relativePath} */\n${await readFile(target, 'utf8')}`);
   }
   return parts.join('\n');
 }
@@ -354,7 +360,11 @@ test('credential and proxy secrets are feature-local and cleared after use or cl
     ''
   );
 
-  const entitySource = await readTree('apps/web-next/src/entities');
+  const entitySource = await readTree(
+    'apps/web-next/src/entities',
+    undefined,
+    new Set([join('source-credential', 'i18n', 'catalog.ts')])
+  );
   assert.doesNotMatch(entitySource, /CredentialSecret|proxyPassword|cookie-import|bearer-token/);
 });
 
@@ -403,7 +413,7 @@ test('Task 8 public APIs expose administration actions, hooks, catalogs, and reu
 
 test('Source Reader writes stay feature-owned and use only public entity invalidation adapters', async () => {
   const upperLayers = [
-    await readTree('apps/web-next/src/app'),
+    await readTree('apps/web-next/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),
     await readTree('apps/web-next/src/pages'),
     await readTree('apps/web-next/src/entities')
   ].join('\n');

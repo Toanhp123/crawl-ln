@@ -14,7 +14,7 @@ export function useDeleteNovel(options: { onDeleted?: (novelId: string) => void 
       await Promise.all([
         novelInvalidation.invalidateAll(client),
         taskInvalidation.invalidateAll(client),
-        taskInvalidation.invalidateNovel(client, novelId)
+        taskInvalidation.invalidateForNovel(client, novelId)
       ]);
       toast({ kind: 'success', title: t('deleteNovel.deleted') });
       options.onDeleted?.(novelId);

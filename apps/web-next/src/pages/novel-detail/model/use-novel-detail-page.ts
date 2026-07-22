@@ -3,6 +3,7 @@ import { useNovel } from '@/entities/novel';
 import { useNovelTask } from '@/entities/task';
 import { useCrawlNovel } from '@/features/crawl-novel';
 import { useDeleteNovel } from '@/features/delete-novel';
+import { createReaderNavigationState } from '@/features/read-chapter';
 import { useUpdateNovel } from '@/features/update-novel';
 import { useConnectionStatus } from '@/shared/realtime';
 
@@ -44,7 +45,7 @@ export function useNovelDetailPage(novelId: string) {
       removeMutation.error,
     openChapter: (index: number) =>
       navigate(`/library/${encodeURIComponent(novelId)}/read/${index}`, {
-        state: { readerReturnPath: location.pathname, backgroundScrollKey: location.key }
+        state: createReaderNavigationState(location.pathname + location.search, location.key)
       }),
     openLibrary: () => navigate('/library')
   };

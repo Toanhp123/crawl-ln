@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useNovels, type ListNovelsOptions } from '@/entities/novel';
 import { useAddNovelOverlay } from '@/features/add-novel';
 import {
+  createReaderNavigationState,
   listReadingHistory,
   useReadingContinuityVersion,
   type ReadingHistoryEntry
@@ -43,6 +44,7 @@ function serverSort(sort: LibrarySort): ListNovelsOptions['sort'] {
 export function useLibraryPage() {
   const [urlSearchParams, setSearchParams] = useSearchParams();
   const connectionState = useConnectionStatus();
+  const location = useLocation();
   const navigate = useNavigate();
   const addNovel = useAddNovelOverlay();
   const keyword = urlSearchParams.get('q') ?? '';
@@ -164,12 +166,14 @@ export function useLibraryPage() {
     openNovel: (novelId: string) => navigate(`/library/${encodeURIComponent(novelId)}`),
     continueImport: (novelId: string) => navigate(`/library/${encodeURIComponent(novelId)}`),
     continueNovel: (novelId: string, chapterIndex: number) =>
-      navigate(`/library/${encodeURIComponent(novelId)}/read/${chapterIndex}`),
+      navigate(`/library/${encodeURIComponent(novelId)}/read/${chapterIndex}`, {
+        state: createReaderNavigationState(location.pathname + location.search, location.key)
+      }),
     openSearchResult: (item: { novelId: string; chapterIndex?: number }) =>
-      navigate(
-        item.chapterIndex === undefined
-          ? `/library/${encodeURIComponent(item.novelId)}`
-          : `/library/${encodeURIComponent(item.novelId)}/read/${item.chapterIndex}`
-      )
+      item.chapterIndex === undefined
+        ? navigate(`/library/${encodeURIComponent(item.novelId)}`)
+        : navigate(`/library/${encodeURIComponent(item.novelId)}/read/${item.chapterIndex}`, {
+            state: createReaderNavigationState(location.pathname + location.search, location.key)
+          })
   };
 }

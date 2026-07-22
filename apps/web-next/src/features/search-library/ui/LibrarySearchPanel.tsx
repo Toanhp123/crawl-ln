@@ -11,6 +11,7 @@ import {
   Stack,
   Text
 } from '../../../shared/ui';
+import { splitHighlightedSnippet } from '../lib/highlighted-snippet';
 import { useSearchLibraryFeature } from '../model/use-search-library-feature';
 
 const types: SearchDocumentType[] = ['all', 'novel', 'chapter'];
@@ -88,7 +89,20 @@ export function LibrarySearchPanel({
             <ListRow
               key={`${item.type}-${item.documentId}`}
               title={item.title}
-              description={`${item.novelTitle} · ${item.snippet}`}
+              description={
+                <>
+                  {item.novelTitle} ·{' '}
+                  {splitHighlightedSnippet(item.snippet).map((part, index) =>
+                    part.highlighted ? (
+                      <mark key={index} className="rounded bg-primary-state-hover px-0.5 text-text">
+                        {part.text}
+                      </mark>
+                    ) : (
+                      <span key={index}>{part.text}</span>
+                    )
+                  )}
+                </>
+              }
               onClick={() => model.select(item)}
             />
           ))}

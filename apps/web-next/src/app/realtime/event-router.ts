@@ -20,7 +20,7 @@ const realtimeResources = new Set<RealtimeResource>([
 ]);
 
 export interface RealtimeInvalidationRegistry {
-  tasks: Pick<TaskInvalidationApi, 'invalidateAll' | 'invalidateDetail' | 'invalidateNovel'>;
+  tasks: Pick<TaskInvalidationApi, 'invalidateAll' | 'invalidateDetail' | 'invalidateForNovel'>;
   novels: Pick<NovelInvalidationApi, 'invalidateList' | 'invalidateStats' | 'invalidateDetail'>;
   scheduler: Pick<
     SchedulerInvalidationApi,
@@ -146,7 +146,7 @@ export async function routeRealtimeEvents(
       invalidations.push(registry.tasks.invalidateDetail(client, taskId));
     }
     for (const novelId of novelIds) {
-      invalidations.push(registry.tasks.invalidateNovel(client, novelId));
+      invalidations.push(registry.tasks.invalidateForNovel(client, novelId));
     }
   }
 

@@ -10,6 +10,6 @@ export async function invalidateAddNovelResult(
   await Promise.all([
     novelInvalidation.invalidateAll(client),
     taskInvalidation.invalidateAll(client),
-    taskInvalidation.invalidateNovel(client, result.novelId)
+    taskInvalidation.invalidateForNovel(client, result.novelId)
   ]);
 }

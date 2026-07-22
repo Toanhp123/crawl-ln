@@ -15,7 +15,7 @@ export function useUpdateNovel() {
         novelInvalidation.invalidateAll(client),
         novelInvalidation.invalidateDetail(client, novelId),
         taskInvalidation.invalidateAll(client),
-        taskInvalidation.invalidateNovel(client, novelId)
+        taskInvalidation.invalidateForNovel(client, novelId)
       ]);
       toast({
         kind: result.task ? 'success' : 'info',

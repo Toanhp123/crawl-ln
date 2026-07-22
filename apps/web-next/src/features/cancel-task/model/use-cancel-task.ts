@@ -12,7 +12,7 @@ export function useCancelTask() {
     onSuccess: async (task) => {
       await Promise.all([
         taskInvalidation.invalidateDetail(client, task.id),
-        taskInvalidation.invalidateNovel(client, task.novelId),
+        taskInvalidation.invalidateForNovel(client, task.novelId),
         taskInvalidation.invalidateAll(client)
       ]);
       toast({ kind: 'success', title: t('cancelTask.success') });

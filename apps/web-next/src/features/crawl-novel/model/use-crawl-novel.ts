@@ -12,7 +12,7 @@ export function useCrawlNovel() {
     onSuccess: async (task) => {
       await Promise.all([
         taskInvalidation.invalidateAll(client),
-        taskInvalidation.invalidateNovel(client, task.novelId)
+        taskInvalidation.invalidateForNovel(client, task.novelId)
       ]);
       toast({
         kind: 'info',

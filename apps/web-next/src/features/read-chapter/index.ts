@@ -1,5 +1,10 @@
 export { readChapterCatalogs } from './i18n/catalog';
 export {
+  createReaderNavigationState,
+  readReaderReturnState,
+  type ReaderNavigationState
+} from './lib/reader-navigation-state';
+export {
   createChapterLoaderAdapter,
   chapterLoaderAdapter,
   type ChapterReadPort
@@ -42,10 +47,7 @@ export {
   type ReaderControllerOptions
 } from './model/use-reader-controller';
 export { useReaderProgress } from './model/use-reader-progress';
-export {
-  isReaderUrlOnlySync,
-  type ReaderRouteSyncSnapshot
-} from './lib/reader-route-sync';
+export { isReaderUrlOnlySync, type ReaderRouteSyncSnapshot } from './lib/reader-route-sync';
 export {
   useSwipeChapterNavigation,
   type SwipeChapterNavigationOptions

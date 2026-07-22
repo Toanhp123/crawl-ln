@@ -9,10 +9,10 @@ const LibraryPage = lazy(() =>
   routeLoaders.library().then((module) => ({ default: module.LibraryPage }))
 );
 const NovelDetailPage = lazy(() =>
-  routeLoaders.novelDetail().then((module) => ({ default: module.FoundationPage }))
+  routeLoaders.novelDetail().then((module) => ({ default: module.NovelDetailPage }))
 );
 const ChapterReaderPage = lazy(() =>
-  routeLoaders.reader().then((module) => ({ default: module.FoundationPage }))
+  routeLoaders.reader().then((module) => ({ default: module.ChapterReaderPage }))
 );
 const TaskDetailPage = lazy(() =>
   routeLoaders.taskDetail().then((module) => ({ default: module.TaskDetailPage }))

@@ -2,11 +2,13 @@ const foundationPage = () => import('@/pages/foundation');
 const libraryPage = () => import('@/pages/library');
 const activityPage = () => import('@/pages/activity');
 const taskDetailPage = () => import('@/pages/task-detail');
+const novelDetailPage = () => import('@/pages/novel-detail');
+const chapterReaderPage = () => import('@/pages/chapter-reader');
 
 export const routeLoaders = {
   library: libraryPage,
-  novelDetail: foundationPage,
-  reader: foundationPage,
+  novelDetail: novelDetailPage,
+  reader: chapterReaderPage,
   taskDetail: taskDetailPage,
   activity: activityPage,
   sources: foundationPage,

@@ -6,6 +6,7 @@ const ok = (data: unknown) => ({ data, error: null });
 test('remediated Sources UI shows safe quarantine and diagnostics without secret leakage', async ({
   page
 }) => {
+  await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await page.route('**/api/source-reader/plugins', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -81,8 +82,8 @@ test('remediated Sources UI shows safe quarantine and diagnostics without secret
   );
 
   await page.goto('/sources');
-  await expect(page.getByText('Unsafe Demo')).toBeVisible();
-  await expect(page.getByText(/quarantined/i)).toBeVisible();
+  await expect(page.getByText('Unsafe Demo', { exact: true })).toBeVisible();
+  await expect(page.getByText('Quarantined', { exact: true })).toBeVisible();
 
   const diagnostics = await page.evaluate(async () => {
     const response = await fetch('/api/source-reader/plugins/unsafe-demo');
@@ -102,12 +103,10 @@ test('remediated Sources UI shows safe quarantine and diagnostics without secret
   expect(routeFailure).toContain('NETWORK_ROUTE_TEST_FAILED');
   expect(routeFailure).not.toContain(secret);
 
-  const toggle = page.getByRole('switch', { name: /Unsafe Demo/i });
+  const toggle = page.getByRole('switch', { name: 'Enable Unsafe Demo', exact: true });
   await toggle.click();
-  await expect(
-    page.getByText(/Không thể cập nhật nguồn truyện|Unable to update source/i)
-  ).toBeVisible();
-  await expect(page.getByText(/^(Yêu cầu thất bại\.?|Request failed\.?)$/i)).toBeVisible();
+  await expect(page.getByText('Plugin update failed', { exact: true })).toBeVisible();
+  await expect(page.getByText('PLUGIN_PACKAGE_INVALID', { exact: true })).toBeVisible();
   await expect(page.getByText(secret)).toHaveCount(0);
 
   const screenshot = await page.screenshot();

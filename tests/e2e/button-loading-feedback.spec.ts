@@ -15,9 +15,10 @@ const plugin = {
 
 const success = (data: unknown) => JSON.stringify({ data, error: null });
 
-test('source refresh shows stable in-place loading feedback even for a fast request', async ({
+test('source switch shows stable in-place loading feedback even for a fast request', async ({
   page
 }) => {
+  await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
@@ -31,6 +32,14 @@ test('source refresh shows stable in-place loading feedback even for a fast requ
       return;
     }
 
+    if (
+      pathname === '/api/source-reader/plugins/novelcool/disable' &&
+      request.method() === 'POST'
+    ) {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+
     if (pathname === '/api/tasks/summary') {
       await route.fulfill({
         status: 200,
@@ -49,48 +58,51 @@ test('source refresh shows stable in-place loading feedback even for a fast requ
 
   await page.goto('/sources');
 
-  const refresh = page.getByRole('button', { name: /refresh|tải lại/i });
-  await expect(refresh).toBeVisible();
-  const before = await refresh.boundingBox();
+  const toggle = page.getByRole('switch', { name: 'Enable NovelCool', exact: true });
+  await expect(toggle).toBeChecked();
+  const before = await toggle.boundingBox();
 
-  await refresh.click();
-  await expect(refresh).toHaveAttribute('data-feedback-phase', 'loading');
-  const during = await refresh.boundingBox();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('data-feedback-phase', 'loading');
+  const during = await toggle.boundingBox();
 
   expect(before).not.toBeNull();
   expect(during).not.toBeNull();
   expect(Math.abs(during!.width - before!.width)).toBeLessThan(1);
   expect(Math.abs(during!.height - before!.height)).toBeLessThan(1);
 
-  await expect(refresh).toHaveAttribute('data-feedback-phase', 'success', { timeout: 1200 });
+  await expect(toggle).toHaveAttribute('data-feedback-phase', 'success', { timeout: 1200 });
 });
 
-test('source refresh reports an error phase instead of a success check on failure', async ({
+test('source switch reports an error phase instead of a success check on failure', async ({
   page
 }) => {
-  let pluginRequests = 0;
+  await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
 
     if (pathname === '/api/source-reader/plugins' && request.method() === 'GET') {
-      pluginRequests += 1;
-      if (pluginRequests === 1) {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: success([plugin])
-        });
-      } else {
-        await route.fulfill({
-          status: 500,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            data: null,
-            error: { code: 'INTERNAL_ERROR', message: 'Refresh failed', details: null }
-          })
-        });
-      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: success([plugin])
+      });
+      return;
+    }
+
+    if (
+      pathname === '/api/source-reader/plugins/novelcool/disable' &&
+      request.method() === 'POST'
+    ) {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: null,
+          error: { code: 'INTERNAL_ERROR', message: 'Toggle failed', details: null }
+        })
+      });
       return;
     }
 
@@ -111,10 +123,11 @@ test('source refresh reports an error phase instead of a success check on failur
   });
 
   await page.goto('/sources');
-  const refresh = page.getByRole('button', { name: /refresh|tải lại/i });
-  await refresh.click();
+  const toggle = page.getByRole('switch', { name: 'Enable NovelCool', exact: true });
+  await expect(toggle).toBeChecked();
+  await toggle.click();
 
-  await expect(refresh).toHaveAttribute('data-feedback-phase', 'loading');
-  await expect(refresh).toHaveAttribute('data-feedback-phase', 'error', { timeout: 1400 });
-  await expect(refresh).not.toHaveAttribute('data-feedback-phase', 'success');
+  await expect(toggle).toHaveAttribute('data-feedback-phase', 'loading');
+  await expect(toggle).toHaveAttribute('data-feedback-phase', 'error', { timeout: 1400 });
+  await expect(toggle).not.toHaveAttribute('data-feedback-phase', 'success');
 });

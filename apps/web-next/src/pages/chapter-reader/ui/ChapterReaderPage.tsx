@@ -5,6 +5,7 @@ import {
   captureReadingAnchor,
   isBookmarked,
   isReaderUrlOnlySync,
+  isReaderUrlUpdatePending,
   markChapterRead,
   readChapterIds,
   readReadingPosition,
@@ -56,6 +57,9 @@ export function ChapterReaderPage() {
   const restored = useRef(false);
   const interactive = useRef(false);
   const currentAnchor = useRef({ paragraphId: '', paragraphOffset: 0, scrollRatio: 0 });
+  const lastScrollY = useRef(0);
+  const allowPreviousLoad = useRef(false);
+  const allowNextLoad = useRef(true);
   const chapters = model.detail.data?.chapters ?? [];
   const controller = useReaderController({
     novelId,
@@ -116,7 +120,15 @@ export function ChapterReaderPage() {
     if (!viewport || !top || !bottom) return;
     const topObserver = new IntersectionObserver(
       (entries) => {
-        if (!interactive.current || !entries.some((entry) => entry.isIntersecting)) return;
+        if (
+          !interactive.current ||
+          !allowPreviousLoad.current ||
+          !controller.hasPrevious ||
+          controller.loadingPrevious ||
+          !entries.some((entry) => entry.isIntersecting)
+        )
+          return;
+        allowPreviousLoad.current = false;
         const before = viewport.scrollHeight;
         void controller.loadPrevious().then((loaded) => {
           if (!loaded) return;
@@ -129,7 +141,14 @@ export function ChapterReaderPage() {
     );
     const bottomObserver = new IntersectionObserver(
       (entries) => {
-        if (interactive.current && entries.some((entry) => entry.isIntersecting)) {
+        if (
+          interactive.current &&
+          allowNextLoad.current &&
+          controller.hasNext &&
+          !controller.loadingNext &&
+          entries.some((entry) => entry.isIntersecting)
+        ) {
+          allowNextLoad.current = false;
           void controller.loadNext();
         }
       },
@@ -141,7 +160,15 @@ export function ChapterReaderPage() {
       topObserver.disconnect();
       bottomObserver.disconnect();
     };
-  }, [controller.loadNext, controller.loadPrevious, viewportRef]);
+  }, [
+    controller.hasNext,
+    controller.hasPrevious,
+    controller.loadNext,
+    controller.loadPrevious,
+    controller.loadingNext,
+    controller.loadingPrevious,
+    viewportRef
+  ]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -205,11 +232,17 @@ export function ChapterReaderPage() {
     if (!viewport || initialIndex === null) return;
     let timer = 0;
     const onScroll = () => {
+      const currentY = viewport.scrollTop;
+      const delta = currentY - lastScrollY.current;
+      lastScrollY.current = currentY;
       if (!interactive.current) return;
-      setChrome(viewport.scrollTop < 72);
+      if (delta < -10) allowPreviousLoad.current = true;
+      if (delta > 10) allowNextLoad.current = true;
+      setChrome(currentY < 72);
       window.clearTimeout(timer);
       timer = window.setTimeout(persistCurrentPosition, 220);
     };
+    lastScrollY.current = viewport.scrollTop;
     viewport.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.clearTimeout(timer);
@@ -219,9 +252,16 @@ export function ChapterReaderPage() {
   }, [initialIndex, persistCurrentPosition, viewportRef]);
 
   useEffect(() => {
-    if (isReaderUrlOnlySync(controller, initialIndex ?? -1)) return;
+    const requestedIndex = initialIndex ?? -1;
+    if (
+      isReaderUrlOnlySync(controller, requestedIndex) ||
+      (interactive.current && isReaderUrlUpdatePending(controller, requestedIndex))
+    )
+      return;
     restored.current = false;
     interactive.current = false;
+    allowPreviousLoad.current = false;
+    allowNextLoad.current = true;
     viewportRef.current?.scrollTo({ top: 0, behavior: 'auto' });
   }, [controller.activeIndex, controller.chapters, initialIndex, novelId, viewportRef]);
 
@@ -250,6 +290,7 @@ export function ChapterReaderPage() {
       });
     }
     restored.current = true;
+    lastScrollY.current = viewport.scrollTop;
     interactive.current = true;
   }, [chapters, initialIndex, initialLoaded, novelId, viewportRef]);
 

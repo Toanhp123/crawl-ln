@@ -33,6 +33,10 @@ async function primaryLandmarks(page: Page) {
   );
 }
 
+function primaryNavigation(page: Page) {
+  return page.locator('nav:visible', { has: page.locator('a[href="/library"]') });
+}
+
 for (const path of ['/library', '/activity', '/sources', '/settings']) {
   test(`current and next mobile screens expose matching primary landmarks for ${path}`, async ({
     browser
@@ -43,8 +47,21 @@ for (const path of ['/library', '/activity', '/sources', '/settings']) {
     await installParityMocks(next);
     await current.goto(`http://127.0.0.1:4173${path}`);
     await next.goto(`http://127.0.0.1:4174${path}`);
-    await expect(next.locator('main')).toBeVisible();
+    await expect(current.locator('main header')).toBeVisible();
+    await expect(next.locator('main header')).toBeVisible();
+    await expect(primaryNavigation(current)).toHaveCount(1);
+    await expect(primaryNavigation(next)).toHaveCount(1);
+    await expect(next.locator('aside')).toBeHidden();
     expect(await primaryLandmarks(next)).toEqual(await primaryLandmarks(current));
+    if (path === '/sources') {
+      const currentSourcesNavigation = current.locator(
+        'div[role="navigation"][aria-label]:visible'
+      );
+      const nextSourcesNavigation = next.locator('div[role="navigation"][aria-label]:visible');
+      const currentLabel = await currentSourcesNavigation.getAttribute('aria-label');
+      expect(currentLabel).toBe('Ngu\u1ed3n truy\u1ec7n');
+      expect(await nextSourcesNavigation.getAttribute('aria-label')).toBe(currentLabel);
+    }
     await current.close();
     await next.close();
   });

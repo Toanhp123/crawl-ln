@@ -72,32 +72,36 @@ async function mockSourceReader(page: Page, options?: { failDisable?: boolean })
 test('Sources page loads Source Reader plugins and rolls back a failed switch', async ({
   page
 }) => {
+  await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await mockSourceReader(page, { failDisable: true });
 
   await page.goto('/sources');
-  const toggle = page.getByRole('switch', { name: /NovelCool/i });
+  const toggle = page.getByRole('switch', { name: 'Enable NovelCool', exact: true });
   await expect(toggle).toBeChecked();
   await toggle.click();
   await expect(toggle).toBeChecked();
 });
 
 test('Sources console navigates all sections and runs the Source Inspector', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await mockSourceReader(page);
 
   await page.goto('/sources?section=credentials');
   await expect(page.getByRole('heading', { name: 'Credential profiles' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Network' }).click();
+  await page.getByRole('button', { name: 'Network', exact: true }).click();
   await expect(page).toHaveURL(/section=network/);
-  await expect(page.getByRole('heading', { name: 'Network profiles' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Network profiles', exact: true })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Challenges' }).click();
-  await expect(page.getByRole('heading', { name: 'Authentication challenges' })).toBeVisible();
+  await page.getByRole('button', { name: 'Challenges', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Authentication challenges', exact: true })
+  ).toBeVisible();
 
-  await page.getByRole('button', { name: 'Inspector' }).click();
-  await expect(page.getByRole('heading', { name: 'Source Inspector' })).toBeVisible();
-  await page.getByLabel('Source URL').fill('https://novelcool.com/novel/example');
-  await page.getByRole('button', { name: 'Run operation' }).click();
+  await page.getByRole('button', { name: 'Inspector', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Source Inspector', exact: true })).toBeVisible();
+  await page.getByLabel('Source URL', { exact: true }).fill('https://novelcool.com/novel/example');
+  await page.getByRole('button', { name: 'Run operation', exact: true }).click();
   await expect(page.getByText('novelcool.com', { exact: true })).toBeVisible();
-  await expect(page.getByText('novelcool', { exact: true })).toBeVisible();
+  await expect(page.getByText(/novelcool@1\.0\.0/).first()).toBeVisible();
 });

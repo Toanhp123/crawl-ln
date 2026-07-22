@@ -47,7 +47,11 @@ export {
   type ReaderControllerOptions
 } from './model/use-reader-controller';
 export { useReaderProgress } from './model/use-reader-progress';
-export { isReaderUrlOnlySync, type ReaderRouteSyncSnapshot } from './lib/reader-route-sync';
+export {
+  isReaderUrlOnlySync,
+  isReaderUrlUpdatePending,
+  type ReaderRouteSyncSnapshot
+} from './lib/reader-route-sync';
 export {
   useSwipeChapterNavigation,
   type SwipeChapterNavigationOptions

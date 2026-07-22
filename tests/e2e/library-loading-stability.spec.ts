@@ -18,6 +18,7 @@ test('stale continue-reading history does not shift the library search controls'
   page
 }) => {
   await page.addInitScript((history) => {
+    localStorage.setItem('novel-tool-language', 'en');
     localStorage.setItem('novel-tool-reading-history:v2', JSON.stringify(history));
   }, staleHistory);
 
@@ -53,14 +54,12 @@ test('stale continue-reading history does not shift the library search controls'
   );
   await page.goto('/library');
 
-  const search = page.getByPlaceholder(
-    /search novels or chapter content|tìm truyện hoặc nội dung chương/i
-  );
+  const search = page.getByRole('searchbox').first();
   await expect(search).toBeVisible();
   const before = await search.boundingBox();
 
   await novelsResponse;
-  await expect(page.getByText(/your library is empty|thư viện.*trống/i)).toBeVisible();
+  await expect(page.getByText('Your library is empty', { exact: true })).toBeVisible();
   const after = await search.boundingBox();
 
   expect(before).not.toBeNull();

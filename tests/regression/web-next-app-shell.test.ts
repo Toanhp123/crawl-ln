@@ -79,9 +79,10 @@ test('provider composition preserves startup ownership and maintenance behavior'
   }
 
   const maintenance = await readFile(
-    'apps/web-next/src/app/providers/MaintenanceProvider.tsx',
+    'apps/web-next/src/shared/maintenance/MaintenanceProvider.tsx',
     'utf8'
   );
+  assert.match(providers, /from ['"]@\/shared\/maintenance['"]/);
   assert.match(maintenance, /beforeunload/);
   assert.match(maintenance, /reloadOnSuccess/);
   assert.match(maintenance, /useMaintenanceOperation/);
@@ -96,15 +97,21 @@ test('provider composition preserves startup ownership and maintenance behavior'
 
 test('query provider injects the exact lightweight persistence policy', async () => {
   const queryProvider = await readFile('apps/web-next/src/app/providers/QueryProvider.tsx', 'utf8');
+  const queryPolicy = await readFile(
+    'apps/web-next/src/app/providers/query-persistence.ts',
+    'utf8'
+  );
   for (const marker of [
     /root\s*===\s*['"]novels['"].*scope\s*===\s*['"]list['"]/s,
     /root\s*===\s*['"]tasks['"].*scope\s*===\s*['"]summary['"]/s,
     /root\s*===\s*['"]scheduler['"].*scope\s*===\s*['"]status['"]/s,
     /root\s*===\s*['"]source-reader['"].*scope\s*===\s*['"]plugins['"]/s
   ]) {
-    assert.match(queryProvider, marker);
+    assert.match(queryPolicy, marker);
   }
-  assert.doesNotMatch(queryProvider, /chapters|events/);
+  assert.match(queryPolicy, /queryKey\.length\s*===\s*2/);
+  assert.doesNotMatch(queryPolicy, /chapters|events/);
+  assert.match(queryProvider, /shouldPersistAppQueryKey\(query\.queryKey\)/);
   assert.match(queryProvider, /ToastProvider/);
   const appProviders = await readFile('apps/web-next/src/app/providers/AppProviders.tsx', 'utf8');
   assert.match(appProviders, /RealtimeProvider/);
@@ -166,7 +173,8 @@ test('app i18n merges shell and public slice catalogs with typed error translati
   assert.match(catalog, /@\/features\/add-novel/);
   assert.match(catalog, /@\/features\/reader-preferences/);
   assert.match(catalog, /@\/entities\/source-plugin/);
-  assert.match(catalog, /catalogFrom/);
+  assert.match(catalog, /const sliceCatalogs/);
+  assert.doesNotMatch(catalog, /catalogFrom|import \* as|Object\.entries/);
   assert.match(catalog, /appMessagesEn/);
   assert.match(catalog, /appMessagesVi/);
 

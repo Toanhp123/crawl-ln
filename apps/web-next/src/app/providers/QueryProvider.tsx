@@ -2,16 +2,13 @@ import type { Query } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import type { QueryPersistenceOptions } from '@/shared/api';
 import { ToastProvider } from '@/shared/ui';
+import { shouldPersistAppQueryKey } from './query-persistence';
 
 export function shouldPersistAppQuery(query: Query): boolean {
-  const [root, scope] = query.queryKey;
-  return (
-    (root === 'novels' && scope === 'list') ||
-    (root === 'tasks' && scope === 'summary') ||
-    (root === 'scheduler' && scope === 'status') ||
-    (root === 'source-reader' && scope === 'plugins')
-  );
+  return shouldPersistAppQueryKey(query.queryKey);
 }
+
+export { shouldPersistAppQueryKey } from './query-persistence';
 
 export const appQueryPersistenceOptions: QueryPersistenceOptions = {
   buster: 'v3-app-shell-v1',

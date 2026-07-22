@@ -5,6 +5,7 @@ coverage/
 playwright-report/
 test-results/
 .nyc_output/
+# Release evidence, migration copies and runtime logs remain outside Git.
 .artifacts/
 *.tsbuildinfo
 .env

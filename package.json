@@ -38,6 +38,7 @@
     "verify": "node scripts/verify.mjs",
     "verify:v3": "node scripts/verify-v3.mjs",
     "verify:release": "npm run verify && npm run test:e2e && npm run rehearse:v3:cutover",
+    "verify:release:v3": "npm run verify && npm run test:e2e && npm run rehearse:v3:cutover && node scripts/v3/release-evidence.mjs",
     "migrate:v3:dry-run": "node --experimental-sqlite scripts/v3/migrate-storage.mjs --mode dry-run",
     "smoke:v3:candidate": "node --experimental-sqlite scripts/v3/smoke-candidate.mjs",
     "cutover:v3:storage": "node --experimental-sqlite scripts/v3/cutover-storage.mjs",

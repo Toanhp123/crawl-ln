@@ -7,14 +7,14 @@ test('canonical web scripts invoke Vite through Node for Termux compatibility', 
     scripts: Record<string, string>;
   };
 
-  assert.equal(packageJson.scripts.dev, 'node ../../node_modules/vite/bin/vite.js --host 0.0.0.0');
+  assert.equal(packageJson.scripts.dev, 'node node_modules/vite/bin/vite.js --host 0.0.0.0');
   assert.equal(
     packageJson.scripts.build,
-    'tsc -p tsconfig.json && node ../../node_modules/vite/bin/vite.js build'
+    'tsc -p tsconfig.json && node node_modules/vite/bin/vite.js build'
   );
   assert.equal(
     packageJson.scripts.preview,
-    'node ../../node_modules/vite/bin/vite.js preview --host 0.0.0.0'
+    'node node_modules/vite/bin/vite.js preview --host 0.0.0.0'
   );
 });
 

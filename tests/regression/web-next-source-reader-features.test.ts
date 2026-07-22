@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import test from 'node:test';
-import { QueryClient } from '@tanstack/react-query';
 
 const featureRoot = 'apps/web/src/features';
 const slices = [
@@ -37,7 +36,8 @@ async function readTree(
 test('plugin toggle rolls back cached state when the server rejects the write', async () => {
   const plugins = await import('../../apps/web/src/features/manage-source-plugins/index.ts');
   const entities = await import('../../apps/web/src/entities/source-plugin/index.ts');
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const { createQueryClient } = await import('../../apps/web/src/shared/api/index.ts');
+  const client = createQueryClient();
   client.setQueryData(entities.sourcePluginKeys.list(), [
     {
       id: 'plugin-1',

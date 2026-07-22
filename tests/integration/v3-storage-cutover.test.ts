@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { access, mkdir, mkdtemp, readFile, rename, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, mkdtemp, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -9,6 +9,7 @@ import test from 'node:test';
 import { promisify } from 'node:util';
 import { cutoverStorage } from '../../scripts/v3/cutover-storage.mjs';
 import { rollbackStorage } from '../../scripts/v3/rollback-storage.mjs';
+import { assertStorageQuiescent } from '../../scripts/v3/storage-safety.mjs';
 import { sha256File, storageManifest } from '../../scripts/v3/storage-manifest.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -200,4 +201,26 @@ test('cutover refuses an existing operation lock without moving storage', async 
 
   assert.equal(readMarker(fixture.livePath), 'v22');
   assert.equal(readMarker(fixture.candidatePath), 'v3');
+});
+
+test('quiescence check refuses WAL-backed storage without changing source bytes', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'novel-tool-v3-quiescence-'));
+  const sourcePath = join(root, 'storage-source');
+  const snapshotPath = join(root, 'storage-snapshot');
+  await mkdir(sourcePath, { recursive: true });
+
+  const database = new DatabaseSync(join(sourcePath, 'novel-tool.sqlite'));
+  database.exec('PRAGMA journal_mode = WAL');
+  database.exec('PRAGMA wal_autocheckpoint = 0');
+  database.exec('CREATE TABLE evidence (id INTEGER PRIMARY KEY, value TEXT NOT NULL)');
+  database.exec("INSERT INTO evidence(value) VALUES ('kept in wal')");
+  await cp(sourcePath, snapshotPath, { recursive: true, preserveTimestamps: true });
+  database.close();
+
+  const before = await storageManifest(snapshotPath);
+  assert.ok(before.files.some((file) => file.path.endsWith('-wal') && file.size > 0));
+
+  await assert.rejects(() => assertStorageQuiescent(snapshotPath), /WAL sidecar/i);
+
+  assert.deepEqual(await storageManifest(snapshotPath), before);
 });

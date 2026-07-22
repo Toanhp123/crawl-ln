@@ -114,6 +114,18 @@ export async function withOperationLock(journalPath, operation) {
 }
 
 export async function assertStorageQuiescent(storagePath) {
+  const manifestBefore = await storageManifest(storagePath);
+  const walSidecars = manifestBefore.files.filter(
+    (file) => file.path.endsWith('-wal') || file.path.endsWith('-shm')
+  );
+  if (walSidecars.length > 0) {
+    throw new Error(
+      `Storage has WAL sidecar files and cannot be checked without changing source bytes: ${walSidecars
+        .map((file) => file.path)
+        .join(', ')}`
+    );
+  }
+
   const databasePath = await findStorageDatabase(storagePath);
   const database = new DatabaseSync(databasePath);
   let transactionOpen = false;
@@ -134,6 +146,11 @@ export async function assertStorageQuiescent(storagePath) {
     throw new Error(`Storage database is not quiescent: ${databasePath}`, { cause: error });
   } finally {
     database.close();
+  }
+
+  const manifestAfter = await storageManifest(storagePath);
+  if (manifestAfter.sha256 !== manifestBefore.sha256) {
+    throw new Error(`Storage quiescence check changed source bytes: ${databasePath}`);
   }
 }
 

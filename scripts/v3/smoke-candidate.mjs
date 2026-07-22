@@ -2,10 +2,12 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { access, cp, mkdir, readFile, rm } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
 import { chromium } from '@playwright/test';
 import { writeCandidateManifestFromEvidence } from './candidate-manifest.mjs';
 import { assertMigrationReport, validateMigrationReport } from './migration-report.mjs';
 import { reserveLoopbackPort, startManagedProcess, waitForHttp } from './process-runner.mjs';
+import { findStorageDatabase } from './storage-manifest.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const apiEntry = join(projectRoot, 'apps', 'api-next', 'dist', 'main.js');
@@ -234,6 +236,79 @@ export async function createCandidateRuntimeStorage({ staging, workRoot }) {
   };
 }
 
+export async function ensureCandidateSmokeProbe(storagePath) {
+  const databasePath = await findStorageDatabase(storagePath);
+  const database = new DatabaseSync(databasePath);
+  let transactionOpen = false;
+  try {
+    const readable = database
+      .prepare(
+        `SELECT n.id
+           FROM library_novels n
+           JOIN library_chapters c ON c.novel_id = n.id
+          WHERE c.source_available = 1
+            AND c.status = 'fetched'
+            AND COALESCE(c.clean_text, c.raw_text, '') <> ''
+          LIMIT 1`
+      )
+      .get();
+    if (readable) return { seeded: false };
+
+    const novelId = `candidate-smoke-probe-${randomUUID()}`;
+    const chapterId = `candidate-smoke-chapter-${randomUUID()}`;
+    const timestamp = '9999-12-31T23:59:59.999Z';
+    database.exec('BEGIN IMMEDIATE');
+    transactionOpen = true;
+    database
+      .prepare(
+        `INSERT INTO library_novels
+          (id, title, source_url, source_name, author, cover_url, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        novelId,
+        'Candidate Smoke Probe',
+        `https://candidate-smoke.invalid/novels/${novelId}`,
+        'candidate-smoke',
+        'Novel Tool',
+        null,
+        'completed',
+        timestamp,
+        timestamp
+      );
+    database
+      .prepare(
+        `INSERT INTO library_chapters
+          (id, novel_id, chapter_index, title, source_url, raw_text, clean_text, status,
+           error_message, source_available, content_version, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        chapterId,
+        novelId,
+        1,
+        'Candidate Smoke Chapter',
+        `https://candidate-smoke.invalid/novels/${novelId}/chapters/1`,
+        '<p>Candidate smoke chapter content.</p>',
+        'Candidate smoke chapter content.',
+        'fetched',
+        null,
+        1,
+        1,
+        timestamp,
+        timestamp
+      );
+    database.exec('COMMIT');
+    transactionOpen = false;
+    return { seeded: true, novelId, chapterId };
+  } catch (error) {
+    if (transactionOpen) database.exec('ROLLBACK');
+    throw error;
+  } finally {
+    database.close();
+  }
+}
+
 export function assertSmokeableMigrationReport(report) {
   assertMigrationReport(report);
   if (report.validation.errors.length > 0) {
@@ -287,6 +362,7 @@ export async function smokeCandidate(input) {
       staging: migrationReport.candidate.storagePath,
       workRoot: join(dirname(resolve(input.outputPath)), 'runtime')
     });
+    await ensureCandidateSmokeProbe(runtimeStorage.path);
     const apiEnvironment = createCandidateApiEnvironment({
       baseEnvironment: environment,
       apiPort: apiReservation.port,

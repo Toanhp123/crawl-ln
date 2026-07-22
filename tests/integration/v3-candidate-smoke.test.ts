@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import {
   createCandidateManifest,
@@ -21,6 +22,7 @@ import {
   assertRedactedCandidateData,
   createCandidateApiEnvironment,
   createCandidateRuntimeStorage,
+  ensureCandidateSmokeProbe,
   runCandidateHttpSmoke,
   smokeCandidate
 } from '../../scripts/v3/smoke-candidate.mjs';
@@ -218,6 +220,45 @@ test('candidate runtime storage is disposable and leaves staging bytes unchanged
   assert.deepEqual(await readFile(join(staging, 'novel-tool.sqlite')), before);
   await runtime.cleanup();
   await assert.rejects(() => access(runtime.path));
+});
+
+test('candidate runtime seeds a disposable reader probe when migrated storage is empty', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'novel-tool-v3-empty-runtime-'));
+  const source = join(root, 'source');
+  const staging = join(root, 'staging');
+  const reportPath = join(root, 'migration.json');
+  await createV22StorageFixture(source);
+
+  const sourceDatabase = new DatabaseSync(join(source, 'novel-tool.sqlite'));
+  sourceDatabase.exec('DELETE FROM crawl_tasks; DELETE FROM chapters; DELETE FROM novels');
+  sourceDatabase.close();
+  await runMigrationDryRun({ source, staging, reportPath });
+
+  const stagingBefore = await readFile(join(staging, 'novel-tool.sqlite'));
+  const runtime = await createCandidateRuntimeStorage({
+    staging,
+    workRoot: join(root, 'runtime')
+  });
+  const probe = await ensureCandidateSmokeProbe(runtime.path);
+  const runtimeDatabase = new DatabaseSync(join(runtime.path, 'novel-tool.sqlite'), {
+    readOnly: true
+  });
+
+  try {
+    assert.equal(probe.seeded, true);
+    assert.equal(
+      runtimeDatabase.prepare('SELECT COUNT(*) AS count FROM library_novels').get()!.count,
+      1
+    );
+    assert.equal(
+      runtimeDatabase.prepare('SELECT clean_text FROM library_chapters').get()!.clean_text,
+      'Candidate smoke chapter content.'
+    );
+    assert.deepEqual(await readFile(join(staging, 'novel-tool.sqlite')), stagingBefore);
+  } finally {
+    runtimeDatabase.close();
+    await runtime.cleanup();
+  }
 });
 
 test('candidate smoke command is exposed and its evidence directory is ignored', async () => {

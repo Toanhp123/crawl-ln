@@ -7,6 +7,8 @@ Tài liệu trong working tree chỉ mô tả hệ thống hiện tại và các
 - [Architecture](ARCHITECTURE.md)
 - [Source Reader](SOURCE_READER.md)
 - [E2E test checklist](E2E_TEST_CHECKLIST.md)
+- [V3 storage cutover](V3_CUTOVER.md)
+- [V3 storage rollback](V3_ROLLBACK.md)
 
 ## Backend
 

@@ -87,7 +87,9 @@ test('Sources console navigates all sections and runs the Source Inspector', asy
   await mockSourceReader(page);
 
   await page.goto('/sources?section=credentials');
-  await expect(page.getByRole('heading', { name: 'Credential profiles' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Credential profiles', exact: true })
+  ).toBeVisible();
 
   await page.getByRole('button', { name: 'Network', exact: true }).click();
   await expect(page).toHaveURL(/section=network/);

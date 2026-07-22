@@ -83,3 +83,18 @@ npm run test:integration
 npm run build
 npm run test:e2e
 ```
+
+## 8. V3 cutover rehearsal
+
+Run the complete copy, migration, candidate evidence, storage swap, live smoke,
+rollback and hash-restore rehearsal before a production cutover:
+
+```bash
+npm run rehearse:v3:cutover
+```
+
+The rehearsal intentionally injects one live-smoke failure so the rollback path
+is exercised. Review `.artifacts/v3/rollback-rehearsal.json`; the eight steps
+must be ordered as copy, migrate, validate, candidate-smoke, cutover, live-smoke,
+rollback and hash-verify. Use [V3 Storage Cutover](V3_CUTOVER.md) and [V3 Storage
+Rollback](V3_ROLLBACK.md) for the operator procedure and recovery commands.

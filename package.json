@@ -52,6 +52,7 @@
     "smoke:v3:candidate": "node --experimental-sqlite scripts/v3/smoke-candidate.mjs",
     "cutover:v3:storage": "node --experimental-sqlite scripts/v3/cutover-storage.mjs",
     "rollback:v3:storage": "node --experimental-sqlite scripts/v3/rollback-storage.mjs",
+    "rehearse:v3:cutover": "node --experimental-sqlite --import tsx scripts/v3/rehearse-cutover.mjs",
     "format": "prettier --write \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"tests/**/*.ts\"",
     "build:prepared": "node scripts/build-prepared.mjs",

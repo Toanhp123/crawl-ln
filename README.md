@@ -63,6 +63,7 @@ npm run test:integration            # integration tests, tự chuẩn bị share
 npm run test:e2e:install            # cài Chromium cho Playwright
 npm run test:e2e                    # browser E2E
 npm run verify                      # lockfile, check, build, regression, integration
+npm run rehearse:v3:cutover        # migration, cutover, rollback and hash-restore rehearsal
 npm run db:reset -w @novel-tool/api # reset SQLite local
 ```
 
@@ -136,3 +137,12 @@ Crawler chỉ đọc website qua Source Reader. Logic riêng theo website nằm 
 - [Design system](docs/frontend/DESIGN_SYSTEM_V2.md)
 
 Completed plans, reviews and checkpoints are intentionally absent from the working tree. Retrieve them through Git history when needed.
+
+## V3 cutover safety
+
+The V3 candidate is migrated into a sibling staging directory and must pass the
+verification and candidate-smoke gates before storage roles change. The storage
+cutover writes a journal and retains the V22 backup; rollback restores the exact
+source manifest and keeps failed V3 storage for diagnosis. Run
+`npm run rehearse:v3:cutover` before an operator-led swap, then follow the
+[cutover](docs/V3_CUTOVER.md) and [rollback](docs/V3_ROLLBACK.md) runbooks.

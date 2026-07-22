@@ -4,7 +4,7 @@ import { AppProviders } from '@/app/providers/AppProviders';
 import { appQueryPersistenceOptions } from '@/app/providers/QueryProvider';
 import { AppRouter } from '@/app/router/AppRouter';
 import { queryClient, restoreQueryCache, startQueryCachePersistence } from '@/shared/api';
-import '@/shared/theme/index.css';
+import '@/app/styles/index.css';
 
 await restoreQueryCache(queryClient, appQueryPersistenceOptions);
 

@@ -1,0 +1,164 @@
+:root {
+  --font-reader: Georgia, 'Times New Roman', ui-serif, serif;
+  --font-reader-active: var(--font-reader);
+  --reader-font-size: 1.0625rem;
+  --reader-line-height: 1.8;
+  --reader-paragraph-gap: 1.1em;
+  --reader-font-weight: 400;
+  --reader-page-x: var(--space-6);
+  --reader-max: 44rem;
+  --reader-content-max: 46rem;
+  --reader-text-align: left;
+  --reader-hyphens: manual;
+  --reader-dim-opacity: 0;
+}
+
+:root[data-reader-font='small'] {
+  --reader-font-size: 1rem;
+}
+:root[data-reader-font='medium'] {
+  --reader-font-size: 1.0625rem;
+}
+:root[data-reader-font='large'] {
+  --reader-font-size: 1.1875rem;
+}
+:root[data-reader-line='compact'] {
+  --reader-line-height: 1.6;
+}
+:root[data-reader-line='comfortable'] {
+  --reader-line-height: 1.8;
+}
+:root[data-reader-line='relaxed'] {
+  --reader-line-height: 2;
+}
+:root[data-reader-paragraph='tight'] {
+  --reader-paragraph-gap: 0.75em;
+}
+:root[data-reader-paragraph='normal'] {
+  --reader-paragraph-gap: 1.1em;
+}
+:root[data-reader-paragraph='wide'] {
+  --reader-paragraph-gap: 1.5em;
+}
+:root[data-reader-family='serif'] {
+  --font-reader-active: var(--font-reader);
+}
+:root[data-reader-family='sans'] {
+  --font-reader-active: var(--font-sans);
+}
+:root[data-reader-weight='regular'] {
+  --reader-font-weight: 400;
+}
+:root[data-reader-weight='medium'] {
+  --reader-font-weight: 500;
+}
+:root[data-reader-margin='narrow'] {
+  --reader-page-x: var(--space-3);
+}
+:root[data-reader-margin='normal'] {
+  --reader-page-x: var(--space-6);
+}
+:root[data-reader-margin='wide'] {
+  --reader-page-x: var(--space-8);
+}
+:root[data-reader-align='justify'] {
+  --reader-text-align: justify;
+}
+:root[data-reader-hyphen='true'] {
+  --reader-hyphens: auto;
+}
+
+.type-reader-title {
+  font-family: var(--font-reader-active, var(--font-reader));
+  font-size: clamp(1.65rem, 6vw, 2.25rem);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.reader-prose-preview,
+.reader-content {
+  font-family: var(--font-reader-active, var(--font-reader));
+  font-size: var(--reader-font-size);
+  font-weight: var(--reader-font-weight);
+  line-height: var(--reader-line-height);
+  text-align: var(--reader-text-align);
+  hyphens: var(--reader-hyphens);
+  word-spacing: 0.03em;
+}
+
+:root[data-reader-indent='true'] .reader-content p + p {
+  text-indent: 1.5em;
+}
+
+:root[data-reader-dropcap='true'] .reader-content p:first-child::first-letter {
+  float: left;
+  padding: 0.08em 0.12em 0 0;
+  color: hsl(var(--color-primary));
+  font-size: 3.1em;
+  font-weight: 700;
+  line-height: 0.82;
+}
+
+:root[data-reader-theme='light'] .reader-surface,
+.reader-surface[data-reader-theme='light'] {
+  --color-bg: 40 33% 98%;
+  --color-bg-elevated: 0 0% 100%;
+  --color-text: 225 20% 12%;
+  --color-text-secondary: 225 12% 27%;
+  --color-muted: 225 8% 47%;
+  --color-border: 225 15% 88%;
+}
+
+:root[data-reader-theme='sepia'] .reader-surface,
+.reader-surface[data-reader-theme='sepia'] {
+  --color-bg: 40 45% 91%;
+  --color-bg-elevated: 40 52% 94%;
+  --color-text: 28 31% 17%;
+  --color-text-secondary: 28 24% 26%;
+  --color-muted: 28 15% 43%;
+  --color-border: 35 28% 76%;
+}
+
+:root[data-reader-theme='dark'] .reader-surface,
+.reader-surface[data-reader-theme='dark'] {
+  --color-bg: 225 18% 8%;
+  --color-bg-elevated: 225 16% 11%;
+  --color-text: 220 25% 94%;
+  --color-text-secondary: 220 14% 82%;
+  --color-muted: 220 9% 61%;
+  --color-border: 225 13% 19%;
+}
+
+.reader-surface {
+  transition:
+    background-color var(--motion-normal) var(--ease-standard),
+    color var(--motion-normal) var(--ease-standard);
+}
+
+.reader-surface input[type='range'] {
+  touch-action: pan-x;
+}
+
+.motion-reader-enter,
+.motion-reader-chapter-enter {
+  animation: motion-reader-chapter-enter var(--motion-normal) var(--ease-standard);
+}
+
+@keyframes motion-reader-chapter-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-reader-enter,
+  .motion-reader-chapter-enter {
+    animation: none;
+  }
+}

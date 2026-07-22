@@ -1,0 +1,18 @@
+export const readChapterCatalogs = {
+  en: {
+    'reader.offline': 'Offline',
+    'reader.loading': 'Loading chapter…',
+    'reader.loadingPrevious': 'Loading previous chapter…',
+    'reader.loadingNext': 'Loading next chapter…',
+    'reader.loadFailed': 'Could not load this chapter',
+    'reader.offlineMissing': 'This chapter is not available in the offline cache.'
+  },
+  vi: {
+    'reader.offline': 'Ngoại tuyến',
+    'reader.loading': 'Đang tải chương…',
+    'reader.loadingPrevious': 'Đang tải chương trước…',
+    'reader.loadingNext': 'Đang tải chương tiếp…',
+    'reader.loadFailed': 'Không thể tải chương này',
+    'reader.offlineMissing': 'Chương này chưa có trong bộ nhớ ngoại tuyến.'
+  }
+} as const;

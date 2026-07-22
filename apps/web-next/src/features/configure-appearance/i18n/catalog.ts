@@ -1,0 +1,40 @@
+export const configureAppearanceCatalogs = {
+  en: {
+    'appearance.theme': 'Theme',
+    'appearance.accent': 'Accent',
+    'appearance.density': 'Density',
+    'appearance.font': 'App font size',
+    'appearance.system': 'System',
+    'appearance.dark': 'Dark',
+    'appearance.light': 'Light',
+    'appearance.indigo': 'Indigo',
+    'appearance.blue': 'Blue',
+    'appearance.emerald': 'Green',
+    'appearance.amber': 'Amber',
+    'appearance.compact': 'Compact',
+    'appearance.comfortable': 'Comfortable',
+    'appearance.small': 'Small',
+    'appearance.medium': 'Medium',
+    'appearance.large': 'Large',
+    'appearance.extra-large': 'Extra large'
+  },
+  vi: {
+    'appearance.theme': 'Giao diện',
+    'appearance.accent': 'Màu nhấn',
+    'appearance.density': 'Mật độ',
+    'appearance.font': 'Cỡ chữ ứng dụng',
+    'appearance.system': 'Hệ thống',
+    'appearance.dark': 'Tối',
+    'appearance.light': 'Sáng',
+    'appearance.indigo': 'Chàm',
+    'appearance.blue': 'Xanh dương',
+    'appearance.emerald': 'Xanh lá',
+    'appearance.amber': 'Hổ phách',
+    'appearance.compact': 'Gọn',
+    'appearance.comfortable': 'Thoải mái',
+    'appearance.small': 'Nhỏ',
+    'appearance.medium': 'Vừa',
+    'appearance.large': 'Lớn',
+    'appearance.extra-large': 'Rất lớn'
+  }
+} as const;

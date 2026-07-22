@@ -1,0 +1,45 @@
+export const backupLibraryCatalogs = {
+  en: {
+    'backup.createTitle': 'Create backup',
+    'backup.restoreTitle': 'Restore backup',
+    'backup.passwordOptional': 'Password (optional)',
+    'backup.createAction': 'Download backup',
+    'backup.restoreAction': 'Restore backup',
+    'backup.created': 'Backup created',
+    'backup.failed': 'Could not create the backup',
+    'backup.restored': 'Backup restored',
+    'backup.restoreFailed': 'Could not restore the backup',
+    'backup.mode.replace': 'Replace',
+    'backup.mode.merge': 'Merge',
+    'backup.settings.keep-current': 'Keep current settings',
+    'backup.settings.use-backup': 'Use backup settings',
+    'backup.replaceWarning':
+      'Replace mode overwrites the current library after creating a safety backup.',
+    'backup.maintenance': 'Library maintenance is in progress. Keep this page open.',
+    'backup.confirmTitle': 'Confirm restore',
+    'backup.confirm.replace': 'Replace the current library with this backup?',
+    'backup.confirm.merge': 'Merge this backup into the current library?',
+    'backup.confirmAction': 'Restore'
+  },
+  vi: {
+    'backup.createTitle': 'Tạo bản sao lưu',
+    'backup.restoreTitle': 'Khôi phục bản sao lưu',
+    'backup.passwordOptional': 'Mật khẩu (không bắt buộc)',
+    'backup.createAction': 'Tải bản sao lưu',
+    'backup.restoreAction': 'Khôi phục',
+    'backup.created': 'Đã tạo bản sao lưu',
+    'backup.failed': 'Không thể tạo bản sao lưu',
+    'backup.restored': 'Đã khôi phục bản sao lưu',
+    'backup.restoreFailed': 'Không thể khôi phục bản sao lưu',
+    'backup.mode.replace': 'Thay thế',
+    'backup.mode.merge': 'Gộp',
+    'backup.settings.keep-current': 'Giữ cài đặt hiện tại',
+    'backup.settings.use-backup': 'Dùng cài đặt trong bản sao',
+    'backup.replaceWarning': 'Chế độ thay thế sẽ ghi đè thư viện sau khi tạo bản sao an toàn.',
+    'backup.maintenance': 'Đang bảo trì thư viện. Hãy giữ trang này mở.',
+    'backup.confirmTitle': 'Xác nhận khôi phục',
+    'backup.confirm.replace': 'Thay thư viện hiện tại bằng bản sao này?',
+    'backup.confirm.merge': 'Gộp bản sao này vào thư viện hiện tại?',
+    'backup.confirmAction': 'Khôi phục'
+  }
+} as const;

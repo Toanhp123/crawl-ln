@@ -6,7 +6,8 @@
     "dev": "node --experimental-sqlite --watch --import tsx src/main.ts",
     "build": "node scripts/build.mjs",
     "start": "node --experimental-sqlite dist/main.js",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "check": "tsc -p tsconfig.json --noEmit",
+    "migrate:v22": "node --experimental-sqlite --import tsx src/platform/migration/v22-import.cli.ts"
   },
   "dependencies": {
     "@endo/module-source": "^1.4.1",

@@ -114,7 +114,7 @@ test('Settings page composes preferences health maintenance backup search and bu
   assert.doesNotMatch(source, /useQuery\(|useMutation\(|\bhttp\s*\(|fetch\s*\(/);
 });
 
-test('contract checker accepts current and next frontend roots independently', async () => {
+test('contract checker accepts retained legacy and canonical frontend roots independently', async () => {
   assert.deepEqual(await checkWebContracts('apps/web-legacy/src'), []);
   assert.deepEqual(await checkWebContracts('apps/web/src'), []);
 });
@@ -124,13 +124,14 @@ test('frontend completion scripts and dual-preview config are present', async ()
     scripts: Record<string, string>;
   };
   assert.equal(packageJson.scripts['check:web-contracts'], 'node scripts/check-web-contracts.mjs');
-  assert.equal(packageJson.scripts['test:e2e'], 'playwright test --config playwright.config.ts');
+  assert.equal(packageJson.scripts['test:e2e'], 'playwright test');
   assert.match(packageJson.scripts['verify:v3:frontend'], /check:web-contracts/);
   assert.match(packageJson.scripts['verify:v3:frontend'], /test:e2e/);
 
   const config = await readFile('playwright.config.ts', 'utf8');
   assert.match(config, /4173/);
-  assert.match(config, /4173/);
-  assert.match(config, /@novel-tool\/web-next/);
+  assert.match(config, /4174/);
+  assert.match(config, /@novel-tool\/web-legacy/);
+  assert.match(config, /@novel-tool\/web/);
   assert.match(config, /baseURL:\s*['"]http:\/\/127\.0\.0\.1:4173['"]/);
 });

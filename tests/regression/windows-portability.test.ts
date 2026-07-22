@@ -36,12 +36,18 @@ test('API build uses a Node script instead of POSIX mkdir and cp', async () => {
   assert.doesNotMatch(source, /mkdir -p|\bcp\s/);
 });
 
-test('legacy Web lifecycle scripts resolve Vite through the npm workspace PATH', () => {
-  assert.equal(webPackage.scripts.dev, 'vite --host 0.0.0.0');
-  assert.equal(webPackage.scripts.build, 'tsc -p tsconfig.json && vite build');
-  assert.equal(webPackage.scripts.preview, 'vite preview --host 0.0.0.0');
+test('legacy Web lifecycle scripts resolve the hoisted Vite binary through Node', () => {
+  assert.equal(webPackage.scripts.dev, 'node ../../node_modules/vite/bin/vite.js --host 0.0.0.0');
+  assert.equal(
+    webPackage.scripts.build,
+    'tsc -p tsconfig.json && node ../../node_modules/vite/bin/vite.js build'
+  );
+  assert.equal(
+    webPackage.scripts.preview,
+    'node ../../node_modules/vite/bin/vite.js preview --host 0.0.0.0'
+  );
 
   for (const scriptName of ['dev', 'build', 'preview']) {
-    assert.doesNotMatch(webPackage.scripts[scriptName], /\.\/node_modules\/vite/);
+    assert.match(webPackage.scripts[scriptName], /node \.\.\/\.\.\/node_modules\/vite/);
   }
 });

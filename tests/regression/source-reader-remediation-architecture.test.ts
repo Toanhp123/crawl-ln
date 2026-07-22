@@ -24,7 +24,7 @@ test('legacy worker runtime is removed and external plugins use only the process
     ),
     false
   );
-  const architecture = await readFile('scripts/check-api-architecture.mjs', 'utf8');
+  const architecture = await readFile('scripts/check-api-legacy-architecture.mjs', 'utf8');
   assert.match(architecture, /IsolatedWorkerPluginRuntime/);
   assert.match(architecture, /node:worker_threads/);
   assert.match(architecture, /sandbox-module-loader/);

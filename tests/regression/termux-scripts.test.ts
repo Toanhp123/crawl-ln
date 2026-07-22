@@ -11,7 +11,7 @@ test('web scripts invoke Vite through Node for Termux compatibility', async () =
 
   for (const scriptName of ['dev', 'build', 'preview']) {
     const script = packageJson.scripts[scriptName];
-    assert.match(script, /node \.\/node_modules\/vite\/bin\/vite\.js/);
+    assert.match(script, /node \.\.\/\.\.\/node_modules\/vite\/bin\/vite\.js/);
     assert.doesNotMatch(script, /(?:^|&&|;)\s*vite(?:\s|$)/);
   }
 });

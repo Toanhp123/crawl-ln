@@ -1,0 +1,66 @@
+{
+  "api-contract": [
+    "tests/regression/api-next-access-security.test.ts",
+    "tests/regression/api-next-ingestion-http-services.test.ts",
+    "tests/integration/api-next-lifecycle.test.ts"
+  ],
+  "backend-architecture": [
+    "tests/regression/api-next-architecture-guard.test.ts",
+    "tests/regression/api-next-library-domain.test.ts",
+    "tests/regression/api-next-ingestion-domain.test.ts"
+  ],
+  "backup": [
+    "tests/integration/api-next-backup.test.ts",
+    "tests/regression/api-next-backup-maintenance.test.ts",
+    "tests/regression/web-next-backup-maintenance.test.ts"
+  ],
+  "browser": [
+    "tests/e2e/app-shell.spec.ts",
+    "tests/e2e/web-next-reader-parity.spec.ts",
+    "tests/e2e/source-reader-sources-page.spec.ts"
+  ],
+  "export": [
+    "tests/integration/api-next-export.test.ts"
+  ],
+  "frontend-architecture": [
+    "tests/regression/web-next-architecture-guard.test.ts",
+    "tests/regression/web-next-app-shell.test.ts",
+    "tests/regression/web-next-shared-foundation.test.ts"
+  ],
+  "ingestion": [
+    "tests/integration/api-next-ingestion-repository.test.ts",
+    "tests/integration/api-next-ingestion-schema.test.ts",
+    "tests/integration/api-next-ingestion-recovery.test.ts"
+  ],
+  "library": [
+    "tests/integration/api-next-library-api.test.ts",
+    "tests/integration/api-next-library-schema.test.ts",
+    "tests/integration/api-next-library-reconciliation.test.ts"
+  ],
+  "migration": [
+    "tests/integration/v3-migration-dry-run.test.ts",
+    "tests/integration/api-next-v22-import.test.ts",
+    "tests/integration/v3-cutover-rehearsal.test.ts"
+  ],
+  "reader-engine": [
+    "packages/reader-engine/tests/reader-window.test.ts",
+    "packages/reader-engine/tests/reader-session.test.ts",
+    "packages/reader-engine/tests/chapter-source.test.ts",
+    "tests/e2e/web-next-reader-parity.spec.ts"
+  ],
+  "realtime": [
+    "tests/regression/api-next-realtime-adapter.test.ts",
+    "tests/regression/api-next-outbox-dispatcher.test.ts"
+  ],
+  "scheduler": [
+    "tests/integration/api-next-scheduler.test.ts"
+  ],
+  "search": [
+    "tests/integration/api-next-search-projection.test.ts"
+  ],
+  "source-reader": [
+    "tests/integration/api-next-source-reader-runtime.test.ts",
+    "tests/regression/api-next-source-reader-admin.test.ts",
+    "tests/regression/api-next-source-reader-pipeline.test.ts"
+  ]
+}

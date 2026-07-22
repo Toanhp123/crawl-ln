@@ -11,7 +11,7 @@ const environmentModuleUrl = pathToFileURL(
   resolve(apiRoot, 'src/platform/config/environment.ts')
 ).href;
 
-test('api-next default storage is package-relative when launched as a workspace', () => {
+test('canonical API default storage is package-relative when launched as a workspace', () => {
   const script = `import(${JSON.stringify(environmentModuleUrl)}).then(({ createEnvironment }) => console.log(JSON.stringify(createEnvironment({}))))`;
   const result = spawnSync(process.execPath, ['--import', 'tsx', '--eval', script], {
     cwd: apiRoot,
@@ -30,7 +30,7 @@ test('api-next default storage is package-relative when launched as a workspace'
   assert.equal(environment.databasePath, resolve(apiRoot, 'storage/novel-tool.sqlite'));
 });
 
-test('api-next owns a package-local environment file and tracked example', async () => {
+test('canonical and retained APIs keep tracked examples while ignoring runtime storage', async () => {
   const [source, example, gitignore] = await Promise.all([
     readFile(resolve(apiRoot, 'src/platform/config/environment.ts'), 'utf8'),
     readFile(resolve(apiRoot, '.env.example'), 'utf8'),
@@ -43,10 +43,13 @@ test('api-next owns a package-local environment file and tracked example', async
   assert.match(example, /^PORT=3000$/m);
   assert.match(example, /^STORAGE_DIR=\.\/storage$/m);
   assert.match(example, /http:\/\/localhost:5173/);
-  assert.match(gitignore, /^!apps\/api-next\/\.env\.example$/m);
+  assert.match(gitignore, /^!apps\/api\/\.env\.example$/m);
+  assert.match(gitignore, /^!apps\/api-legacy\/\.env\.example$/m);
+  assert.match(gitignore, /^apps\/api\/storage\/$/m);
+  assert.match(gitignore, /^apps\/api-legacy\/storage\/$/m);
 });
 
-test('api-next resolves relative path overrides against its package root', () => {
+test('canonical API resolves relative path overrides against its package root', () => {
   const environment = createEnvironment({
     STORAGE_DIR: './runtime-storage',
     DATABASE_PATH: './runtime-storage/custom.sqlite',

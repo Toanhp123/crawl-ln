@@ -192,7 +192,7 @@ test('candidate API environment preserves the configured Source Reader master ke
   });
 
   assert.equal(environment.SOURCE_READER_MASTER_KEY, 'configured-key');
-  assert.equal(environment.PORT, '30001');
+  assert.equal(environment.PORT, '31001');
   assert.equal(environment.STORAGE_DIR, 'D:/candidate-storage');
 });
 

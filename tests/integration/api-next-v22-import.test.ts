@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
-import { importV22Database } from '../../apps/api-next/src/platform/migration/v22-importer.ts';
+import { importV22Database } from '../../apps/api/src/platform/migration/v22-importer.ts';
 import { createV22Fixture } from '../helpers/v22-database.fixture.ts';
 
 test('v22 importer preserves module records and rebuilds search', async () => {

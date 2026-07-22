@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createSchedulerModule } from '../../apps/api-next/src/modules/scheduler/scheduler.module.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
-import { InMemoryEventBus } from '../../apps/api-next/src/platform/events/in-memory-event-bus.ts';
+import { createSchedulerModule } from '../../apps/api/src/modules/scheduler/scheduler.module.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
+import { InMemoryEventBus } from '../../apps/api/src/platform/events/in-memory-event-bus.ts';
 
 const now = new Date('2026-07-21T08:00:00.000Z');
 const novel = {

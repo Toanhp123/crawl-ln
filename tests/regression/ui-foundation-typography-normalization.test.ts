@@ -19,7 +19,7 @@ async function sourceFiles(directory: string): Promise<string[]> {
 }
 
 test('app font preference changes typography tokens without scaling the root element', async () => {
-  const typography = await read('apps/web/src/shared/theme/typography.css');
+  const typography = await read('apps/web-legacy/src/shared/theme/typography.css');
 
   assert.doesNotMatch(typography, /data-app-font='[^']+'\][^{]*\{[^}]*font-size\s*:/s);
   assert.match(typography, /data-app-font='small'[\s\S]*--type-body-size:/);
@@ -27,7 +27,7 @@ test('app font preference changes typography tokens without scaling the root ele
 });
 
 test('shared Text owns semantic title, body, caption and metric roles', async () => {
-  const text = await read('apps/web/src/shared/ui/data-display/Text.tsx');
+  const text = await read('apps/web-legacy/src/shared/ui/data-display/Text.tsx');
 
   for (const role of [
     'caption',
@@ -49,10 +49,10 @@ test('shared Text owns semantic title, body, caption and metric roles', async ()
 
 test('web source does not introduce page-specific pixel font sizes', async () => {
   const paths = [
-    'apps/web/src/features',
-    'apps/web/src/pages',
-    'apps/web/src/widgets',
-    'apps/web/src/shared/ui'
+    'apps/web-legacy/src/features',
+    'apps/web-legacy/src/pages',
+    'apps/web-legacy/src/widgets',
+    'apps/web-legacy/src/shared/ui'
   ];
   const files = (await Promise.all(paths.map((path) => sourceFiles(join(root, path))))).flat();
   const offenders: string[] = [];

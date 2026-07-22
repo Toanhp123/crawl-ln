@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { ApplicationEvent } from '../../apps/api-next/src/platform/events/application-event.ts';
-import type { EventBus } from '../../apps/api-next/src/platform/events/event-bus.ts';
-import { InMemoryEventBus } from '../../apps/api-next/src/platform/events/in-memory-event-bus.ts';
-import { OutboxDispatcher } from '../../apps/api-next/src/platform/events/outbox-dispatcher.ts';
-import type { OutboxSource } from '../../apps/api-next/src/platform/events/outbox-source.ts';
+import type { ApplicationEvent } from '../../apps/api/src/platform/events/application-event.ts';
+import type { EventBus } from '../../apps/api/src/platform/events/event-bus.ts';
+import { InMemoryEventBus } from '../../apps/api/src/platform/events/in-memory-event-bus.ts';
+import { OutboxDispatcher } from '../../apps/api/src/platform/events/outbox-dispatcher.ts';
+import type { OutboxSource } from '../../apps/api/src/platform/events/outbox-source.ts';
 
 const now = '2026-07-21T00:00:00.000Z';
 const clock = { now: () => new Date(now) };

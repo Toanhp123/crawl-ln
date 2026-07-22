@@ -19,13 +19,13 @@ function sourceFiles(root: string): string[] {
 }
 
 test('web source has no JavaScript animation engine or retained route presence', () => {
-  const packageJson = JSON.parse(read('apps/web/package.json')) as {
+  const packageJson = JSON.parse(read('apps/web-legacy/package.json')) as {
     dependencies?: Record<string, string>;
   };
   assert.equal(packageJson.dependencies?.motion, undefined);
   assert.equal(packageJson.dependencies?.['framer-motion'], undefined);
 
-  for (const file of sourceFiles('apps/web/src')) {
+  for (const file of sourceFiles('apps/web-legacy/src')) {
     const source = read(file);
     assert.doesNotMatch(source, /motion\/react|framer-motion/);
     assert.doesNotMatch(source, /\bAnimatePresence\b|\blayoutId\s*=|\bMotionValue\b/);
@@ -35,15 +35,15 @@ test('web source has no JavaScript animation engine or retained route presence',
 });
 
 test('app renders the current outlet directly without a route motion coordinator', () => {
-  const main = read('apps/web/src/main.tsx');
-  const shell = read('apps/web/src/app/layouts/AppShell.tsx');
+  const main = read('apps/web-legacy/src/main.tsx');
+  const shell = read('apps/web-legacy/src/app/layouts/AppShell.tsx');
   assert.doesNotMatch(main, /AppMotionProvider/);
   assert.doesNotMatch(shell, /RouteMotionCoordinator/);
   assert.match(shell, /<Outlet\s*\/>/);
 });
 
 test('BottomSheet gesture is distance-threshold-only and never moves the panel inline', () => {
-  const source = read('apps/web/src/shared/ui/overlay/BottomSheet.tsx');
+  const source = read('apps/web-legacy/src/shared/ui/overlay/BottomSheet.tsx');
   assert.doesNotMatch(source, /style=\{\{|transform:|velocity|spring|rubberBand/);
   assert.match(source, /DISMISS_DISTANCE_PX/);
   assert.match(source, /onOpenChange\(false\)/);

@@ -1,11 +1,11 @@
 import { createAppRuntime } from './app.js';
-import { env } from './shared/config/env.js';
-import { logger } from './shared/logger/logger.js';
+import { environment } from './platform/config/environment.js';
 
-const runtime = createAppRuntime({ startBackgroundServices: true });
+const runtime = createAppRuntime();
 await runtime.ready;
-const server = runtime.app.listen(env.port, env.host, () => {
-  logger.info(`API running at http://${env.host}:${env.port}`);
+
+const server = runtime.app.listen(environment.port, environment.host, () => {
+  console.log(`API Next running at http://${environment.host}:${environment.port}`);
 });
 
 let shuttingDown = false;
@@ -14,7 +14,7 @@ const shutdown = async () => {
   shuttingDown = true;
   await runtime.lifecycle.stop();
   server.close((error) => {
-    if (error) logger.error(error.stack ?? error.message);
+    if (error) console.error(error.stack ?? error.message);
     process.exit(error ? 1 : 0);
   });
 };

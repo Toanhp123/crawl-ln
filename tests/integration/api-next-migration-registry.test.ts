@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import type { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
-import type { ModuleMigration } from '../../apps/api-next/src/platform/database/module-migration.ts';
-import { MigrationRegistry } from '../../apps/api-next/src/platform/database/migration-registry.ts';
-import { runRegisteredMigrations } from '../../apps/api-next/src/platform/database/migration-runner.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
+import type { ModuleMigration } from '../../apps/api/src/platform/database/module-migration.ts';
+import { MigrationRegistry } from '../../apps/api/src/platform/database/migration-registry.ts';
+import { runRegisteredMigrations } from '../../apps/api/src/platform/database/migration-runner.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
 
 function applied(database: SqliteDatabase): Array<[string, number]> {
   return (

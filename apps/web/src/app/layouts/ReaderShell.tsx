@@ -1,7 +1,7 @@
 import { Suspense, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet } from 'react-router-dom';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n';
 import { LoadingState, ScrollViewport } from '@/shared/ui';
 
 export function ReaderShell() {

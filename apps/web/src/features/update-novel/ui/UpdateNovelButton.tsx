@@ -1,26 +1,26 @@
 import { RefreshCw } from 'lucide-react';
-import { Button, type ActionState } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '../../../shared/i18n';
+import { Button, type ButtonProps } from '../../../shared/ui';
+import { useUpdateNovel } from '../model/use-update-novel';
 
 export function UpdateNovelButton({
-  actionState,
-  disabled,
-  onClick
-}: {
-  actionState: ActionState;
-  disabled?: boolean;
-  onClick: () => void;
-}) {
+  novelId,
+  children,
+  ...props
+}: ButtonProps & { novelId: string }) {
+  const mutation = useUpdateNovel();
   const { t } = useI18n();
   return (
     <Button
-      variant="secondary"
-      actionState={actionState}
-      leadingIcon={<RefreshCw size={17} />}
-      disabled={disabled}
-      onClick={onClick}
+      {...props}
+      actionState={mutation.status}
+      leadingIcon={props.leadingIcon ?? <RefreshCw size={17} />}
+      onClick={(event) => {
+        props.onClick?.(event);
+        if (!event.defaultPrevented) mutation.mutate(novelId);
+      }}
     >
-      {t('updateNovel.action')}
+      {children ?? t('updateNovel.action')}
     </Button>
   );
 }

@@ -35,28 +35,22 @@ export interface SourceReaderRequestContext {
 }
 
 export interface IdentifyRequest extends SourceReaderRequestContext, PluginIdentifyRequest {}
-
 export interface ReadMetadataRequest
   extends SourceReaderRequestContext, PluginReadMetadataRequest {}
-
 export interface ReadChapterListRequest
   extends SourceReaderRequestContext, Omit<PluginReadChapterListRequest, 'limit'> {
   limit?: number;
 }
-
 export interface StreamChapterListRequest extends SourceReaderRequestContext {
   url: string;
   batchSize?: number;
 }
-
 export interface ReadChapterContentRequest
   extends SourceReaderRequestContext, PluginReadChapterContentRequest {}
-
 export interface SearchSourceRequest
   extends SourceReaderRequestContext, Omit<PluginSearchSourceRequest, 'limit'> {
   limit?: number;
 }
-
 export interface LatestUpdatesRequest
   extends SourceReaderRequestContext, Omit<PluginLatestUpdatesRequest, 'limit'> {
   limit?: number;

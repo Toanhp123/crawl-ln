@@ -1,17 +1,10 @@
-import {
-  AlertTriangle,
-  ArrowLeft,
-  BookOpenText,
-  Check,
-  Clock3,
-  ExternalLink,
-  Pause,
-  Play,
-  Square,
-  X
-} from 'lucide-react';
-import { taskOutcomeLabel } from '@/entities/task/model/outcome';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { AlertTriangle, ArrowLeft, BookOpenText, Clock3, ExternalLink } from 'lucide-react';
+import { NovelCover } from '@/entities/novel';
+import { isTaskActive, taskOutcomeLabel } from '@/entities/task';
+import { CancelTaskButton } from '@/features/cancel-task';
+import { PauseTaskButton } from '@/features/pause-task';
+import { ResumeTaskButton } from '@/features/resume-task';
+import { useI18n } from '@/shared/i18n';
 import {
   Badge,
   Button,
@@ -21,22 +14,24 @@ import {
   Page,
   Panel,
   Progress,
-  StickyActionBar
+  StickyActionBar,
+  Text
 } from '@/shared/ui';
-import { NovelCover } from '@/entities/novel/ui/NovelCover';
-import { useTaskDetailPage } from '../model/useTaskDetailPage';
+import { useTaskDetailPage } from '../model/use-task-detail-page';
 
-function percent(total: number, fetched: number, failed: number) {
+function percent(total: number, fetched: number, failed: number): number {
   return total ? Math.min(100, Math.round(((fetched + failed) / total) * 100)) : 0;
 }
-function duration(start: string, end: string) {
-  const seconds = Math.max(0, Math.floor((Date.parse(end) - Date.parse(start)) / 1000));
+
+function durationMs(value: number): string {
+  const seconds = Math.max(0, Math.floor(value / 1000));
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
   return minutes < 60 ? `${minutes}m ${rest}s` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
-function time(value: string) {
+
+function time(value: string): string {
   return new Intl.DateTimeFormat(undefined, {
     hour: '2-digit',
     minute: '2-digit',
@@ -45,56 +40,47 @@ function time(value: string) {
 }
 
 export function TaskDetailPage() {
-  const { t, status } = useI18n();
-  const { task, events, novel, cancel, pause, resume, navigate } = useTaskDetailPage();
-  if (task.isLoading)
+  const { t, status, number } = useI18n();
+  const { task, events, novel, navigate } = useTaskDetailPage();
+
+  if (task.isLoading) {
     return (
       <Page>
         <LoadingState title={t('common.loadingData')} />
       </Page>
     );
-  if (task.isError || !task.data)
+  }
+  if (task.isError || !task.data) {
     return (
       <Page>
         <ErrorState
           title={t('common.error')}
           description={t('common.errorDescription')}
           actionLabel={t('common.retry')}
-          onAction={() => {
-            void task.refetch();
-          }}
+          onAction={() => void task.refetch()}
         />
       </Page>
     );
+  }
+
   const item = task.data;
   const info = novel.data?.novel;
   const progress = percent(item.totalChapters, item.fetchedChapters, item.failedChapters);
-  const active = ['running', 'queued', 'pausing', 'resuming'].includes(item.status);
-  const canPause =
-    item.status === 'running' || item.status === 'queued' || item.status === 'resuming';
-  const canResume = item.status === 'paused';
-  const tone =
-    item.status === 'completed'
-      ? 'success'
-      : item.status === 'failed' || item.status === 'cancelled'
-        ? 'danger'
-        : 'primary';
   const processed = item.fetchedChapters + item.failedChapters;
+  const active = isTaskActive(item.status);
+  const canPause = ['running', 'queued', 'resuming'].includes(item.status);
+  const canResume = item.status === 'paused';
+  const outcome = taskOutcomeLabel(item, t);
   const stages = [
-    { label: t('crawl.detail.analyze'), value: 100, done: true, meta: t('crawl.detail.done') },
-    {
-      label: t('crawl.detail.fetch'),
-      value: progress,
-      done: item.status === 'completed',
-      meta: `${processed}/${item.totalChapters}`
-    },
+    { label: t('crawl.detail.analyze'), value: 100, meta: t('crawl.detail.done') },
+    { label: t('crawl.detail.fetch'), value: progress, meta: `${processed}/${item.totalChapters}` },
     {
       label: t('crawl.detail.store'),
       value: item.status === 'completed' ? 100 : progress,
-      done: item.status === 'completed',
       meta: item.status === 'completed' ? t('crawl.detail.done') : status(item.status)
     }
   ];
+
   return (
     <Page bottomInset="stickyAction" className="space-y-3">
       <div className="grid min-h-12 grid-cols-[2.75rem_1fr_2.75rem] items-center">
@@ -109,11 +95,19 @@ export function TaskDetailPage() {
         <div className="flex gap-3">
           <NovelCover title={info?.title ?? item.novelId} coverUrl={info?.coverUrl} size="sm" />
           <div className="min-w-0 flex-1">
-            <h2 className="line-clamp-3 type-title font-bold">{info?.title ?? item.novelId}</h2>
-            <p className="mt-1.5 flex items-center gap-1.5 truncate type-body-sm text-primary">
+            <Text as="h2" variant="title" className="line-clamp-3">
+              {info?.title ?? item.novelId}
+            </Text>
+            <Text
+              as="p"
+              variant="supporting"
+              tone="primary"
+              className="mt-1.5 flex items-center gap-1.5"
+              truncate
+            >
               <BookOpenText size={14} />
               {info?.sourceName ?? item.novelId}
-            </p>
+            </Text>
             <div className="mt-2">
               <Badge
                 tone={
@@ -126,7 +120,7 @@ export function TaskDetailPage() {
                         : 'neutral'
                 }
               >
-                {taskOutcomeLabel(item, t)}
+                {outcome}
               </Badge>
             </div>
           </div>
@@ -145,30 +139,36 @@ export function TaskDetailPage() {
 
       <Panel>
         <div className="flex items-center justify-between">
-          <h2 className="type-title-sm font-bold">{t('crawl.detail.overall')}</h2>
-          <strong className="type-metric-sm text-primary">{progress}%</strong>
+          <Text as="h2" variant="sectionTitle">
+            {t('crawl.detail.overall')}
+          </Text>
+          <strong className="type-title tabular-nums text-primary">{number(progress)}%</strong>
         </div>
-        <div className="mt-3">
-          <Progress value={progress} />
-        </div>
-        <div className="mt-4 grid grid-cols-3 divide-x divide-border text-center">
+        <Progress value={progress} label={t('crawl.detail.overall')} />
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           <div>
             <strong className="block type-title tabular-nums">
-              {processed}/{item.totalChapters}
+              {number(processed)}/{number(item.totalChapters)}
             </strong>
-            <span className="type-caption text-muted">{t('crawl.detail.processed')}</span>
+            <Text variant="caption" tone="muted">
+              {t('crawl.detail.processed')}
+            </Text>
           </div>
           <div>
             <strong className="block type-title tabular-nums text-success">
-              {item.fetchedChapters}
+              {number(item.fetchedChapters)}
             </strong>
-            <span className="type-caption text-muted">{t('crawl.detail.fetched')}</span>
+            <Text variant="caption" tone="muted">
+              {t('crawl.detail.fetched')}
+            </Text>
           </div>
           <div>
             <strong className="block type-title tabular-nums text-danger">
-              {item.failedChapters}
+              {number(item.failedChapters)}
             </strong>
-            <span className="type-caption text-muted">{t('crawl.detail.failed')}</span>
+            <Text variant="caption" tone="muted">
+              {t('crawl.detail.failed')}
+            </Text>
           </div>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 text-center type-label">
@@ -187,25 +187,22 @@ export function TaskDetailPage() {
           <Panel tone="inset" padding="sm" className="text-muted">
             {t('crawl.detail.eta')}
             <strong className="mt-0.5 block text-secondary">
-              {item.etaSeconds == null
-                ? '—'
-                : duration(
-                    new Date(0).toISOString(),
-                    new Date(item.etaSeconds * 1000).toISOString()
-                  )}
+              {item.etaSeconds == null ? '—' : durationMs(item.etaSeconds * 1000)}
             </strong>
           </Panel>
           <Panel tone="inset" padding="sm" className="text-muted">
             {t('crawl.detail.pausedTime')}
             <strong className="mt-0.5 block text-secondary">
-              {duration(new Date(0).toISOString(), new Date(item.totalPausedMs).toISOString())}
+              {durationMs(item.totalPausedMs)}
             </strong>
           </Panel>
         </div>
       </Panel>
 
       <Panel>
-        <h2 className="mb-3 type-title-sm font-bold">{t('crawl.detail.stages')}</h2>
+        <Text as="h2" variant="sectionTitle" className="mb-3">
+          {t('crawl.detail.stages')}
+        </Text>
         <div className="space-y-3">
           {stages.map((stage) => (
             <div
@@ -221,12 +218,22 @@ export function TaskDetailPage() {
       </Panel>
 
       <Panel>
-        <h2 className="mb-3 type-title-sm font-bold">{t('crawl.detail.activity')}</h2>
-        <div className="max-h-72 space-y-3 overflow-y-auto type-label">
+        <Text as="h2" variant="sectionTitle" className="mb-3">
+          {t('crawl.detail.activity')}
+        </Text>
+        <div className="max-h-72 space-y-3 overflow-y-auto type-label" aria-live="polite">
           {(events.data ?? []).map((event) => (
             <div key={event.id} className="flex gap-3">
               <span
-                className={`mt-1 h-2 w-2 shrink-0 rounded-full ${event.level === 'error' ? 'bg-danger' : event.level === 'warning' ? 'bg-warning' : event.level === 'success' ? 'bg-success' : 'bg-primary'}`}
+                className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
+                  event.level === 'error'
+                    ? 'bg-danger'
+                    : event.level === 'warning'
+                      ? 'bg-warning'
+                      : event.level === 'success'
+                        ? 'bg-success'
+                        : 'bg-primary'
+                }`}
               />
               <time className="w-16 shrink-0 text-muted">{time(event.createdAt)}</time>
               <span className={event.level === 'error' ? 'text-danger' : ''}>{event.message}</span>
@@ -245,29 +252,19 @@ export function TaskDetailPage() {
       {item.failedChapters > 0 ? (
         <Panel padding="sm" className="flex items-start gap-2.5 type-label">
           <AlertTriangle className="mt-0.5 shrink-0 text-warning" size={17} />
-          <p>{t('crawl.detail.failedNotice').replace('{count}', String(item.failedChapters))}</p>
+          <p>{t('crawl.detail.failedNotice', { count: item.failedChapters })}</p>
         </Panel>
       ) : null}
 
       <StickyActionBar className="grid grid-cols-2 gap-2">
         {canPause ? (
-          <Button
-            variant="secondary"
-            actionState={pause.status}
-            leadingIcon={<Pause size={16} />}
-            onClick={() => pause.mutate()}
-          >
+          <PauseTaskButton taskId={item.id} variant="secondary">
             {t('crawl.detail.pause')}
-          </Button>
+          </PauseTaskButton>
         ) : canResume ? (
-          <Button
-            variant="secondary"
-            actionState={resume.status}
-            leadingIcon={<Play size={16} />}
-            onClick={() => resume.mutate()}
-          >
+          <ResumeTaskButton taskId={item.id} variant="secondary">
             {t('crawl.detail.resume')}
-          </Button>
+          </ResumeTaskButton>
         ) : active ? (
           <Button variant="secondary" disabled>
             <Clock3 size={16} />
@@ -279,15 +276,8 @@ export function TaskDetailPage() {
             {t('nav.activity')}
           </Button>
         )}
-        {active || canResume ? (
-          <Button
-            variant="danger"
-            actionState={cancel.status}
-            leadingIcon={<Square size={16} />}
-            onClick={() => cancel.mutate()}
-          >
-            {t('crawl.detail.stop')}
-          </Button>
+        {active ? (
+          <CancelTaskButton taskId={item.id}>{t('crawl.detail.stop')}</CancelTaskButton>
         ) : (
           <Button onClick={() => navigate(`/library/${encodeURIComponent(item.novelId)}`)}>
             <ExternalLink size={16} />

@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from '../../../../shared/database/sqlite.js';
+import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import type {
   PluginStorePort,
   StoredPluginVersion
@@ -6,6 +6,7 @@ import type {
 import type { PluginStatus, PluginTrustLevel } from '../../domain/plugin/source-plugin.js';
 import type { CompatibilityIssue } from '../../domain/plugin/source-reader-host-compatibility.js';
 import { parseSourcePluginManifest } from '../../domain/plugin/source-plugin-manifest.schema.js';
+import { sqliteUpsertUpdate } from './sqlite-syntax.js';
 
 interface StoredVersionRow {
   plugin_id: string;
@@ -53,7 +54,7 @@ export class SqlitePluginStore implements PluginStorePort {
           id, plugin_id, plugin_version, original_package_path, staging_path,
           status, error_code, created_at, completed_at
         ) VALUES(?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(id) DO UPDATE SET
+        ON CONFLICT(id) ${sqliteUpsertUpdate}
           plugin_id=excluded.plugin_id,
           plugin_version=excluded.plugin_version,
           original_package_path=excluded.original_package_path,
@@ -84,7 +85,7 @@ export class SqlitePluginStore implements PluginStorePort {
           INSERT INTO source_reader_plugins(
             id, name, trust_level, status, active_version, enabled, installed_at, updated_at
           ) VALUES(?,?,?,?,NULL,0,?,?)
-          ON CONFLICT(id) DO UPDATE SET
+          ON CONFLICT(id) ${sqliteUpsertUpdate}
             name=excluded.name,
             trust_level=CASE
               WHEN source_reader_plugins.active_version IS NULL THEN excluded.trust_level
@@ -113,7 +114,7 @@ export class SqlitePluginStore implements PluginStorePort {
             signature_status, manifest_json, sdk_range, installed_at,
             compatibility_issues_json, activated_extensions_json, sandbox_protocol_version
           ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
-          ON CONFLICT(plugin_id, version) DO UPDATE SET
+          ON CONFLICT(plugin_id, version) ${sqliteUpsertUpdate}
             trust_level=excluded.trust_level,
             status=CASE
               WHEN source_reader_plugin_versions.status='active' THEN 'active'

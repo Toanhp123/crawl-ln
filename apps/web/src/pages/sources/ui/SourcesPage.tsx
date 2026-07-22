@@ -1,4 +1,4 @@
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n';
 import { FilterChip, Page, PageHeader, Panel } from '@/shared/ui';
 import { SourceAuthChallengesPanel } from '@/widgets/source-auth-challenges-panel';
 import { SourceCredentialsPanel } from '@/widgets/source-credentials-panel';
@@ -6,6 +6,7 @@ import { SourceInspector } from '@/widgets/source-inspector';
 import { SourceNetworkProfilesPanel } from '@/widgets/source-network-profiles-panel';
 import { SourceReaderOverview } from '@/widgets/source-reader-overview';
 import { type SourcesSection, useSourcesPage } from '../model/useSourcesPage';
+
 export function SourcesPage() {
   const { t } = useI18n();
   const model = useSourcesPage();
@@ -16,6 +17,7 @@ export function SourcesPage() {
     { id: 'challenges', label: t('sources.section.challenges') },
     { id: 'inspector', label: t('sources.section.inspector') }
   ];
+
   return (
     <Page className="max-w-6xl">
       <PageHeader title={t('nav.sources')} description={t('sources.console.description')} />

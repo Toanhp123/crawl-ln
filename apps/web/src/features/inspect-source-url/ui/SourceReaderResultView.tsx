@@ -1,10 +1,9 @@
 import type { SourceReaderResult } from '@novel-tool/shared';
-import { Badge, Panel, ScrollViewport, Text } from '@/shared/ui';
-import { sourceReaderResultJson } from '../model/sourceInspector';
-
+import { Badge, Panel, ScrollViewport, Text } from '../../../shared/ui';
+import { sourceReaderResultJson } from '../model/source-inspector';
 export function SourceReaderResultView({
   result,
-  rawLabel = 'Raw JSON'
+  rawLabel = 'Raw redacted response'
 }: {
   result: SourceReaderResult<unknown>;
   rawLabel?: string;

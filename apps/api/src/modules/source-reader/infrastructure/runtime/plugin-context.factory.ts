@@ -1,8 +1,8 @@
-import type { ClockPort } from '../../../../shared/ports/clock.port.js';
-import type { HtmlParserPort } from '../../../../shared/ports/html-parser.port.js';
-import type { HttpClientPort } from '../../../../shared/ports/http-client.port.js';
+import type { ClockPort } from '../../application/ports/runtime-support.ports.js';
+import type { HtmlParserPort } from '../../application/ports/runtime-support.ports.js';
+import type { HttpClientPort } from '../../application/ports/runtime-support.ports.js';
 import type { RouteAwareHttpClientPort } from '../../application/ports/network-route.port.js';
-import type { LoggerPort } from '../../../../shared/ports/logger.port.js';
+import type { LoggerPort } from '../../application/ports/runtime-support.ports.js';
 import {
   BoundedSourceReaderStructuredLogger,
   type SourceReaderStructuredLogger

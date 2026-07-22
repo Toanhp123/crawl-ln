@@ -3,7 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import test from 'node:test';
 
-const entityRoot = 'apps/web-next/src/entities';
+const entityRoot = 'apps/web/src/entities';
 
 async function readTree(directory: string, root = directory): Promise<string> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -17,11 +17,11 @@ async function readTree(directory: string, root = directory): Promise<string> {
 }
 
 test('core entity public APIs export reads, keys, invalidation adapters, and reusable UI', async () => {
-  const novel = await import('../../apps/web-next/src/entities/novel/index.ts');
-  const chapter = await import('../../apps/web-next/src/entities/chapter/index.ts');
-  const task = await import('../../apps/web-next/src/entities/task/index.ts');
-  const scheduler = await import('../../apps/web-next/src/entities/scheduler/index.ts');
-  const search = await import('../../apps/web-next/src/entities/search/index.ts');
+  const novel = await import('../../apps/web/src/entities/novel/index.ts');
+  const chapter = await import('../../apps/web/src/entities/chapter/index.ts');
+  const task = await import('../../apps/web/src/entities/task/index.ts');
+  const scheduler = await import('../../apps/web/src/entities/scheduler/index.ts');
+  const search = await import('../../apps/web/src/entities/search/index.ts');
 
   assert.equal(typeof novel.useNovels, 'function');
   assert.equal(typeof novel.useNovel, 'function');
@@ -85,11 +85,11 @@ test('entity read clients preserve current endpoint and query contracts', async 
   }) as typeof fetch;
 
   try {
-    const novel = await import('../../apps/web-next/src/entities/novel/index.ts');
-    const chapter = await import('../../apps/web-next/src/entities/chapter/index.ts');
-    const task = await import('../../apps/web-next/src/entities/task/index.ts');
-    const scheduler = await import('../../apps/web-next/src/entities/scheduler/index.ts');
-    const search = await import('../../apps/web-next/src/entities/search/index.ts');
+    const novel = await import('../../apps/web/src/entities/novel/index.ts');
+    const chapter = await import('../../apps/web/src/entities/chapter/index.ts');
+    const task = await import('../../apps/web/src/entities/task/index.ts');
+    const scheduler = await import('../../apps/web/src/entities/scheduler/index.ts');
+    const search = await import('../../apps/web/src/entities/search/index.ts');
 
     await novel.listNovels({
       q: 'a b',
@@ -145,10 +145,10 @@ test('entity read clients preserve current endpoint and query contracts', async 
 });
 
 test('entity invalidation adapters target only their owned query roots', async () => {
-  const novel = await import('../../apps/web-next/src/entities/novel/index.ts');
-  const task = await import('../../apps/web-next/src/entities/task/index.ts');
-  const scheduler = await import('../../apps/web-next/src/entities/scheduler/index.ts');
-  const search = await import('../../apps/web-next/src/entities/search/index.ts');
+  const novel = await import('../../apps/web/src/entities/novel/index.ts');
+  const task = await import('../../apps/web/src/entities/task/index.ts');
+  const scheduler = await import('../../apps/web/src/entities/scheduler/index.ts');
+  const search = await import('../../apps/web/src/entities/search/index.ts');
   const calls: Array<readonly unknown[]> = [];
   const client = {
     invalidateQueries({ queryKey }: { queryKey: readonly unknown[] }) {

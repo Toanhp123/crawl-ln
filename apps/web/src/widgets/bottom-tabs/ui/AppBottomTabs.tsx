@@ -1,7 +1,7 @@
 import { Activity, BookOpen, Library, Plus, Settings } from 'lucide-react';
+import { useTaskSummary } from '@/entities/task';
+import { useI18n } from '@/shared/i18n';
 import { BottomNav } from '@/shared/ui';
-import { useTaskSummary } from '@/entities/task/model/useTaskSummary';
-import { useI18n } from '@/shared/i18n/I18nProvider';
 
 export function AppBottomTabs({
   onRouteIntent,
@@ -13,6 +13,7 @@ export function AppBottomTabs({
   const summary = useTaskSummary();
   const { t } = useI18n();
   const badge = summary.data?.activeCount ?? 0;
+
   return (
     <BottomNav
       items={[

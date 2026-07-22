@@ -4,11 +4,11 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { PluginHealthService } from '../../apps/api/src/modules/source-reader/application/services/plugin-health.service.ts';
-import { ExternalPluginLoader } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts';
-import { SqlitePluginHealthRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin-health.repository.ts';
-import { SqlitePluginStore } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.ts';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
+import { PluginHealthService } from '../../apps/api-legacy/src/modules/source-reader/application/services/plugin-health.service.ts';
+import { ExternalPluginLoader } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts';
+import { SqlitePluginHealthRepository } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin-health.repository.ts';
+import { SqlitePluginStore } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.ts';
+import { createSqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
 
 const root = await mkdtemp(join(tmpdir(), 'source-plugin-health-'));
 const database = createSqliteDatabase(join(root, 'test.sqlite'));

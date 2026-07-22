@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import test from 'node:test';
-import { createAppContainer } from '../../apps/api-next/src/bootstrap/app-container.ts';
-import { createAppLifecycle } from '../../apps/api-next/src/platform/lifecycle/app-lifecycle.ts';
+import { createAppContainer } from '../../apps/api/src/bootstrap/app-container.ts';
+import { createAppLifecycle } from '../../apps/api/src/platform/lifecycle/app-lifecycle.ts';
 import {
   createEnvironment,
-  type NextEnvironment
-} from '../../apps/api-next/src/platform/config/environment.ts';
+  type Environment
+} from '../../apps/api/src/platform/config/environment.ts';
 
 function createTestContainer(order: string[]) {
   return createAppLifecycle({
@@ -35,10 +35,10 @@ function createTestContainer(order: string[]) {
   });
 }
 
-function testEnvironment(): NextEnvironment {
+function testEnvironment(): Environment {
   return {
     host: '127.0.0.1',
-    port: 3100,
+    port: 3000,
     databasePath: ':memory:',
     outboxBatchSize: 10,
     outboxIntervalMs: 1_000,
@@ -73,5 +73,5 @@ test('composition root exposes only lifecycle and presentation surfaces', async 
 
 test('environment accepts an exact database file override', () => {
   const databasePath = resolve('fixtures', 'novel-tool.sqlite');
-  assert.equal(createEnvironment({ NEXT_DATABASE_PATH: databasePath }).databasePath, databasePath);
+  assert.equal(createEnvironment({ DATABASE_PATH: databasePath }).databasePath, databasePath);
 });

@@ -4,8 +4,8 @@ import test from 'node:test';
 import {
   InProcessSourceReaderObservability,
   redactSourceReaderValue
-} from '../../apps/api/src/modules/source-reader/infrastructure/observability/source-reader-observability.ts';
-import { sourceReaderRequestIdMiddleware } from '../../apps/api/src/modules/source-reader/presentation/source-reader-request-id.middleware.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/infrastructure/observability/source-reader-observability.ts';
+import { sourceReaderRequestIdMiddleware } from '../../apps/api-legacy/src/modules/source-reader/presentation/source-reader-request-id.middleware.ts';
 
 test('redaction removes auth query values, cookies, OTP, and authorization headers', () => {
   assert.deepEqual(
@@ -73,7 +73,7 @@ test('request id middleware echoes a supplied id', () => {
 
 test('source reader service wraps candidate invocation with circuit rate and observability', async () => {
   const source = await readFile(
-    'apps/api/src/modules/source-reader/application/services/source-reader.service.ts',
+    'apps/api-legacy/src/modules/source-reader/application/services/source-reader.service.ts',
     'utf8'
   );
   assert.match(source, /circuit\.allow/);

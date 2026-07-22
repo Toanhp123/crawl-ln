@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { checkApiNextArchitecture } from '../../scripts/lib/api-next-architecture.mjs';
+import { checkApiArchitecture } from '../../scripts/lib/api-architecture.mjs';
 
 const validModuleSurfaces = {
   'modules/library/public/library.api.ts': 'export interface LibraryApi {}',
@@ -34,7 +34,7 @@ test('guard rejects cross-module internal imports', async (context) => {
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  assert.match((await checkApiNextArchitecture(root)).join('\n'), /cross-module internal import/);
+  assert.match((await checkApiArchitecture(root)).join('\n'), /cross-module internal import/);
 });
 
 test('guard resolves dynamic alias imports before enforcing module boundaries', async (context) => {
@@ -48,7 +48,7 @@ test('guard resolves dynamic alias imports before enforcing module boundaries', 
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  assert.match((await checkApiNextArchitecture(root)).join('\n'), /cross-module internal import/);
+  assert.match((await checkApiArchitecture(root)).join('\n'), /cross-module internal import/);
 });
 
 test('guard permits cross-module imports through the target public surface', async (context) => {
@@ -58,7 +58,7 @@ test('guard permits cross-module imports through the target public surface', asy
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  assert.deepEqual(await checkApiNextArchitecture(root), []);
+  assert.deepEqual(await checkApiArchitecture(root), []);
 });
 
 test('guard rejects foreign module table prefixes', async (context) => {
@@ -68,7 +68,7 @@ test('guard rejects foreign module table prefixes', async (context) => {
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  assert.match((await checkApiNextArchitecture(root)).join('\n'), /foreign table prefix/);
+  assert.match((await checkApiArchitecture(root)).join('\n'), /foreign table prefix/);
 });
 
 test('guard rejects cross-module foreign keys', async (context) => {
@@ -78,7 +78,7 @@ test('guard rejects cross-module foreign keys', async (context) => {
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  assert.match((await checkApiNextArchitecture(root)).join('\n'), /foreign table prefix/);
+  assert.match((await checkApiArchitecture(root)).join('\n'), /foreign table prefix/);
 });
 
 test('guard rejects deep composition behavior', async (context) => {
@@ -87,7 +87,7 @@ test('guard rejects deep composition behavior', async (context) => {
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  assert.match((await checkApiNextArchitecture(root)).join('\n'), /composition behavior/);
+  assert.match((await checkApiArchitecture(root)).join('\n'), /composition behavior/);
 });
 
 test('guard enforces clean layer direction inside a module', async (context) => {
@@ -97,7 +97,7 @@ test('guard enforces clean layer direction inside a module', async (context) => 
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  assert.match((await checkApiNextArchitecture(root)).join('\n'), /layer direction/);
+  assert.match((await checkApiArchitecture(root)).join('\n'), /layer direction/);
 });
 
 test('guard limits shared transport contracts to presentation and approved adapters', async (context) => {
@@ -112,8 +112,8 @@ test('guard limits shared transport contracts to presentation and approved adapt
   context.after(() => rm(invalidRoot, { recursive: true, force: true }));
   context.after(() => rm(validRoot, { recursive: true, force: true }));
 
-  assert.match((await checkApiNextArchitecture(invalidRoot)).join('\n'), /shared transport/);
-  assert.deepEqual(await checkApiNextArchitecture(validRoot), []);
+  assert.match((await checkApiArchitecture(invalidRoot)).join('\n'), /shared transport/);
+  assert.deepEqual(await checkApiArchitecture(validRoot), []);
 });
 
 test('guard requires public API and index surfaces for every module', async (context) => {
@@ -123,7 +123,7 @@ test('guard requires public API and index surfaces for every module', async (con
   );
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const violations = (await checkApiNextArchitecture(root)).join('\n');
+  const violations = (await checkApiArchitecture(root)).join('\n');
   assert.match(violations, /public\/library\.api\.ts/);
   assert.match(violations, /modules\/library\/index\.ts/);
 });

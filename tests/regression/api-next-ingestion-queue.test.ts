@@ -1,20 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PauseJobCommandHandler } from '../../apps/api-next/src/modules/ingestion/application/commands/job-control.commands.ts';
-import { ChapterFetchService } from '../../apps/api-next/src/modules/ingestion/application/services/chapter-fetch.service.ts';
-import { IngestionJobRunnerService } from '../../apps/api-next/src/modules/ingestion/application/services/ingestion-job-runner.service.ts';
-import { IngestionQueueService } from '../../apps/api-next/src/modules/ingestion/application/services/ingestion-queue.service.ts';
-import { SourcePolicyService } from '../../apps/api-next/src/modules/ingestion/application/services/source-policy.service.ts';
-import { IngestionJobEntity } from '../../apps/api-next/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
+import { PauseJobCommandHandler } from '../../apps/api/src/modules/ingestion/application/commands/job-control.commands.ts';
+import { ChapterFetchService } from '../../apps/api/src/modules/ingestion/application/services/chapter-fetch.service.ts';
+import { IngestionJobRunnerService } from '../../apps/api/src/modules/ingestion/application/services/ingestion-job-runner.service.ts';
+import { IngestionQueueService } from '../../apps/api/src/modules/ingestion/application/services/ingestion-queue.service.ts';
+import { SourcePolicyService } from '../../apps/api/src/modules/ingestion/application/services/source-policy.service.ts';
+import { IngestionJobEntity } from '../../apps/api/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
 import type {
   IngestionEvent,
   IngestionJob,
   IngestionJobChapter
-} from '../../apps/api-next/src/modules/ingestion/domain/ingestion.models.ts';
+} from '../../apps/api/src/modules/ingestion/domain/ingestion.models.ts';
 import type {
   LibraryChapter,
   LibraryNovelDetail
-} from '../../apps/api-next/src/modules/library/public/library.api.ts';
+} from '../../apps/api/src/modules/library/public/library.api.ts';
 
 const now = '2026-07-21T00:00:00.000Z';
 

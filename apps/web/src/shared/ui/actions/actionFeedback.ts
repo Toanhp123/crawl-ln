@@ -23,7 +23,7 @@ export const actionFeedbackPolicies = {
   }
 } as const;
 
-export interface ActionFeedbackScheduler {
+export interface ActionFeedbackClock {
   now: () => number;
   setTimeout: (callback: () => void, delayMs: number) => unknown;
   clearTimeout: (timer: unknown) => void;
@@ -31,11 +31,11 @@ export interface ActionFeedbackScheduler {
 
 type ControllerOptions = {
   policy?: ActionFeedbackPolicyName;
-  scheduler?: ActionFeedbackScheduler;
+  clock?: ActionFeedbackClock;
   onPhaseChange: (phase: ActionFeedbackPhase) => void;
 };
 
-const systemScheduler: ActionFeedbackScheduler = {
+const systemClock: ActionFeedbackClock = {
   now: () => Date.now(),
   setTimeout: (callback, delayMs) => globalThis.setTimeout(callback, delayMs),
   clearTimeout: (timer) => globalThis.clearTimeout(timer as ReturnType<typeof setTimeout>)
@@ -43,7 +43,7 @@ const systemScheduler: ActionFeedbackScheduler = {
 
 export function createActionFeedbackController({
   policy = 'standard',
-  scheduler = systemScheduler,
+  clock = systemClock,
   onPhaseChange
 }: ControllerOptions) {
   const timing = actionFeedbackPolicies[policy];
@@ -56,8 +56,8 @@ export function createActionFeedbackController({
   let resetTimer: unknown;
   let disposed = false;
 
-  const clearTimer = (timer: unknown) => {
-    if (timer !== undefined) scheduler.clearTimeout(timer);
+  const clearTimer = (timerHandle: unknown) => {
+    if (timerHandle !== undefined) clock.clearTimeout(timerHandle);
   };
 
   const clearTimers = () => {
@@ -77,7 +77,7 @@ export function createActionFeedbackController({
 
   const resetAfter = (durationMs: number) => {
     clearTimer(resetTimer);
-    resetTimer = scheduler.setTimeout(() => {
+    resetTimer = clock.setTimeout(() => {
       if (disposed || actionState === 'pending') return;
       emit('idle');
       cycleActive = false;
@@ -97,10 +97,10 @@ export function createActionFeedbackController({
     if (!cycleActive) return;
 
     if (phase === 'loading' && loadingStartedAt !== null) {
-      const elapsed = scheduler.now() - loadingStartedAt;
+      const elapsed = clock.now() - loadingStartedAt;
       const remaining = Math.max(0, timing.loadingMinDurationMs - elapsed);
       clearTimer(settleTimer);
-      settleTimer = scheduler.setTimeout(() => showOutcome(outcome), remaining);
+      settleTimer = clock.setTimeout(() => showOutcome(outcome), remaining);
       return;
     }
 
@@ -121,11 +121,11 @@ export function createActionFeedbackController({
         emit('idle');
         const beginLoading = () => {
           if (disposed || actionState !== 'pending') return;
-          loadingStartedAt = scheduler.now();
+          loadingStartedAt = clock.now();
           emit('loading');
         };
         if (timing.loadingDelayMs === 0) beginLoading();
-        else loadingDelayTimer = scheduler.setTimeout(beginLoading, timing.loadingDelayMs);
+        else loadingDelayTimer = clock.setTimeout(beginLoading, timing.loadingDelayMs);
         return;
       }
 

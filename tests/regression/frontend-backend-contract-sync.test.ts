@@ -6,9 +6,9 @@ const read = (path: string) => readFile(new URL(`../../${path}`, import.meta.url
 
 test('frontend API modules use the canonical /api backend routes', async () => {
   const [plugins, search, tasks] = await Promise.all([
-    read('apps/web/src/entities/source-plugin/api/sourcePluginApi.ts'),
-    read('apps/web/src/features/search-library/api/searchLibrary.ts'),
-    read('apps/web/src/entities/task/api/taskApi.ts')
+    read('apps/web-legacy/src/entities/source-plugin/api/sourcePluginApi.ts'),
+    read('apps/web-legacy/src/features/search-library/api/searchLibrary.ts'),
+    read('apps/web-legacy/src/entities/task/api/taskApi.ts')
   ]);
   assert.match(plugins, /['"]\/api\/source-reader\/plugins/);
   assert.doesNotMatch(plugins, /['"]\/api\/plugins/);
@@ -19,8 +19,8 @@ test('frontend API modules use the canonical /api backend routes', async () => {
 
 test('frontend consumes only the canonical response envelope', async () => {
   const [http, backup] = await Promise.all([
-    read('apps/web/src/shared/api/http.ts'),
-    read('apps/web/src/features/backup-library/api/backupLibrary.ts')
+    read('apps/web-legacy/src/shared/api/http.ts'),
+    read('apps/web-legacy/src/features/backup-library/api/backupLibrary.ts')
   ]);
   assert.match(http, /ApiResponse/);
   assert.doesNotMatch(http, /payload as T/);
@@ -29,13 +29,13 @@ test('frontend consumes only the canonical response envelope', async () => {
 });
 
 test('frontend error contracts use the shared backend error code union', async () => {
-  const errors = await read('apps/web/src/shared/api/errors.ts');
+  const errors = await read('apps/web-legacy/src/shared/api/errors.ts');
   assert.match(errors, /ApiErrorCode/);
   assert.doesNotMatch(errors, /code\?: string/);
 });
 
 test('frontend build version follows package metadata instead of a stale hard-coded release', async () => {
-  const build = await read('apps/web/src/shared/config/build.ts');
+  const build = await read('apps/web-legacy/src/shared/config/build.ts');
   assert.doesNotMatch(build, /2\.6\.0/);
   assert.match(build, /__APP_VERSION__/);
 });

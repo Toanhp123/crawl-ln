@@ -21,7 +21,7 @@ function literalKeys(source: string, pattern: RegExp): Set<string> {
 }
 
 test('web-next has complete EN/VI literal catalogs without reflective feature loading', async () => {
-  const files = (await sourceFiles('apps/web-next/src')).filter((file) => /\.(ts|tsx)$/.test(file));
+  const files = (await sourceFiles('apps/web/src')).filter((file) => /\.(ts|tsx)$/.test(file));
   const contents = await Promise.all(files.map((file) => readFile(file, 'utf8')));
   const catalogContents = contents.filter((_, index) => {
     const file = files[index];
@@ -36,7 +36,7 @@ test('web-next has complete EN/VI literal catalogs without reflective feature lo
   const missing = [...usedKeys].filter((key) => !catalogKeys.has(key)).sort();
   assert.deepEqual(missing, []);
 
-  const appCatalog = await readFile('apps/web-next/src/app/i18n/catalog.ts', 'utf8');
+  const appCatalog = await readFile('apps/web/src/app/i18n/catalog.ts', 'utf8');
   assert.doesNotMatch(appCatalog, /import \* as/);
   assert.doesNotMatch(appCatalog, /Object\.entries/);
   assert.match(appCatalog, /import \{ chapterCatalogs \} from ['"]@\/entities\/chapter['"]/);
@@ -46,11 +46,12 @@ test('web-next has complete EN/VI literal catalogs without reflective feature lo
 
 test('web-next carries every current common status translation', async () => {
   const currentSources = await Promise.all(
-    ['apps/web/src/shared/i18n/locales/en.ts', 'apps/web/src/shared/i18n/locales/vi.ts'].map(
-      (file) => readFile(file, 'utf8')
-    )
+    [
+      'apps/web-legacy/src/shared/i18n/locales/en.ts',
+      'apps/web-legacy/src/shared/i18n/locales/vi.ts'
+    ].map((file) => readFile(file, 'utf8'))
   );
-  const nextFiles = (await sourceFiles('apps/web-next/src')).filter(
+  const nextFiles = (await sourceFiles('apps/web/src')).filter(
     (file) => file.endsWith('catalog.ts') || /app-messages\.[a-z]+\.ts$/.test(file)
   );
   const nextSources = await Promise.all(nextFiles.map((file) => readFile(file, 'utf8')));
@@ -68,14 +69,14 @@ test('web-next carries every current common status translation', async () => {
 });
 
 test('web-next treats only entity and feature source modules as side-effect-free', async () => {
-  const configModule = (await import('../../apps/web-next/vite.config')) as Record<string, unknown>;
-  const moduleSideEffects = configModule.webNextModuleSideEffects;
+  const configModule = (await import('../../apps/web/vite.config')) as Record<string, unknown>;
+  const moduleSideEffects = configModule.webModuleSideEffects;
 
   assert.equal(typeof moduleSideEffects, 'function');
   if (typeof moduleSideEffects !== 'function') return;
 
   const policy = moduleSideEffects as (id: string) => boolean | undefined;
-  const sourceRoot = resolve('apps/web-next/src');
+  const sourceRoot = resolve('apps/web/src');
   assert.equal(policy(join(sourceRoot, 'entities/novel/index.ts')), false);
   assert.equal(policy(join(sourceRoot, 'features/read-chapter/index.ts')), false);
   assert.equal(policy(join(sourceRoot, 'app/i18n/catalog.ts')), undefined);

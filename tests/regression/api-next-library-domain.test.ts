@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { LibraryChapterEntity } from '../../apps/api-next/src/modules/library/domain/entities/library-chapter.entity.ts';
-import { LibraryNovelEntity } from '../../apps/api-next/src/modules/library/domain/entities/library-novel.entity.ts';
-import { LibraryError } from '../../apps/api-next/src/modules/library/domain/errors/library.error.ts';
+import { LibraryChapterEntity } from '../../apps/api/src/modules/library/domain/entities/library-chapter.entity.ts';
+import { LibraryNovelEntity } from '../../apps/api/src/modules/library/domain/entities/library-novel.entity.ts';
+import { LibraryError } from '../../apps/api/src/modules/library/domain/errors/library.error.ts';
 import type {
   LibraryChapter,
   LibraryNovel
-} from '../../apps/api-next/src/modules/library/domain/library.models.ts';
+} from '../../apps/api/src/modules/library/domain/library.models.ts';
 
 const now = '2026-07-21T00:00:00.000Z';
 

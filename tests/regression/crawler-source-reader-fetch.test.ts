@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { FetchChapterUseCase } from '../../apps/api/src/modules/crawler/application/use-cases/fetch-chapter.usecase.ts';
+import { FetchChapterUseCase } from '../../apps/api-legacy/src/modules/crawler/application/use-cases/fetch-chapter.usecase.ts';
 
 const calls: string[] = [];
 const robots = { check: async () => ({ allowed: true, crawlDelayMs: 25 }) };

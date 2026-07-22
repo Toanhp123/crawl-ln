@@ -1,19 +1,23 @@
-import type { SourceReaderPluginDescriptor } from '@novel-tool/shared';
 import type { ReactNode } from 'react';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Badge, ListRow, Text } from '@/shared/ui';
-import { sourcePluginTone } from '../model/sourcePlugin';
+import { useI18n } from '../../../shared/i18n';
+import { Badge, ListRow, Text } from '../../../shared/ui';
+import { sourcePluginTone } from '../model/source-plugin';
+import type { SourcePlugin } from '../model/types';
 
 export function SourcePluginRow({
   plugin,
   trailing,
   onOpen
 }: {
-  plugin: SourceReaderPluginDescriptor;
+  plugin: SourcePlugin;
   trailing?: ReactNode;
   onOpen?: () => void;
 }) {
-  const { number, status } = useI18n();
+  const { number, status, t } = useI18n();
+  const version = plugin.activeVersion
+    ? t('sources.plugins.version', { value: plugin.activeVersion })
+    : '—';
+
   return (
     <ListRow
       {...(onOpen ? { onClick: onOpen } : {})}
@@ -23,7 +27,7 @@ export function SourcePluginRow({
         <span className="flex flex-wrap items-center gap-2">
           <Badge tone={sourcePluginTone(plugin)}>{status(plugin.status)}</Badge>
           <Text variant="caption" tone="muted">
-            {plugin.activeVersion ?? '—'} · {number(plugin.capabilities.length)}
+            {version} · {number(plugin.capabilities.length)}
           </Text>
         </span>
       }

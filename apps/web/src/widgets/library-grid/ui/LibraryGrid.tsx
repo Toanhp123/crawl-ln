@@ -1,5 +1,4 @@
-import type { Novel } from '@novel-tool/shared';
-import { NovelLibraryCard, type NovelReadingProgress } from '@/entities/novel';
+import { NovelLibraryCard, type Novel, type NovelReadingProgress } from '@/entities/novel';
 
 export function LibraryGrid({
   novels,

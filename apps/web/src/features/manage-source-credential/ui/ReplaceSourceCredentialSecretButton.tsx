@@ -1,47 +1,33 @@
-import type { SourceReaderCredentialMetadata } from '@novel-tool/shared';
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateSourceCredentialSecret } from '@/entities/source-credential';
-import { queryKeys } from '@/shared/api/queryKeys';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Button, Drawer, toast } from '@/shared/ui';
+import type { SourceCredential } from '../../../entities/source-credential';
+import { useI18n } from '../../../shared/i18n';
+import { Button, Drawer } from '../../../shared/ui';
 import {
   buildCredentialSecret,
-  createEmptyCredentialSecrets,
+  clearCredentialSecrets,
   hasCredentialSecret
-} from '../model/credentialSecret';
+} from '../model/credential-secret';
+import { useUpdateSourceCredentialSecret } from '../model/use-source-credential-actions';
 import { CredentialSecretEditor } from './CredentialSecretEditor';
 
 export function ReplaceSourceCredentialSecretButton({
   credential
 }: {
-  credential: SourceReaderCredentialMetadata;
+  credential: SourceCredential;
 }) {
-  const { t, errorMessage } = useI18n();
-  const client = useQueryClient();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [secrets, setSecrets] = useState(createEmptyCredentialSecrets);
-  const reset = () => setSecrets(createEmptyCredentialSecrets());
-  const update = useMutation({
-    mutationFn: () =>
-      updateSourceCredentialSecret(credential.id, {
-        secret: buildCredentialSecret(credential.strategy, secrets)
-      }),
-    onSuccess: () => {
-      toast({ kind: 'success', title: t('sources.credentials.updated') });
+  const [secrets, setSecrets] = useState(clearCredentialSecrets);
+  const reset = () => setSecrets(clearCredentialSecrets());
+  const update = useUpdateSourceCredentialSecret(
+    credential.id,
+    () => {
       setOpen(false);
       reset();
-      void client.invalidateQueries({ queryKey: queryKeys.sourceReader.credentials() });
     },
-    onError: (error) =>
-      toast({
-        kind: 'error',
-        title: t('sources.credentials.updateFailed'),
-        description: errorMessage(error)
-      }),
-    onSettled: reset
-  });
+    reset
+  );
   return (
     <>
       <Button
@@ -50,7 +36,7 @@ export function ReplaceSourceCredentialSecretButton({
         leadingIcon={<Pencil size={16} />}
         onClick={() => setOpen(true)}
       >
-        {t('sources.credentials.replace')}
+        {t('manageSourceCredential.replace')}
       </Button>
       <Drawer
         open={open}
@@ -58,7 +44,7 @@ export function ReplaceSourceCredentialSecretButton({
           setOpen(next);
           if (!next) reset();
         }}
-        title={t('sources.credentials.replaceTitle')}
+        title={t('manageSourceCredential.replaceTitle')}
       >
         <div className="space-y-4">
           <CredentialSecretEditor
@@ -70,9 +56,9 @@ export function ReplaceSourceCredentialSecretButton({
             full
             actionState={update.status}
             disabled={!hasCredentialSecret(credential.strategy, secrets)}
-            onClick={() => update.mutate()}
+            onClick={() => update.mutate(buildCredentialSecret(credential.strategy, secrets))}
           >
-            {t('sources.common.save')}
+            {t('manageSourceCredential.save')}
           </Button>
         </div>
       </Drawer>

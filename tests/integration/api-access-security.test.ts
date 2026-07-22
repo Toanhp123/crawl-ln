@@ -6,7 +6,7 @@ import test from 'node:test';
 
 const storageDir = await mkdtemp(join(tmpdir(), 'novel-tool-api-access-'));
 process.env.STORAGE_DIR = storageDir;
-const { createAppRuntime } = await import('../../apps/api/src/app.ts');
+const { createAppRuntime } = await import('../../apps/api-legacy/src/app.ts');
 const runtime = createAppRuntime({ startBackgroundServices: false });
 const server = runtime.app.listen(0, '127.0.0.1');
 await new Promise<void>((resolve) => server.once('listening', resolve));

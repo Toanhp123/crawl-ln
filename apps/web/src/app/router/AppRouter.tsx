@@ -1,33 +1,50 @@
 import { lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
-import { AppShell } from '@/app/layouts/AppShell';
-import { ReaderShell } from '@/app/layouts/ReaderShell';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { AppShell } from '../layouts/AppShell';
+import { ReaderShell } from '../layouts/ReaderShell';
 import { HomeRedirect } from './HomeRedirect';
-import { routeLoaders } from './routePreload';
+import { routeLoaders } from './route-preload';
 
-const LibraryPage = lazy(() => routeLoaders.library().then((m) => ({ default: m.LibraryPage })));
-const NovelDetailRoute = lazy(() =>
-  routeLoaders.novelDetail().then((m) => ({ default: m.NovelDetailRoute }))
+const LibraryPage = lazy(() =>
+  routeLoaders.library().then((module) => ({ default: module.LibraryPage }))
+);
+const NovelDetailPage = lazy(() =>
+  routeLoaders.novelDetail().then((module) => ({ default: module.NovelDetailPage }))
 );
 const ChapterReaderPage = lazy(() =>
-  routeLoaders.reader().then((m) => ({ default: m.ChapterReaderPage }))
+  routeLoaders.reader().then((module) => ({ default: module.ChapterReaderPage }))
 );
 const TaskDetailPage = lazy(() =>
-  routeLoaders.taskDetail().then((m) => ({ default: m.TaskDetailPage }))
+  routeLoaders.taskDetail().then((module) => ({ default: module.TaskDetailPage }))
 );
-const ActivityPage = lazy(() => routeLoaders.activity().then((m) => ({ default: m.ActivityPage })));
-const SourcesPage = lazy(() => routeLoaders.sources().then((m) => ({ default: m.SourcesPage })));
+const ActivityPage = lazy(() =>
+  routeLoaders.activity().then((module) => ({ default: module.ActivityPage }))
+);
+const SourcesPage = lazy(() =>
+  routeLoaders.sources().then((module) => ({ default: module.SourcesPage }))
+);
 const SourcePluginPage = lazy(() =>
-  routeLoaders.sourcePlugin().then((m) => ({ default: m.SourcePluginPage }))
+  routeLoaders.sourcePlugin().then((module) => ({ default: module.SourcePluginPage }))
 );
-const SettingsPage = lazy(() => routeLoaders.settings().then((m) => ({ default: m.SettingsPage })));
+const SettingsPage = lazy(() =>
+  routeLoaders.settings().then((module) => ({ default: module.SettingsPage }))
+);
+
+function NovelDetailRouteFrame() {
+  return (
+    <>
+      <NovelDetailPage />
+      <Outlet />
+    </>
+  );
+}
 
 export function AppRouter() {
   return (
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/library" element={<LibraryPage />} />
-        <Route path="/library/:novelId" element={<NovelDetailRoute />}>
+        <Route path="/library/:novelId" element={<NovelDetailRouteFrame />}>
           <Route element={<ReaderShell />}>
             <Route path="read/:chapterIndex" element={<ChapterReaderPage />} />
           </Route>
@@ -36,7 +53,7 @@ export function AppRouter() {
         <Route path="/activity/:taskId" element={<TaskDetailPage />} />
         <Route path="/sources" element={<SourcesPage />} />
         <Route path="/sources/new" element={<SourcePluginPage mode="create" />} />
-        <Route path="/sources/:pluginId" element={<SourcePluginPage mode="edit" />} />
+        <Route path="/sources/:pluginId" element={<SourcePluginPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/crawl" element={<Navigate to="/activity" replace />} />
         <Route path="/tasks" element={<Navigate to="/activity" replace />} />

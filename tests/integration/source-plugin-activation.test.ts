@@ -4,11 +4,11 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { ExternalPluginLoader } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts';
-import { novelCoolPlugin } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts';
-import { InMemoryPluginRegistry } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.ts';
-import { SqlitePluginStore } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.ts';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
+import { ExternalPluginLoader } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts';
+import { novelCoolPlugin } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts';
+import { InMemoryPluginRegistry } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.ts';
+import { SqlitePluginStore } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.ts';
+import { createSqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
 
 const root = await mkdtemp(join(tmpdir(), 'source-plugin-activation-'));
 const database = createSqliteDatabase(join(root, 'test.sqlite'));

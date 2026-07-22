@@ -2,13 +2,16 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const page = readFileSync('apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx', 'utf8');
+const page = readFileSync(
+  'apps/web-legacy/src/pages/chapter-reader/ui/ChapterReaderPage.tsx',
+  'utf8'
+);
 const bottomBar = readFileSync(
-  'apps/web/src/widgets/reader-bottom-bar/ui/ReaderBottomBar.tsx',
+  'apps/web-legacy/src/widgets/reader-bottom-bar/ui/ReaderBottomBar.tsx',
   'utf8'
 );
 const offline = readFileSync(
-  'apps/web/src/features/read-chapter/ui/ReaderOfflineBanner.tsx',
+  'apps/web-legacy/src/features/read-chapter/ui/ReaderOfflineBanner.tsx',
   'utf8'
 );
 

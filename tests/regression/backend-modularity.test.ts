@@ -5,7 +5,7 @@ import test from 'node:test';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 test('app container composes focused module factories', () => {
-  const source = read('apps/api/src/shared/container/app-container.ts');
+  const source = read('apps/api-legacy/src/shared/container/app-container.ts');
   assert.match(source, /createInfrastructureModule/);
   assert.match(source, /createCrawlerModule/);
   assert.match(source, /createNovelsModule/);
@@ -16,9 +16,11 @@ test('app container composes focused module factories', () => {
 
 test('novels application depends on ports instead of crawler concrete use cases', () => {
   const analyze = read(
-    'apps/api/src/modules/novels/application/use-cases/analyze-novel.usecase.ts'
+    'apps/api-legacy/src/modules/novels/application/use-cases/analyze-novel.usecase.ts'
   );
-  const update = read('apps/api/src/modules/novels/application/use-cases/update-novel.usecase.ts');
+  const update = read(
+    'apps/api-legacy/src/modules/novels/application/use-cases/update-novel.usecase.ts'
+  );
   assert.doesNotMatch(analyze, /modules\/crawler|crawler\/application/);
   assert.doesNotMatch(update, /modules\/crawler|crawler\/application/);
   assert.match(analyze, /SourceAnalyzerPort/);
@@ -27,10 +29,10 @@ test('novels application depends on ports instead of crawler concrete use cases'
 
 test('source URL identity rules are owned locally by crawler and novels', () => {
   const novelAnalyze = read(
-    'apps/api/src/modules/novels/application/use-cases/analyze-novel.usecase.ts'
+    'apps/api-legacy/src/modules/novels/application/use-cases/analyze-novel.usecase.ts'
   );
   const crawlerAnalyze = read(
-    'apps/api/src/modules/crawler/application/use-cases/analyze-source.usecase.ts'
+    'apps/api-legacy/src/modules/crawler/application/use-cases/analyze-source.usecase.ts'
   );
   assert.match(novelAnalyze, /domain\/url\/chapter-source-url-key/);
   assert.match(crawlerAnalyze, /function comparableHostname/);
@@ -40,18 +42,18 @@ test('source URL identity rules are owned locally by crawler and novels', () => 
 
 test('scheduler infrastructure does not import novels infrastructure', () => {
   const source = read(
-    'apps/api/src/modules/scheduler/infrastructure/sqlite/auto-update-policy-sqlite.repository.ts'
+    'apps/api-legacy/src/modules/scheduler/infrastructure/sqlite/auto-update-policy-sqlite.repository.ts'
   );
   assert.doesNotMatch(source, /novels\/infrastructure/);
 });
 
 test('feature repositories are constructed by their owning module factories', () => {
   const sharedInfrastructure = read(
-    'apps/api/src/shared/container/modules/infrastructure.module.ts'
+    'apps/api-legacy/src/shared/container/modules/infrastructure.module.ts'
   );
-  const tasks = read('apps/api/src/shared/container/modules/tasks.module.ts');
-  const chapters = read('apps/api/src/shared/container/modules/chapters.module.ts');
-  const scheduler = read('apps/api/src/shared/container/modules/scheduler.module.ts');
+  const tasks = read('apps/api-legacy/src/shared/container/modules/tasks.module.ts');
+  const chapters = read('apps/api-legacy/src/shared/container/modules/chapters.module.ts');
+  const scheduler = read('apps/api-legacy/src/shared/container/modules/scheduler.module.ts');
   assert.doesNotMatch(sharedInfrastructure, /SqliteRepository/);
   assert.match(tasks, /new TaskSqliteRepository/);
   assert.match(chapters, /new ChapterSqliteRepository/);
@@ -61,10 +63,10 @@ test('feature repositories are constructed by their owning module factories', ()
 
 test('route factories accept controllers instead of the global app container', () => {
   for (const path of [
-    'apps/api/src/modules/novels/presentation/routes/novel.routes.ts',
-    'apps/api/src/modules/crawler/presentation/routes/crawl.routes.ts',
-    'apps/api/src/modules/task/presentation/routes/task.routes.ts',
-    'apps/api/src/modules/scheduler/presentation/scheduler.routes.ts'
+    'apps/api-legacy/src/modules/novels/presentation/routes/novel.routes.ts',
+    'apps/api-legacy/src/modules/crawler/presentation/routes/crawl.routes.ts',
+    'apps/api-legacy/src/modules/task/presentation/routes/task.routes.ts',
+    'apps/api-legacy/src/modules/scheduler/presentation/scheduler.routes.ts'
   ]) {
     const source = read(path);
     assert.doesNotMatch(source, /AppContainer/);
@@ -73,9 +75,9 @@ test('route factories accept controllers instead of the global app container', (
 
 test('novels does not expose a legacy crawl command wrapper', () => {
   const controller = read(
-    'apps/api/src/modules/novels/presentation/controllers/novel.controller.ts'
+    'apps/api-legacy/src/modules/novels/presentation/controllers/novel.controller.ts'
   );
-  const routes = read('apps/api/src/modules/novels/presentation/routes/novel.routes.ts');
+  const routes = read('apps/api-legacy/src/modules/novels/presentation/routes/novel.routes.ts');
   assert.doesNotMatch(controller, /CrawlNovelUseCase|crawlNovelDto|crawl =/);
   assert.doesNotMatch(routes, /post\('\/crawl'/);
   assert.match(controller, /NovelTaskQueryPort/);

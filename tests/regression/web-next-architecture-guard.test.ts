@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { checkWebNextArchitecture } from '../../scripts/lib/web-next-architecture.mjs';
+import { checkWebArchitecture } from '../../scripts/lib/web-architecture.mjs';
 
 async function fixture(files: Record<string, string>): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'web-next-architecture-'));
@@ -42,7 +42,7 @@ test('guard resolves alias, relative, export, and dynamic deep imports', async (
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.equal(errors.filter((item) => item.includes('public index')).length, 3);
 });
 
@@ -58,7 +58,7 @@ test('guard parses import types and require calls before enforcing public indexe
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.equal(errors.filter((item) => item.includes('public index')).length, 2);
 });
 
@@ -73,7 +73,7 @@ test('guard rejects missing slice indexes, domain shared state, and page mutatio
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.ok(errors.some((item) => item.includes('shared cannot own domain concepts')));
   assert.ok(errors.some((item) => item.includes('slice is missing index.ts')));
   assert.ok(errors.some((item) => item.includes('pages cannot own product mutations')));
@@ -95,7 +95,7 @@ test('guard rejects upward and same-layer cross-slice dependencies', async (cont
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.ok(errors.some((item) => item.includes('cannot import upward')));
   assert.ok(errors.some((item) => item.includes('same-layer slices cannot cross-import')));
   assert.ok(errors.some((item) => item.includes('page slices cannot import each other')));
@@ -119,7 +119,7 @@ test('guard locks TanStack hook and mutating HTTP ownership', async (context) =>
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.ok(errors.some((item) => item.includes('query hooks belong to entities')));
   assert.equal(
     errors.filter((item) => item.includes('app/pages cannot issue mutating HTTP requests')).length,
@@ -148,11 +148,11 @@ test('guard scans shared declarations and strings while allowing technical names
   context.after(() => rm(validRoot, { recursive: true, force: true }));
 
   assert.ok(
-    (await checkWebNextArchitecture(invalidRoot)).filter((item) =>
+    (await checkWebArchitecture(invalidRoot)).filter((item) =>
       item.includes('shared cannot own domain concepts')
     ).length >= 2
   );
-  assert.deepEqual(await checkWebNextArchitecture(validRoot), []);
+  assert.deepEqual(await checkWebArchitecture(validRoot), []);
 });
 
 test('guard rejects product API endpoints that end a shared string literal', async (context) => {
@@ -163,7 +163,7 @@ test('guard rejects product API endpoints that end a shared string literal', asy
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.equal(
     errors.filter((item) => item.includes('shared cannot own domain concepts')).length,
     3
@@ -180,7 +180,7 @@ test('guard scans shared object keys and template literal segments', async (cont
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.ok(errors.some((item) => item.includes('(chapter)')));
   assert.ok(errors.some((item) => item.includes('/api/tasks/')));
 });
@@ -196,7 +196,7 @@ test('guard rejects domain selectors and custom properties in shared styles', as
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.equal(errors.filter((item) => item.includes('shared cannot own domain CSS')).length, 3);
 });
 
@@ -211,7 +211,7 @@ test('guard rejects reader-owned selectors and custom properties in shared style
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  const errors = await checkWebNextArchitecture(root);
+  const errors = await checkWebArchitecture(root);
   assert.equal(errors.filter((item) => item.includes('shared cannot own reader CSS')).length, 3);
 });
 
@@ -230,5 +230,5 @@ test('guard accepts public-index imports and same-slice internals', async (conte
   });
   context.after(() => rm(root, { recursive: true, force: true }));
 
-  assert.deepEqual(await checkWebNextArchitecture(root), []);
+  assert.deepEqual(await checkWebArchitecture(root), []);
 });

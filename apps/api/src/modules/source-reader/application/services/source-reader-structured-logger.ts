@@ -1,4 +1,4 @@
-import type { LoggerPort } from '../../../../shared/ports/logger.port.js';
+import type { LoggerPort } from '../ports/runtime-support.ports.js';
 
 export const MAX_MESSAGE_BYTES = 2_048;
 export const MAX_METADATA_BYTES = 8_192;
@@ -95,7 +95,7 @@ function isSensitiveKey(key: string): boolean {
 function truncateUtf8(value: string, maxBytes: number): string {
   const bytes = Buffer.from(value, 'utf8');
   if (bytes.length <= maxBytes) return value;
-  const suffix = `…${TRUNCATED}`;
+  const suffix = `...${TRUNCATED}`;
   const suffixBytes = Buffer.byteLength(suffix, 'utf8');
   return Buffer.concat([
     bytes.subarray(0, Math.max(0, maxBytes - suffixBytes)),

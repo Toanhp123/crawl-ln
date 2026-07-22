@@ -1,13 +1,13 @@
 import { MoreHorizontal } from 'lucide-react';
 import { useState, type ComponentProps } from 'react';
-import { CrawlNovelButton } from '@/features/crawl-novel/ui/CrawlNovelButton';
-import { UpdateNovelButton } from '@/features/update-novel/ui/UpdateNovelButton';
-import { ExportMenu } from '@/features/export-novel/ui/ExportMenu';
-import { BottomSheet, Button, Text, type ActionState } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { AutoUpdateControl } from '@/features/update-auto-update';
+import { ExportNovelControl } from '@/features/export-novel';
+import { useI18n } from '@/shared/i18n';
+import { BottomSheet, Button, Stack, Text, type ActionState } from '@/shared/ui';
+import type { Novel } from '@/entities/novel';
 
 export function NovelManagementSheet({
-  novelId,
+  novel,
   updateActionState,
   crawlActionState,
   taskActive,
@@ -15,7 +15,7 @@ export function NovelManagementSheet({
   onCrawl,
   triggerClassName
 }: {
-  novelId: string;
+  novel: Novel;
   updateActionState: ActionState;
   crawlActionState: ActionState;
   taskActive: boolean;
@@ -25,7 +25,6 @@ export function NovelManagementSheet({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-
   return (
     <>
       <Button
@@ -42,22 +41,25 @@ export function NovelManagementSheet({
         title={t('reader.manageNovel')}
         description={t('reader.manageNovelDescription')}
       >
-        <div className="grid gap-3">
+        <Stack gap="md">
           <Text variant="caption" tone="muted">
             {t('reader.manageNovelHint')}
           </Text>
-          <UpdateNovelButton
-            actionState={updateActionState}
-            disabled={taskActive}
-            onClick={onUpdate}
-          />
-          <CrawlNovelButton
+          <Button full actionState={updateActionState} disabled={taskActive} onClick={onUpdate}>
+            {t('reader.updateAction')}
+          </Button>
+          <Button
+            full
+            variant="secondary"
             actionState={crawlActionState}
             disabled={taskActive}
             onClick={onCrawl}
-          />
-          <ExportMenu novelId={novelId} />
-        </div>
+          >
+            {t('reader.crawlAction')}
+          </Button>
+          <AutoUpdateControl novel={novel} />
+          <ExportNovelControl novelId={novel.id} />
+        </Stack>
       </BottomSheet>
     </>
   );

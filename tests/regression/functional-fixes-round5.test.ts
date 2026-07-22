@@ -10,7 +10,7 @@ async function source(path: string) {
 
 test('cover restore uses path-relative containment instead of separator-sensitive prefix matching', async () => {
   const store = await source(
-    'apps/api/src/modules/backup/infrastructure/sqlite/sqlite-backup.store.ts'
+    'apps/api-legacy/src/modules/backup/infrastructure/sqlite/sqlite-backup.store.ts'
   );
   assert.match(store, /relative\(root, destination\)/);
   assert.match(store, /isAbsolute\(relativePath\)/);

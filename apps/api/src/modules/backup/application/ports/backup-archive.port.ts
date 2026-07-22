@@ -1,12 +1,11 @@
-import type { BackupManifest, BackupSettings } from '../../domain/backup.js';
-import type { BackupSnapshot } from './backup-store.port.js';
+import type { BackupManifest, BackupSettings, BackupSnapshot } from '../../domain/backup.models.js';
 
-export type OpenedBackup = {
+export interface OpenedBackup {
   manifest: BackupManifest;
   database: Buffer;
+  contributors: Record<string, unknown>;
   settings: BackupSettings;
-  covers: Array<{ path: string; content: Buffer }>;
-};
+}
 
 export interface BackupArchivePort {
   create(

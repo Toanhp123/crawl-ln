@@ -6,7 +6,7 @@ import {
   appendReaderChapter,
   createReaderWindow,
   prependReaderChapter
-} from '../../apps/web/src/modules/reader/domain/reader-window.ts';
+} from '../../apps/web-legacy/src/modules/reader/domain/reader-window.ts';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
@@ -47,7 +47,7 @@ test('reader window never evicts the active chapter during rapid prepend and app
 });
 
 test('reader async state is scoped to a generation and cancelled when leaving', () => {
-  const hook = read('apps/web/src/modules/reader/presentation/use-infinite-reader.ts');
+  const hook = read('apps/web-legacy/src/modules/reader/presentation/use-infinite-reader.ts');
   assert.match(hook, /session\.current !== currentSession/);
   assert.match(hook, /mounted\.current/);
   assert.match(hook, /cancelSession/);
@@ -57,7 +57,7 @@ test('reader async state is scoped to a generation and cancelled when leaving', 
 });
 
 test('reader observers are interactive-only and consume one load permission per gesture', () => {
-  const page = read('apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
+  const page = read('apps/web-legacy/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
   assert.match(page, /scrollPhase\.current !== 'interactive'/);
   assert.match(page, /allowPreviousLoad\.current = false/);
   assert.match(page, /allowNextLoad\.current = false/);

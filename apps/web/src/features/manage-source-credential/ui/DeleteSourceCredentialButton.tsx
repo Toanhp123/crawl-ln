@@ -1,29 +1,12 @@
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { deleteSourceCredential } from '@/entities/source-credential';
-import { queryKeys } from '@/shared/api/queryKeys';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Button, ConfirmDialog, toast } from '@/shared/ui';
-
+import { useI18n } from '../../../shared/i18n';
+import { Button, ConfirmDialog } from '../../../shared/ui';
+import { useDeleteSourceCredential } from '../model/use-source-credential-actions';
 export function DeleteSourceCredentialButton({ credentialId }: { credentialId: string }) {
-  const { t, errorMessage } = useI18n();
-  const client = useQueryClient();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const remove = useMutation({
-    mutationFn: () => deleteSourceCredential(credentialId),
-    onSuccess: () => {
-      toast({ kind: 'success', title: t('sources.credentials.deleted') });
-      setOpen(false);
-      void client.invalidateQueries({ queryKey: queryKeys.sourceReader.credentials() });
-    },
-    onError: (error) =>
-      toast({
-        kind: 'error',
-        title: t('sources.updateFailed'),
-        description: errorMessage(error)
-      })
-  });
+  const remove = useDeleteSourceCredential(credentialId, () => setOpen(false));
   return (
     <>
       <Button
@@ -32,13 +15,12 @@ export function DeleteSourceCredentialButton({ credentialId }: { credentialId: s
         leadingIcon={<Trash2 size={16} />}
         onClick={() => setOpen(true)}
       >
-        {t('sources.plugins.remove')}
+        {t('manageSourceCredential.delete')}
       </Button>
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}
-        title={t('sources.credentials.deleteTitle')}
-        description={t('sources.credentials.deleteDescription')}
+        title={t('manageSourceCredential.deleteTitle')}
         danger
         actionState={remove.status}
         onConfirm={() => remove.mutate()}

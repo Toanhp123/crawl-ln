@@ -1,10 +1,10 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const root = join(process.cwd(), 'apps/api/src/modules/crawler');
+const root = join(process.cwd(), 'apps/api-legacy/src/modules/crawler');
 const crawlerModulePath = join(
   process.cwd(),
-  'apps/api/src/shared/container/modules/crawler.module.ts'
+  'apps/api-legacy/src/shared/container/modules/crawler.module.ts'
 );
 const violations = [];
 const sources = [];

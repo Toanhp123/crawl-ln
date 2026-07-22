@@ -1,4 +1,4 @@
-import type { CrawlTask, TaskStatus } from './types';
+import type { CrawlTask, TaskStatus } from '../api/task-api';
 
 const ACTIVE_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set([
   'queued',

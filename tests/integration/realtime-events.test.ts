@@ -10,7 +10,7 @@ process.env.NODE_ENV = 'test';
 const storageDir = await mkdtemp(join(tmpdir(), 'novel-tool-realtime-events-'));
 process.env.STORAGE_DIR = storageDir;
 
-const { createAppRuntime } = await import('../../apps/api/src/app.ts');
+const { createAppRuntime } = await import('../../apps/api-legacy/src/app.ts');
 
 async function readUntilEvent(
   reader: ReadableStreamDefaultReader<Uint8Array>,

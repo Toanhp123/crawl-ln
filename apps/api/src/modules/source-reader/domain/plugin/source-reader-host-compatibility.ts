@@ -1,4 +1,4 @@
-import type { SourceCapability } from '../../public/source-reader.models.js';
+import type { SourceCapability } from '@novel-tool/source-plugin-sdk';
 
 export interface CompatibilityIssue {
   code:

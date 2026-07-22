@@ -5,12 +5,12 @@ import { readFileSync } from 'node:fs';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 test('novel metadata persists author and cover URL through domain and sqlite', () => {
-  const model = read('apps/api/src/modules/novels/domain/models/novel.ts');
+  const model = read('apps/api-legacy/src/modules/novels/domain/models/novel.ts');
   const analyze = read(
-    'apps/api/src/modules/novels/application/use-cases/analyze-novel.usecase.ts'
+    'apps/api-legacy/src/modules/novels/application/use-cases/analyze-novel.usecase.ts'
   );
   const sqlite = read(
-    'apps/api/src/modules/novels/infrastructure/sqlite/novel-analysis-sqlite.adapter.ts'
+    'apps/api-legacy/src/modules/novels/infrastructure/sqlite/novel-analysis-sqlite.adapter.ts'
   );
   assert.match(model, /author\?: string/);
   assert.match(model, /coverUrl\?: string/);
@@ -20,7 +20,7 @@ test('novel metadata persists author and cover URL through domain and sqlite', (
 });
 
 test('activity groups active, queued, and terminal crawl work', () => {
-  const model = read('apps/web/src/pages/activity/model/useActivityPage.ts');
+  const model = read('apps/web-legacy/src/pages/activity/model/useActivityPage.ts');
   assert.match(model, /running:/);
   assert.match(model, /queued:/);
   assert.match(model, /recent:/);
@@ -29,10 +29,10 @@ test('activity groups active, queued, and terminal crawl work', () => {
 
 test('crawl job plans every pending chapter instead of maxChaptersPerRun slices', () => {
   const createJob = read(
-    'apps/api/src/modules/crawler/application/use-cases/create-crawl-job.usecase.ts'
+    'apps/api-legacy/src/modules/crawler/application/use-cases/create-crawl-job.usecase.ts'
   );
   const runner = read(
-    'apps/api/src/modules/crawler/application/services/crawl-job-runner.service.ts'
+    'apps/api-legacy/src/modules/crawler/application/services/crawl-job-runner.service.ts'
   );
   assert.doesNotMatch(createJob, /slice\(0, this\.config\.maxChaptersPerRun\)/);
   assert.doesNotMatch(runner, /slice\(0, this\.config\.maxChaptersPerRun\)/);

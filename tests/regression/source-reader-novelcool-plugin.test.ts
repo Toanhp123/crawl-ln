@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { CheerioHtmlParserAdapter } from '../../apps/api/src/shared/infrastructure/html/cheerio-html-parser.adapter.ts';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
-import { novelCoolPlugin } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts';
-import type { PluginContext } from '../../apps/api/src/modules/source-reader/domain/plugin/source-plugin.ts';
+import { CheerioHtmlParserAdapter } from '../../apps/api-legacy/src/shared/infrastructure/html/cheerio-html-parser.adapter.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { novelCoolPlugin } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts';
+import type { PluginContext } from '../../apps/api-legacy/src/modules/source-reader/domain/plugin/source-plugin.ts';
 import { assertPluginContract } from '../helpers/source-reader-plugin-contract.ts';
 
 const novelHtml = await readFile('tests/fixtures/source-reader/novelcool-novel.html', 'utf8');

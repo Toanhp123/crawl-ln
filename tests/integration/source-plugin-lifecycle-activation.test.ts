@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PluginActivationService } from '../../apps/api/src/modules/source-reader/application/services/plugin-activation.service.ts';
-import type { ExternalPluginProcessHandle } from '../../apps/api/src/modules/source-reader/application/ports/external-plugin-supervisor.port.ts';
+import { PluginActivationService } from '../../apps/api-legacy/src/modules/source-reader/application/services/plugin-activation.service.ts';
+import type { ExternalPluginProcessHandle } from '../../apps/api-legacy/src/modules/source-reader/application/ports/external-plugin-supervisor.port.ts';
 import type {
   PluginRegistryPort,
   PreparedPluginRegistrySnapshot,
   RegisteredPlugin
-} from '../../apps/api/src/modules/source-reader/application/ports/plugin-registry.port.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/application/ports/plugin-registry.port.ts';
 import type {
   PluginStorePort,
   StoredPluginVersion
-} from '../../apps/api/src/modules/source-reader/application/ports/plugin-store.port.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/application/ports/plugin-store.port.ts';
 
 const manifest = (version: string) => ({
   id: 'demo',

@@ -7,7 +7,7 @@ import test from 'node:test';
 const storageDir = await mkdtemp(join(tmpdir(), 'source-reader-admin-http-'));
 process.env.STORAGE_DIR = storageDir;
 process.env.SOURCE_READER_LOCAL_ADMIN = 'true';
-const { createAppRuntime } = await import('../../apps/api/src/app.ts');
+const { createAppRuntime } = await import('../../apps/api-legacy/src/app.ts');
 const runtime = createAppRuntime({ startBackgroundServices: false });
 const server = runtime.app.listen(0);
 const address = server.address();

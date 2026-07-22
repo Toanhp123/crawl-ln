@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ApiError } from '../../apps/web/src/shared/api/errors.ts';
-import { http, httpVoid } from '../../apps/web/src/shared/api/http.ts';
+import { ApiError } from '../../apps/web-legacy/src/shared/api/errors.ts';
+import { http, httpVoid } from '../../apps/web-legacy/src/shared/api/http.ts';
 
 function mockFetch(response: Response) {
   globalThis.fetch = (async () => response) as typeof fetch;

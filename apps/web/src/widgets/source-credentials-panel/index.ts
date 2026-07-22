@@ -1,1 +1,1 @@
-export * from './ui/SourceCredentialsPanel';
+export { SourceCredentialsPanel } from './ui/SourceCredentialsPanel';

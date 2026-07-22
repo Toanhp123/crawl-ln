@@ -5,7 +5,7 @@ Use a source you are authorized to access. Start with a small chapter limit and 
 ## 1. Prepare environment
 
 ```bash
-cp apps/api/.env.example apps/api/.env
+cp apps/api-legacy/.env.example apps/api-legacy/.env
 node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 ```
 

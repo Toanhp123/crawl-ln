@@ -4,12 +4,12 @@ import {
   buildNetworkProfileUpdate,
   canSubmitNetworkProfile,
   type NetworkProfileFormState
-} from '../../apps/web/src/features/manage-source-network-profile/model/networkProfileForm.ts';
+} from '../../apps/web-legacy/src/features/manage-source-network-profile/model/networkProfileForm.ts';
 import {
   buildCredentialSecret,
   createEmptyCredentialSecrets,
   hasCredentialSecret
-} from '../../apps/web/src/features/manage-source-credential/model/credentialSecret.ts';
+} from '../../apps/web-legacy/src/features/manage-source-credential/model/credentialSecret.ts';
 
 const proxyForm = (overrides: Partial<NetworkProfileFormState> = {}): NetworkProfileFormState => ({
   name: 'Primary proxy',
@@ -83,7 +83,7 @@ test('credential forms require the secret fields needed by each strategy', () =>
 
 test('network edit form resets from current metadata without hydrating write-only proxy values', async () => {
   const model =
-    await import('../../apps/web/src/features/manage-source-network-profile/model/networkProfileForm.ts');
+    await import('../../apps/web-legacy/src/features/manage-source-network-profile/model/networkProfileForm.ts');
   assert.equal(typeof model.networkProfileFormFromProfile, 'function');
   const form = model.networkProfileFormFromProfile({
     id: 'network-1',
@@ -112,7 +112,7 @@ test('network edit form resets from current metadata without hydrating write-onl
 
 test('credential create model builds a trimmed request and resets all fields', async () => {
   const model =
-    await import('../../apps/web/src/features/manage-source-credential/model/credentialForm.ts');
+    await import('../../apps/web-legacy/src/features/manage-source-credential/model/credentialForm.ts');
   assert.equal(typeof model.createEmptyCredentialForm, 'function');
   assert.equal(typeof model.buildCredentialCreateRequest, 'function');
   assert.deepEqual(model.createEmptyCredentialForm(), {

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AnalyzeSourceUseCase } from '../../apps/api/src/modules/crawler/application/use-cases/analyze-source.usecase.js';
-import { InMemoryRateLimiterService } from '../../apps/api/src/modules/crawler/infrastructure/services/rate-limiter.service.js';
-import { RobotsTxtPolicyService } from '../../apps/api/src/modules/crawler/infrastructure/services/robots-policy.service.js';
-import { env } from '../../apps/api/src/shared/config/env.js';
+import { AnalyzeSourceUseCase } from '../../apps/api-legacy/src/modules/crawler/application/use-cases/analyze-source.usecase.js';
+import { InMemoryRateLimiterService } from '../../apps/api-legacy/src/modules/crawler/infrastructure/services/rate-limiter.service.js';
+import { RobotsTxtPolicyService } from '../../apps/api-legacy/src/modules/crawler/infrastructure/services/robots-policy.service.js';
+import { env } from '../../apps/api-legacy/src/shared/config/env.js';
 
 test('analyze accepts www and bare host as the same source host', async () => {
   const useCase = new AnalyzeSourceUseCase(
@@ -82,7 +82,7 @@ test('robots cache expires and refetches rules', async () => {
 
 test('cancel waits until a running task is persisted as cancelled', async () => {
   const { CrawlQueueService } =
-    await import('../../apps/api/src/modules/crawler/application/services/crawl-queue.service.js');
+    await import('../../apps/api-legacy/src/modules/crawler/application/services/crawl-queue.service.js');
   let stored = {
     id: 't1',
     novelId: 'n1',

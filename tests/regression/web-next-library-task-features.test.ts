@@ -3,7 +3,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import test from 'node:test';
 
-const featureRoot = 'apps/web-next/src/features';
+const featureRoot = 'apps/web/src/features';
 const slices = [
   'add-novel',
   'crawl-novel',
@@ -32,7 +32,7 @@ async function readTree(
 }
 
 test('add novel analyzes before crawling and invalidates novel and task roots', async () => {
-  const addNovel = await import('../../apps/web-next/src/features/add-novel/index.ts');
+  const addNovel = await import('../../apps/web/src/features/add-novel/index.ts');
   const calls: string[] = [];
   const workflow = addNovel.createAddNovelWorkflow({
     analyze: async (url: string) => {
@@ -111,19 +111,18 @@ test('library and task action clients preserve current mutation contracts', asyn
 
   try {
     const { analyzeNovel } =
-      await import('../../apps/web-next/src/features/add-novel/api/analyze-novel.ts');
+      await import('../../apps/web/src/features/add-novel/api/analyze-novel.ts');
     const { crawlNovel } =
-      await import('../../apps/web-next/src/features/crawl-novel/api/crawl-novel.ts');
+      await import('../../apps/web/src/features/crawl-novel/api/crawl-novel.ts');
     const { updateNovel } =
-      await import('../../apps/web-next/src/features/update-novel/api/update-novel.ts');
+      await import('../../apps/web/src/features/update-novel/api/update-novel.ts');
     const { deleteNovel } =
-      await import('../../apps/web-next/src/features/delete-novel/api/delete-novel.ts');
-    const { pauseTask } =
-      await import('../../apps/web-next/src/features/pause-task/api/pause-task.ts');
+      await import('../../apps/web/src/features/delete-novel/api/delete-novel.ts');
+    const { pauseTask } = await import('../../apps/web/src/features/pause-task/api/pause-task.ts');
     const { resumeTask } =
-      await import('../../apps/web-next/src/features/resume-task/api/resume-task.ts');
+      await import('../../apps/web/src/features/resume-task/api/resume-task.ts');
     const { cancelTask } =
-      await import('../../apps/web-next/src/features/cancel-task/api/cancel-task.ts');
+      await import('../../apps/web/src/features/cancel-task/api/cancel-task.ts');
 
     const detail = await analyzeNovel('https://example.test/book');
     assert.equal(detail.novel.id, 'novel-1');
@@ -164,13 +163,13 @@ test('library and task action clients preserve current mutation contracts', asyn
 });
 
 test('feature public APIs expose only action workflows, hooks, providers, and UI', async () => {
-  const addNovel = await import('../../apps/web-next/src/features/add-novel/index.ts');
-  const crawlNovel = await import('../../apps/web-next/src/features/crawl-novel/index.ts');
-  const updateNovel = await import('../../apps/web-next/src/features/update-novel/index.ts');
-  const deleteNovel = await import('../../apps/web-next/src/features/delete-novel/index.ts');
-  const pauseTask = await import('../../apps/web-next/src/features/pause-task/index.ts');
-  const resumeTask = await import('../../apps/web-next/src/features/resume-task/index.ts');
-  const cancelTask = await import('../../apps/web-next/src/features/cancel-task/index.ts');
+  const addNovel = await import('../../apps/web/src/features/add-novel/index.ts');
+  const crawlNovel = await import('../../apps/web/src/features/crawl-novel/index.ts');
+  const updateNovel = await import('../../apps/web/src/features/update-novel/index.ts');
+  const deleteNovel = await import('../../apps/web/src/features/delete-novel/index.ts');
+  const pauseTask = await import('../../apps/web/src/features/pause-task/index.ts');
+  const resumeTask = await import('../../apps/web/src/features/resume-task/index.ts');
+  const cancelTask = await import('../../apps/web/src/features/cancel-task/index.ts');
 
   assert.equal(typeof addNovel.createAddNovelWorkflow, 'function');
   assert.equal(typeof addNovel.useAddNovel, 'function');
@@ -197,9 +196,9 @@ test('feature public APIs expose only action workflows, hooks, providers, and UI
 
 test('app, pages, and entities do not own library or task mutations', async () => {
   const upperLayers = [
-    await readTree('apps/web-next/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),
-    await readTree('apps/web-next/src/pages'),
-    await readTree('apps/web-next/src/entities')
+    await readTree('apps/web/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),
+    await readTree('apps/web/src/pages'),
+    await readTree('apps/web/src/entities')
   ].join('\n');
   assert.doesNotMatch(
     upperLayers,

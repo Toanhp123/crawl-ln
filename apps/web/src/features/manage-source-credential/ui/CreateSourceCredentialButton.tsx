@@ -1,20 +1,17 @@
-import type { SourceReaderCredentialStrategy } from '@novel-tool/shared';
 import { KeyRound, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createSourceCredential } from '@/entities/source-credential';
-import { queryKeys } from '@/shared/api/queryKeys';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Button, Drawer, Field, FilterChip, Input, SegmentedControl, toast } from '@/shared/ui';
+import { useI18n } from '../../../shared/i18n';
+import { Button, Drawer, Field, FilterChip, Input, SegmentedControl } from '../../../shared/ui';
 import {
-  buildCredentialCreateRequest,
+  buildCredentialCreateInput,
   canSubmitCredentialForm,
   createEmptyCredentialForm
-} from '../model/credentialForm';
-import { createEmptyCredentialSecrets } from '../model/credentialSecret';
+} from '../model/credential-form';
+import { clearCredentialSecrets, type CredentialStrategy } from '../model/credential-secret';
+import { useCreateSourceCredential } from '../model/use-source-credential-actions';
 import { CredentialSecretEditor } from './CredentialSecretEditor';
 
-const strategies: SourceReaderCredentialStrategy[] = [
+const strategies: CredentialStrategy[] = [
   'cookie-import',
   'bearer-token',
   'basic-auth',
@@ -23,31 +20,21 @@ const strategies: SourceReaderCredentialStrategy[] = [
 ];
 
 export function CreateSourceCredentialButton() {
-  const { t, status, errorMessage } = useI18n();
-  const client = useQueryClient();
+  const { t, status } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(createEmptyCredentialForm);
   const reset = () => setForm(createEmptyCredentialForm());
-  const create = useMutation({
-    mutationFn: () => createSourceCredential(buildCredentialCreateRequest(form)),
-    onSuccess: () => {
-      toast({ kind: 'success', title: t('sources.credentials.created') });
+  const create = useCreateSourceCredential(
+    () => {
       setOpen(false);
       reset();
-      void client.invalidateQueries({ queryKey: queryKeys.sourceReader.credentials() });
     },
-    onError: (error) =>
-      toast({
-        kind: 'error',
-        title: t('sources.credentials.createFailed'),
-        description: errorMessage(error)
-      }),
-    onSettled: () => setForm((current) => ({ ...current, secrets: createEmptyCredentialSecrets() }))
-  });
+    () => setForm((current) => ({ ...current, secrets: clearCredentialSecrets() }))
+  );
   return (
     <>
       <Button leadingIcon={<Plus size={17} />} onClick={() => setOpen(true)}>
-        {t('sources.credentials.create')}
+        {t('manageSourceCredential.create')}
       </Button>
       <Drawer
         open={open}
@@ -55,48 +42,42 @@ export function CreateSourceCredentialButton() {
           setOpen(next);
           if (!next) reset();
         }}
-        title={t('sources.credentials.createTitle')}
+        title={t('manageSourceCredential.createTitle')}
       >
         <div className="space-y-4">
-          <Field label={t('sources.credentials.name')}>
+          <Field label={t('manageSourceCredential.name')}>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
             />
           </Field>
-          <Field label={t('sources.credentials.owner')}>
-            <SegmentedControl
-              value={form.ownerType}
-              columns={2}
-              items={[
-                { id: 'user', label: t('sources.common.user') },
-                { id: 'system', label: t('sources.common.system') }
-              ]}
-              onChange={(ownerType) => setForm({ ...form, ownerType })}
-            />
-          </Field>
-          <Field label={t('sources.credentials.strategy')}>
-            <div className="flex flex-wrap gap-2">
-              {strategies.map((strategy) => (
-                <FilterChip
-                  key={strategy}
-                  selected={form.strategy === strategy}
-                  onClick={() =>
-                    setForm({ ...form, strategy, secrets: createEmptyCredentialSecrets() })
-                  }
-                >
-                  {status(strategy)}
-                </FilterChip>
-              ))}
-            </div>
-          </Field>
-          <Field label={t('sources.credentials.pluginId')} hint={t('sources.common.optional')}>
+          <SegmentedControl
+            value={form.ownerType}
+            columns={2}
+            items={[
+              { id: 'user', label: t('manageSourceCredential.user') },
+              { id: 'system', label: t('manageSourceCredential.system') }
+            ]}
+            onChange={(ownerType) => setForm({ ...form, ownerType })}
+          />
+          <div className="flex flex-wrap gap-2">
+            {strategies.map((strategy) => (
+              <FilterChip
+                key={strategy}
+                selected={form.strategy === strategy}
+                onClick={() => setForm({ ...form, strategy, secrets: clearCredentialSecrets() })}
+              >
+                {status(strategy)}
+              </FilterChip>
+            ))}
+          </div>
+          <Field label={t('manageSourceCredential.plugin')}>
             <Input
               value={form.pluginId}
               onChange={(event) => setForm({ ...form, pluginId: event.target.value })}
             />
           </Field>
-          <Field label={t('sources.credentials.domain')} hint={t('sources.common.optional')}>
+          <Field label={t('manageSourceCredential.domain')}>
             <Input
               value={form.domain}
               onChange={(event) => setForm({ ...form, domain: event.target.value })}
@@ -109,12 +90,12 @@ export function CreateSourceCredentialButton() {
           />
           <Button
             full
+            leadingIcon={<KeyRound size={17} />}
             actionState={create.status}
             disabled={!canSubmitCredentialForm(form)}
-            leadingIcon={<KeyRound size={17} />}
-            onClick={() => create.mutate()}
+            onClick={() => create.mutate(buildCredentialCreateInput(form))}
           >
-            {t('sources.common.create')}
+            {t('manageSourceCredential.save')}
           </Button>
         </div>
       </Drawer>

@@ -3,7 +3,12 @@ import { BackupBadRequestError } from '../../application/errors/backup.error.js'
 
 const KEY_LENGTH = 32;
 
-export type EncryptedPayload = { encrypted: Buffer; salt: Buffer; iv: Buffer; tag: Buffer };
+export interface EncryptedPayload {
+  encrypted: Buffer;
+  salt: Buffer;
+  iv: Buffer;
+  tag: Buffer;
+}
 
 export function encryptPayload(content: Buffer, password: string): EncryptedPayload {
   const salt = randomBytes(16);

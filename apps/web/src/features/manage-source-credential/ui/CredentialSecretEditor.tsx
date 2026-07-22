@@ -1,14 +1,13 @@
-import type { SourceReaderCredentialStrategy } from '@novel-tool/shared';
-import type { CredentialSecretFields } from '../model/credentialSecret';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Field, InlineNotice, Input } from '@/shared/ui';
+import type { CredentialSecretFields, CredentialStrategy } from '../model/credential-secret';
+import { useI18n } from '../../../shared/i18n';
+import { Field, InlineNotice, Input } from '../../../shared/ui';
 
 export function CredentialSecretEditor({
   strategy,
   value,
   onChange
 }: {
-  strategy: SourceReaderCredentialStrategy;
+  strategy: CredentialStrategy;
   value: CredentialSecretFields;
   onChange: (value: CredentialSecretFields) => void;
 }) {
@@ -25,26 +24,26 @@ export function CredentialSecretEditor({
   );
   return (
     <div className="space-y-3">
-      <InlineNotice>{t('sources.credentials.secretWriteOnly')}</InlineNotice>
+      <InlineNotice>{t('manageSourceCredential.writeOnly')}</InlineNotice>
       {strategy === 'cookie-import'
-        ? field('cookie', t('sources.credentials.cookie'), 'password')
+        ? field('cookie', t('manageSourceCredential.cookie'), 'password')
         : null}
       {strategy === 'bearer-token'
-        ? field('token', t('sources.credentials.token'), 'password')
+        ? field('token', t('manageSourceCredential.token'), 'password')
         : null}
       {strategy === 'basic-auth' || strategy === 'form-login' ? (
         <>
-          {field('username', t('sources.credentials.username'))}
-          {field('password', t('sources.credentials.password'), 'password')}
+          {field('username', t('manageSourceCredential.username'))}
+          {field('password', t('manageSourceCredential.password'), 'password')}
         </>
       ) : null}
       {strategy === 'form-login'
-        ? field('loginUrl', t('sources.credentials.loginUrl'), 'url')
+        ? field('loginUrl', t('manageSourceCredential.loginUrl'), 'url')
         : null}
       {strategy === 'custom' ? (
         <>
-          {field('customKey', t('sources.credentials.customKey'))}
-          {field('customValue', t('sources.credentials.customValue'), 'password')}
+          {field('customKey', t('manageSourceCredential.customKey'))}
+          {field('customValue', t('manageSourceCredential.customValue'), 'password')}
         </>
       ) : null}
     </div>

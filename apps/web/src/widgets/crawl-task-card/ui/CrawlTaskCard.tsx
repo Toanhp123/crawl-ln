@@ -1,18 +1,10 @@
-import type { CrawlTask, Novel } from '@novel-tool/shared';
-import { BookOpenText, MoreVertical, RotateCcw } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Chip,
-  IconButton,
-  ProgressRing,
-  Text
-} from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { BookOpenText, RotateCcw } from 'lucide-react';
+import type { Novel } from '@/entities/novel';
+import { taskOutcomeLabel, type CrawlTask } from '@/entities/task';
+import { useI18n } from '@/shared/i18n';
+import { Card, CardContent, CardHeader, CardTitle, Chip, ProgressRing, Text } from '@/shared/ui';
 
-function progressOf(task: CrawlTask) {
+export function taskProgressPercent(task: CrawlTask): number {
   if (!task.totalChapters) return 0;
   return Math.min(
     100,
@@ -30,7 +22,8 @@ export function CrawlTaskCard({
   onOpen?: () => void;
 }) {
   const { t, status, number } = useI18n();
-  const percent = progressOf(task);
+  const percent = taskProgressPercent(task);
+  const outcome = taskOutcomeLabel(task, t);
   const tone =
     task.status === 'completed' ? 'success' : task.status === 'failed' ? 'danger' : 'primary';
   const activate = () => onOpen?.();
@@ -69,31 +62,24 @@ export function CrawlTaskCard({
                 className="mt-1 flex items-center gap-1.5"
                 truncate
               >
-                <BookOpenText size={20} className="h-4 w-4" />
+                <BookOpenText size={16} />
                 {novel?.sourceName ?? task.novelId}
               </Text>
             </div>
-            <IconButton
-              aria-label={t('common.more')}
-              variant="ghost"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <MoreVertical size={20} />
-            </IconButton>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2">
             <Chip
               tone={
                 task.status === 'completed'
                   ? 'success'
-                  : task.status === 'failed'
+                  : task.status === 'failed' || task.status === 'cancelled'
                     ? 'danger'
                     : task.status === 'running'
                       ? 'warning'
                       : 'neutral'
               }
             >
-              {status(task.status)}
+              {outcome || status(task.status)}
             </Chip>
             <Text variant="metadata" tone="secondary" className="font-medium tabular-nums">
               {t('activity.chapterProgress', {
@@ -107,7 +93,7 @@ export function CrawlTaskCard({
                 tone="danger"
                 className="ml-auto inline-flex items-center gap-1 font-semibold"
               >
-                <RotateCcw size={20} className="h-4 w-4" />
+                <RotateCcw size={15} />
                 {t('common.retry')}
               </Text>
             ) : null}

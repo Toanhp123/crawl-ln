@@ -6,8 +6,8 @@ const root = new URL('../../', import.meta.url);
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8');
 
 test('semantic typography uses unambiguous Tailwind font-size utilities', () => {
-  const typography = read('apps/web/src/shared/theme/typography.css');
-  const text = read('apps/web/src/shared/ui/data-display/Text.tsx');
+  const typography = read('apps/web-legacy/src/shared/theme/typography.css');
+  const text = read('apps/web-legacy/src/shared/ui/data-display/Text.tsx');
 
   for (const role of [
     'display',
@@ -29,8 +29,8 @@ test('semantic typography uses unambiguous Tailwind font-size utilities', () => 
 
   const sourceFiles = [
     text,
-    read('apps/web/src/shared/ui/actions/Button.tsx'),
-    read('apps/web/src/shared/ui/data-display/Chip.tsx')
+    read('apps/web-legacy/src/shared/ui/actions/Button.tsx'),
+    read('apps/web-legacy/src/shared/ui/data-display/Chip.tsx')
   ].join('\n');
   assert.doesNotMatch(sourceFiles, /\btext-type-/);
   assert.doesNotMatch(sourceFiles, /text-\[var\(--type-[^)]+-size\)\]/);

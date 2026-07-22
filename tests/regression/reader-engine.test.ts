@@ -5,11 +5,11 @@ import {
   appendReaderChapter,
   createReaderWindow,
   prependReaderChapter
-} from '../../apps/web/src/modules/reader/domain/reader-window.ts';
+} from '../../apps/web-legacy/src/modules/reader/domain/reader-window.ts';
 import {
   MemoryReaderChapterCache,
   ReaderChapterSource
-} from '../../apps/web/src/modules/reader/application/reader-chapter-source.ts';
+} from '../../apps/web-legacy/src/modules/reader/application/reader-chapter-source.ts';
 
 function chapter(index: number): Chapter {
   return {
@@ -67,12 +67,15 @@ test('reader chapter source uses memory cache before loader and keeps a bounded 
 test('reader page delegates infinite loading and offline cache to the reader module', async () => {
   const { readFile } = await import('node:fs/promises');
   const page = await readFile(
-    new URL('../../apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx', import.meta.url),
+    new URL(
+      '../../apps/web-legacy/src/pages/chapter-reader/ui/ChapterReaderPage.tsx',
+      import.meta.url
+    ),
     'utf8'
   );
   const hook = await readFile(
     new URL(
-      '../../apps/web/src/modules/reader/presentation/use-infinite-reader.ts',
+      '../../apps/web-legacy/src/modules/reader/presentation/use-infinite-reader.ts',
       import.meta.url
     ),
     'utf8'

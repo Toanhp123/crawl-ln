@@ -10,8 +10,8 @@ import { reserveLoopbackPort, startManagedProcess, waitForHttp } from './process
 import { findStorageDatabase } from './storage-manifest.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const apiEntry = join(projectRoot, 'apps', 'api-next', 'dist', 'main.js');
-const webRoot = join(projectRoot, 'apps', 'web-next');
+const apiEntry = join(projectRoot, 'apps', 'api', 'dist', 'main.js');
+const webRoot = join(projectRoot, 'apps', 'web');
 const webEntry = join(webRoot, 'dist', 'index.html');
 const vite = join(webRoot, 'node_modules', 'vite', 'bin', 'vite.js');
 
@@ -195,14 +195,14 @@ export function createCandidateApiEnvironment({
   const masterKey = baseEnvironment.SOURCE_READER_MASTER_KEY ?? randomBytes(32).toString('base64');
   return {
     ...baseEnvironment,
-    NEXT_API_HOST: '127.0.0.1',
-    NEXT_API_PORT: String(apiPort),
-    NEXT_STORAGE_DIR: storagePath,
+    HOST: '127.0.0.1',
+    PORT: String(apiPort),
+    STORAGE_DIR: storagePath,
     SOURCE_READER_PLUGIN_DIR: join(storagePath, 'source-plugins'),
     SOURCE_READER_LOCAL_ADMIN: 'true',
     SOURCE_READER_MASTER_KEY: masterKey,
     API_CORS_ORIGINS: webBaseUrl,
-    NEXT_OUTBOX_INTERVAL_MS: '3600000'
+    OUTBOX_INTERVAL_MS: '3600000'
   };
 }
 
@@ -381,7 +381,7 @@ export async function smokeCandidate(input) {
     await apiReservation.release();
     apiReservation = undefined;
     apiProcess = await startManagedProcess({
-      name: 'api-next',
+      name: 'api',
       command: process.execPath,
       args: ['--experimental-sqlite', apiEntry],
       cwd: projectRoot,
@@ -394,7 +394,7 @@ export async function smokeCandidate(input) {
     await webReservation.release();
     webReservation = undefined;
     webProcess = await startManagedProcess({
-      name: 'web-next',
+      name: 'web',
       command: process.execPath,
       args: [
         vite,

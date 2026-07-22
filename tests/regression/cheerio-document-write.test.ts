@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CheerioHtmlParserAdapter } from '../../apps/api/src/shared/infrastructure/html/cheerio-html-parser.adapter.js';
+import { CheerioHtmlParserAdapter } from '../../apps/api-legacy/src/shared/infrastructure/html/cheerio-html-parser.adapter.js';
 
 test('materializes static HTML emitted by document.write before selector queries', () => {
   const html = String.raw`

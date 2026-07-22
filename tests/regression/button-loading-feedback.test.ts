@@ -16,8 +16,8 @@ function sourceFiles(root: string): string[] {
 }
 
 test('shared Button renders idle, loading, success and error from one action-state contract', () => {
-  const source = read('apps/web/src/shared/ui/actions/Button.tsx');
-  const feedback = read('apps/web/src/shared/ui/actions/actionFeedback.ts');
+  const source = read('apps/web-legacy/src/shared/ui/actions/Button.tsx');
+  const feedback = read('apps/web-legacy/src/shared/ui/actions/actionFeedback.ts');
 
   assert.match(source, /actionState\?: ActionState/);
   assert.match(source, /feedbackPolicy\?: ActionFeedbackPolicyName/);
@@ -36,7 +36,7 @@ test('shared Button renders idle, loading, success and error from one action-sta
 });
 
 test('feedback timing is not configurable with raw milliseconds outside the central policy', () => {
-  const files = sourceFiles('apps/web/src').filter(
+  const files = sourceFiles('apps/web-legacy/src').filter(
     (path) => !path.endsWith('/shared/ui/actions/actionFeedback.ts')
   );
 
@@ -53,19 +53,28 @@ test('feedback timing is not configurable with raw milliseconds outside the cent
 
 test('async product actions pass mutation outcome instead of a pending boolean', () => {
   const expectations: Array<[string, RegExp]> = [
-    ['apps/web/src/app/layouts/GlobalAddNovelOverlay.tsx', /actionState=\{addNovel\.status\}/],
     [
-      'apps/web/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx',
+      'apps/web-legacy/src/app/layouts/GlobalAddNovelOverlay.tsx',
+      /actionState=\{addNovel\.status\}/
+    ],
+    [
+      'apps/web-legacy/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx',
       /actionState=\{mutation\.status\}/
     ],
-    ['apps/web/src/features/search-library/ui/SearchIndexPanel.tsx', /actionState=\{m\.status\}/],
-    ['apps/web/src/pages/task-detail/ui/TaskDetailPage.tsx', /actionState=\{pause\.status\}/],
     [
-      'apps/web/src/pages/settings/ui/SettingsPage.tsx',
+      'apps/web-legacy/src/features/search-library/ui/SearchIndexPanel.tsx',
+      /actionState=\{m\.status\}/
+    ],
+    [
+      'apps/web-legacy/src/pages/task-detail/ui/TaskDetailPage.tsx',
+      /actionState=\{pause\.status\}/
+    ],
+    [
+      'apps/web-legacy/src/pages/settings/ui/SettingsPage.tsx',
       /actionState=\{model\.runScheduler\.status\}/
     ],
     [
-      'apps/web/src/pages/novel-detail/ui/NovelDetailPage.tsx',
+      'apps/web-legacy/src/pages/novel-detail/ui/NovelDetailPage.tsx',
       /actionState=\{model\.removeNovel\.status\}/
     ]
   ];
@@ -74,8 +83,8 @@ test('async product actions pass mutation outcome instead of a pending boolean',
 });
 
 test('long operations keep their labels stable and use the shared long-running policy', () => {
-  const backup = read('apps/web/src/features/backup-library/ui/BackupRestorePanel.tsx');
-  const exportMenu = read('apps/web/src/features/export-novel/ui/ExportMenu.tsx');
+  const backup = read('apps/web-legacy/src/features/backup-library/ui/BackupRestorePanel.tsx');
+  const exportMenu = read('apps/web-legacy/src/features/export-novel/ui/ExportMenu.tsx');
 
   assert.match(backup, /actionState=\{backupAction\.state\}/);
   assert.match(backup, /actionState=\{restoreAction\.state\}/);

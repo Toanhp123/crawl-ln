@@ -1,16 +1,26 @@
-import type { AutoUpdateInterval, Novel } from '../application/models/scheduler-contracts.js';
-
-export interface UpdateAutoUpdatePolicyApi {
-  execute(id: string, enabled: boolean, intervalMinutes: AutoUpdateInterval): Promise<Novel>;
-}
+import type {
+  SchedulerCommands,
+  SchedulerLifecycleApi,
+  SchedulerQueries
+} from './scheduler.contracts.js';
 
 export interface SchedulerApi {
-  readonly updateAutoUpdatePolicy: UpdateAutoUpdatePolicyApi;
+  commands: SchedulerCommands;
+  queries: SchedulerQueries;
+  lifecycle: SchedulerLifecycleApi;
 }
 
-export interface SchedulerLifecycle {
-  readonly service: {
-    start(): void;
-    stop(): Promise<void>;
-  };
-}
+export type {
+  SchedulerCommands,
+  SchedulerLifecycleApi,
+  SchedulerQueries,
+  UpdateSchedulerPolicyCommand
+} from './scheduler.contracts.js';
+export type {
+  AutoUpdateInterval,
+  ScheduledNovel,
+  SchedulerDiagnostic,
+  SchedulerPolicy,
+  SchedulerResultCode,
+  SchedulerStatus
+} from '../domain/scheduler.models.js';

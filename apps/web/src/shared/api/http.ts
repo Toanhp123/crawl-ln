@@ -1,16 +1,18 @@
-import type { ApiResponse, ApiSuccess } from '@novel-tool/shared';
 import { API_BASE_URL } from '../config/api';
 import { ApiError, readApiError } from './errors';
+
+type SuccessEnvelope<T> = { data: T; error: null };
+type FailureEnvelope = {
+  data: null;
+  error: { code: string; message: string; details: unknown | null };
+};
+type ResponseEnvelope<T> = SuccessEnvelope<T> | FailureEnvelope;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function isApiSuccess<T>(value: unknown): value is ApiSuccess<T> {
-  return isObject(value) && 'data' in value && value.error === null;
-}
-
-function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+function isResponseEnvelope<T>(value: unknown): value is ResponseEnvelope<T> {
   if (!isObject(value) || !('data' in value) || !('error' in value)) return false;
   if (value.error === null) return true;
   return (
@@ -23,7 +25,6 @@ function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
 
 export async function readApiSuccess<T>(response: Response): Promise<T> {
   if (!response.ok) throw await readApiError(response);
-
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
     throw new ApiError('Expected a JSON response from the API', {
@@ -33,24 +34,26 @@ export async function readApiSuccess<T>(response: Response): Promise<T> {
   }
 
   const payload: unknown = await response.json();
-  if (!isApiResponse<T>(payload)) {
+  if (!isResponseEnvelope<T>(payload)) {
     throw new ApiError('The API returned an invalid response envelope', {
       status: response.status,
       code: 'INTERNAL_ERROR',
-      details: payload
+      details: payload,
+      requestId: response.headers.get('x-request-id') ?? undefined
     });
   }
-  if (!isApiSuccess(payload)) {
+  if (payload.error !== null) {
     throw new ApiError(payload.error.message, {
       status: response.status,
       code: payload.error.code,
-      details: payload.error.details
+      details: payload.error.details,
+      requestId: response.headers.get('x-request-id') ?? undefined
     });
   }
   return payload.data;
 }
 
-function createRequest(path: string, init?: RequestInit) {
+function request(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
@@ -61,11 +64,11 @@ function createRequest(path: string, init?: RequestInit) {
 }
 
 export async function http<T>(path: string, init?: RequestInit): Promise<T> {
-  return readApiSuccess<T>(await createRequest(path, init));
+  return readApiSuccess<T>(await request(path, init));
 }
 
 export async function httpVoid(path: string, init?: RequestInit): Promise<void> {
-  const response = await createRequest(path, init);
+  const response = await request(path, init);
   if (!response.ok) throw await readApiError(response);
   if (response.status !== 204) {
     throw new ApiError(`Expected HTTP 204 but received ${response.status}`, {

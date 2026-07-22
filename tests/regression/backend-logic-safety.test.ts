@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CrawlJobRunnerService } from '../../apps/api/src/modules/crawler/application/services/crawl-job-runner.service.ts';
-import { CrawlQueueService } from '../../apps/api/src/modules/crawler/application/services/crawl-queue.service.ts';
-import { CrawlTaskEntity } from '../../apps/api/src/modules/task/domain/entities/task.entity.ts';
-import type { CrawlerTaskPort } from '../../apps/api/src/modules/crawler/application/ports/crawler-task.port.ts';
+import { CrawlJobRunnerService } from '../../apps/api-legacy/src/modules/crawler/application/services/crawl-job-runner.service.ts';
+import { CrawlQueueService } from '../../apps/api-legacy/src/modules/crawler/application/services/crawl-queue.service.ts';
+import { CrawlTaskEntity } from '../../apps/api-legacy/src/modules/task/domain/entities/task.entity.ts';
+import type { CrawlerTaskPort } from '../../apps/api-legacy/src/modules/crawler/application/ports/crawler-task.port.ts';
 
 const now = '2026-07-16T00:00:00.000Z';
 const terminalTask = (status: 'completed' | 'failed' | 'cancelled') => ({

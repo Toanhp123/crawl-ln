@@ -1,6 +1,6 @@
 import { WifiOff } from 'lucide-react';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Text } from '@/shared/ui';
+import { useI18n } from '../../../shared/i18n';
+import { Text } from '../../../shared/ui';
 
 export function ReaderOfflineBanner({ offline }: { offline: boolean }) {
   const { t } = useI18n();

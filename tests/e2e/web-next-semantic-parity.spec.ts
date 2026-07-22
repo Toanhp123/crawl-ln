@@ -45,8 +45,8 @@ for (const path of ['/library', '/activity', '/sources', '/settings']) {
     const next = await browser.newPage();
     await installParityMocks(current);
     await installParityMocks(next);
-    await current.goto(`http://127.0.0.1:4173${path}`);
-    await next.goto(`http://127.0.0.1:4174${path}`);
+    await current.goto(`http://127.0.0.1:4174${path}`);
+    await next.goto(`http://127.0.0.1:4173${path}`);
     await expect(current.locator('main header')).toBeVisible();
     await expect(next.locator('main header')).toBeVisible();
     await expect(primaryNavigation(current)).toHaveCount(1);

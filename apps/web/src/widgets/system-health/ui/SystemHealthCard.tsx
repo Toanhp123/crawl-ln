@@ -1,23 +1,21 @@
 import { Activity, CalendarClock, Database } from 'lucide-react';
+import { useSchedulerStatus } from '@/entities/scheduler';
+import { useConnectionStatus } from '@/shared/realtime';
+import { useI18n } from '@/shared/i18n';
 import { Badge, Card, Panel, Text } from '@/shared/ui';
-import type { TranslationKey } from '@/shared/i18n/I18nProvider';
 
-export function SystemHealthCard({
-  t,
-  schedulerHealthy,
-  monitoredNovels
-}: {
-  t: (key: TranslationKey) => string;
-  schedulerHealthy: boolean;
-  monitoredNovels: number;
-}) {
+export function SystemHealthCard() {
+  const { t, number } = useI18n();
+  const connectionState = useConnectionStatus();
+  const scheduler = useSchedulerStatus({ connectionState, pollingIntervalMs: 15_000 });
+  const healthy = Boolean(scheduler.data?.running) && !scheduler.error;
   const rows = [
     {
       icon: CalendarClock,
       label: t('settings.healthScheduler'),
-      value: schedulerHealthy ? t('settings.healthHealthy') : t('settings.healthAttention'),
-      tone: schedulerHealthy ? ('success' as const) : ('warning' as const),
-      detail: `${monitoredNovels} ${t('settings.healthMonitored')}`
+      value: healthy ? t('settings.healthHealthy') : t('settings.healthAttention'),
+      tone: healthy ? ('success' as const) : ('warning' as const),
+      detail: `${number(scheduler.data?.monitoredNovels ?? 0)} ${t('settings.healthMonitored')}`
     },
     {
       icon: Database,

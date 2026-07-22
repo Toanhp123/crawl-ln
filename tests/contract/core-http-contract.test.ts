@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { nextApiRuntime } from './api-next.runtime.ts';
+import { apiRuntime } from './api-next.runtime.ts';
 import { currentApiRuntime } from './current-api.runtime.ts';
 import { withContractServer } from './http-server.harness.ts';
 
@@ -56,7 +56,7 @@ async function assertCoreHttpContract(baseUrl: string): Promise<void> {
 
 for (const [name, runtime] of [
   ['current', currentApiRuntime],
-  ['next', nextApiRuntime]
+  ['next', apiRuntime]
 ] as const) {
   test(`${name} API exposes canonical health and JSON 404 contracts`, async () => {
     await withContractServer(runtime, assertCoreHttpContract);

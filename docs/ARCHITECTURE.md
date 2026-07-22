@@ -5,8 +5,8 @@ Novel Tool is an npm monorepo with a TypeScript modular-monolith API and a React
 ## Runtime layout
 
 ```text
-apps/api          Express API, SQLite, crawl queue and Source Reader
-apps/web          React, Vite, Tailwind and TanStack Query
+apps/api-legacy          Express API, SQLite, crawl queue and Source Reader
+apps/web-legacy          React, Vite, Tailwind and TanStack Query
 packages/shared   Zod request schemas and public transport types
 tests             Regression, integration and browser E2E
 ```
@@ -25,7 +25,7 @@ source-reader
 task
 ```
 
-Each module owns its domain, application, infrastructure and presentation code where applicable. Cross-module calls use public façades or narrow ports passed by `apps/api/src/shared/container`. Feature modules do not import another module's internal folders.
+Each module owns its domain, application, infrastructure and presentation code where applicable. Cross-module calls use public façades or narrow ports passed by `apps/api-legacy/src/shared/container`. Feature modules do not import another module's internal folders.
 
 Key ownership rules:
 

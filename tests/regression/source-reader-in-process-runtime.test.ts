@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { InProcessPluginRuntime } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.ts';
-import { RuntimeRouter } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/runtime-router.ts';
-import { PluginContextFactory } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/plugin-context.factory.ts';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { InProcessPluginRuntime } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.ts';
+import { RuntimeRouter } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/runtime-router.ts';
+import { PluginContextFactory } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/plugin-context.factory.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
 
 const parser = {
   load: () => ({

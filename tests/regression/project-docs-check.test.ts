@@ -60,3 +60,17 @@ test('documentation check accepts canonical current docs and ignores historical 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test('documentation check ignores generated artifact snapshots', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'novel-tool-docs-artifacts-'));
+  try {
+    await write(root, 'README.md', '# Project\n\n[Docs](docs/README.md)\n');
+    await write(root, 'docs/README.md', '# Docs\n');
+    await write(root, '.artifacts/v3/backup/README.md', '[Missing](nowhere.md)\n');
+
+    const { checkDocumentation } = await import('../../scripts/check-docs.mjs');
+    assert.deepEqual(await checkDocumentation(root), { ok: true, errors: [] });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

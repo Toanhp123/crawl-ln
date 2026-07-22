@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AnalyzeSourceUseCase } from '../../apps/api/src/modules/crawler/application/use-cases/analyze-source.usecase.ts';
+import { AnalyzeSourceUseCase } from '../../apps/api-legacy/src/modules/crawler/application/use-cases/analyze-source.usecase.ts';
 
 const robots = { check: async () => ({ allowed: true, crawlDelayMs: 0 }) };
 const reader = {

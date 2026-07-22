@@ -4,7 +4,7 @@ Source Reader is the only runtime boundary for identifying novel URLs, reading m
 
 ## Architecture and module boundary
 
-The bounded context lives at `apps/api/src/modules/source-reader`. Its public reader and management façades are exported from `public/`, application policies own fallback and authorization, infrastructure owns SQLite, HTTP, browser, crypto, cache, and plugin execution, and presentation maps typed errors to HTTP responses. Other modules may depend only on the public façades passed through the composition root.
+The bounded context lives at `apps/api-legacy/src/modules/source-reader`. Its public reader and management façades are exported from `public/`, application policies own fallback and authorization, infrastructure owns SQLite, HTTP, browser, crypto, cache, and plugin execution, and presentation maps typed errors to HTTP responses. Other modules may depend only on the public façades passed through the composition root.
 
 Source Reader never writes novels, chapters, or crawl jobs. It returns source data to the crawler, which coordinates persistence through the owning modules.
 

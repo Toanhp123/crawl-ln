@@ -3,13 +3,13 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
-import { LocalEncryptedVault } from '../../apps/api/src/modules/source-reader/infrastructure/secrets/local-encrypted.vault.ts';
-import { SqliteCredentialRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-credential.repository.ts';
-import { SqliteNetworkProfileRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-network-profile.repository.ts';
-import { SqliteSessionRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-session.repository.ts';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
-import { browserSessionIdentityKey } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { LocalEncryptedVault } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/secrets/local-encrypted.vault.ts';
+import { SqliteCredentialRepository } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-credential.repository.ts';
+import { SqliteNetworkProfileRepository } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-network-profile.repository.ts';
+import { SqliteSessionRepository } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-session.repository.ts';
+import { createSqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
+import { browserSessionIdentityKey } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.ts';
 
 async function fixture(t: test.TestContext) {
   const root = await mkdtemp(join(tmpdir(), 'source-reader-session-binding-'));

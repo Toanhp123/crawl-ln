@@ -2,7 +2,7 @@ import * as ToastPrimitive from '@radix-ui/react-toast';
 import { CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '../../i18n';
 import { IconButton } from '../actions/IconButton';
 
 type ToastKind = 'success' | 'error' | 'info';

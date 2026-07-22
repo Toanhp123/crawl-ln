@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
   isReaderUrlOnlySync,
   isReaderUrlUpdatePending
-} from '../../apps/web-next/src/features/read-chapter/lib/reader-route-sync';
+} from '../../apps/web/src/features/read-chapter/lib/reader-route-sync';
 
 test('reader recognizes URL-only active chapter synchronization', () => {
   const snapshot = {
@@ -32,7 +32,7 @@ test('reader recognizes an in-window URL update that has not reached the route y
 
 test('reader route changes do not own session teardown', async () => {
   const source = await readFile(
-    'apps/web-next/src/features/read-chapter/model/use-reader-controller.ts',
+    'apps/web/src/features/read-chapter/model/use-reader-controller.ts',
     'utf8'
   );
 
@@ -43,7 +43,7 @@ test('reader route changes do not own session teardown', async () => {
 
 test('reader page skips scroll reset during URL-only synchronization', async () => {
   const source = await readFile(
-    'apps/web-next/src/pages/chapter-reader/ui/ChapterReaderPage.tsx',
+    'apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx',
     'utf8'
   );
 

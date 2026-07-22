@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { access, readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import test from 'node:test';
-import { checkWebNextArchitecture } from '../../scripts/lib/web-next-architecture.mjs';
+import { checkWebArchitecture } from '../../scripts/lib/web-architecture.mjs';
 import { checkWebContracts } from '../../scripts/lib/web-contracts.mjs';
 
 async function readTree(directory: string, root = directory): Promise<string> {
@@ -26,7 +26,7 @@ async function exists(path: string): Promise<boolean> {
 }
 
 test('every final frontend slice has a public index and real route loader', async () => {
-  assert.deepEqual(await checkWebNextArchitecture(process.cwd()), []);
+  assert.deepEqual(await checkWebArchitecture(process.cwd()), []);
   for (const directory of [
     'source-reader-overview',
     'source-plugin-details',
@@ -36,18 +36,18 @@ test('every final frontend slice has a public index and real route loader', asyn
     'source-inspector',
     'system-health'
   ]) {
-    assert.equal(await exists(`apps/web-next/src/widgets/${directory}/index.ts`), true);
+    assert.equal(await exists(`apps/web/src/widgets/${directory}/index.ts`), true);
   }
   for (const page of ['sources', 'settings']) {
-    assert.equal(await exists(`apps/web-next/src/pages/${page}/index.ts`), true);
+    assert.equal(await exists(`apps/web/src/pages/${page}/index.ts`), true);
   }
-  const preload = await readFile('apps/web-next/src/app/router/route-preload.ts', 'utf8');
+  const preload = await readFile('apps/web/src/app/router/route-preload.ts', 'utf8');
   assert.match(preload, /import\(['"]@\/pages\/sources['"]\)/);
   assert.match(preload, /import\(['"]@\/pages\/settings['"]\)/);
 });
 
 test('Sources page preserves section URL state and composes public administration slices', async () => {
-  const source = await readTree('apps/web-next/src/pages/sources');
+  const source = await readTree('apps/web/src/pages/sources');
   assert.match(source, /useSearchParams/);
   for (const section of ['plugins', 'credentials', 'network', 'challenges', 'inspector']) {
     assert.match(source, new RegExp(section));
@@ -75,7 +75,7 @@ test('Sources widgets keep reads and writes in public entity and feature APIs', 
       'source-network-profiles-panel',
       'source-auth-challenges-panel',
       'source-inspector'
-    ].map((name) => readTree(`apps/web-next/src/widgets/${name}`))
+    ].map((name) => readTree(`apps/web/src/widgets/${name}`))
   );
   const joined = source.join('\n');
   for (const marker of [
@@ -97,7 +97,7 @@ test('Sources widgets keep reads and writes in public entity and feature APIs', 
 });
 
 test('Settings page composes preferences health maintenance backup search and build metadata', async () => {
-  const source = await readTree('apps/web-next/src/pages/settings');
+  const source = await readTree('apps/web/src/pages/settings');
   for (const marker of [
     'AppearanceControls',
     'LanguageControls',
@@ -115,28 +115,22 @@ test('Settings page composes preferences health maintenance backup search and bu
 });
 
 test('contract checker accepts current and next frontend roots independently', async () => {
+  assert.deepEqual(await checkWebContracts('apps/web-legacy/src'), []);
   assert.deepEqual(await checkWebContracts('apps/web/src'), []);
-  assert.deepEqual(await checkWebContracts('apps/web-next/src'), []);
 });
 
 test('frontend completion scripts and dual-preview config are present', async () => {
   const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as {
     scripts: Record<string, string>;
   };
-  assert.equal(
-    packageJson.scripts['check:web-next-contracts'],
-    'node scripts/check-web-next-contracts.mjs'
-  );
-  assert.equal(
-    packageJson.scripts['test:e2e:web-next'],
-    'playwright test --config playwright.web-next.config.ts'
-  );
-  assert.match(packageJson.scripts['verify:v3:frontend'], /check:web-next-contracts/);
-  assert.match(packageJson.scripts['verify:v3:frontend'], /test:e2e:web-next/);
+  assert.equal(packageJson.scripts['check:web-contracts'], 'node scripts/check-web-contracts.mjs');
+  assert.equal(packageJson.scripts['test:e2e'], 'playwright test --config playwright.config.ts');
+  assert.match(packageJson.scripts['verify:v3:frontend'], /check:web-contracts/);
+  assert.match(packageJson.scripts['verify:v3:frontend'], /test:e2e/);
 
-  const config = await readFile('playwright.web-next.config.ts', 'utf8');
+  const config = await readFile('playwright.config.ts', 'utf8');
   assert.match(config, /4173/);
-  assert.match(config, /4174/);
+  assert.match(config, /4173/);
   assert.match(config, /@novel-tool\/web-next/);
-  assert.match(config, /baseURL:\s*['"]http:\/\/127\.0\.0\.1:4174['"]/);
+  assert.match(config, /baseURL:\s*['"]http:\/\/127\.0\.0\.1:4173['"]/);
 });

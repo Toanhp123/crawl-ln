@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
-import { importV22StagingDatabase } from '../../apps/api-next/src/platform/migration/v22-import.cli.ts';
+import { importV22StagingDatabase } from '../../apps/api/src/platform/migration/v22-import.cli.ts';
 import { createV22StorageFixture } from '../../scripts/v3/create-v22-fixture.mjs';
 import { validateMigrationReport } from '../../scripts/v3/migration-report.mjs';
 import { assertMigrationPaths, runMigrationDryRun } from '../../scripts/v3/migrate-storage.mjs';
@@ -25,7 +25,7 @@ test('migration commands are exposed from the root and api-next workspaces', asy
   const rootPackage = JSON.parse(await readFile('package.json', 'utf8')) as {
     scripts: Record<string, string>;
   };
-  const apiPackage = JSON.parse(await readFile('apps/api-next/package.json', 'utf8')) as {
+  const apiPackage = JSON.parse(await readFile('apps/api/package.json', 'utf8')) as {
     scripts: Record<string, string>;
   };
 

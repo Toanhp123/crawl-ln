@@ -12,7 +12,7 @@ function files(dir: string): string[] {
 
 test('composition root delegates task and novel state transitions to module-owned services', () => {
   const crawlerModule = readFileSync(
-    'apps/api/src/shared/container/modules/crawler.module.ts',
+    'apps/api-legacy/src/shared/container/modules/crawler.module.ts',
     'utf8'
   );
   assert.doesNotMatch(crawlerModule, /CrawlTaskEntity|NovelEntity/);
@@ -21,7 +21,7 @@ test('composition root delegates task and novel state transitions to module-owne
 });
 
 test('feature modules do not import another bounded context directly', () => {
-  const root = 'apps/api/src/modules';
+  const root = 'apps/api-legacy/src/modules';
   for (const path of files(root)) {
     const sourceModule = path.slice(root.length + 1).split(/[\\/]/)[0];
     const source = readFileSync(path, 'utf8');
@@ -34,14 +34,14 @@ test('feature modules do not import another bounded context directly', () => {
 });
 
 test('database transactions expose synchronous bodies only', () => {
-  const database = readFileSync('apps/api/src/shared/database/sqlite.ts', 'utf8');
+  const database = readFileSync('apps/api-legacy/src/shared/database/sqlite.ts', 'utf8');
   assert.doesNotMatch(database, /async transaction</);
   assert.match(database, /transactionSync<T>\(work: \(\) => T\)/);
 });
 
 test('backup compatibility uses the migration registry schema version', () => {
   const archive = readFileSync(
-    'apps/api/src/modules/backup/infrastructure/archive/jszip-backup.archive.ts',
+    'apps/api-legacy/src/modules/backup/infrastructure/archive/jszip-backup.archive.ts',
     'utf8'
   );
   assert.match(archive, /CURRENT_SCHEMA_VERSION.*shared\/database\/sqlite/);
@@ -50,15 +50,15 @@ test('backup compatibility uses the migration registry schema version', () => {
 
 test('chapter reads are owned by the chapters module and consumed through a novels port', () => {
   const repository = readFileSync(
-    'apps/api/src/modules/novels/domain/repositories/novel.repository.ts',
+    'apps/api-legacy/src/modules/novels/domain/repositories/novel.repository.ts',
     'utf8'
   );
   const detailQuery = readFileSync(
-    'apps/api/src/modules/novels/application/services/novel-detail-query.service.ts',
+    'apps/api-legacy/src/modules/novels/application/services/novel-detail-query.service.ts',
     'utf8'
   );
   const chapterModule = readFileSync(
-    'apps/api/src/shared/container/modules/chapters.module.ts',
+    'apps/api-legacy/src/shared/container/modules/chapters.module.ts',
     'utf8'
   );
 

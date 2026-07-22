@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from '../../../../shared/database/sqlite.js';
+import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import type {
   SessionHandle,
   SessionRepository
@@ -7,6 +7,7 @@ import type { SourceReaderInvalidationEvent } from '../../application/ports/sour
 import type { SealedSecret, SecretVault } from '../../application/ports/secret-vault.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import { sealJson, unsealJson } from './encrypted-json.js';
+import { sqliteUpsertUpdate } from './sqlite-syntax.js';
 
 interface SessionRow {
   id: string;
@@ -61,7 +62,7 @@ export class SqliteSessionRepository implements SessionRepository {
           network_profile_id, network_binding, encrypted_session,
           encryption_metadata_json, status, expires_at, created_at
         ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(id) DO UPDATE SET
+        ON CONFLICT(id) ${sqliteUpsertUpdate}
           plugin_id=excluded.plugin_id, plugin_version=excluded.plugin_version,
           credential_profile_id=excluded.credential_profile_id,
           owner_type=excluded.owner_type, owner_id=excluded.owner_id,

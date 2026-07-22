@@ -4,7 +4,7 @@ import { join, relative } from 'node:path';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-const featureRoot = 'apps/web-next/src/features';
+const featureRoot = 'apps/web/src/features';
 const slices = [
   'install-source-plugin',
   'manage-source-plugins',
@@ -35,8 +35,8 @@ async function readTree(
 }
 
 test('plugin toggle rolls back cached state when the server rejects the write', async () => {
-  const plugins = await import('../../apps/web-next/src/features/manage-source-plugins/index.ts');
-  const entities = await import('../../apps/web-next/src/entities/source-plugin/index.ts');
+  const plugins = await import('../../apps/web/src/features/manage-source-plugins/index.ts');
+  const entities = await import('../../apps/web/src/entities/source-plugin/index.ts');
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   client.setQueryData(entities.sourcePluginKeys.list(), [
     {
@@ -126,20 +126,20 @@ test('Source Reader feature clients preserve frozen write and inspection contrac
   }) as typeof fetch;
 
   try {
-    const install = await import('../../apps/web-next/src/features/install-source-plugin/index.ts');
-    const plugins = await import('../../apps/web-next/src/features/manage-source-plugins/index.ts');
+    const install = await import('../../apps/web/src/features/install-source-plugin/index.ts');
+    const plugins = await import('../../apps/web/src/features/manage-source-plugins/index.ts');
     const permissions =
-      await import('../../apps/web-next/src/features/review-source-permissions/index.ts');
-    const testPlugin = await import('../../apps/web-next/src/features/test-source-plugin/index.ts');
+      await import('../../apps/web/src/features/review-source-permissions/index.ts');
+    const testPlugin = await import('../../apps/web/src/features/test-source-plugin/index.ts');
     const credentials =
-      await import('../../apps/web-next/src/features/manage-source-credential/index.ts');
+      await import('../../apps/web/src/features/manage-source-credential/index.ts');
     const auth =
-      await import('../../apps/web-next/src/features/authenticate-source-credential/index.ts');
+      await import('../../apps/web/src/features/authenticate-source-credential/index.ts');
     const networks =
-      await import('../../apps/web-next/src/features/manage-source-network-profile/index.ts');
+      await import('../../apps/web/src/features/manage-source-network-profile/index.ts');
     const challenges =
-      await import('../../apps/web-next/src/features/resolve-source-auth-challenge/index.ts');
-    const inspector = await import('../../apps/web-next/src/features/inspect-source-url/index.ts');
+      await import('../../apps/web/src/features/resolve-source-auth-challenge/index.ts');
+    const inspector = await import('../../apps/web/src/features/inspect-source-url/index.ts');
 
     await install.installSourcePlugin(new File([new Uint8Array([1, 2, 3])], 'plugin.zip'));
     await plugins.enableSourcePlugin('plugin/1', '1.0.0');
@@ -328,10 +328,9 @@ test('Source Reader feature clients preserve frozen write and inspection contrac
 });
 
 test('credential and proxy secrets are feature-local and cleared after use or close', async () => {
-  const credentials =
-    await import('../../apps/web-next/src/features/manage-source-credential/index.ts');
+  const credentials = await import('../../apps/web/src/features/manage-source-credential/index.ts');
   const networks =
-    await import('../../apps/web-next/src/features/manage-source-network-profile/index.ts');
+    await import('../../apps/web/src/features/manage-source-network-profile/index.ts');
 
   const secret = credentials.buildCredentialSecret('basic-auth', {
     cookie: '',
@@ -361,7 +360,7 @@ test('credential and proxy secrets are feature-local and cleared after use or cl
   );
 
   const entitySource = await readTree(
-    'apps/web-next/src/entities',
+    'apps/web/src/entities',
     undefined,
     new Set([join('source-credential', 'i18n', 'catalog.ts')])
   );
@@ -370,7 +369,7 @@ test('credential and proxy secrets are feature-local and cleared after use or cl
 
 test('feature errors expose only public code and request ID, never submitted or response secrets', async () => {
   const { ApiError, getPublicErrorDescription } =
-    await import('../../apps/web-next/src/shared/api/index.ts');
+    await import('../../apps/web/src/shared/api/index.ts');
   const error = new ApiError('server echoed token=top-secret', {
     status: 400,
     code: 'AUTHENTICATION_FAILED',
@@ -392,7 +391,7 @@ test('feature errors expose only public code and request ID, never submitted or 
 
 test('Task 8 public APIs expose administration actions, hooks, catalogs, and reusable UI', async () => {
   const modules = await Promise.all(
-    slices.map((slice) => import(`../../apps/web-next/src/features/${slice}/index.ts`))
+    slices.map((slice) => import(`../../apps/web/src/features/${slice}/index.ts`))
   );
   for (const [index, module] of modules.entries()) {
     assert.equal((await stat(join(featureRoot, slices[index], 'index.ts'))).isFile(), true);
@@ -413,9 +412,9 @@ test('Task 8 public APIs expose administration actions, hooks, catalogs, and reu
 
 test('Source Reader writes stay feature-owned and use only public entity invalidation adapters', async () => {
   const upperLayers = [
-    await readTree('apps/web-next/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),
-    await readTree('apps/web-next/src/pages'),
-    await readTree('apps/web-next/src/entities')
+    await readTree('apps/web/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),
+    await readTree('apps/web/src/pages'),
+    await readTree('apps/web/src/entities')
   ].join('\n');
   assert.doesNotMatch(
     upperLayers,

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import type { SourceReaderPlugin } from '../../apps/api/src/modules/source-reader/domain/plugin/source-plugin.ts';
+import type { SourceReaderPlugin } from '../../apps/api-legacy/src/modules/source-reader/domain/plugin/source-plugin.ts';
 
 const methodByCapability = {
   identify: 'identify',

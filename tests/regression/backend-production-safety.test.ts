@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {
   CrawlTaskEntity,
   InvalidTaskTransitionError
-} from '../../apps/api/src/modules/task/domain/entities/task.entity.ts';
-import { CrawlQueueService } from '../../apps/api/src/modules/crawler/application/services/crawl-queue.service.ts';
-import { AutoUpdateSchedulerService } from '../../apps/api/src/modules/scheduler/application/auto-update-scheduler.service.ts';
-import { CrawlerConflictError } from '../../apps/api/src/modules/crawler/application/errors/crawler.error.ts';
-import { buildAxiosRequestConfig } from '../../apps/api/src/shared/infrastructure/http/axios-http-client.adapter.ts';
-import type { TaskRepository } from '../../apps/api/src/modules/task/domain/repositories/task.repository.ts';
-import type { AutoUpdatePolicyRepository } from '../../apps/api/src/modules/scheduler/application/ports/auto-update-policy.repository.ts';
-import type { SchedulerDiagnosticsRepository } from '../../apps/api/src/modules/scheduler/application/ports/scheduler-diagnostics.repository.ts';
+} from '../../apps/api-legacy/src/modules/task/domain/entities/task.entity.ts';
+import { CrawlQueueService } from '../../apps/api-legacy/src/modules/crawler/application/services/crawl-queue.service.ts';
+import { AutoUpdateSchedulerService } from '../../apps/api-legacy/src/modules/scheduler/application/auto-update-scheduler.service.ts';
+import { CrawlerConflictError } from '../../apps/api-legacy/src/modules/crawler/application/errors/crawler.error.ts';
+import { buildAxiosRequestConfig } from '../../apps/api-legacy/src/shared/infrastructure/http/axios-http-client.adapter.ts';
+import type { TaskRepository } from '../../apps/api-legacy/src/modules/task/domain/repositories/task.repository.ts';
+import type { AutoUpdatePolicyRepository } from '../../apps/api-legacy/src/modules/scheduler/application/ports/auto-update-policy.repository.ts';
+import type { SchedulerDiagnosticsRepository } from '../../apps/api-legacy/src/modules/scheduler/application/ports/scheduler-diagnostics.repository.ts';
 
 const now = '2026-07-16T00:00:00.000Z';
 const task = () =>

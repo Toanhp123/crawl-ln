@@ -12,7 +12,7 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const importCli = join(
   projectRoot,
   'apps',
-  'api-next',
+  'api',
   'src',
   'platform',
   'migration',

@@ -7,9 +7,9 @@ const read = (path: string) => readFile(new URL(path, root), 'utf8');
 
 test('library prioritizes one continue-reading hero and mobile filter sheet', async () => {
   const [library, hero, controls] = await Promise.all([
-    read('apps/web/src/pages/library/ui/LibraryPage.tsx'),
-    read('apps/web/src/widgets/continue-reading/ui/ContinueReadingHero.tsx'),
-    read('apps/web/src/features/filter-library/ui/LibraryControlsSheet.tsx')
+    read('apps/web-legacy/src/pages/library/ui/LibraryPage.tsx'),
+    read('apps/web-legacy/src/widgets/continue-reading/ui/ContinueReadingHero.tsx'),
+    read('apps/web-legacy/src/features/filter-library/ui/LibraryControlsSheet.tsx')
   ]);
   assert.match(library, /ContinueReadingHero/);
   assert.match(library, /LibraryControlsSheet/);
@@ -20,9 +20,9 @@ test('library prioritizes one continue-reading hero and mobile filter sheet', as
 
 test('settings uses explicit reader controls and separates preferences from system information', async () => {
   const [settings, controls, model] = await Promise.all([
-    read('apps/web/src/pages/settings/ui/SettingsPage.tsx'),
-    read('apps/web/src/pages/settings/ui/ReaderSettingsControls.tsx'),
-    read('apps/web/src/pages/settings/model/useSettingsPage.tsx')
+    read('apps/web-legacy/src/pages/settings/ui/SettingsPage.tsx'),
+    read('apps/web-legacy/src/pages/settings/ui/ReaderSettingsControls.tsx'),
+    read('apps/web-legacy/src/pages/settings/model/useSettingsPage.tsx')
   ]);
   assert.match(settings, /settings\.preferences/);
   assert.match(settings, /settings\.tasks/);
@@ -35,7 +35,7 @@ test('settings uses explicit reader controls and separates preferences from syst
 });
 
 test('novel detail consumes shared rows for bookmarks and emphasizes reading progress', async () => {
-  const detail = await read('apps/web/src/pages/novel-detail/ui/NovelDetailPage.tsx');
+  const detail = await read('apps/web-legacy/src/pages/novel-detail/ui/NovelDetailPage.tsx');
   assert.match(detail, /ListRow/);
   assert.match(detail, /reader\.readingProgress/);
   assert.match(detail, /latestPosition\?\.scrollRatio/);

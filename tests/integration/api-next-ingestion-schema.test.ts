@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ingestionMigrations } from '../../apps/api-next/src/modules/ingestion/index.ts';
-import type { CreateIngestionJobCommand } from '../../apps/api-next/src/modules/ingestion/public/ingestion.api.ts';
-import { MigrationRegistry } from '../../apps/api-next/src/platform/database/migration-registry.ts';
-import { runRegisteredMigrations } from '../../apps/api-next/src/platform/database/migration-runner.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
+import { ingestionMigrations } from '../../apps/api/src/modules/ingestion/index.ts';
+import type { CreateIngestionJobCommand } from '../../apps/api/src/modules/ingestion/public/ingestion.api.ts';
+import { MigrationRegistry } from '../../apps/api/src/platform/database/migration-registry.ts';
+import { runRegisteredMigrations } from '../../apps/api/src/platform/database/migration-runner.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
 
 function migrateIngestion(): SqliteDatabase {
   const database = new SqliteDatabase(':memory:');

@@ -1,12 +1,7 @@
-import type {
-  EditableNetworkRouteType,
-  NetworkProfileFormState
-} from '../model/networkProfileForm';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Field, Input, SegmentedControl } from '@/shared/ui';
-
-const routeIds: EditableNetworkRouteType[] = ['direct', 'http-proxy', 'https-proxy', 'socks-proxy'];
-
+import { useI18n } from '../../../shared/i18n';
+import { Field, FilterChip, Input, SegmentedControl } from '../../../shared/ui';
+import type { NetworkProfileFormState, NetworkRouteType } from '../model/network-profile-form';
+const routes: NetworkRouteType[] = ['direct', 'http-proxy', 'https-proxy', 'socks-proxy'];
 export function NetworkProfileForm({
   value,
   onChange,
@@ -16,72 +11,65 @@ export function NetworkProfileForm({
   onChange: (value: NetworkProfileFormState) => void;
   ownerEditable?: boolean;
 }) {
-  const { status, t } = useI18n();
+  const { t, status } = useI18n();
   return (
-    <div className="space-y-4">
-      <Field label={t('sources.network.name')}>
-        <Input
-          value={value.name}
-          onChange={(event) => onChange({ ...value, name: event.target.value })}
-        />
+    <div className="space-y-3">
+      <Field label={t('manageSourceNetworkProfile.name')}>
+        <Input value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })} />
       </Field>
-      <Field label={t('sources.network.owner')}>
+      {ownerEditable ? (
         <SegmentedControl
           value={value.ownerType}
           columns={2}
           items={[
-            { id: 'user', label: t('sources.common.user') },
-            { id: 'system', label: t('sources.common.system') }
+            { id: 'user', label: t('manageSourceNetworkProfile.user') },
+            { id: 'system', label: t('manageSourceNetworkProfile.system') }
           ]}
-          disabled={!ownerEditable}
           onChange={(ownerType) => onChange({ ...value, ownerType })}
         />
-      </Field>
-      <Field label={t('sources.network.routeType')}>
-        <SegmentedControl
-          value={value.routeType}
-          columns={4}
-          items={routeIds.map((id) => ({ id, label: status(id) }))}
-          onChange={(routeType) => onChange({ ...value, routeType, proxyPassword: '' })}
-        />
-      </Field>
-      <Field label={t('sources.network.regions')} hint={t('sources.network.regionsHint')}>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        {routes.map((routeType) => (
+          <FilterChip
+            key={routeType}
+            selected={value.routeType === routeType}
+            onClick={() => onChange({ ...value, routeType, proxyPassword: '' })}
+          >
+            {status(routeType)}
+          </FilterChip>
+        ))}
+      </div>
+      <Field label={t('manageSourceNetworkProfile.regions')}>
         <Input
           value={value.regions}
-          onChange={(event) => onChange({ ...value, regions: event.target.value })}
+          onChange={(e) => onChange({ ...value, regions: e.target.value })}
         />
       </Field>
-      <Field label={t('sources.network.tags')} hint={t('sources.network.tagsHint')}>
-        <Input
-          value={value.tags}
-          onChange={(event) => onChange({ ...value, tags: event.target.value })}
-        />
+      <Field label={t('manageSourceNetworkProfile.tags')}>
+        <Input value={value.tags} onChange={(e) => onChange({ ...value, tags: e.target.value })} />
       </Field>
       {value.routeType !== 'direct' ? (
         <>
-          <Field label={t('sources.network.proxyUrl')}>
+          <Field label={t('manageSourceNetworkProfile.proxyUrl')}>
             <Input
               type="url"
               value={value.proxyUrl}
-              onChange={(event) => onChange({ ...value, proxyUrl: event.target.value })}
+              onChange={(e) => onChange({ ...value, proxyUrl: e.target.value })}
             />
           </Field>
-          <Field label={t('sources.network.proxyUsername')} hint={t('sources.common.optional')}>
+          <Field label={t('manageSourceNetworkProfile.proxyUsername')}>
             <Input
-              value={value.proxyUsername}
               autoComplete="off"
-              onChange={(event) => onChange({ ...value, proxyUsername: event.target.value })}
+              value={value.proxyUsername}
+              onChange={(e) => onChange({ ...value, proxyUsername: e.target.value })}
             />
           </Field>
-          <Field
-            label={t('sources.network.proxyPassword')}
-            hint={t('sources.credentials.secretWriteOnly')}
-          >
+          <Field label={t('manageSourceNetworkProfile.proxyPassword')}>
             <Input
               type="password"
-              value={value.proxyPassword}
               autoComplete="new-password"
-              onChange={(event) => onChange({ ...value, proxyPassword: event.target.value })}
+              value={value.proxyPassword}
+              onChange={(e) => onChange({ ...value, proxyPassword: e.target.value })}
             />
           </Field>
         </>

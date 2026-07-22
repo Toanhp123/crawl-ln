@@ -1,14 +1,15 @@
 import { Activity, BookOpen, Library, Plus, Settings } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useTaskSummary } from '@/entities/task';
+import { useAddNovelOverlay } from '@/features/add-novel';
+import { useI18n } from '@/shared/i18n';
+import { cn } from '@/shared/lib';
 import { Button, Text } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
-import { useGlobalAddNovel } from '@/shared/model/GlobalAddNovelContext';
-import { useTaskSummary } from '@/entities/task/model/useTaskSummary';
-import { preloadRoute } from '@/app/router/routePreload';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { preloadRoute } from '../router/route-preload';
 
 export function AppSidebar() {
-  const addNovel = useGlobalAddNovel();
+  const addNovel = useAddNovelOverlay();
+  const summary = useTaskSummary();
   const { t } = useI18n();
   const items = [
     { href: '/library', label: t('nav.library'), icon: Library },
@@ -16,7 +17,7 @@ export function AppSidebar() {
     { href: '/sources', label: t('nav.sources'), icon: BookOpen },
     { href: '/settings', label: t('nav.settings'), icon: Settings }
   ];
-  const summary = useTaskSummary();
+
   return (
     <aside className="hidden h-full w-64 shrink-0 border-r border-border bg-[hsl(var(--color-bg-elevated)/.92)] p-4 backdrop-blur-xl md:flex md:flex-col">
       <div className="px-2 py-3">
@@ -36,6 +37,7 @@ export function AppSidebar() {
             key={href}
             to={href}
             onPointerEnter={() => preloadRoute(href)}
+            onFocus={() => preloadRoute(href)}
             className={({ isActive }) =>
               cn(
                 'flex min-h-[44px] items-center gap-3 rounded-[var(--radius-md)] px-3 type-supporting font-medium transition-colors',

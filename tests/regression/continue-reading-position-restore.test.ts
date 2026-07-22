@@ -5,7 +5,7 @@ import test from 'node:test';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 test('continue reading restores the saved paragraph before marking the reader interactive', () => {
-  const page = read('apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
+  const page = read('apps/web-legacy/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
   assert.match(page, /useLayoutEffect/);
   assert.match(page, /const initialChapterLoaded/);
   const restore = page.indexOf('restoreReadingAnchor(saved, viewport, chapterRoot)');
@@ -16,7 +16,7 @@ test('continue reading restores the saved paragraph before marking the reader in
 });
 
 test('reader persists the exact active-chapter anchor before closing', () => {
-  const page = read('apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
+  const page = read('apps/web-legacy/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
   assert.match(page, /const persistCurrentPosition = useCallback/);
   assert.match(page, /#reader-chapter-\$\{activeChapter\.index\}/);
   assert.match(
@@ -27,8 +27,8 @@ test('reader persists the exact active-chapter anchor before closing', () => {
 });
 
 test('reader semantics and app scroll cache are bounded', () => {
-  const page = read('apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
-  const viewport = read('apps/web/src/app/layouts/AppScrollViewport.tsx');
+  const page = read('apps/web-legacy/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
+  const viewport = read('apps/web-legacy/src/app/layouts/AppScrollViewport.tsx');
   assert.match(page, /<article\s+ref=\{readerRoot\}/);
   assert.doesNotMatch(page, /<main\s+ref=\{readerRoot\}/);
   assert.match(viewport, /MAX_SCROLL_POSITIONS = 80/);

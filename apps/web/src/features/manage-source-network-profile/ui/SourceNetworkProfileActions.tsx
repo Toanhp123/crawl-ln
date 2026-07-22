@@ -1,67 +1,99 @@
-import type { SourceReaderNetworkProfileMetadata } from '@novel-tool/shared';
-import { Trash2, Wifi } from 'lucide-react';
+import { Plus, Trash2, Wifi } from 'lucide-react';
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { SourceNetworkProfile } from '../../../entities/source-network-profile';
+import { useI18n } from '../../../shared/i18n';
+import { Button, ConfirmDialog, Drawer, Switch } from '../../../shared/ui';
 import {
-  deleteSourceNetworkProfile,
-  testSourceNetworkProfile,
-  updateSourceNetworkProfile
-} from '@/entities/source-network-profile';
-import { queryKeys } from '@/shared/api/queryKeys';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Button, ConfirmDialog, Switch, toast } from '@/shared/ui';
-import { EditSourceNetworkProfileButton } from './EditSourceNetworkProfileButton';
-
-export function SourceNetworkProfileActions({
-  profile
-}: {
-  profile: SourceReaderNetworkProfileMetadata;
-}) {
-  const { t, errorMessage } = useI18n();
-  const client = useQueryClient();
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const refresh = () =>
-    void client.invalidateQueries({ queryKey: queryKeys.sourceReader.networkProfiles() });
-  const failure = (error: unknown) =>
-    toast({
-      kind: 'error',
-      title: t('sources.network.saveFailed'),
-      description: errorMessage(error)
-    });
-  const toggle = useMutation({
-    mutationFn: (enabled: boolean) => updateSourceNetworkProfile(profile.id, { enabled }),
-    onSuccess: refresh,
-    onError: failure
-  });
-  const test = useMutation({
-    mutationFn: () => testSourceNetworkProfile(profile.id),
-    onSuccess: () => {
-      toast({ kind: 'success', title: t('sources.network.testCompleted') });
-      refresh();
+  buildNetworkProfileCreate,
+  buildNetworkProfileUpdate,
+  canSubmitNetworkProfile,
+  clearNetworkProfileSecret,
+  createEmptyNetworkProfileForm,
+  networkProfileFormFromProfile
+} from '../model/network-profile-form';
+import {
+  useCreateSourceNetworkProfile,
+  useDeleteSourceNetworkProfile,
+  useTestSourceNetworkProfile,
+  useUpdateSourceNetworkProfile
+} from '../model/use-source-network-profile-actions';
+import { NetworkProfileForm } from './NetworkProfileForm';
+export function CreateSourceNetworkProfileButton() {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(createEmptyNetworkProfileForm);
+  const reset = () => setForm(createEmptyNetworkProfileForm());
+  const action = useCreateSourceNetworkProfile(
+    () => {
+      setOpen(false);
+      reset();
     },
-    onError: failure
-  });
-  const remove = useMutation({
-    mutationFn: () => deleteSourceNetworkProfile(profile.id),
-    onSuccess: () => {
-      toast({ kind: 'success', title: t('sources.network.deleted') });
-      setConfirmOpen(false);
-      refresh();
-    },
-    onError: failure
-  });
+    () => setForm((current) => clearNetworkProfileSecret(current))
+  );
+  return (
+    <>
+      <Button leadingIcon={<Plus size={17} />} onClick={() => setOpen(true)}>
+        {t('manageSourceNetworkProfile.create')}
+      </Button>
+      <Drawer
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) reset();
+        }}
+        title={t('manageSourceNetworkProfile.createTitle')}
+      >
+        <div className="space-y-4">
+          <NetworkProfileForm value={form} onChange={setForm} />
+          <Button
+            full
+            actionState={action.status}
+            disabled={!canSubmitNetworkProfile(form)}
+            onClick={() => action.mutate(buildNetworkProfileCreate(form))}
+          >
+            {t('manageSourceNetworkProfile.save')}
+          </Button>
+        </div>
+      </Drawer>
+    </>
+  );
+}
+export function SourceNetworkProfileActions({ profile }: { profile: SourceNetworkProfile }) {
+  const { t } = useI18n();
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [form, setForm] = useState(() => networkProfileFormFromProfile(profile));
+  const reset = () => setForm(networkProfileFormFromProfile(profile));
+  const update = useUpdateSourceNetworkProfile(
+    profile.id,
+    () => setEditOpen(false),
+    () => setForm((current) => clearNetworkProfileSecret(current))
+  );
+  const remove = useDeleteSourceNetworkProfile(profile.id, () => setDeleteOpen(false));
+  const test = useTestSourceNetworkProfile(profile.id);
+  const toggle = useUpdateSourceNetworkProfile(profile.id);
   const legacy = profile.routeType === 'vpn-gateway';
   return (
     <div className="space-y-2">
       <Switch
         checked={profile.enabled}
-        label={t(profile.enabled ? 'sources.common.enabled' : 'sources.common.disabled')}
-        actionState={toggle.status}
+        label={t('manageSourceNetworkProfile.enabled')}
         disabled={legacy}
-        onCheckedChange={(enabled) => toggle.mutate(enabled)}
+        actionState={toggle.status}
+        onCheckedChange={(enabled) => toggle.mutate({ enabled })}
       />
       <div className="flex flex-wrap gap-2">
-        <EditSourceNetworkProfileButton profile={profile} />
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => {
+            reset();
+            setEditOpen(true);
+          }}
+          disabled={legacy}
+        >
+          {t('manageSourceNetworkProfile.edit')}
+        </Button>
         <Button
           size="sm"
           variant="secondary"
@@ -70,22 +102,41 @@ export function SourceNetworkProfileActions({
           disabled={legacy}
           onClick={() => test.mutate()}
         >
-          {t('sources.network.test')}
+          {t('manageSourceNetworkProfile.test')}
         </Button>
         <Button
           size="sm"
           variant="danger"
           leadingIcon={<Trash2 size={16} />}
-          onClick={() => setConfirmOpen(true)}
+          onClick={() => setDeleteOpen(true)}
         >
-          {t('sources.plugins.remove')}
+          {t('manageSourceNetworkProfile.delete')}
         </Button>
       </div>
+      <Drawer
+        open={editOpen}
+        onOpenChange={(next) => {
+          setEditOpen(next);
+          if (!next) reset();
+        }}
+        title={t('manageSourceNetworkProfile.editTitle')}
+      >
+        <div className="space-y-4">
+          <NetworkProfileForm value={form} onChange={setForm} ownerEditable={false} />
+          <Button
+            full
+            actionState={update.status}
+            disabled={!canSubmitNetworkProfile(form, profile.routeType)}
+            onClick={() => update.mutate(buildNetworkProfileUpdate(form, profile.routeType))}
+          >
+            {t('manageSourceNetworkProfile.save')}
+          </Button>
+        </div>
+      </Drawer>
       <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={t('sources.network.deleteTitle')}
-        description={t('sources.network.deleteDescription')}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t('manageSourceNetworkProfile.deleteTitle')}
         danger
         actionState={remove.status}
         onConfirm={() => remove.mutate()}

@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { libraryMigrations } from '../../apps/api-next/src/modules/library/index.ts';
+import { libraryMigrations } from '../../apps/api/src/modules/library/index.ts';
 import type {
   LibraryApi,
   LibraryCommands,
   LibraryQueries
-} from '../../apps/api-next/src/modules/library/public/library.api.ts';
-import { MigrationRegistry } from '../../apps/api-next/src/platform/database/migration-registry.ts';
-import { runRegisteredMigrations } from '../../apps/api-next/src/platform/database/migration-runner.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
+} from '../../apps/api/src/modules/library/public/library.api.ts';
+import { MigrationRegistry } from '../../apps/api/src/platform/database/migration-registry.ts';
+import { runRegisteredMigrations } from '../../apps/api/src/platform/database/migration-runner.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
 
 function migrateLibrary(): SqliteDatabase {
   const database = new SqliteDatabase(':memory:');

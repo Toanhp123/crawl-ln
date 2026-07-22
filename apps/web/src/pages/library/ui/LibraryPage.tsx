@@ -1,18 +1,15 @@
-import { useScrollRestoration } from '@/shared/lib/useScrollRestoration';
-import { BookOpenText, BookPlus, FileText, SlidersHorizontal, X } from 'lucide-react';
 import { useState } from 'react';
-import { LibraryGrid } from '@/widgets/library-grid';
-import { ContinueReadingHero } from '@/widgets/continue-reading/ui/ContinueReadingHero';
-import { LibraryControlsSheet } from '@/features/filter-library/ui/LibraryControlsSheet';
-import { LibraryContentSearch } from '@/features/search-library/ui/LibraryContentSearch';
-import { useI18n, type TranslationKey } from '@/shared/i18n/I18nProvider';
+import { BookOpenText, BookPlus, FileText, SlidersHorizontal, X } from 'lucide-react';
+import { LibrarySearchPanel } from '@/features/search-library';
+import { useI18n } from '@/shared/i18n';
+import { useScrollRestoration } from '@/shared/lib';
 import {
   Button,
+  Card,
+  Chip,
   EmptyState,
   ErrorBanner,
   ErrorState,
-  Card,
-  Chip,
   IconButton,
   Page,
   PageHeader,
@@ -22,8 +19,10 @@ import {
   StickyToolbar,
   Text
 } from '@/shared/ui';
-import { LIBRARY_PAGE_SIZE, useLibraryPage } from '../model/useLibraryPage';
-import { useGlobalAddNovel } from '@/shared/model/GlobalAddNovelContext';
+import { ContinueReadingHero } from '@/widgets/continue-reading';
+import { LibraryGrid } from '@/widgets/library-grid';
+import { LIBRARY_PAGE_SIZE, useLibraryPage } from '../model/use-library-page';
+import { LibraryControlsSheet } from './LibraryControlsSheet';
 
 function LibraryCardSkeleton() {
   return (
@@ -44,6 +43,7 @@ function LibrarySkeleton() {
     <div
       className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
       aria-hidden
+      data-library-skeleton-count={LIBRARY_PAGE_SIZE}
     >
       {Array.from({ length: LIBRARY_PAGE_SIZE }, (_, index) => (
         <LibraryCardSkeleton key={index} />
@@ -56,15 +56,13 @@ export function LibraryPage() {
   useScrollRestoration('library');
   const { t } = useI18n();
   const model = useLibraryPage();
-  const addNovel = useGlobalAddNovel();
   const [controlsOpen, setControlsOpen] = useState(false);
   const primaryHistory = model.readingHistory[0];
-  const activeControlCount = model.activeFilterChips.length;
-  const isNovelScope = model.searchScope === 'novels';
+  const isNovelScope = model.scope === 'novels';
   const showContinueRegion =
     Boolean(primaryHistory) && isNovelScope && !model.keyword && model.filter === 'all';
   const isInitialError = isNovelScope && model.novels.isError && !model.novels.data;
-  const isEmpty = isNovelScope && !model.novels.isLoading && model.visibleItems.length === 0;
+  const isEmpty = isNovelScope && !model.novels.isLoading && model.items.length === 0;
 
   if (isInitialError) {
     return (
@@ -87,7 +85,6 @@ export function LibraryPage() {
         description={t('library.count', { count: model.total })}
         compact
       />
-
       {model.novels.data ? <ErrorBanner error={model.novels.error} /> : null}
 
       <StickyToolbar className="pb-4">
@@ -103,9 +100,9 @@ export function LibraryPage() {
               <IconButton aria-label={t('library.controls')} onClick={() => setControlsOpen(true)}>
                 <SlidersHorizontal size={20} />
               </IconButton>
-              {activeControlCount ? (
+              {model.activeControlCount ? (
                 <span className="pointer-events-none absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 type-caption font-bold text-[hsl(var(--color-primary-contrast))]">
-                  {activeControlCount}
+                  {model.activeControlCount}
                 </span>
               ) : null}
             </div>
@@ -114,33 +111,33 @@ export function LibraryPage() {
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
           <Chip
             selected={isNovelScope}
-            onClick={() => model.setSearchScope('novels')}
+            onClick={() => model.setScope('novels')}
             className="inline-flex shrink-0 items-center gap-1.5"
           >
-            <BookOpenText size={20} className="h-4 w-4" />
+            <BookOpenText size={16} />
             {t('library.searchScope.novels')}
           </Chip>
           <Chip
             selected={!isNovelScope}
-            onClick={() => model.setSearchScope('content')}
+            onClick={() => model.setScope('content')}
             className="inline-flex shrink-0 items-center gap-1.5"
           >
-            <FileText size={20} className="h-4 w-4" />
+            <FileText size={16} />
             {t('library.searchScope.content')}
           </Chip>
         </div>
-        {isNovelScope && model.activeFilterChips.length ? (
+        {isNovelScope && model.activeControlCount ? (
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            {model.activeFilterChips.map((chip) => (
-              <Chip
-                key={chip.id}
-                selected
-                onClick={chip.id === 'filter' ? model.clearFilter : model.clearSort}
-              >
-                {t(chip.labelKey as TranslationKey)}
-                <X size={20} className="ml-1 h-4 w-4" />
+            {model.filter !== 'all' ? (
+              <Chip selected onClick={() => model.setFilter('all')}>
+                {t(`library.filter.${model.filter}`)} <X size={14} />
               </Chip>
-            ))}
+            ) : null}
+            {model.sort !== 'reading' ? (
+              <Chip selected onClick={() => model.setSort('reading')}>
+                {t(`library.sort.${model.sort}`)} <X size={14} />
+              </Chip>
+            ) : null}
             <Chip onClick={model.clearFilters}>{t('library.clearFilters')}</Chip>
           </div>
         ) : null}
@@ -159,32 +156,23 @@ export function LibraryPage() {
 
       {isNovelScope ? (
         <>
-          <div className="flex items-center justify-between gap-3 pt-2">
-            <Text as="p" variant="supporting" tone="muted" className="font-semibold">
-              {t('common.items', { count: model.total })}
-            </Text>
-          </div>
-
+          <Text as="p" variant="supporting" tone="muted" className="font-semibold">
+            {t('common.items', { count: model.total })}
+          </Text>
           {model.novels.isLoading ? (
             <LibrarySkeleton />
           ) : isEmpty ? (
-            model.isSearchEmpty ? (
+            model.keyword ? (
               <EmptyState
                 title={t('library.empty.search', { query: model.keyword })}
                 description={t('library.empty.searchDescription')}
                 action={
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <Button variant="secondary" onClick={() => model.setKeyword('')}>
-                      {t('library.clearSearch')}
-                    </Button>
-                    <Button onClick={() => model.setSearchScope('content')}>
-                      <FileText size={20} />
-                      {t('library.searchInContent')}
-                    </Button>
-                  </div>
+                  <Button variant="secondary" onClick={() => model.setKeyword('')}>
+                    {t('library.clearSearch')}
+                  </Button>
                 }
               />
-            ) : model.isFilterEmpty ? (
+            ) : model.filter !== 'all' ? (
               <EmptyState
                 title={t('library.empty.filter')}
                 description={t('library.empty.filterDescription')}
@@ -199,8 +187,8 @@ export function LibraryPage() {
                 title={t('library.empty.initial')}
                 description={t('library.empty.initialDescription')}
                 action={
-                  <Button onClick={addNovel.open}>
-                    <BookPlus size={20} />
+                  <Button onClick={model.openImport}>
+                    <BookPlus size={18} />
                     {t('library.importNovel')}
                   </Button>
                 }
@@ -208,20 +196,28 @@ export function LibraryPage() {
             )
           ) : (
             <LibraryGrid
-              novels={model.visibleItems}
+              novels={model.items}
               readingByNovel={model.readingByNovel}
               onOpen={model.openNovel}
               onRead={model.continueNovel}
               onContinueImport={model.continueImport}
             />
           )}
-
           {!model.novels.isLoading && model.totalPages > 1 ? (
             <Pagination page={model.page} totalPages={model.totalPages} onChange={model.setPage} />
           ) : null}
         </>
       ) : (
-        <LibraryContentSearch query={model.keyword} />
+        <LibrarySearchPanel
+          query={model.keyword}
+          onQueryChange={model.setKeyword}
+          type="chapter"
+          page={model.page}
+          onPageChange={model.setPage}
+          showSearchInput={false}
+          showTypeFilters={false}
+          onSelect={model.openSearchResult}
+        />
       )}
 
       <LibraryControlsSheet

@@ -56,15 +56,17 @@ export interface SourceReaderErrorOptions {
 }
 
 export class SourceReaderError extends Error {
-  readonly code: SourceReaderErrorCode;
   readonly retryable: boolean;
   readonly fallbackAllowed: boolean;
   readonly details?: Record<string, unknown>;
 
-  constructor(code: SourceReaderErrorCode, message: string, options: SourceReaderErrorOptions) {
+  constructor(
+    readonly code: SourceReaderErrorCode,
+    message: string,
+    options: SourceReaderErrorOptions
+  ) {
     super(message, { cause: options.cause });
     this.name = 'SourceReaderError';
-    this.code = code;
     this.retryable = options.retryable;
     this.fallbackAllowed = options.fallbackAllowed;
     this.details = options.details;

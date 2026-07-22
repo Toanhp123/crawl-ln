@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from '../../../../shared/database/sqlite.js';
+import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import type { PluginHealthRepository } from '../../application/ports/plugin-health.repository.js';
 
 export class SqlitePluginHealthRepository implements PluginHealthRepository {

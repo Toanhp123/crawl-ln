@@ -1,13 +1,13 @@
-import {
-  SourceAuthChallengeRow,
-  useSourceAuthChallengesQuery
-} from '@/entities/source-auth-challenge';
+import { SourceAuthChallengeRow, useSourceAuthChallenges } from '@/entities/source-auth-challenge';
 import { ResolveSourceAuthChallenge } from '@/features/resolve-source-auth-challenge';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { EmptyState, ErrorBanner, LoadingState, Panel, Section, Text } from '@/shared/ui';
+import { useI18n } from '@/shared/i18n';
+import { useConnectionStatus } from '@/shared/realtime';
+import { EmptyState, ErrorBanner, LoadingState, Panel, Section } from '@/shared/ui';
+
 export function SourceAuthChallengesPanel() {
-  const { t, relativeTime } = useI18n();
-  const query = useSourceAuthChallengesQuery(true);
+  const { t } = useI18n();
+  const connectionState = useConnectionStatus();
+  const query = useSourceAuthChallenges({ connectionState, pollingIntervalMs: 5_000 });
   return (
     <Section
       title={t('sources.challenges.title')}
@@ -24,9 +24,6 @@ export function SourceAuthChallengesPanel() {
             <Panel key={challenge.id} tone="default" padding="none">
               <SourceAuthChallengeRow challenge={challenge} />
               <div className="border-t border-border p-4">
-                <Text as="p" variant="caption" tone="muted" className="mb-3">
-                  {t('sources.challenges.expires', { value: relativeTime(challenge.expiresAt) })}
-                </Text>
                 <ResolveSourceAuthChallenge challenge={challenge} />
               </div>
             </Panel>

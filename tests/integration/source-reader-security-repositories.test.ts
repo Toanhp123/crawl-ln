@@ -3,13 +3,13 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
-import { LocalEncryptedVault } from '../../apps/api/src/modules/source-reader/infrastructure/secrets/local-encrypted.vault.ts';
-import { SqliteCredentialRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-credential.repository.ts';
-import { SqliteNetworkProfileRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-network-profile.repository.ts';
-import { SqliteSessionRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-session.repository.ts';
-import { SqliteAuthChallengeRepository } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-auth-challenge.repository.ts';
+import { createSqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { LocalEncryptedVault } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/secrets/local-encrypted.vault.ts';
+import { SqliteCredentialRepository } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-credential.repository.ts';
+import { SqliteNetworkProfileRepository } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-network-profile.repository.ts';
+import { SqliteSessionRepository } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-session.repository.ts';
+import { SqliteAuthChallengeRepository } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-auth-challenge.repository.ts';
 
 async function createFixture(t: test.TestContext) {
   const root = await mkdtemp(join(tmpdir(), 'source-reader-security-repo-'));

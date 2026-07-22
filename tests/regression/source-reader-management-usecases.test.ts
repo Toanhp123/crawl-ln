@@ -4,17 +4,17 @@ import {
   EnablePluginUseCase,
   InstallSourcePluginUseCase,
   ListPluginsUseCase
-} from '../../apps/api/src/modules/source-reader/application/use-cases/plugins/manage-source-plugins.usecase.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/application/use-cases/plugins/manage-source-plugins.usecase.ts';
 import {
   CreateCredentialUseCase,
   LoginCredentialUseCase,
   UpdateCredentialSecretUseCase
-} from '../../apps/api/src/modules/source-reader/application/use-cases/credentials/manage-credentials.usecase.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/application/use-cases/credentials/manage-credentials.usecase.ts';
 import {
   CreateNetworkProfileUseCase,
   UpdateNetworkProfileUseCase
-} from '../../apps/api/src/modules/source-reader/application/use-cases/network/manage-network-profiles.usecase.ts';
-import { RespondAuthChallengeUseCase } from '../../apps/api/src/modules/source-reader/application/use-cases/auth-challenges/manage-auth-challenges.usecase.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/application/use-cases/network/manage-network-profiles.usecase.ts';
+import { RespondAuthChallengeUseCase } from '../../apps/api-legacy/src/modules/source-reader/application/use-cases/auth-challenges/manage-auth-challenges.usecase.ts';
 
 const actor = { id: 'user-1', roles: ['source-admin'] as const };
 const clock = { now: () => new Date('2026-07-20T00:00:00.000Z') };

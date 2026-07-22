@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import test from 'node:test';
-import { NetworkRouteResolver } from '../../apps/api/src/modules/source-reader/infrastructure/network/network-route.resolver.ts';
-import { ProxyAgentFactory } from '../../apps/api/src/modules/source-reader/infrastructure/network/proxy-agent.factory.ts';
-import { RouteAwareHttpClientAdapter } from '../../apps/api/src/modules/source-reader/infrastructure/network/route-aware-http-client.adapter.ts';
-import { buildChromiumLaunchOptions } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/browser-worker/browser-launch-options.ts';
-import { browserSessionIdentityKey } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.ts';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { NetworkRouteResolver } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/network/network-route.resolver.ts';
+import { ProxyAgentFactory } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/network/proxy-agent.factory.ts';
+import { RouteAwareHttpClientAdapter } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/network/route-aware-http-client.adapter.ts';
+import { buildChromiumLaunchOptions } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/browser-worker/browser-launch-options.ts';
+import { browserSessionIdentityKey } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
 import { startHttpProxyServer } from '../helpers/http-proxy-server.ts';
 import { startSocks5ProxyServer } from '../helpers/socks5-proxy-server.ts';
 

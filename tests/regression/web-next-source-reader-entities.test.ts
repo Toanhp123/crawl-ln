@@ -3,7 +3,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import test from 'node:test';
 
-const entityRoot = 'apps/web-next/src/entities';
+const entityRoot = 'apps/web/src/entities';
 const slices = [
   'source-plugin',
   'source-credential',
@@ -30,10 +30,10 @@ async function assertSliceShape(slice: (typeof slices)[number]) {
 }
 
 test('Source Reader entity public APIs expose reads, keys, invalidation, UI, and catalogs', async () => {
-  const plugin = await import('../../apps/web-next/src/entities/source-plugin/index.ts');
-  const credential = await import('../../apps/web-next/src/entities/source-credential/index.ts');
-  const network = await import('../../apps/web-next/src/entities/source-network-profile/index.ts');
-  const challenge = await import('../../apps/web-next/src/entities/source-auth-challenge/index.ts');
+  const plugin = await import('../../apps/web/src/entities/source-plugin/index.ts');
+  const credential = await import('../../apps/web/src/entities/source-credential/index.ts');
+  const network = await import('../../apps/web/src/entities/source-network-profile/index.ts');
+  const challenge = await import('../../apps/web/src/entities/source-auth-challenge/index.ts');
 
   assert.equal(typeof plugin.useSourcePlugins, 'function');
   assert.equal(typeof plugin.useSourcePluginDiagnostics, 'function');
@@ -111,12 +111,10 @@ test('Source Reader entity clients preserve GET contracts and normalize plugin i
   }) as typeof fetch;
 
   try {
-    const plugin = await import('../../apps/web-next/src/entities/source-plugin/index.ts');
-    const credential = await import('../../apps/web-next/src/entities/source-credential/index.ts');
-    const network =
-      await import('../../apps/web-next/src/entities/source-network-profile/index.ts');
-    const challenge =
-      await import('../../apps/web-next/src/entities/source-auth-challenge/index.ts');
+    const plugin = await import('../../apps/web/src/entities/source-plugin/index.ts');
+    const credential = await import('../../apps/web/src/entities/source-credential/index.ts');
+    const network = await import('../../apps/web/src/entities/source-network-profile/index.ts');
+    const challenge = await import('../../apps/web/src/entities/source-auth-challenge/index.ts');
 
     const plugins = await plugin.listSourcePlugins();
     await plugin.getSourcePluginDiagnostics('plugin/a');
@@ -169,10 +167,10 @@ test('Source Reader entity metadata stays redacted and contains no administratio
 });
 
 test('Source Reader invalidation adapters target only their owned collections', async () => {
-  const plugin = await import('../../apps/web-next/src/entities/source-plugin/index.ts');
-  const credential = await import('../../apps/web-next/src/entities/source-credential/index.ts');
-  const network = await import('../../apps/web-next/src/entities/source-network-profile/index.ts');
-  const challenge = await import('../../apps/web-next/src/entities/source-auth-challenge/index.ts');
+  const plugin = await import('../../apps/web/src/entities/source-plugin/index.ts');
+  const credential = await import('../../apps/web/src/entities/source-credential/index.ts');
+  const network = await import('../../apps/web/src/entities/source-network-profile/index.ts');
+  const challenge = await import('../../apps/web/src/entities/source-auth-challenge/index.ts');
   const calls: Array<readonly unknown[]> = [];
   const client = {
     invalidateQueries({ queryKey }: { queryKey: readonly unknown[] }) {

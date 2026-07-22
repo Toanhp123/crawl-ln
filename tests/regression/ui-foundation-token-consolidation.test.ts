@@ -10,8 +10,8 @@ const countDefinition = (source: string, token: string) =>
     .length;
 
 test('component tokens have one owner and utility CSS does not redefine them', async () => {
-  const components = await read('apps/web/src/shared/theme/components.css');
-  const componentTokens = await read('apps/web/src/shared/theme/component-tokens.css');
+  const components = await read('apps/web-legacy/src/shared/theme/components.css');
+  const componentTokens = await read('apps/web-legacy/src/shared/theme/component-tokens.css');
   const owned = [
     '--button-radius',
     '--button-font-weight',
@@ -31,10 +31,10 @@ test('component tokens have one owner and utility CSS does not redefine them', a
 });
 
 test('motion and elevation expose one canonical scale', async () => {
-  const motion = await read('apps/web/src/shared/theme/motion.css');
-  const elevation = await read('apps/web/src/shared/theme/elevation.css');
-  const index = await read('apps/web/src/shared/theme/index.css');
-  const themeFiles = await readdir(new URL('apps/web/src/shared/theme/', root));
+  const motion = await read('apps/web-legacy/src/shared/theme/motion.css');
+  const elevation = await read('apps/web-legacy/src/shared/theme/elevation.css');
+  const index = await read('apps/web-legacy/src/shared/theme/index.css');
+  const themeFiles = await readdir(new URL('apps/web-legacy/src/shared/theme/', root));
 
   assert.match(motion, /--motion-instant:/);
   assert.match(motion, /--motion-fast:/);
@@ -49,11 +49,11 @@ test('motion and elevation expose one canonical scale', async () => {
 });
 
 test('web source does not use legacy or undefined shadow and motion aliases', async () => {
-  const files = await readdir(new URL('apps/web/src/', root), { recursive: true });
+  const files = await readdir(new URL('apps/web-legacy/src/', root), { recursive: true });
   const sources = await Promise.all(
     files
       .filter((path) => /\.(?:css|ts|tsx)$/.test(path))
-      .map((path) => read(`apps/web/src/${path}`))
+      .map((path) => read(`apps/web-legacy/src/${path}`))
   );
   const source = sources.join('\n');
 

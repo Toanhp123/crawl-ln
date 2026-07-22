@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { sourceUrlRequestSchema } from '../../apps/api/src/modules/source-reader/presentation/dto/source-reader.dto.ts';
+import { sourceUrlRequestSchema } from '../../apps/api-legacy/src/modules/source-reader/presentation/dto/source-reader.dto.ts';
 
 test('source reader routes expose approved reader and administration surface', async () => {
   const routes = await readFile(
-    'apps/api/src/modules/source-reader/presentation/routes/source-reader.routes.ts',
+    'apps/api-legacy/src/modules/source-reader/presentation/routes/source-reader.routes.ts',
     'utf8'
   );
   for (const path of [
@@ -28,7 +28,7 @@ test('source reader routes expose approved reader and administration surface', a
 
 test('reader controller overwrites user identity from actor context', async () => {
   const controller = await readFile(
-    'apps/api/src/modules/source-reader/presentation/controllers/source-reader.controller.ts',
+    'apps/api-legacy/src/modules/source-reader/presentation/controllers/source-reader.controller.ts',
     'utf8'
   );
   assert.match(controller, /sourceReaderActor\?\.id/);

@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from '../../../../shared/database/sqlite.js';
+import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import type {
   CredentialHandle,
   CredentialRepository
@@ -6,6 +6,7 @@ import type {
 import type { SealedSecret, SecretVault } from '../../application/ports/secret-vault.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import { sealJson, unsealJson } from './encrypted-json.js';
+import { sqliteUpsertUpdate } from './sqlite-syntax.js';
 
 interface CredentialRow {
   id: string;
@@ -63,7 +64,7 @@ export class SqliteCredentialRepository implements CredentialRepository {
           id, owner_type, owner_id, plugin_id, domain, name, strategy,
           encrypted_payload, encryption_metadata_json, enabled, created_at, updated_at
         ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(id) DO UPDATE SET
+        ON CONFLICT(id) ${sqliteUpsertUpdate}
           owner_type=excluded.owner_type, owner_id=excluded.owner_id,
           plugin_id=excluded.plugin_id, domain=excluded.domain, name=excluded.name,
           strategy=excluded.strategy, encrypted_payload=excluded.encrypted_payload,

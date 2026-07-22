@@ -3,11 +3,10 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 test('reader navigation state preserves the return URL and scroll identity', async () => {
-  const navigation =
-    (await import('../../apps/web-next/src/features/read-chapter/index.ts')) as Record<
-      string,
-      unknown
-    >;
+  const navigation = (await import('../../apps/web/src/features/read-chapter/index.ts')) as Record<
+    string,
+    unknown
+  >;
   assert.equal(typeof navigation.createReaderNavigationState, 'function');
   assert.equal(typeof navigation.readReaderReturnState, 'function');
   if (
@@ -35,7 +34,7 @@ test('reader navigation state preserves the return URL and scroll identity', asy
 
 test('highlighted snippets recognize only mark tokens', async () => {
   const snippets =
-    (await import('../../apps/web-next/src/features/search-library/lib/highlighted-snippet.ts')) as Record<
+    (await import('../../apps/web/src/features/search-library/lib/highlighted-snippet.ts')) as Record<
       string,
       unknown
     >;
@@ -59,15 +58,15 @@ test('remaining parity details are wired through their intended owners', async (
   const [credential, library, novelDetail, chapterReader, searchPanel, taskInvalidation, realtime] =
     await Promise.all([
       readFile(
-        'apps/web-next/src/features/manage-source-credential/ui/ReplaceSourceCredentialSecretButton.tsx',
+        'apps/web/src/features/manage-source-credential/ui/ReplaceSourceCredentialSecretButton.tsx',
         'utf8'
       ),
-      readFile('apps/web-next/src/pages/library/model/use-library-page.ts', 'utf8'),
-      readFile('apps/web-next/src/pages/novel-detail/model/use-novel-detail-page.ts', 'utf8'),
-      readFile('apps/web-next/src/pages/chapter-reader/model/use-chapter-reader-page.ts', 'utf8'),
-      readFile('apps/web-next/src/features/search-library/ui/LibrarySearchPanel.tsx', 'utf8'),
-      readFile('apps/web-next/src/entities/task/api/task-invalidation.ts', 'utf8'),
-      readFile('apps/web-next/src/app/realtime/event-router.ts', 'utf8')
+      readFile('apps/web/src/pages/library/model/use-library-page.ts', 'utf8'),
+      readFile('apps/web/src/pages/novel-detail/model/use-novel-detail-page.ts', 'utf8'),
+      readFile('apps/web/src/pages/chapter-reader/model/use-chapter-reader-page.ts', 'utf8'),
+      readFile('apps/web/src/features/search-library/ui/LibrarySearchPanel.tsx', 'utf8'),
+      readFile('apps/web/src/entities/task/api/task-invalidation.ts', 'utf8'),
+      readFile('apps/web/src/app/realtime/event-router.ts', 'utf8')
     ]);
   const taskConsumers = await Promise.all(
     [
@@ -78,7 +77,7 @@ test('remaining parity details are wired through their intended owners', async (
       'pause-task/model/use-pause-task.ts',
       'resume-task/model/use-resume-task.ts',
       'update-novel/model/use-update-novel.ts'
-    ].map((path) => readFile(`apps/web-next/src/features/${path}`, 'utf8'))
+    ].map((path) => readFile(`apps/web/src/features/${path}`, 'utf8'))
   );
 
   assert.match(credential, /disabled=\{!hasCredentialSecret\(credential\.strategy, secrets\)\}/);

@@ -1,34 +1,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { AppProviders } from '@/app/providers/AppProviders';
+import { appQueryPersistenceOptions } from '@/app/providers/QueryProvider';
 import { AppRouter } from '@/app/router/AppRouter';
-import { QueryProvider } from '@/app/providers/QueryProvider';
-import { ErrorBoundaryProvider } from '@/app/providers/ErrorBoundaryProvider';
-import { I18nProvider } from '@/shared/i18n/I18nProvider';
-import { ThemeProvider } from '@/shared/theme/runtime/ThemeProvider';
-import { MaintenanceProvider } from '@/shared/maintenance/MaintenanceProvider';
-import { queryClient } from '@/shared/api/queryClient';
-import { restoreQueryCache, startQueryCachePersistence } from '@/shared/api/queryPersistence';
+import { queryClient, restoreQueryCache, startQueryCachePersistence } from '@/shared/api';
 import '@/app/styles/index.css';
 
-await restoreQueryCache(queryClient);
+await restoreQueryCache(queryClient, appQueryPersistenceOptions);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <I18nProvider>
-        <QueryProvider>
-          <ErrorBoundaryProvider>
-            <MaintenanceProvider>
-              <BrowserRouter>
-                <AppRouter />
-              </BrowserRouter>
-            </MaintenanceProvider>
-          </ErrorBoundaryProvider>
-        </QueryProvider>
-      </I18nProvider>
-    </ThemeProvider>
+    <AppProviders>
+      <AppRouter />
+    </AppProviders>
   </React.StrictMode>
 );
 
-startQueryCachePersistence(queryClient);
+startQueryCachePersistence(queryClient, appQueryPersistenceOptions);

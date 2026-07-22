@@ -26,9 +26,9 @@ Tài liệu trong working tree chỉ mô tả hệ thống hiện tại và các
 
 Code-owned guides remain beside their implementation:
 
-- [Theme guide](../apps/web/src/shared/theme/README.md)
-- [Visual style guide](../apps/web/src/shared/theme/VISUAL_STYLE_GUIDE.md)
-- [Shared UI guide](../apps/web/src/shared/ui/README.md)
+- [Theme guide](../apps/web-legacy/src/shared/theme/README.md)
+- [Visual style guide](../apps/web-legacy/src/shared/theme/VISUAL_STYLE_GUIDE.md)
+- [Shared UI guide](../apps/web-legacy/src/shared/ui/README.md)
 
 ## Historical material
 

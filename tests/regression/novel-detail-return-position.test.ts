@@ -5,10 +5,12 @@ import { readFileSync } from 'node:fs';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 test('reader back closes the overlay through the same history POP path as browser gesture', () => {
-  const detailModel = read('apps/web/src/pages/novel-detail/model/useNovelDetailPage.ts');
-  const readerModel = read('apps/web/src/pages/chapter-reader/model/useChapterReaderPage.ts');
-  const detailPage = read('apps/web/src/pages/novel-detail/ui/NovelDetailPage.tsx');
-  const chapterList = read('apps/web/src/entities/chapter/ui/ChapterList.tsx');
+  const detailModel = read('apps/web-legacy/src/pages/novel-detail/model/useNovelDetailPage.ts');
+  const readerModel = read(
+    'apps/web-legacy/src/pages/chapter-reader/model/useChapterReaderPage.ts'
+  );
+  const detailPage = read('apps/web-legacy/src/pages/novel-detail/ui/NovelDetailPage.tsx');
+  const chapterList = read('apps/web-legacy/src/entities/chapter/ui/ChapterList.tsx');
 
   assert.match(detailModel, /readerNavigationState\(location\.key\)/);
   assert.match(readerModel, /cameFromApp\(location\.state\)/);

@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useRef } from 'react';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '../../i18n';
 import { IconButton } from '../actions/IconButton';
 
 const DISMISS_DISTANCE_PX = 96;

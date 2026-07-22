@@ -1,1 +1,1 @@
-export * from './ui/SourceInspector';
+export { SourceInspector } from './ui/SourceInspector';

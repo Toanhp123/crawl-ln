@@ -5,13 +5,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import JSZip from 'jszip';
-import { nextApiRuntime } from './api-next.runtime.ts';
+import { apiRuntime } from './api-next.runtime.ts';
 import { currentApiRuntime } from './current-api.runtime.ts';
 import { withContractServer } from './http-server.harness.ts';
 
 const storageRoot = await mkdtemp(join(tmpdir(), 'source-reader-http-contract-'));
 process.env.STORAGE_DIR = join(storageRoot, 'current');
-process.env.NEXT_STORAGE_DIR = join(storageRoot, 'next');
+process.env.STORAGE_DIR = join(storageRoot, 'next');
 process.env.SOURCE_READER_LOCAL_ADMIN = 'true';
 process.env.SOURCE_READER_MASTER_KEY = Buffer.alloc(32, 7).toString('base64');
 process.env.SOURCE_READER_NETWORK_DIAGNOSTIC_URL = 'http://127.0.0.1:1/diagnostic';
@@ -371,7 +371,7 @@ async function assertSourceReaderHttpContract(baseUrl: string): Promise<void> {
 
 for (const [name, runtime] of [
   ['current', currentApiRuntime],
-  ['next', nextApiRuntime]
+  ['next', apiRuntime]
 ] as const) {
   test(`${name} API preserves the Source Reader HTTP contract`, async () => {
     await withContractServer(runtime, assertSourceReaderHttpContract);

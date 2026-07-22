@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseSourcePluginManifest } from '../../apps/api/src/modules/source-reader/domain/plugin/source-plugin-manifest.schema.ts';
+import { parseSourcePluginManifest } from '../../apps/api-legacy/src/modules/source-reader/domain/plugin/source-plugin-manifest.schema.ts';
 import { assertPluginContract } from '../helpers/source-reader-plugin-contract.ts';
 
 test('manifest accepts independent capability contracts and matchers', () => {

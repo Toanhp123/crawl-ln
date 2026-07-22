@@ -1,16 +1,17 @@
 import {
   SourceNetworkProfileRow,
-  useSourceNetworkProfilesQuery
+  useSourceNetworkProfiles
 } from '@/entities/source-network-profile';
 import {
   CreateSourceNetworkProfileButton,
   SourceNetworkProfileActions
 } from '@/features/manage-source-network-profile';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n';
 import { EmptyState, ErrorBanner, LoadingState, Panel, Section } from '@/shared/ui';
+
 export function SourceNetworkProfilesPanel() {
   const { t } = useI18n();
-  const query = useSourceNetworkProfilesQuery();
+  const query = useSourceNetworkProfiles();
   return (
     <Section
       title={t('sources.network.title')}

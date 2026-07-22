@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import JSZip from 'jszip';
-import { ExportPipelineService } from '../../apps/api/src/modules/export/application/services/export-pipeline.service.ts';
-import { TextExportWriter } from '../../apps/api/src/modules/export/infrastructure/text/text-export.writer.ts';
-import { EpubExportWriter } from '../../apps/api/src/modules/export/infrastructure/epub/epub-export.writer.ts';
+import { ExportPipelineService } from '../../apps/api-legacy/src/modules/export/application/services/export-pipeline.service.ts';
+import { TextExportWriter } from '../../apps/api-legacy/src/modules/export/infrastructure/text/text-export.writer.ts';
+import { EpubExportWriter } from '../../apps/api-legacy/src/modules/export/infrastructure/epub/epub-export.writer.ts';
 
 const book = {
   novel: {

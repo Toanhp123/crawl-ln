@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { StandardAuthenticationService } from '../../apps/api/src/modules/source-reader/application/services/standard-authentication.service.ts';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { StandardAuthenticationService } from '../../apps/api-legacy/src/modules/source-reader/application/services/standard-authentication.service.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
 
 interface RequestRecord {
   method: 'get' | 'post';

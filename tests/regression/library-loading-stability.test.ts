@@ -7,8 +7,8 @@ const read = (path: string) => readFile(new URL(path, root), 'utf8');
 
 test('library resolves continue reading from list data without shifting the toolbar', async () => {
   const [page, model] = await Promise.all([
-    read('apps/web/src/pages/library/ui/LibraryPage.tsx'),
-    read('apps/web/src/pages/library/model/useLibraryPage.ts')
+    read('apps/web-legacy/src/pages/library/ui/LibraryPage.tsx'),
+    read('apps/web-legacy/src/pages/library/model/useLibraryPage.ts')
   ]);
 
   assert.doesNotMatch(page, /ContinueReadingSkeleton/);

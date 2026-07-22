@@ -3,16 +3,16 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const bottomNav = readFileSync(
-  new URL('../../apps/web/src/shared/ui/navigation/BottomNav.tsx', import.meta.url),
+  new URL('../../apps/web-legacy/src/shared/ui/navigation/BottomNav.tsx', import.meta.url),
   'utf8'
 );
 
 const tailwindConfig = readFileSync(
-  new URL('../../apps/web/tailwind.config.ts', import.meta.url),
+  new URL('../../apps/web-legacy/tailwind.config.ts', import.meta.url),
   'utf8'
 );
 const addOverlay = readFileSync(
-  new URL('../../apps/web/src/app/layouts/GlobalAddNovelOverlay.tsx', import.meta.url),
+  new URL('../../apps/web-legacy/src/app/layouts/GlobalAddNovelOverlay.tsx', import.meta.url),
   'utf8'
 );
 

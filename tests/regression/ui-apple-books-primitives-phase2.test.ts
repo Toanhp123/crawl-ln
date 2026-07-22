@@ -4,15 +4,15 @@ import test from 'node:test';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
-const card = read('apps/web/src/shared/ui/layout/Card.tsx');
-const chip = read('apps/web/src/shared/ui/data-display/Chip.tsx');
-const badge = read('apps/web/src/shared/ui/feedback/Badge.tsx');
-const filterChip = read('apps/web/src/shared/ui/forms/FilterChip.tsx');
-const empty = read('apps/web/src/shared/ui/feedback/EmptyState.tsx');
-const listRow = read('apps/web/src/shared/ui/data-display/ListRow.tsx');
-const section = read('apps/web/src/shared/ui/layout/Section.tsx');
-const toolbar = read('apps/web/src/shared/ui/layout/Toolbar.tsx');
-const index = read('apps/web/src/shared/ui/index.ts');
+const card = read('apps/web-legacy/src/shared/ui/layout/Card.tsx');
+const chip = read('apps/web-legacy/src/shared/ui/data-display/Chip.tsx');
+const badge = read('apps/web-legacy/src/shared/ui/feedback/Badge.tsx');
+const filterChip = read('apps/web-legacy/src/shared/ui/forms/FilterChip.tsx');
+const empty = read('apps/web-legacy/src/shared/ui/feedback/EmptyState.tsx');
+const listRow = read('apps/web-legacy/src/shared/ui/data-display/ListRow.tsx');
+const section = read('apps/web-legacy/src/shared/ui/layout/Section.tsx');
+const toolbar = read('apps/web-legacy/src/shared/ui/layout/Toolbar.tsx');
+const index = read('apps/web-legacy/src/shared/ui/index.ts');
 
 test('Apple Books compact primitives expose one canonical composition API', () => {
   assert.match(card, /export function CardContent/);

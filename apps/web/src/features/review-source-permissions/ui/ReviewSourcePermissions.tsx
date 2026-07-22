@@ -1,12 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  approveSourcePluginPermissions,
-  denySourcePluginPermissions,
-  useSourcePluginPermissionsQuery
-} from '@/entities/source-plugin';
-import { queryKeys } from '@/shared/api/queryKeys';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Button, EmptyState, ErrorBanner, ListRow, LoadingState, Panel, toast } from '@/shared/ui';
+import { useSourcePluginPermissions } from '../../../entities/source-plugin';
+import { getPublicErrorDescription } from '../../../shared/api';
+import { useI18n } from '../../../shared/i18n';
+import { Button, EmptyState, ErrorBanner, ListRow, LoadingState, Panel } from '../../../shared/ui';
+import { useReviewSourcePermissions } from '../model/use-review-source-permissions';
+
 export function ReviewSourcePermissions({
   pluginId,
   version
@@ -14,62 +11,39 @@ export function ReviewSourcePermissions({
   pluginId: string;
   version?: string;
 }) {
-  const { t, errorMessage } = useI18n();
-  const client = useQueryClient();
-  const query = useSourcePluginPermissionsQuery(pluginId);
-  const action = useMutation({
-    mutationFn: ({ approved }: { approved: boolean }) => {
-      if (!version) throw new Error(t('sources.plugins.activeVersionRequired'));
-      return approved
-        ? approveSourcePluginPermissions(pluginId, version)
-        : denySourcePluginPermissions(pluginId, version);
-    },
-    onSuccess: (_d, { approved }) => {
-      toast({
-        kind: 'success',
-        title: t(
-          approved ? 'sources.plugins.permissionApproved' : 'sources.plugins.permissionDenied'
-        )
-      });
-      void client.invalidateQueries({
-        queryKey: queryKeys.sourceReader.pluginPermissions(pluginId)
-      });
-      void client.invalidateQueries({ queryKey: queryKeys.sourceReader.plugin(pluginId) });
-      void client.invalidateQueries({ queryKey: queryKeys.sourceReader.plugins() });
-    },
-    onError: (error) =>
-      toast({ kind: 'error', title: t('sources.updateFailed'), description: errorMessage(error) })
-  });
+  const { t } = useI18n();
+  const query = useSourcePluginPermissions(pluginId);
+  const action = useReviewSourcePermissions(pluginId, version);
   if (query.isLoading) return <LoadingState />;
-  if (query.error) return <ErrorBanner error={query.error} />;
+  if (query.error) return <ErrorBanner error={getPublicErrorDescription(query.error)} />;
   return (
     <Panel tone="default" className="space-y-3">
       {query.data?.length ? (
         query.data.map((permission, index) => (
           <ListRow
-            key={`${permission.permission ?? 'permission'}-${index}`}
+            key={`${permission.permission ?? permission.scope ?? 'permission'}-${index}`}
             title={permission.permission ?? permission.scope ?? `Permission ${index + 1}`}
             description={permission.scope ?? permission.status ?? ''}
           />
         ))
       ) : (
-        <EmptyState title={t('sources.plugins.noPermissions')} />
+        <EmptyState title={t('reviewSourcePermissions.empty')} />
       )}
       <div className="flex flex-wrap gap-2">
         <Button
-          actionState={action.variables?.approved ? action.status : 'idle'}
           disabled={!version}
-          onClick={() => action.mutate({ approved: true })}
+          actionState={action.variables === true ? action.status : 'idle'}
+          onClick={() => action.mutate(true)}
         >
-          {t('sources.plugins.approve')}
+          {t('reviewSourcePermissions.approve')}
         </Button>
         <Button
           variant="danger"
-          actionState={action.variables?.approved === false ? action.status : 'idle'}
           disabled={!version}
-          onClick={() => action.mutate({ approved: false })}
+          actionState={action.variables === false ? action.status : 'idle'}
+          onClick={() => action.mutate(false)}
         >
-          {t('sources.plugins.deny')}
+          {t('reviewSourcePermissions.deny')}
         </Button>
       </div>
     </Panel>

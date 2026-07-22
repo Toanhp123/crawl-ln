@@ -1,1 +1,1 @@
-export * from './ui/SourceAuthChallengesPanel';
+export { SourceAuthChallengesPanel } from './ui/SourceAuthChallengesPanel';

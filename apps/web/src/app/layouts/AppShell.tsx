@@ -1,14 +1,13 @@
 import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { AppBottomTabs } from '@/widgets/bottom-tabs/ui/AppBottomTabs';
-import { AppHeader } from '@/widgets/app-header/ui/AppHeader';
+import { AddNovelOverlay, AddNovelProvider, useAddNovelOverlay } from '@/features/add-novel';
+import { useI18n } from '@/shared/i18n';
 import { AppViewport, LoadingState } from '@/shared/ui';
+import { AppBottomTabs } from '@/widgets/bottom-tabs';
+import { AppHeader } from '@/widgets/app-header';
+import { preloadRoute, scheduleIdleRoutePreload } from '../router/route-preload';
 import { AppScrollViewport } from './AppScrollViewport';
 import { AppSidebar } from './AppSidebar';
-import { preloadRoute, scheduleIdleRoutePreload } from '@/app/router/routePreload';
-import { GlobalAddNovelProvider, useGlobalAddNovel } from '@/shared/model/GlobalAddNovelContext';
-import { GlobalAddNovelOverlay } from './GlobalAddNovelOverlay';
 
 function RouteLoading() {
   return (
@@ -21,8 +20,10 @@ function RouteLoading() {
 function AppShellContent() {
   const { t } = useI18n();
   const { pathname } = useLocation();
-  const addNovel = useGlobalAddNovel();
+  const addNovel = useAddNovelOverlay();
+
   useEffect(() => scheduleIdleRoutePreload(pathname), [pathname]);
+
   return (
     <div id="app-shell-root" className="h-full">
       <AppViewport>
@@ -36,7 +37,7 @@ function AppShellContent() {
           <AppSidebar />
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="md:hidden">
-              <AppHeader />
+              <AppHeader onRouteIntent={preloadRoute} />
             </div>
             <AppScrollViewport>
               <div id="main-content" className="mx-auto w-full max-w-7xl">
@@ -48,7 +49,7 @@ function AppShellContent() {
             <AppBottomTabs onRouteIntent={preloadRoute} onAddNovel={addNovel.open} />
           </div>
         </div>
-        <GlobalAddNovelOverlay />
+        <AddNovelOverlay />
       </AppViewport>
     </div>
   );
@@ -56,8 +57,8 @@ function AppShellContent() {
 
 export function AppShell() {
   return (
-    <GlobalAddNovelProvider>
+    <AddNovelProvider>
       <AppShellContent />
-    </GlobalAddNovelProvider>
+    </AddNovelProvider>
   );
 }

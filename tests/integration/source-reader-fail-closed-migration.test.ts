@@ -3,12 +3,12 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { ExternalPluginRevalidationService } from '../../apps/api/src/modules/source-reader/application/services/external-plugin-revalidation.service.ts';
-import type { StoredPluginVersion } from '../../apps/api/src/modules/source-reader/application/ports/plugin-store.port.ts';
+import { ExternalPluginRevalidationService } from '../../apps/api-legacy/src/modules/source-reader/application/services/external-plugin-revalidation.service.ts';
+import type { StoredPluginVersion } from '../../apps/api-legacy/src/modules/source-reader/application/ports/plugin-store.port.ts';
 import {
   CURRENT_SCHEMA_VERSION,
   SqliteDatabase
-} from '../../apps/api/src/shared/database/sqlite.ts';
+} from '../../apps/api-legacy/src/shared/database/sqlite.ts';
 
 const manifest = {
   id: 'external-demo',

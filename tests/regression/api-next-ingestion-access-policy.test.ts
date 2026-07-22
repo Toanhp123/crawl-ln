@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { RobotsTxtAccessPolicyAdapter } from '../../apps/api-next/src/modules/ingestion/infrastructure/robots-txt-access-policy.adapter.ts';
-import { createEnvironment } from '../../apps/api-next/src/platform/config/environment.ts';
+import { RobotsTxtAccessPolicyAdapter } from '../../apps/api/src/modules/ingestion/infrastructure/robots-txt-access-policy.adapter.ts';
+import { createEnvironment } from '../../apps/api/src/platform/config/environment.ts';
 
 test('api-next environment exposes crawler policy settings', () => {
   const environment = createEnvironment({

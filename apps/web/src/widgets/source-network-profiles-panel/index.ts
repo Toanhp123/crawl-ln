@@ -1,1 +1,1 @@
-export * from './ui/SourceNetworkProfilesPanel';
+export { SourceNetworkProfilesPanel } from './ui/SourceNetworkProfilesPanel';

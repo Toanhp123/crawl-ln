@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { chooseFetchedChapterTitle } from '../../apps/api/src/modules/crawler/application/services/crawl-queue.service.js';
+import { chooseFetchedChapterTitle } from '../../apps/api-legacy/src/modules/crawler/application/services/crawl-queue.service.js';
 
 test('keeps analyzed chapter title when fetched title is generic', () => {
   assert.equal(

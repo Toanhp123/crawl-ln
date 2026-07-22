@@ -3,12 +3,12 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import type { VerifiedPluginPackage } from '../../apps/api/src/modules/source-reader/application/ports/plugin-package-verifier.port.ts';
-import { PluginCompatibilityService } from '../../apps/api/src/modules/source-reader/application/services/plugin-compatibility.service.ts';
-import { PluginInstallationService } from '../../apps/api/src/modules/source-reader/application/services/plugin-installation.service.ts';
-import { SOURCE_READER_HOST_COMPATIBILITY } from '../../apps/api/src/modules/source-reader/domain/plugin/source-reader-host-compatibility.ts';
-import { SqlitePluginStore } from '../../apps/api/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.ts';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
+import type { VerifiedPluginPackage } from '../../apps/api-legacy/src/modules/source-reader/application/ports/plugin-package-verifier.port.ts';
+import { PluginCompatibilityService } from '../../apps/api-legacy/src/modules/source-reader/application/services/plugin-compatibility.service.ts';
+import { PluginInstallationService } from '../../apps/api-legacy/src/modules/source-reader/application/services/plugin-installation.service.ts';
+import { SOURCE_READER_HOST_COMPATIBILITY } from '../../apps/api-legacy/src/modules/source-reader/domain/plugin/source-reader-host-compatibility.ts';
+import { SqlitePluginStore } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/sqlite/sqlite-plugin.store.ts';
+import { createSqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
 
 const root = await mkdtemp(join(tmpdir(), 'source-plugin-install-'));
 const database = createSqliteDatabase(join(root, 'test.sqlite'));

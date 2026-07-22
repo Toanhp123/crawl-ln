@@ -156,7 +156,7 @@ export class SourcePluginPackageVerifier implements PluginPackageVerifierPort {
 
     for (const [path, expected] of Object.entries(checksums)) {
       const content = files.get(path);
-      if (!content) throw new Error(`Checksum references missing file ${path}`);
+      if (!content) throw new Error(`Checksum lists an absent file ${path}`);
       const actual = createHash('sha256').update(content).digest('hex');
       if (actual !== expected) throw new Error(`Checksum mismatch for ${path}`);
     }

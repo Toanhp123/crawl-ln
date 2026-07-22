@@ -4,21 +4,24 @@ import { readFileSync } from 'node:fs';
 
 const storage = readFileSync(
   new URL(
-    '../../apps/web/src/features/read-chapter/model/readingPositionStorage.ts',
+    '../../apps/web-legacy/src/features/read-chapter/model/readingPositionStorage.ts',
     import.meta.url
   ),
   'utf8'
 );
 const anchor = readFileSync(
-  new URL('../../apps/web/src/features/read-chapter/model/readingAnchor.ts', import.meta.url),
+  new URL(
+    '../../apps/web-legacy/src/features/read-chapter/model/readingAnchor.ts',
+    import.meta.url
+  ),
   'utf8'
 );
 const paragraphId = readFileSync(
-  new URL('../../apps/web/src/entities/chapter/lib/paragraphDomId.ts', import.meta.url),
+  new URL('../../apps/web-legacy/src/entities/chapter/lib/paragraphDomId.ts', import.meta.url),
   'utf8'
 );
 const reader = readFileSync(
-  new URL('../../apps/web/src/entities/chapter/ui/ChapterReader.tsx', import.meta.url),
+  new URL('../../apps/web-legacy/src/entities/chapter/ui/ChapterReader.tsx', import.meta.url),
   'utf8'
 );
 

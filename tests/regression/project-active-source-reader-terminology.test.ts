@@ -3,10 +3,10 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const activeFiles = [
-  'apps/api/.env.example',
-  'apps/api/.env.termux.example',
-  'apps/web/src/shared/i18n/locales/en.ts',
-  'apps/web/src/shared/i18n/locales/vi.ts'
+  'apps/api-legacy/.env.example',
+  'apps/api-legacy/.env.termux.example',
+  'apps/web-legacy/src/shared/i18n/locales/en.ts',
+  'apps/web-legacy/src/shared/i18n/locales/vi.ts'
 ];
 
 const retiredPatterns = [

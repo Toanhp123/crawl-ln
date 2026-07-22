@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { InMemoryPluginRegistry } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.ts';
-import { InProcessPluginRuntime } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.ts';
-import { MemoryReaderCache } from '../../apps/api/src/modules/source-reader/infrastructure/cache/memory-reader.cache.ts';
-import { HmacCursorCodec } from '../../apps/api/src/modules/source-reader/infrastructure/cursor/hmac-cursor.codec.ts';
-import { SourceReaderService } from '../../apps/api/src/modules/source-reader/application/services/source-reader.service.ts';
-import { PublicCacheRefreshService } from '../../apps/api/src/modules/source-reader/application/services/public-cache-refresh.service.ts';
-import type { CacheScope } from '../../apps/api/src/modules/source-reader/public/source-reader.models.ts';
-import type { SourceReaderPlugin } from '../../apps/api/src/modules/source-reader/domain/plugin/source-plugin.ts';
+import { InMemoryPluginRegistry } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.ts';
+import { InProcessPluginRuntime } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/in-process/in-process-plugin.runtime.ts';
+import { MemoryReaderCache } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/cache/memory-reader.cache.ts';
+import { HmacCursorCodec } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/cursor/hmac-cursor.codec.ts';
+import { SourceReaderService } from '../../apps/api-legacy/src/modules/source-reader/application/services/source-reader.service.ts';
+import { PublicCacheRefreshService } from '../../apps/api-legacy/src/modules/source-reader/application/services/public-cache-refresh.service.ts';
+import type { CacheScope } from '../../apps/api-legacy/src/modules/source-reader/public/source-reader.models.ts';
+import type { SourceReaderPlugin } from '../../apps/api-legacy/src/modules/source-reader/domain/plugin/source-plugin.ts';
 
 const contextFactory = {
   create: () => ({

@@ -6,7 +6,7 @@ const root = new URL('../../', import.meta.url);
 const read = (path: string) => readFile(new URL(path, root), 'utf8');
 
 test('Surface is structural and never owns elevation', async () => {
-  const surface = await read('apps/web/src/shared/ui/layout/Surface.tsx');
+  const surface = await read('apps/web-legacy/src/shared/ui/layout/Surface.tsx');
 
   assert.match(surface, /default:\s*'bg-surface'/);
   assert.match(surface, /subtle:\s*'bg-surface2'/);
@@ -15,7 +15,7 @@ test('Surface is structural and never owns elevation', async () => {
 });
 
 test('Card owns canonical elevation and interactive hierarchy', async () => {
-  const card = await read('apps/web/src/shared/ui/layout/Card.tsx');
+  const card = await read('apps/web-legacy/src/shared/ui/layout/Card.tsx');
 
   assert.match(card, /flat:\s*'shadow-\[var\(--elevation-0\)\]'/);
   assert.match(card, /raised:\s*'shadow-\[var\(--elevation-1\)\]'/);
@@ -27,8 +27,8 @@ test('Card owns canonical elevation and interactive hierarchy', async () => {
 });
 
 test('Panel is a dense grouping primitive without elevation', async () => {
-  const panel = await read('apps/web/src/shared/ui/layout/Panel.tsx');
-  const index = await read('apps/web/src/shared/ui/index.ts');
+  const panel = await read('apps/web-legacy/src/shared/ui/layout/Panel.tsx');
+  const index = await read('apps/web-legacy/src/shared/ui/index.ts');
 
   assert.match(panel, /subtle:\s*'border border-border bg-surface2'/);
   assert.match(panel, /inset:\s*'bg-surface2'/);
@@ -37,10 +37,10 @@ test('Panel is a dense grouping primitive without elevation', async () => {
 });
 
 test('shared overlays use the highest elevation while toasts use the floating level', async () => {
-  const modal = await read('apps/web/src/shared/ui/overlay/Modal.tsx');
-  const sheet = await read('apps/web/src/shared/ui/overlay/BottomSheet.tsx');
-  const drawer = await read('apps/web/src/shared/ui/overlay/Drawer.tsx');
-  const toast = await read('apps/web/src/shared/ui/feedback/Toast.tsx');
+  const modal = await read('apps/web-legacy/src/shared/ui/overlay/Modal.tsx');
+  const sheet = await read('apps/web-legacy/src/shared/ui/overlay/BottomSheet.tsx');
+  const drawer = await read('apps/web-legacy/src/shared/ui/overlay/Drawer.tsx');
+  const toast = await read('apps/web-legacy/src/shared/ui/feedback/Toast.tsx');
 
   for (const source of [modal, sheet, drawer]) {
     assert.match(source, /shadow-\[var\(--elevation-3\)\]/);
@@ -49,11 +49,11 @@ test('shared overlays use the highest elevation while toasts use the floating le
 });
 
 test('shared primitives do not introduce pixel radii or arbitrary visual shadows', async () => {
-  const files = await readdir(new URL('apps/web/src/shared/ui/', root), { recursive: true });
+  const files = await readdir(new URL('apps/web-legacy/src/shared/ui/', root), { recursive: true });
   const sources = await Promise.all(
     files
       .filter((path) => /\.(?:ts|tsx)$/.test(path))
-      .map(async (path) => ({ path, source: await read(`apps/web/src/shared/ui/${path}`) }))
+      .map(async (path) => ({ path, source: await read(`apps/web-legacy/src/shared/ui/${path}`) }))
   );
 
   for (const { path, source } of sources) {
@@ -68,9 +68,11 @@ test('shared primitives do not introduce pixel radii or arbitrary visual shadows
 });
 
 test('features no longer ask Surface to act as an elevated card', async () => {
-  const files = await readdir(new URL('apps/web/src/', root), { recursive: true });
+  const files = await readdir(new URL('apps/web-legacy/src/', root), { recursive: true });
   const sources = await Promise.all(
-    files.filter((path) => /\.(?:ts|tsx)$/.test(path)).map((path) => read(`apps/web/src/${path}`))
+    files
+      .filter((path) => /\.(?:ts|tsx)$/.test(path))
+      .map((path) => read(`apps/web-legacy/src/${path}`))
   );
 
   assert.doesNotMatch(sources.join('\n'), /<Surface[^>]*tone=["']elevated["']/);

@@ -16,7 +16,7 @@ async function readTree(directory: string, root = directory): Promise<string> {
 
 test('web reader controller delegates window and loading behavior to reader-engine', async () => {
   const source = await readFile(
-    'apps/web-next/src/features/read-chapter/model/use-reader-controller.ts',
+    'apps/web/src/features/read-chapter/model/use-reader-controller.ts',
     'utf8'
   );
   assert.match(source, /createReaderSession/);
@@ -31,7 +31,7 @@ test('web reader controller delegates window and loading behavior to reader-engi
 
 test('chapter loading adapts the chapter entity public API without owning HTTP', async () => {
   const source = await readFile(
-    'apps/web-next/src/features/read-chapter/lib/chapter-loader-adapter.ts',
+    'apps/web/src/features/read-chapter/lib/chapter-loader-adapter.ts',
     'utf8'
   );
   assert.match(source, /getChapter/);
@@ -42,7 +42,7 @@ test('chapter loading adapts the chapter entity public API without owning HTTP',
 
 test('reader persistence and browser globals remain outside the package', async () => {
   const engine = await readTree('packages/reader-engine/src');
-  const feature = await readTree('apps/web-next/src/features/read-chapter');
+  const feature = await readTree('apps/web/src/features/read-chapter');
   assert.doesNotMatch(engine, /indexedDB|localStorage|navigator|\bdocument\b/);
   assert.match(feature, /indexedDB/);
   assert.match(feature, /localStorage/);
@@ -51,7 +51,7 @@ test('reader persistence and browser globals remain outside the package', async 
 
 test('persistent reader cache preserves version invalidation bounded pruning and quota retry', async () => {
   const source = await readFile(
-    'apps/web-next/src/features/read-chapter/lib/indexeddb-reader-cache.ts',
+    'apps/web/src/features/read-chapter/lib/indexeddb-reader-cache.ts',
     'utf8'
   );
   assert.match(source, /DB_VERSION\s*=\s*\d+/);
@@ -63,7 +63,7 @@ test('persistent reader cache preserves version invalidation bounded pruning and
 });
 
 test('reading adapters retain anchor position continuity and navigation acceptance behavior', async () => {
-  const source = await readTree('apps/web-next/src/features/read-chapter');
+  const source = await readTree('apps/web/src/features/read-chapter');
   assert.match(source, /data-reader-paragraph/);
   assert.match(source, /paragraphOffset/);
   assert.match(source, /scrollRatio/);
@@ -77,7 +77,7 @@ test('reading adapters retain anchor position continuity and navigation acceptan
 });
 
 test('reader preferences own storage DOM attributes and reader theme CSS', async () => {
-  const source = await readTree('apps/web-next/src/features/reader-preferences');
+  const source = await readTree('apps/web/src/features/reader-preferences');
   assert.match(source, /novel-tool-reader/);
   for (const attribute of [
     'readerFont',
@@ -103,15 +103,9 @@ test('reader preferences own storage DOM attributes and reader theme CSS', async
 });
 
 test('reader action slices expose only public APIs and feature-owned CSS', async () => {
-  const readChapter = await readFile('apps/web-next/src/features/read-chapter/index.ts', 'utf8');
-  const preferences = await readFile(
-    'apps/web-next/src/features/reader-preferences/index.ts',
-    'utf8'
-  );
-  const selectChapter = await readFile(
-    'apps/web-next/src/features/select-chapter/index.ts',
-    'utf8'
-  );
+  const readChapter = await readFile('apps/web/src/features/read-chapter/index.ts', 'utf8');
+  const preferences = await readFile('apps/web/src/features/reader-preferences/index.ts', 'utf8');
+  const selectChapter = await readFile('apps/web/src/features/select-chapter/index.ts', 'utf8');
   assert.match(readChapter, /useReaderController/);
   assert.match(readChapter, /IndexedDbReaderChapterCache/);
   assert.match(readChapter, /useReaderProgress/);
@@ -122,7 +116,7 @@ test('reader action slices expose only public APIs and feature-owned CSS', async
 });
 
 test('web-next declares its reader-engine workspace dependency', async () => {
-  const packageJson = JSON.parse(await readFile('apps/web-next/package.json', 'utf8')) as {
+  const packageJson = JSON.parse(await readFile('apps/web/package.json', 'utf8')) as {
     dependencies?: Record<string, string>;
   };
   assert.equal(packageJson.dependencies?.['@novel-tool/reader-engine'], '2.9.6');
@@ -130,7 +124,7 @@ test('web-next declares its reader-engine workspace dependency', async () => {
 
 test('reader preference normalization rejects invalid stored values and clamps brightness', async () => {
   const { normalizeReaderPreferences } =
-    await import('../../apps/web-next/src/features/reader-preferences/model/preferences.ts');
+    await import('../../apps/web/src/features/reader-preferences/model/preferences.ts');
   assert.deepEqual(
     normalizeReaderPreferences({
       fontSize: 'huge',

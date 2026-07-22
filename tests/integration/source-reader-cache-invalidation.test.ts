@@ -3,11 +3,11 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
-import { MemoryReaderCache } from '../../apps/api/src/modules/source-reader/infrastructure/cache/memory-reader.cache.ts';
-import { SqliteReaderCache } from '../../apps/api/src/modules/source-reader/infrastructure/cache/sqlite-reader.cache.ts';
-import { SourceReaderInvalidationService } from '../../apps/api/src/modules/source-reader/application/services/source-reader-invalidation.service.ts';
-import type { ReaderCacheMetadata } from '../../apps/api/src/modules/source-reader/application/ports/reader-cache.port.ts';
+import { createSqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
+import { MemoryReaderCache } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/cache/memory-reader.cache.ts';
+import { SqliteReaderCache } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/cache/sqlite-reader.cache.ts';
+import { SourceReaderInvalidationService } from '../../apps/api-legacy/src/modules/source-reader/application/services/source-reader-invalidation.service.ts';
+import type { ReaderCacheMetadata } from '../../apps/api-legacy/src/modules/source-reader/application/ports/reader-cache.port.ts';
 
 function metadata(
   scope: ReaderCacheMetadata['scope'],

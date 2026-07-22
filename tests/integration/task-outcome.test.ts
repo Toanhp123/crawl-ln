@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { SqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
-import { CrawlTaskEntity } from '../../apps/api/src/modules/task/domain/entities/task.entity.ts';
+import { SqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
+import { CrawlTaskEntity } from '../../apps/api-legacy/src/modules/task/domain/entities/task.entity.ts';
 
 test('crawl task completion derives success partial and failure outcomes', () => {
   const base = CrawlTaskEntity.createQueued({

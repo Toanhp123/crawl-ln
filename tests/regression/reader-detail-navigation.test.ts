@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const router = readFileSync('apps/web/src/app/router/AppRouter.tsx', 'utf8');
-const chapterList = readFileSync('apps/web/src/entities/chapter/ui/ChapterList.tsx', 'utf8');
+const router = readFileSync('apps/web-legacy/src/app/router/AppRouter.tsx', 'utf8');
+const chapterList = readFileSync('apps/web-legacy/src/entities/chapter/ui/ChapterList.tsx', 'utf8');
 
 test('novel overview stays mounted while immersive reader is a nested overlay', () => {
   assert.match(router, /path="\/library\/:novelId" element=\{<NovelDetailRoute \/>\}/);

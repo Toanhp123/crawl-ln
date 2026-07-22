@@ -14,16 +14,16 @@ const verificationStepNames = [
   'check:docs',
   'check:current-reference',
   'build:current-reference',
-  'check:api-next-arch',
-  'check:web-next-arch',
-  'check:web-next-contracts',
+  'check:arch',
+  'check:web-arch',
+  'check:web-contracts',
   'check:reader-engine-arch',
-  'check:next-types',
-  'build:next',
+  'check:types',
+  'build',
   'contract',
   'regression',
   'integration',
-  'e2e:web-next'
+  'e2e'
 ];
 
 function sha256(content) {

@@ -1,6 +1,6 @@
 import { BookOpenText } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '../../../shared/lib';
 
 export function NovelCover({
   title,

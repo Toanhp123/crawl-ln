@@ -1,10 +1,11 @@
-import type { SqliteDatabase } from '../../../../shared/database/sqlite.js';
+import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import type {
   AuthChallengeHandle,
   AuthChallengeRepository
 } from '../../application/ports/auth-challenge.repository.js';
 import type { SealedSecret, SecretVault } from '../../application/ports/secret-vault.port.js';
 import { sealJson, unsealJson } from './encrypted-json.js';
+import { sqliteUpsertUpdate } from './sqlite-syntax.js';
 
 interface ChallengeRow {
   id: string;
@@ -62,7 +63,7 @@ export class SqliteAuthChallengeRepository implements AuthChallengeRepository {
           type, status, encrypted_state, encryption_metadata_json,
           expires_at, created_at
         ) VALUES(?,?,?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(id) DO UPDATE SET
+        ON CONFLICT(id) ${sqliteUpsertUpdate}
           plugin_id=excluded.plugin_id,
           credential_profile_id=excluded.credential_profile_id,
           network_profile_id=excluded.network_profile_id,

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BackupMaintenanceCoordinator } from '../../apps/api-next/src/platform/lifecycle/backup-maintenance.coordinator.ts';
+import { BackupMaintenanceCoordinator } from '../../apps/api/src/platform/lifecycle/backup-maintenance.coordinator.ts';
 
 test('backup maintenance quiesces queue and scheduler around restore work', async () => {
   const trace: string[] = [];

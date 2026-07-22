@@ -1,4 +1,4 @@
-import type { CrawlTask } from './types';
+import type { CrawlTask } from '../api/task-api';
 
 type OutcomeTranslator = (
   key:

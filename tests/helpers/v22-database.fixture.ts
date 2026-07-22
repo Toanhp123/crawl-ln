@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import {
   CURRENT_SCHEMA_VERSION,
   SqliteDatabase
-} from '../../apps/api/src/shared/database/sqlite.ts';
+} from '../../apps/api-legacy/src/shared/database/sqlite.ts';
 
 export interface V22Fixture {
   databasePath: string;

@@ -1,1 +1,1 @@
-export * from './ui/SourceReaderOverview';
+export { SourceReaderOverview } from './ui/SourceReaderOverview';

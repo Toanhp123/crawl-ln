@@ -1,9 +1,9 @@
-import type { Novel } from '@novel-tool/shared';
 import { BookOpen, Clock3, Play } from 'lucide-react';
-import type { ReadingHistoryEntry } from '@/features/read-chapter/model/readingContinuityStorage';
-import { NovelCover } from '@/entities/novel/ui/NovelCover';
+import type { Novel } from '@/entities/novel';
+import type { ReadingHistoryEntry } from '@/features/read-chapter';
+import { useI18n } from '@/shared/i18n';
 import { Button, Card, Progress, Text } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { NovelCover } from '@/entities/novel';
 
 export function ContinueReadingHero({
   readingHistory,
@@ -21,6 +21,7 @@ export function ContinueReadingHero({
     0,
     Math.min(100, Math.round((readingHistory.bookProgress ?? readingHistory.scrollRatio) * 100))
   );
+
   return (
     <Card
       padding="lg"
@@ -49,10 +50,10 @@ export function ContinueReadingHero({
           </button>
           <Text variant="supporting" tone="muted" className="mt-2 inline-flex items-center gap-1.5">
             <BookOpen size={15} />
-            {t('common.chapter')} {readingHistory.chapterIndex}
+            {t('common.chapter')} {number(readingHistory.chapterIndex)}
           </Text>
           <div className="mt-3">
-            <Progress value={progress} />
+            <Progress value={progress} label={t('library.card.readingProgress')} />
             <div className="mt-1.5 flex items-center justify-between gap-2">
               <Text variant="caption" tone="muted">
                 {t('reader.progressPercent', { value: number(progress) })}

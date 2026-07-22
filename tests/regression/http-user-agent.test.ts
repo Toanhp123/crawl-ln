@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildAxiosRequestConfig } from '../../apps/api/src/shared/infrastructure/http/axios-http-client.adapter.js';
+import { buildAxiosRequestConfig } from '../../apps/api-legacy/src/shared/infrastructure/http/axios-http-client.adapter.js';
 
 test('uses a deterministic mobile browser user agent for crawler requests', () => {
   const first = buildAxiosRequestConfig();

@@ -7,9 +7,9 @@ const read = (path: string) => readFile(new URL(path, root), 'utf8');
 
 test('library owns novel and content search scopes', async () => {
   const [page, model, content] = await Promise.all([
-    read('apps/web/src/pages/library/ui/LibraryPage.tsx'),
-    read('apps/web/src/pages/library/model/useLibraryPage.ts'),
-    read('apps/web/src/features/search-library/ui/LibraryContentSearch.tsx')
+    read('apps/web-legacy/src/pages/library/ui/LibraryPage.tsx'),
+    read('apps/web-legacy/src/pages/library/model/useLibraryPage.ts'),
+    read('apps/web-legacy/src/features/search-library/ui/LibraryContentSearch.tsx')
   ]);
 
   assert.match(model, /searchScope/);
@@ -23,9 +23,9 @@ test('library owns novel and content search scopes', async () => {
 
 test('standalone search destination is removed', async () => {
   const [router, header, tabs] = await Promise.all([
-    read('apps/web/src/app/router/AppRouter.tsx'),
-    read('apps/web/src/widgets/app-header/ui/AppHeader.tsx'),
-    read('apps/web/src/widgets/bottom-tabs/ui/AppBottomTabs.tsx')
+    read('apps/web-legacy/src/app/router/AppRouter.tsx'),
+    read('apps/web-legacy/src/widgets/app-header/ui/AppHeader.tsx'),
+    read('apps/web-legacy/src/widgets/bottom-tabs/ui/AppBottomTabs.tsx')
   ]);
 
   assert.doesNotMatch(router, /pages\/search|path="\/search"/);

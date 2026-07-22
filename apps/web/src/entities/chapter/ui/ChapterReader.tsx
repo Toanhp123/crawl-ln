@@ -1,7 +1,7 @@
-import type { Chapter } from '@novel-tool/shared';
-import { EmptyState } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { paragraphDomId } from '../lib/paragraphDomId';
+import type { Chapter } from '../api/chapter-api';
+import { EmptyState } from '../../../shared/ui';
+import { useI18n } from '../../../shared/i18n';
+import { paragraphDomId } from '../lib/paragraph-dom-id';
 
 function displayTitle(chapter: Chapter, chapterLabel: string) {
   const title = chapter.title?.trim();

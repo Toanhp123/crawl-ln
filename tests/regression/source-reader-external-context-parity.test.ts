@@ -4,9 +4,9 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import test from 'node:test';
-import { CheerioHtmlParserAdapter } from '../../apps/api/src/shared/infrastructure/html/cheerio-html-parser.adapter.ts';
-import { PluginContextFactory } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/plugin-context.factory.ts';
-import { ExternalProcessSupervisor } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts';
+import { CheerioHtmlParserAdapter } from '../../apps/api-legacy/src/shared/infrastructure/html/cheerio-html-parser.adapter.ts';
+import { PluginContextFactory } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/plugin-context.factory.ts';
+import { ExternalProcessSupervisor } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts';
 
 const deadline = () => new Date(Date.now() + 10_000).toISOString();
 

@@ -8,12 +8,10 @@ import {
   useRef,
   useState
 } from 'react';
-import { Card, LoadingState, Text } from '@/shared/ui';
+import { useI18n } from '../i18n';
+import { Card, LoadingState, Text } from '../ui';
 
-type MaintenanceOptions = {
-  reloadOnSuccess?: boolean;
-};
-
+type MaintenanceOptions = { reloadOnSuccess?: boolean };
 type MaintenanceContextValue = {
   active: boolean;
   runMaintenance<T>(
@@ -26,14 +24,13 @@ type MaintenanceContextValue = {
 const MaintenanceContext = createContext<MaintenanceContextValue | null>(null);
 
 export function MaintenanceProvider({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   const [label, setLabel] = useState<string | null>(null);
   const runningRef = useRef(false);
 
   useEffect(() => {
     if (!label) return;
-    const preventUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-    };
+    const preventUnload = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener('beforeunload', preventUnload);
     return () => window.removeEventListener('beforeunload', preventUnload);
   }, [label]);
@@ -44,7 +41,7 @@ export function MaintenanceProvider({ children }: { children: ReactNode }) {
       operation: () => Promise<T>,
       options?: MaintenanceOptions
     ) => {
-      if (runningRef.current) throw new Error('A maintenance operation is already running');
+      if (runningRef.current) throw new Error(t('maintenance.busy'));
       runningRef.current = true;
       setLabel(operationLabel);
       try {
@@ -58,7 +55,7 @@ export function MaintenanceProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    []
+    [t]
   );
 
   const value = useMemo(
@@ -87,7 +84,7 @@ export function MaintenanceProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useMaintenanceOperation() {
+export function useMaintenanceOperation(): MaintenanceContextValue {
   const context = useContext(MaintenanceContext);
   if (!context) throw new Error('useMaintenanceOperation must be used inside MaintenanceProvider');
   return context;

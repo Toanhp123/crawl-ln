@@ -1,7 +1,7 @@
-import type { Novel } from '@novel-tool/shared';
+import type { Novel } from '../model/types';
 import { AlertTriangle, BookOpen, Download, Play } from 'lucide-react';
-import { Badge, Button, Card, Progress, Text } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { Badge, Button, Card, Progress, Text } from '../../../shared/ui';
+import { useI18n } from '../../../shared/i18n';
 import { NovelCover } from './NovelCover';
 
 export type NovelReadingProgress = {

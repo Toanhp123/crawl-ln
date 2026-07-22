@@ -5,12 +5,12 @@ import test from 'node:test';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 test('principal screens compose Apple Books Compact primitives', () => {
-  const activity = read('apps/web/src/pages/activity/ui/ActivityPage.tsx');
-  const addNovel = read('apps/web/src/app/layouts/GlobalAddNovelOverlay.tsx');
-  const library = read('apps/web/src/pages/library/ui/LibraryPage.tsx');
-  const novelCard = read('apps/web/src/entities/novel/ui/NovelLibraryCard.tsx');
-  const readerToolbar = read('apps/web/src/widgets/reader-toolbar/ui/ReaderToolbar.tsx');
-  const readerBottom = read('apps/web/src/widgets/reader-bottom-bar/ui/ReaderBottomBar.tsx');
+  const activity = read('apps/web-legacy/src/pages/activity/ui/ActivityPage.tsx');
+  const addNovel = read('apps/web-legacy/src/app/layouts/GlobalAddNovelOverlay.tsx');
+  const library = read('apps/web-legacy/src/pages/library/ui/LibraryPage.tsx');
+  const novelCard = read('apps/web-legacy/src/entities/novel/ui/NovelLibraryCard.tsx');
+  const readerToolbar = read('apps/web-legacy/src/widgets/reader-toolbar/ui/ReaderToolbar.tsx');
+  const readerBottom = read('apps/web-legacy/src/widgets/reader-bottom-bar/ui/ReaderBottomBar.tsx');
 
   assert.match(activity, /<Section/);
   assert.match(activity, /<EmptyState/);
@@ -30,8 +30,8 @@ test('principal screens compose Apple Books Compact primitives', () => {
 
 test('migrated screen chrome uses canonical icon scale', () => {
   const files = [
-    'apps/web/src/widgets/reader-toolbar/ui/ReaderToolbar.tsx',
-    'apps/web/src/widgets/reader-bottom-bar/ui/ReaderBottomBar.tsx'
+    'apps/web-legacy/src/widgets/reader-toolbar/ui/ReaderToolbar.tsx',
+    'apps/web-legacy/src/widgets/reader-bottom-bar/ui/ReaderBottomBar.tsx'
   ]
     .map(read)
     .join('\n');

@@ -6,7 +6,7 @@ import type { RealtimeEvent } from '@novel-tool/shared';
 import {
   createRealtimeInvalidationQueue,
   getRealtimePollingInterval
-} from '../../apps/web/src/shared/realtime/realtimeInvalidation.ts';
+} from '../../apps/web-legacy/src/shared/realtime/realtimeInvalidation.ts';
 
 const read = (path: string) => readFileSync(resolve(path), 'utf8');
 
@@ -57,17 +57,17 @@ test('connected realtime disables polling and disconnected realtime uses fallbac
 });
 
 test('query provider owns realtime lifecycle and polling hooks use realtime status', () => {
-  const provider = read('apps/web/src/app/providers/QueryProvider.tsx');
+  const provider = read('apps/web-legacy/src/app/providers/QueryProvider.tsx');
   assert.match(provider, /RealtimeProvider/);
 
   const pollingFiles = [
-    'apps/web/src/entities/task/model/useTasks.ts',
-    'apps/web/src/entities/task/model/useTaskSummary.ts',
-    'apps/web/src/pages/library/model/useLibraryPage.ts',
-    'apps/web/src/pages/task-detail/model/useTaskDetailPage.ts',
-    'apps/web/src/pages/novel-detail/model/useNovelDetailPage.ts',
-    'apps/web/src/pages/settings/model/useSettingsPage.tsx',
-    'apps/web/src/features/auto-update/model/useAutoUpdate.ts'
+    'apps/web-legacy/src/entities/task/model/useTasks.ts',
+    'apps/web-legacy/src/entities/task/model/useTaskSummary.ts',
+    'apps/web-legacy/src/pages/library/model/useLibraryPage.ts',
+    'apps/web-legacy/src/pages/task-detail/model/useTaskDetailPage.ts',
+    'apps/web-legacy/src/pages/novel-detail/model/useNovelDetailPage.ts',
+    'apps/web-legacy/src/pages/settings/model/useSettingsPage.tsx',
+    'apps/web-legacy/src/features/auto-update/model/useAutoUpdate.ts'
   ];
   for (const path of pollingFiles) {
     const source = read(path);

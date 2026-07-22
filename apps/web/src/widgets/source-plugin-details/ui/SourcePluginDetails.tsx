@@ -1,8 +1,7 @@
-import { useNavigate } from 'react-router-dom';
 import {
-  useSourcePluginDiagnosticsQuery,
-  useSourcePluginHealthQuery,
-  useSourcePluginsQuery
+  useSourcePluginDiagnostics,
+  useSourcePluginHealth,
+  useSourcePlugins
 } from '@/entities/source-plugin';
 import {
   RemoveSourcePluginButton,
@@ -10,19 +9,20 @@ import {
 } from '@/features/manage-source-plugins';
 import { ReviewSourcePermissions } from '@/features/review-source-permissions';
 import { TestSourcePluginButton } from '@/features/test-source-plugin';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n';
 import { Badge, EmptyState, ErrorBanner, LoadingState, Panel, Section, Text } from '@/shared/ui';
 
 export function SourcePluginDetails({ pluginId }: { pluginId: string }) {
   const { status, t } = useI18n();
-  const navigate = useNavigate();
-  const plugins = useSourcePluginsQuery();
+  const plugins = useSourcePlugins();
   const plugin = plugins.data?.find((item) => item.id === pluginId);
-  const diagnostics = useSourcePluginDiagnosticsQuery(pluginId);
-  const health = useSourcePluginHealthQuery(pluginId);
+  const diagnostics = useSourcePluginDiagnostics(pluginId);
+  const health = useSourcePluginHealth(pluginId);
+
   if (plugins.isLoading) return <LoadingState />;
   if (plugins.error) return <ErrorBanner error={plugins.error} />;
   if (!plugin) return <EmptyState title={t('sources.profile.notFound')} />;
+
   return (
     <div className="space-y-5">
       <Panel tone="default" padding="lg" className="space-y-4">
@@ -68,10 +68,7 @@ export function SourcePluginDetails({ pluginId }: { pluginId: string }) {
         <SourcePluginEnableSwitch plugin={plugin} />
         <div className="flex flex-wrap gap-2">
           <TestSourcePluginButton pluginId={plugin.id} />
-          <RemoveSourcePluginButton
-            pluginId={plugin.id}
-            onRemoved={() => navigate('/sources?section=plugins')}
-          />
+          <RemoveSourcePluginButton pluginId={plugin.id} />
         </div>
       </Panel>
       <Section title={t('sources.plugins.diagnostics')}>

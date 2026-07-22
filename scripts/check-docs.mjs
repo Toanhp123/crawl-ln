@@ -10,7 +10,7 @@ const RETIRED_PATTERNS = [
   /\bsource-profiles\.json\b/i
 ];
 const REQUIRED_ENTRYPOINTS = ['README.md', 'docs/README.md'];
-const SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules']);
+const SKIPPED_DIRECTORIES = new Set(['.artifacts', '.git', 'node_modules']);
 
 async function exists(path) {
   try {

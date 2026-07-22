@@ -4,8 +4,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import test from 'node:test';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
-import { ExternalProcessSupervisor } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { ExternalProcessSupervisor } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts';
 
 async function createPlugin(): Promise<string> {
   const root = await mkdtemp(resolve(tmpdir(), 'source-plugin-sdk-errors-'));

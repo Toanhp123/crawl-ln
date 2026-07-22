@@ -1,5 +1,5 @@
-import { env } from '../../../../../../shared/config/env.js';
-import { sanitizeChapterText } from '../../../../../../shared/text/chapter-content-sanitizer.js';
+import { novelCoolMinimumChapterContentChars } from './novelcool.config.js';
+import { sanitizeChapterText } from './novelcool-content-sanitizer.js';
 import { SourceReaderError } from '../../../../domain/errors/source-reader.error.js';
 import type {
   PluginContext,
@@ -105,118 +105,130 @@ function extractChapters(
   return ordered.map((chapter, index) => ({ ...chapter, index: index + 1 }));
 }
 
-export const novelCoolPlugin: SourceReaderPlugin = {
-  manifest: novelCoolManifest,
+export interface NovelCoolPluginOptions {
+  minimumChapterContentChars?: number;
+}
 
-  async identify({ url }) {
-    const normalized = new URL(url);
-    normalized.hostname = normalized.hostname.toLowerCase().replace(/^www\./, '');
-    return {
-      data: {
-        normalizedUrl: normalized.toString(),
-        domain: normalized.hostname,
-        pageType: normalized.pathname.includes('/chapter/') ? 'chapter' : 'novel'
-      }
-    };
-  },
+export function createNovelCoolPlugin(options: NovelCoolPluginOptions = {}): SourceReaderPlugin {
+  const minimumChapterContentChars = Math.max(
+    1,
+    Math.trunc(options.minimumChapterContentChars ?? novelCoolMinimumChapterContentChars)
+  );
+  return {
+    manifest: novelCoolManifest,
 
-  async readMetadata({ url }, context) {
-    const response = await context.http.get(url);
-    const finalUrl = response.url || url;
-    const document = context.html.load(response.data);
-    const diagnostics = classifyNovelCoolPage({ html: response.data, finalUrl, document });
-    assertUsablePage(diagnostics, url);
-    const title = firstText(document, ['h1.novel-title', 'h1', '.bookinfo h1']);
-    if (title.length < 2) {
-      throw new SourceReaderError('PLUGIN_RESULT_INVALID', 'NovelCool title was not found', {
-        retryable: false,
-        fallbackAllowed: true,
-        details: { url, ...diagnostics }
-      });
-    }
+    async identify({ url }) {
+      const normalized = new URL(url);
+      normalized.hostname = normalized.hostname.toLowerCase().replace(/^www\./, '');
+      return {
+        data: {
+          normalizedUrl: normalized.toString(),
+          domain: normalized.hostname,
+          pageType: normalized.pathname.includes('/chapter/') ? 'chapter' : 'novel'
+        }
+      };
+    },
 
-    const cover = firstAttr(document, ['img.book-cover', '.bookinfo img', '.cover img'], 'src');
-    return {
-      data: {
-        title,
-        sourceUrl: context.url.normalize(finalUrl),
-        sourceName: 'NovelCool',
-        author: firstText(document, ['.author', '.bookinfo .author']) || undefined,
-        coverUrl: cover ? context.url.resolve(cover, finalUrl) : undefined,
-        description: firstText(document, ['.summary', '.description', '#summary']) || undefined
-      },
-      cacheHints: {
-        scope: 'public',
-        ttlMs: 30 * 60_000,
-        staleWhileRevalidateMs: 6 * 60 * 60_000
-      }
-    };
-  },
-
-  async readChapterList({ url, cursor }, context) {
-    if (cursor) {
-      throw new SourceReaderError('CURSOR_INVALID', 'NovelCool uses module-managed cursors', {
-        retryable: false,
-        fallbackAllowed: false
-      });
-    }
-
-    const response = await context.http.get(url);
-    const finalUrl = response.url || url;
-    const document = context.html.load(response.data);
-    const diagnostics = classifyNovelCoolPage({ html: response.data, finalUrl, document });
-    assertUsablePage(diagnostics, url);
-    const candidates = extractChapters(document, context, finalUrl);
-    if (candidates.length === 0) {
-      throw new SourceReaderError('PLUGIN_RESULT_INVALID', 'NovelCool chapter list is empty', {
-        retryable: false,
-        fallbackAllowed: true,
-        details: { url, ...diagnostics }
-      });
-    }
-
-    return {
-      data: { items: candidates, hasMore: false },
-      cacheHints: {
-        scope: 'public',
-        ttlMs: 5 * 60_000,
-        staleWhileRevalidateMs: 60 * 60_000
-      }
-    };
-  },
-
-  async readChapterContent({ url }, context) {
-    const response = await context.http.get(url);
-    const finalUrl = response.url || url;
-    const document = context.html.load(response.data);
-    const diagnostics = classifyNovelCoolPage({ html: response.data, finalUrl, document });
-    assertUsablePage(diagnostics, url);
-    const title = firstText(document, ['h1.chapter-title', '.chapter-title', 'h1']) || 'Chapter';
-    document.remove(
-      'script,style,noscript,nav,header,footer,aside,form,button,.ads,.advertisement'
-    );
-    const rawText = chapterContent(document);
-    const cleanText = sanitizeChapterText(rawText, title);
-    if (cleanText.length < env.minChapterContentChars) {
-      throw new SourceReaderError(
-        'PLUGIN_RESULT_INVALID',
-        'NovelCool chapter content is too short',
-        {
+    async readMetadata({ url }, context) {
+      const response = await context.http.get(url);
+      const finalUrl = response.url || url;
+      const document = context.html.load(response.data);
+      const diagnostics = classifyNovelCoolPage({ html: response.data, finalUrl, document });
+      assertUsablePage(diagnostics, url);
+      const title = firstText(document, ['h1.novel-title', 'h1', '.bookinfo h1']);
+      if (title.length < 2) {
+        throw new SourceReaderError('PLUGIN_RESULT_INVALID', 'NovelCool title was not found', {
           retryable: false,
           fallbackAllowed: true,
-          details: {
-            url,
-            ...diagnostics,
-            minChapterContentChars: env.minChapterContentChars,
-            actualChars: cleanText.length
-          }
-        }
-      );
-    }
+          details: { url, ...diagnostics }
+        });
+      }
 
-    return {
-      data: { title, url: context.url.normalize(finalUrl), rawText, cleanText },
-      cacheHints: { scope: 'public', ttlMs: 30 * 24 * 60 * 60_000, immutable: true }
-    };
-  }
-};
+      const cover = firstAttr(document, ['img.book-cover', '.bookinfo img', '.cover img'], 'src');
+      return {
+        data: {
+          title,
+          sourceUrl: context.url.normalize(finalUrl),
+          sourceName: 'NovelCool',
+          author: firstText(document, ['.author', '.bookinfo .author']) || undefined,
+          coverUrl: cover ? context.url.resolve(cover, finalUrl) : undefined,
+          description: firstText(document, ['.summary', '.description', '#summary']) || undefined
+        },
+        cacheHints: {
+          scope: 'public',
+          ttlMs: 30 * 60_000,
+          staleWhileRevalidateMs: 6 * 60 * 60_000
+        }
+      };
+    },
+
+    async readChapterList({ url, cursor }, context) {
+      if (cursor) {
+        throw new SourceReaderError('CURSOR_INVALID', 'NovelCool uses module-managed cursors', {
+          retryable: false,
+          fallbackAllowed: false
+        });
+      }
+
+      const response = await context.http.get(url);
+      const finalUrl = response.url || url;
+      const document = context.html.load(response.data);
+      const diagnostics = classifyNovelCoolPage({ html: response.data, finalUrl, document });
+      assertUsablePage(diagnostics, url);
+      const candidates = extractChapters(document, context, finalUrl);
+      if (candidates.length === 0) {
+        throw new SourceReaderError('PLUGIN_RESULT_INVALID', 'NovelCool chapter list is empty', {
+          retryable: false,
+          fallbackAllowed: true,
+          details: { url, ...diagnostics }
+        });
+      }
+
+      return {
+        data: { items: candidates, hasMore: false },
+        cacheHints: {
+          scope: 'public',
+          ttlMs: 5 * 60_000,
+          staleWhileRevalidateMs: 60 * 60_000
+        }
+      };
+    },
+
+    async readChapterContent({ url }, context) {
+      const response = await context.http.get(url);
+      const finalUrl = response.url || url;
+      const document = context.html.load(response.data);
+      const diagnostics = classifyNovelCoolPage({ html: response.data, finalUrl, document });
+      assertUsablePage(diagnostics, url);
+      const title = firstText(document, ['h1.chapter-title', '.chapter-title', 'h1']) || 'Chapter';
+      document.remove(
+        'script,style,noscript,nav,header,footer,aside,form,button,.ads,.advertisement'
+      );
+      const rawText = chapterContent(document);
+      const cleanText = sanitizeChapterText(rawText, title);
+      if (cleanText.length < minimumChapterContentChars) {
+        throw new SourceReaderError(
+          'PLUGIN_RESULT_INVALID',
+          'NovelCool chapter content is too short',
+          {
+            retryable: false,
+            fallbackAllowed: true,
+            details: {
+              url,
+              ...diagnostics,
+              minChapterContentChars: minimumChapterContentChars,
+              actualChars: cleanText.length
+            }
+          }
+        );
+      }
+
+      return {
+        data: { title, url: context.url.normalize(finalUrl), rawText, cleanText },
+        cacheHints: { scope: 'public', ttlMs: 30 * 24 * 60 * 60_000, immutable: true }
+      };
+    }
+  };
+}
+
+export const novelCoolPlugin = createNovelCoolPlugin();

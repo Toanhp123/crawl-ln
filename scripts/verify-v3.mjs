@@ -9,8 +9,8 @@ const execFileAsync = promisify(execFile);
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const tsc = join(projectRoot, 'node_modules', 'typescript', 'bin', 'tsc');
 const playwright = join(projectRoot, 'node_modules', '@playwright', 'test', 'cli.js');
-const webNextRoot = join(projectRoot, 'apps', 'web-next');
-const vite = join(webNextRoot, 'node_modules', 'vite', 'bin', 'vite.js');
+const webRoot = join(projectRoot, 'apps', 'web');
+const vite = join(webRoot, 'node_modules', 'vite', 'bin', 'vite.js');
 
 function command(name, args, options = {}) {
   return { type: 'command', name, command: process.execPath, args, ...options };
@@ -26,22 +26,20 @@ export const verificationSteps = [
   command('check:docs', [join(projectRoot, 'scripts', 'check-docs.mjs')]),
   command('check:current-reference', [join(projectRoot, 'scripts', 'check-prepared.mjs')]),
   command('build:current-reference', [join(projectRoot, 'scripts', 'build-prepared.mjs')]),
-  command('check:api-next-arch', [join(projectRoot, 'scripts', 'check-api-next-architecture.mjs')]),
-  command('check:web-next-arch', [join(projectRoot, 'scripts', 'check-web-next-architecture.mjs')]),
-  command('check:web-next-contracts', [
-    join(projectRoot, 'scripts', 'check-web-next-contracts.mjs')
-  ]),
+  command('check:arch', [join(projectRoot, 'scripts', 'check-api-architecture.mjs')]),
+  command('check:web-arch', [join(projectRoot, 'scripts', 'check-web-architecture.mjs')]),
+  command('check:web-contracts', [join(projectRoot, 'scripts', 'check-web-contracts.mjs')]),
   command('check:reader-engine-arch', [
     join(projectRoot, 'scripts', 'check-reader-engine-architecture.mjs')
   ]),
-  commandGroup('check:next-types', [
-    command('check:api-next', [
+  commandGroup('check:types', [
+    command('check:api', [
       tsc,
       '-p',
-      join(projectRoot, 'apps', 'api-next', 'tsconfig.json'),
+      join(projectRoot, 'apps', 'api', 'tsconfig.json'),
       '--noEmit'
     ]),
-    command('check:web-next', [tsc, '-p', join(webNextRoot, 'tsconfig.json'), '--noEmit']),
+    command('check:web', [tsc, '-p', join(webRoot, 'tsconfig.json'), '--noEmit']),
     command('check:reader-engine', [
       tsc,
       '-p',
@@ -49,19 +47,14 @@ export const verificationSteps = [
       '--noEmit'
     ])
   ]),
-  commandGroup('build:next', [
-    command('build:api-next', [join(projectRoot, 'apps', 'api-next', 'scripts', 'build.mjs')]),
-    command('build:web-next', [vite, 'build'], { cwd: webNextRoot })
+  commandGroup('build', [
+    command('build:api', [join(projectRoot, 'apps', 'api', 'scripts', 'build.mjs')]),
+    command('build:web', [vite, 'build'], { cwd: webRoot })
   ]),
   { type: 'suite', name: 'contract', suite: 'contract' },
   { type: 'suite', name: 'regression', suite: 'regression' },
   { type: 'suite', name: 'integration', suite: 'integration' },
-  command('e2e:web-next', [
-    playwright,
-    'test',
-    '--config',
-    join(projectRoot, 'playwright.web-next.config.ts')
-  ])
+  command('e2e', [playwright, 'test', '--config', join(projectRoot, 'playwright.config.ts')])
 ];
 
 function runCommand(step) {

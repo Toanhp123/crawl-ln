@@ -1,26 +1,3 @@
-export type {
-  CacheScope,
-  ChapterContent,
-  ChapterSummary,
-  IdentifyRequest,
-  LatestUpdate,
-  LatestUpdatesRequest,
-  NovelMetadata,
-  NovelSearchResult,
-  Page,
-  ReadChapterContentRequest,
-  ReadChapterListRequest,
-  ReadMetadataRequest,
-  SearchSourceRequest,
-  SourceCapability,
-  SourceIdentity,
-  SourceReaderRequestContext,
-  SourceReaderResult,
-  SourceReaderWarning,
-  StreamChapterListRequest,
-  VersionedExtensionValue
-} from './source-reader.models.js';
-
 import type {
   ChapterContent,
   ChapterSummary,
@@ -38,6 +15,7 @@ import type {
   SourceReaderResult,
   StreamChapterListRequest
 } from './source-reader.models.js';
+
 export interface SourceReaderApi {
   identify(request: IdentifyRequest): Promise<SourceReaderResult<SourceIdentity>>;
   readMetadata(request: ReadMetadataRequest): Promise<SourceReaderResult<NovelMetadata>>;
@@ -147,20 +125,12 @@ export interface SourceReaderManagementApi {
     }>;
     remove: SourceReaderExecutor<{ actor: SourceReaderActor; credentialId: string }>;
     login: SourceReaderExecutor<
-      {
-        actor: SourceReaderActor;
-        credentialId: string;
-        networkProfileId?: string;
-      },
+      { actor: SourceReaderActor; credentialId: string; networkProfileId?: string },
       SourceReaderAuthenticationResult
     >;
     logout: SourceReaderExecutor<{ actor: SourceReaderActor; credentialId: string }>;
     test: SourceReaderExecutor<
-      {
-        actor: SourceReaderActor;
-        credentialId: string;
-        networkProfileId?: string;
-      },
+      { actor: SourceReaderActor; credentialId: string; networkProfileId?: string },
       SourceReaderAuthenticationResult
     >;
   };
@@ -187,13 +157,11 @@ export interface SourceReaderManagementApi {
     list: SourceReaderExecutor<{ actor: SourceReaderActor }, unknown[]>;
     get: SourceReaderExecutor<{ actor: SourceReaderActor; challengeId: string }>;
     respond: SourceReaderExecutor<
-      {
-        actor: SourceReaderActor;
-        challengeId: string;
-        response: Record<string, unknown>;
-      },
+      { actor: SourceReaderActor; challengeId: string; response: Record<string, unknown> },
       SourceReaderAuthenticationResult
     >;
     cancel: SourceReaderExecutor<{ actor: SourceReaderActor; challengeId: string }>;
   };
 }
+
+export type * from './source-reader.models.js';

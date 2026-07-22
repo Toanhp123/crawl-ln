@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
+import { createSqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
 
 test('database rejects invalid statuses and task counters', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'novel-tool-integrity-'));

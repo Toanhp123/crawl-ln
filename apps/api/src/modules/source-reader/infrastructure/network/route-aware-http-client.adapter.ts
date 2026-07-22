@@ -3,14 +3,44 @@ import type {
   HttpClientPort,
   HttpRequestOptions,
   HttpResponse
-} from '../../../../shared/ports/http-client.port.js';
-import { buildAxiosRequestConfig } from '../../../../shared/infrastructure/http/axios-http-client.adapter.js';
+} from '../../application/ports/runtime-support.ports.js';
 import type {
   RouteAwareHttpClientPort,
   RoutedHttpRequestOptions
 } from '../../application/ports/network-route.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import { ProxyAgentFactory } from './proxy-agent.factory.js';
+
+const DEFAULT_BROWSER_USER_AGENT =
+  'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126 Mobile Safari/537.36';
+const DEFAULT_TIMEOUT_MS = 15_000;
+const MAX_RESPONSE_BYTES = 20 * 1024 * 1024;
+
+interface RouteAwareHttpClientLimits {
+  requestTimeoutMs?: number;
+  maxResponseBytes?: number;
+}
+
+function buildAxiosRequestConfig(
+  options: HttpRequestOptions | undefined,
+  limits: Required<RouteAwareHttpClientLimits>
+): AxiosRequestConfig {
+  return {
+    timeout: options?.timeoutMs ?? limits.requestTimeoutMs,
+    signal: options?.signal,
+    maxRedirects: 0,
+    maxContentLength: limits.maxResponseBytes,
+    maxBodyLength: limits.maxResponseBytes,
+    validateStatus: (status) => status >= 200 && status < 300,
+    headers: {
+      'User-Agent': DEFAULT_BROWSER_USER_AGENT,
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      ...options?.headers
+    },
+    responseType: 'text',
+    transformResponse: [(data) => data]
+  };
+}
 
 function normalizeHeaders(headers: unknown): Record<string, string> {
   if (!headers || typeof headers !== 'object') return {};
@@ -40,7 +70,17 @@ function toResponse(
 }
 
 export class RouteAwareHttpClientAdapter implements HttpClientPort, RouteAwareHttpClientPort {
-  constructor(private readonly agents = new ProxyAgentFactory()) {}
+  private readonly limits: Required<RouteAwareHttpClientLimits>;
+
+  constructor(
+    private readonly agents = new ProxyAgentFactory(),
+    limits: RouteAwareHttpClientLimits = {}
+  ) {
+    this.limits = {
+      requestTimeoutMs: Math.max(1, limits.requestTimeoutMs ?? DEFAULT_TIMEOUT_MS),
+      maxResponseBytes: Math.max(1, limits.maxResponseBytes ?? MAX_RESPONSE_BYTES)
+    };
+  }
 
   get(url: string, options?: HttpRequestOptions) {
     return this.getRouted(url, { ...options, route: { kind: 'direct', identity: 'direct' } });
@@ -75,7 +115,7 @@ export class RouteAwareHttpClientAdapter implements HttpClientPort, RouteAwareHt
     url: string,
     options: RoutedHttpRequestOptions
   ) {
-    const config: AxiosRequestConfig = buildAxiosRequestConfig(options);
+    const config: AxiosRequestConfig = buildAxiosRequestConfig(options, this.limits);
     if (options.route.kind !== 'direct') {
       const agent = this.agents.get(options.route);
       config.httpAgent = agent;

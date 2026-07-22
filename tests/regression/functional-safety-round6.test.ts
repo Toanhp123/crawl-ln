@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { buildAxiosRequestConfig } from '../../apps/api/src/shared/infrastructure/http/axios-http-client.adapter.ts';
+import { buildAxiosRequestConfig } from '../../apps/api-legacy/src/shared/infrastructure/http/axios-http-client.adapter.ts';
 import {
   abortableSleep,
   computeRetryDelayMs
-} from '../../apps/api/src/modules/crawler/application/services/crawl-job-runner.service.ts';
-import { ExportPipelineService } from '../../apps/api/src/modules/export/application/services/export-pipeline.service.ts';
+} from '../../apps/api-legacy/src/modules/crawler/application/services/crawl-job-runner.service.ts';
+import { ExportPipelineService } from '../../apps/api-legacy/src/modules/export/application/services/export-pipeline.service.ts';
 
 const read = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
@@ -39,7 +39,7 @@ test('retry delay grows exponentially and can be aborted', async () => {
 });
 
 test('reader observes every prefetch promise', () => {
-  const source = read('apps/web/src/modules/reader/presentation/use-infinite-reader.ts');
+  const source = read('apps/web-legacy/src/modules/reader/presentation/use-infinite-reader.ts');
   assert.match(source, /function prefetchChapter/);
   assert.match(source, /source\.load\(novelId, chapter, signal\)\.catch\(\(\) => undefined\)/);
   assert.doesNotMatch(source, /if \(next\) void source\.load/);
@@ -93,7 +93,9 @@ test('export rejects a source larger than the configured memory budget', async (
 });
 
 test('pause persists pausing before aborting and waits for runner completion', () => {
-  const source = read('apps/api/src/modules/crawler/application/services/crawl-queue.service.ts');
+  const source = read(
+    'apps/api-legacy/src/modules/crawler/application/services/crawl-queue.service.ts'
+  );
   const update = source.indexOf('await this.tasks.update(this.tasks.markPausing');
   const abort = source.indexOf('this.controllers.get(taskId)?.abort()', update);
   const awaitProcess = source.indexOf('if (activeProcess) await activeProcess', abort);

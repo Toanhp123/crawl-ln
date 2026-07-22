@@ -72,16 +72,16 @@ function passedVerificationFixture() {
       'check:docs',
       'check:current-reference',
       'build:current-reference',
-      'check:api-next-arch',
-      'check:web-next-arch',
-      'check:web-next-contracts',
+      'check:arch',
+      'check:web-arch',
+      'check:web-contracts',
       'check:reader-engine-arch',
-      'check:next-types',
-      'build:next',
+      'check:types',
+      'build',
       'contract',
       'regression',
       'integration',
-      'e2e:web-next'
+      'e2e'
     ].map((name) => ({ name, durationMs: 10 })),
     passed: true
   } as const;
@@ -192,8 +192,8 @@ test('candidate API environment preserves the configured Source Reader master ke
   });
 
   assert.equal(environment.SOURCE_READER_MASTER_KEY, 'configured-key');
-  assert.equal(environment.NEXT_API_PORT, '31001');
-  assert.equal(environment.NEXT_STORAGE_DIR, 'D:/candidate-storage');
+  assert.equal(environment.PORT, '30001');
+  assert.equal(environment.STORAGE_DIR, 'D:/candidate-storage');
 });
 
 test('candidate redaction checks detect escaped Windows storage paths', () => {

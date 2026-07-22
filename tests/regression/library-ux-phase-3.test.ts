@@ -7,9 +7,9 @@ const read = (path: string) => readFile(new URL(path, root), 'utf8');
 
 test('library phase 3 uses card-first reading and import actions', async () => {
   const [page, card, grid] = await Promise.all([
-    read('apps/web/src/pages/library/ui/LibraryPage.tsx'),
-    read('apps/web/src/entities/novel/ui/NovelLibraryCard.tsx'),
-    read('apps/web/src/widgets/library-grid/ui/LibraryGrid.tsx')
+    read('apps/web-legacy/src/pages/library/ui/LibraryPage.tsx'),
+    read('apps/web-legacy/src/entities/novel/ui/NovelLibraryCard.tsx'),
+    read('apps/web-legacy/src/widgets/library-grid/ui/LibraryGrid.tsx')
   ]);
   assert.match(page, /ContinueReadingHero/);
   assert.match(page, /activeFilterChips/);
@@ -20,7 +20,7 @@ test('library phase 3 uses card-first reading and import actions', async () => {
 });
 
 test('library phase 3 distinguishes empty search and filter states', async () => {
-  const page = await read('apps/web/src/pages/library/ui/LibraryPage.tsx');
+  const page = await read('apps/web-legacy/src/pages/library/ui/LibraryPage.tsx');
   assert.match(page, /library\.empty\.initial/);
   assert.match(page, /library\.empty\.search/);
   assert.match(page, /library\.empty\.filter/);
@@ -31,7 +31,7 @@ test('library phase 3 distinguishes empty search and filter states', async () =>
 test('novel list read model exposes chapter progress fields', async () => {
   const [shared, repository] = await Promise.all([
     read('packages/shared/src/index.ts'),
-    read('apps/api/src/modules/novels/infrastructure/sqlite/novel-sqlite.repository.ts')
+    read('apps/api-legacy/src/modules/novels/infrastructure/sqlite/novel-sqlite.repository.ts')
   ]);
   assert.match(shared, /chapterCount\?: number/);
   assert.match(shared, /fetchedChapterCount\?: number/);

@@ -30,21 +30,16 @@
   --table-cell-x: var(--density-table-cell-x);
   --table-cell-y: var(--density-table-cell-y);
   --toast-width: 24rem;
-  --setting-choice-height: var(--density-setting-choice-height);
-  --setting-row-height: var(--density-setting-row-height);
   --list-row-height: var(--density-list-row-height);
-  --library-row-height: var(--density-library-row-height);
   --icon-box-sm: 2rem;
   --icon-box-md: 2.25rem;
   --icon-box-lg: 2.5rem;
   --focus-ring: 0 0 0 3px var(--state-focus-ring);
-  --reader-toolbar-height: 3.5rem;
   --control-min: 2.75rem;
   --control-large: 3rem;
   --app-nav-height: 3.5rem;
   --app-nav-total: calc(var(--app-nav-height) + env(safe-area-inset-bottom));
   --page-gutter: 1rem;
-  --reader-content-max: 46rem;
   --surface-elevated: hsl(var(--color-bg-elevated));
   --gradient-primary-cover: linear-gradient(
     145deg,
@@ -78,10 +73,7 @@
   --density-list-item-gap: var(--space-2);
   --density-table-cell-x: var(--space-4);
   --density-table-cell-y: var(--space-3);
-  --density-setting-choice-height: 2.75rem;
-  --density-setting-row-height: 3rem;
   --density-list-row-height: 3.25rem;
-  --density-library-row-height: 5.25rem;
 }
 
 :root[data-density='comfortable'] {
@@ -99,10 +91,7 @@
   --density-list-item-gap: var(--space-3);
   --density-table-cell-x: var(--space-6);
   --density-table-cell-y: var(--space-4);
-  --density-setting-choice-height: 3rem;
-  --density-setting-row-height: 3.5rem;
   --density-list-row-height: 3.75rem;
-  --density-library-row-height: 5.75rem;
 }
 
 @media (min-width: 768px) {

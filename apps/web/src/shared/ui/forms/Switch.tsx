@@ -1,6 +1,6 @@
 import { Check, CircleX, LoaderCircle } from 'lucide-react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { cn } from '@/shared/lib/cn';
+import { cn } from '../../lib/cn';
 import { type ActionFeedbackPolicyName, type ActionState } from '../actions/actionFeedback';
 import { useActionFeedback } from '../actions/useActionFeedback';
 import { Text } from '../data-display/Text';

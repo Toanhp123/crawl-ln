@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SourceReaderAuthorizationPolicy } from '../../apps/api/src/modules/source-reader/application/policies/source-reader-authorization.policy.ts';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
-import { sourceReaderActorMiddleware } from '../../apps/api/src/modules/source-reader/presentation/source-reader-actor.middleware.ts';
+import { SourceReaderAuthorizationPolicy } from '../../apps/api-legacy/src/modules/source-reader/application/policies/source-reader-authorization.policy.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { sourceReaderActorMiddleware } from '../../apps/api-legacy/src/modules/source-reader/presentation/source-reader-actor.middleware.ts';
 
 const policy = new SourceReaderAuthorizationPolicy();
 

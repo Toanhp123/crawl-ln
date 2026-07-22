@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { RecoverCrawlJobsUseCase } from '../../apps/api/src/modules/crawler/application/use-cases/recover-crawl-jobs.usecase.ts';
-import { CreateCrawlJobUseCase } from '../../apps/api/src/modules/crawler/application/use-cases/create-crawl-job.usecase.ts';
-import { CrawlTaskEntity } from '../../apps/api/src/modules/task/domain/entities/task.entity.ts';
+import { RecoverCrawlJobsUseCase } from '../../apps/api-legacy/src/modules/crawler/application/use-cases/recover-crawl-jobs.usecase.ts';
+import { CreateCrawlJobUseCase } from '../../apps/api-legacy/src/modules/crawler/application/use-cases/create-crawl-job.usecase.ts';
+import { CrawlTaskEntity } from '../../apps/api-legacy/src/modules/task/domain/entities/task.entity.ts';
 import type { CrawlTask } from '@novel-tool/shared';
 
 const now = '2026-07-16T00:00:00.000Z';

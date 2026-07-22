@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { cn } from '../../apps/web/src/shared/lib/cn';
+import { cn } from '../../apps/web-legacy/src/shared/lib/cn';
 
 const read = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
@@ -11,9 +11,9 @@ test('semantic typography survives color class merging', () => {
 });
 
 test('semantic typography utilities own font size and line height', () => {
-  const typography = read('apps/web/src/shared/theme/typography.css');
-  const text = read('apps/web/src/shared/ui/data-display/Text.tsx');
-  const webSource = read('apps/web/src/shared/ui/actions/Button.tsx') + text;
+  const typography = read('apps/web-legacy/src/shared/theme/typography.css');
+  const text = read('apps/web-legacy/src/shared/ui/data-display/Text.tsx');
+  const webSource = read('apps/web-legacy/src/shared/ui/actions/Button.tsx') + text;
 
   assert.match(
     typography,

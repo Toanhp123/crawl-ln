@@ -14,28 +14,28 @@ test('v3 verification covers every cutover acceptance surface in order', async (
       'check:docs',
       'check:current-reference',
       'build:current-reference',
-      'check:api-next-arch',
-      'check:web-next-arch',
-      'check:web-next-contracts',
+      'check:arch',
+      'check:web-arch',
+      'check:web-contracts',
       'check:reader-engine-arch',
-      'check:next-types',
-      'build:next',
+      'check:types',
+      'build',
       'contract',
       'regression',
       'integration',
-      'e2e:web-next'
+      'e2e'
     ]
   );
 });
 
 test('v3 next build resolves Vite from the web-next workspace', async () => {
   const { verificationSteps } = await import('../../scripts/verify-v3.mjs');
-  const buildNext = verificationSteps.find(
-    (step: { name: string }) => step.name === 'build:next'
-  ) as { commands: Array<{ name: string; args: string[] }> };
-  const webBuild = buildNext.commands.find((step) => step.name === 'build:web-next');
+  const buildNext = verificationSteps.find((step: { name: string }) => step.name === 'build') as {
+    commands: Array<{ name: string; args: string[] }>;
+  };
+  const webBuild = buildNext.commands.find((step) => step.name === 'build:web');
 
-  assert.equal(webBuild?.args[0], resolve('apps/web-next/node_modules/vite/bin/vite.js'));
+  assert.equal(webBuild?.args[0], resolve('apps/web/node_modules/vite/bin/vite.js'));
 });
 
 test('v3 verification is exposed through npm and CI without replacing the legacy gate', async () => {

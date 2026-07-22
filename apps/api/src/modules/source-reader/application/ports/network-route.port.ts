@@ -1,7 +1,4 @@
-import type {
-  HttpRequestOptions,
-  HttpResponse
-} from '../../../../shared/ports/http-client.port.js';
+import type { HttpRequestOptions, HttpResponse } from './runtime-support.ports.js';
 import type { NetworkProfileHandle } from './network-profile.repository.js';
 
 export type ResolvedNetworkRoute =

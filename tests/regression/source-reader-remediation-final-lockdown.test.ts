@@ -27,21 +27,21 @@ test('every approved remediation invariant has behavioral evidence', () => {
 
 test('final remediation contains no legacy worker runtime or permissive cache identity', () => {
   assert.equal(
-    existsSync('apps/api/src/modules/source-reader/infrastructure/runtime/isolated-worker'),
+    existsSync('apps/api-legacy/src/modules/source-reader/infrastructure/runtime/isolated-worker'),
     false
   );
   const service = readFileSync(
-    'apps/api/src/modules/source-reader/application/services/source-reader.service.ts',
+    'apps/api-legacy/src/modules/source-reader/application/services/source-reader.service.ts',
     'utf8'
   );
   assert.doesNotMatch(service, /\bauthScope\b/);
   const validators = readFileSync(
-    'apps/api/src/modules/source-reader/application/services/plugin-result-validator.ts',
+    'apps/api-legacy/src/modules/source-reader/application/services/plugin-result-validator.ts',
     'utf8'
   );
   assert.doesNotMatch(validators, /z\.array\(z\.unknown\(\)\)/);
   const sandboxSchema = readFileSync(
-    'apps/api/src/modules/source-reader/infrastructure/runtime/external-process/sandbox-protocol.schema.ts',
+    'apps/api-legacy/src/modules/source-reader/infrastructure/runtime/external-process/sandbox-protocol.schema.ts',
     'utf8'
   );
   assert.doesNotMatch(sandboxSchema, /z\.array\(z\.unknown\(\)\)/);

@@ -1,64 +1,41 @@
 import { Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { installSourcePlugin } from '@/entities/source-plugin';
-import { queryKeys } from '@/shared/api/queryKeys';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Button, ErrorBanner, Field, InlineNotice, Input, Panel, toast } from '@/shared/ui';
-const MAX_PACKAGE_BYTES = 20 * 1024 * 1024;
+import { useI18n } from '../../../shared/i18n';
+import { Button, ErrorBanner, Field, InlineNotice, Input, Panel } from '../../../shared/ui';
+import { MAX_SOURCE_PLUGIN_BYTES } from '../api/install-source-plugin';
+import { useInstallSourcePlugin } from '../model/use-install-source-plugin';
+
 export function InstallSourcePluginForm({ onInstalled }: { onInstalled?: () => void }) {
-  const { t, errorMessage } = useI18n();
-  const client = useQueryClient();
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File>();
-  const [validation, setValidation] = useState<string>();
-  const install = useMutation({
-    mutationFn: async () => {
-      if (!file) throw new Error(t('sources.plugins.fileRequired'));
-      if (file.size > MAX_PACKAGE_BYTES) throw new Error(t('sources.plugins.fileTooLarge'));
-      return installSourcePlugin(file);
-    },
-    onSuccess: () => {
-      setFile(undefined);
-      setValidation(undefined);
-      if (inputRef.current) inputRef.current.value = '';
-      void client.invalidateQueries({ queryKey: queryKeys.sourceReader.plugins() });
-      toast({ kind: 'success', title: t('sources.plugins.installed') });
-      onInstalled?.();
-    },
-    onError: (error) =>
-      toast({
-        kind: 'error',
-        title: t('sources.plugins.installFailed'),
-        description: errorMessage(error)
-      })
+  const install = useInstallSourcePlugin(() => {
+    setFile(undefined);
+    if (inputRef.current) inputRef.current.value = '';
+    onInstalled?.();
   });
+  const tooLarge = Boolean(file && file.size > MAX_SOURCE_PLUGIN_BYTES);
+
   return (
     <Panel tone="default" padding="lg" className="space-y-4">
-      <InlineNotice>{t('sources.plugins.installDescription')}</InlineNotice>
-      <Field label={t('sources.plugins.file')} hint={t('sources.plugins.fileHint')}>
+      <InlineNotice>{t('installSourcePlugin.description')}</InlineNotice>
+      <Field label={t('installSourcePlugin.file')}>
         <Input
           ref={inputRef}
           type="file"
           accept=".zip,.source-plugin,application/zip"
-          onChange={(event) => {
-            const next = event.target.files?.[0];
-            setFile(next);
-            setValidation(
-              next && next.size > MAX_PACKAGE_BYTES ? t('sources.plugins.fileTooLarge') : undefined
-            );
-          }}
+          onChange={(event) => setFile(event.target.files?.[0])}
         />
       </Field>
       {file ? <InlineNotice>{file.name}</InlineNotice> : null}
-      {validation ? <ErrorBanner error={validation} /> : null}
+      {tooLarge ? <ErrorBanner error={t('installSourcePlugin.tooLarge')} /> : null}
       <Button
         leadingIcon={<Upload size={17} />}
         actionState={install.status}
-        disabled={!file || Boolean(validation)}
-        onClick={() => install.mutate()}
+        disabled={!file || tooLarge}
+        onClick={() => file && install.mutate(file)}
       >
-        {t('sources.plugins.install')}
+        {t('installSourcePlugin.install')}
       </Button>
     </Panel>
   );

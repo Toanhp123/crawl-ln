@@ -1,1 +1,1 @@
-export * from './ui/SourcePluginDetails';
+export { SourcePluginDetails } from './ui/SourcePluginDetails';

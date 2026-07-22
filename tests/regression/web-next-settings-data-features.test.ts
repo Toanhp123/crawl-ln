@@ -3,7 +3,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import test from 'node:test';
 
-const featureRoot = 'apps/web-next/src/features';
+const featureRoot = 'apps/web/src/features';
 const slices = [
   'update-auto-update',
   'run-scheduler',
@@ -33,8 +33,7 @@ async function readTree(
 }
 
 test('binary features preserve response filenames, content, and invalid empty-response semantics', async () => {
-  const { createExportClient } =
-    await import('../../apps/web-next/src/features/export-novel/index.ts');
+  const { createExportClient } = await import('../../apps/web/src/features/export-novel/index.ts');
   const requests: Array<{ url: string; init?: RequestInit }> = [];
   const client = createExportClient(async (input, init) => {
     requests.push({ url: String(input), init });
@@ -114,13 +113,13 @@ test('scheduler, search rebuild, and backup clients preserve current mutation co
 
   try {
     const { updateAutoUpdate } =
-      await import('../../apps/web-next/src/features/update-auto-update/api/update-auto-update.ts');
+      await import('../../apps/web/src/features/update-auto-update/api/update-auto-update.ts');
     const { runScheduler } =
-      await import('../../apps/web-next/src/features/run-scheduler/api/run-scheduler.ts');
+      await import('../../apps/web/src/features/run-scheduler/api/run-scheduler.ts');
     const { rebuildSearchIndex } =
-      await import('../../apps/web-next/src/features/rebuild-search-index/api/rebuild-search-index.ts');
+      await import('../../apps/web/src/features/rebuild-search-index/api/rebuild-search-index.ts');
     const { createLibraryBackup, restoreLibraryBackup } =
-      await import('../../apps/web-next/src/features/backup-library/api/backup-library.ts');
+      await import('../../apps/web/src/features/backup-library/api/backup-library.ts');
 
     await updateAutoUpdate({ novelId: 'novel/1', enabled: true, intervalMinutes: 360 });
     await runScheduler();
@@ -206,7 +205,7 @@ test('scheduler, search rebuild, and backup clients preserve current mutation co
 });
 
 test('backup restore validation and settings helpers remain feature-owned', async () => {
-  const backup = await import('../../apps/web-next/src/features/backup-library/index.ts');
+  const backup = await import('../../apps/web/src/features/backup-library/index.ts');
   assert.equal(backup.requiresRestoreConfirmation('replace'), true);
   assert.equal(backup.requiresRestoreConfirmation('merge'), true);
   assert.deepEqual(
@@ -268,14 +267,14 @@ test('search and settings controls consume public entity/provider commands', asy
 });
 
 test('Task 7 feature public APIs expose actions and reusable controls', async () => {
-  const autoUpdate = await import('../../apps/web-next/src/features/update-auto-update/index.ts');
-  const scheduler = await import('../../apps/web-next/src/features/run-scheduler/index.ts');
-  const search = await import('../../apps/web-next/src/features/search-library/index.ts');
-  const rebuild = await import('../../apps/web-next/src/features/rebuild-search-index/index.ts');
-  const exportNovel = await import('../../apps/web-next/src/features/export-novel/index.ts');
-  const backup = await import('../../apps/web-next/src/features/backup-library/index.ts');
-  const appearance = await import('../../apps/web-next/src/features/configure-appearance/index.ts');
-  const language = await import('../../apps/web-next/src/features/configure-language/index.ts');
+  const autoUpdate = await import('../../apps/web/src/features/update-auto-update/index.ts');
+  const scheduler = await import('../../apps/web/src/features/run-scheduler/index.ts');
+  const search = await import('../../apps/web/src/features/search-library/index.ts');
+  const rebuild = await import('../../apps/web/src/features/rebuild-search-index/index.ts');
+  const exportNovel = await import('../../apps/web/src/features/export-novel/index.ts');
+  const backup = await import('../../apps/web/src/features/backup-library/index.ts');
+  const appearance = await import('../../apps/web/src/features/configure-appearance/index.ts');
+  const language = await import('../../apps/web/src/features/configure-language/index.ts');
 
   assert.equal(typeof autoUpdate.useUpdateAutoUpdate, 'function');
   assert.equal(typeof autoUpdate.AutoUpdateControl, 'function');
@@ -302,9 +301,9 @@ test('Task 7 feature public APIs expose actions and reusable controls', async ()
 
 test('pages and entities do not own Task 7 mutations or provider state transitions', async () => {
   const upperLayers = [
-    await readTree('apps/web-next/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),
-    await readTree('apps/web-next/src/pages'),
-    await readTree('apps/web-next/src/entities')
+    await readTree('apps/web/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),
+    await readTree('apps/web/src/pages'),
+    await readTree('apps/web/src/entities')
   ].join('\n');
   assert.doesNotMatch(
     upperLayers,

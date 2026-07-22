@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useI18n } from '@/shared/i18n';
 import { Button, Progress, Text } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
 
 export function ReaderBottomBar({
   chapterTitle,

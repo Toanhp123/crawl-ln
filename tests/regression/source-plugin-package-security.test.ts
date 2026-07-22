@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import JSZip from 'jszip';
-import { SourcePluginPackageVerifier } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.ts';
-import { StaticTrustStore } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.ts';
+import { SourcePluginPackageVerifier } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.ts';
+import { StaticTrustStore } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.ts';
 
 const manifest = {
   id: 'demo',

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { InMemoryEventBus } from '../../apps/api-next/src/platform/events/in-memory-event-bus.ts';
-import { ApplicationEventToRealtimeAdapter } from '../../apps/api-next/src/platform/realtime/application-event-to-realtime.adapter.ts';
-import { InMemoryRealtimeEventBroker } from '../../apps/api-next/src/platform/realtime/in-memory-realtime-event-broker.ts';
+import { InMemoryEventBus } from '../../apps/api/src/platform/events/in-memory-event-bus.ts';
+import { ApplicationEventToRealtimeAdapter } from '../../apps/api/src/platform/realtime/application-event-to-realtime.adapter.ts';
+import { InMemoryRealtimeEventBroker } from '../../apps/api/src/platform/realtime/in-memory-realtime-event-broker.ts';
 
 const occurredAt = '2026-07-21T11:00:00.000Z';
 

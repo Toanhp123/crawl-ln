@@ -5,7 +5,7 @@ import test from 'node:test';
 const read = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
 test('API depends on and re-exports canonical source plugin SDK contracts', () => {
-  const apiPackage = JSON.parse(read('apps/api/package.json')) as {
+  const apiPackage = JSON.parse(read('apps/api-legacy/package.json')) as {
     dependencies?: Record<string, string>;
   };
   assert.equal(
@@ -13,7 +13,7 @@ test('API depends on and re-exports canonical source plugin SDK contracts', () =
     'file:../../packages/source-plugin-sdk'
   );
 
-  const models = read('apps/api/src/modules/source-reader/public/source-reader.models.ts');
+  const models = read('apps/api-legacy/src/modules/source-reader/public/source-reader.models.ts');
   assert.match(models, /from '@novel-tool\/source-plugin-sdk'/);
   assert.doesNotMatch(models, /export interface NovelMetadata/);
   assert.doesNotMatch(models, /export interface ChapterSummary/);
@@ -22,7 +22,7 @@ test('API depends on and re-exports canonical source plugin SDK contracts', () =
 });
 
 test('internal plugin domain imports manifest and operation result from SDK', () => {
-  const plugin = read('apps/api/src/modules/source-reader/domain/plugin/source-plugin.ts');
+  const plugin = read('apps/api-legacy/src/modules/source-reader/domain/plugin/source-plugin.ts');
   assert.match(plugin, /from '@novel-tool\/source-plugin-sdk'/);
   assert.doesNotMatch(plugin, /export interface SourcePluginManifest/);
   assert.doesNotMatch(plugin, /export interface PluginOperationResult/);
@@ -32,7 +32,7 @@ test('internal plugin domain imports manifest and operation result from SDK', ()
 
 test('manifest validation uses SDK capability constants', () => {
   const schema = read(
-    'apps/api/src/modules/source-reader/domain/plugin/source-plugin-manifest.schema.ts'
+    'apps/api-legacy/src/modules/source-reader/domain/plugin/source-plugin-manifest.schema.ts'
   );
   assert.match(schema, /SOURCE_CAPABILITIES/);
   assert.match(schema, /z\.enum\(SOURCE_CAPABILITIES\)/);
@@ -40,9 +40,11 @@ test('manifest validation uses SDK capability constants', () => {
 });
 
 test('authentication lifecycle and external RPC contracts are re-exported from SDK', () => {
-  const auth = read('apps/api/src/modules/source-reader/domain/auth/authentication.ts');
-  const lifecycle = read('apps/api/src/modules/source-reader/domain/plugin/plugin-lifecycle.ts');
-  const rpc = read('apps/api/src/modules/source-reader/domain/plugin/external-auth-rpc.ts');
+  const auth = read('apps/api-legacy/src/modules/source-reader/domain/auth/authentication.ts');
+  const lifecycle = read(
+    'apps/api-legacy/src/modules/source-reader/domain/plugin/plugin-lifecycle.ts'
+  );
+  const rpc = read('apps/api-legacy/src/modules/source-reader/domain/plugin/external-auth-rpc.ts');
 
   for (const source of [auth, lifecycle, rpc]) {
     assert.match(source, /@novel-tool\/source-plugin-sdk/);
@@ -54,10 +56,10 @@ test('authentication lifecycle and external RPC contracts are re-exported from S
 
 test('sandbox dispatch receives the SDK capability method mapping from the host', () => {
   const sandbox = read(
-    'apps/api/src/modules/source-reader/infrastructure/runtime/external-process/sandbox-entry.mjs'
+    'apps/api-legacy/src/modules/source-reader/infrastructure/runtime/external-process/sandbox-entry.mjs'
   );
   const supervisor = read(
-    'apps/api/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts'
+    'apps/api-legacy/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts'
   );
 
   assert.match(supervisor, /SOURCE_CAPABILITY_METHODS/);

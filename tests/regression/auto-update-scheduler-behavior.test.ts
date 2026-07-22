@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Novel, NovelUpdateDiagnostic } from '@novel-tool/shared';
-import { AutoUpdateSchedulerService } from '../../apps/api/src/modules/scheduler/application/auto-update-scheduler.service.ts';
-import type { AutoUpdatePolicyRepository } from '../../apps/api/src/modules/scheduler/application/ports/auto-update-policy.repository.ts';
-import type { TaskRepository } from '../../apps/api/src/modules/task/domain/repositories/task.repository.ts';
-import type { NovelUpdateDiagnosticPublisherPort } from '../../apps/api/src/modules/scheduler/application/ports/scheduler-diagnostic-publisher.port.ts';
-import type { UpdateNovelUseCase } from '../../apps/api/src/modules/novels/application/use-cases/update-novel.usecase.ts';
+import { AutoUpdateSchedulerService } from '../../apps/api-legacy/src/modules/scheduler/application/auto-update-scheduler.service.ts';
+import type { AutoUpdatePolicyRepository } from '../../apps/api-legacy/src/modules/scheduler/application/ports/auto-update-policy.repository.ts';
+import type { TaskRepository } from '../../apps/api-legacy/src/modules/task/domain/repositories/task.repository.ts';
+import type { NovelUpdateDiagnosticPublisherPort } from '../../apps/api-legacy/src/modules/scheduler/application/ports/scheduler-diagnostic-publisher.port.ts';
+import type { UpdateNovelUseCase } from '../../apps/api-legacy/src/modules/novels/application/use-cases/update-novel.usecase.ts';
 
 const novel = (id: string, failures = 0): Novel => ({
   id,

@@ -6,7 +6,7 @@ import {
   isTaskPolling,
   selectLatestActiveTask,
   taskIndicator
-} from '../../apps/web/src/entities/task/model/status.ts';
+} from '../../apps/web-legacy/src/entities/task/model/status.ts';
 
 const task = (id: string, status: CrawlTask['status'], updatedAt: string): CrawlTask => ({
   id,

@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const files = [
-  'apps/web/src/entities/source-plugin/api/sourcePluginApi.ts',
-  'apps/web/src/features/manage-source-plugins/model/useSourcePluginActions.ts',
-  'apps/web/src/features/manage-source-plugins/ui/SourcePluginActions.tsx',
-  'apps/web/src/widgets/source-reader-overview/ui/SourceReaderOverview.tsx',
-  'apps/web/src/pages/sources/model/useSourcesPage.ts',
-  'apps/web/src/pages/sources/ui/SourcesPage.tsx'
+  'apps/web-legacy/src/entities/source-plugin/api/sourcePluginApi.ts',
+  'apps/web-legacy/src/features/manage-source-plugins/model/useSourcePluginActions.ts',
+  'apps/web-legacy/src/features/manage-source-plugins/ui/SourcePluginActions.tsx',
+  'apps/web-legacy/src/widgets/source-reader-overview/ui/SourceReaderOverview.tsx',
+  'apps/web-legacy/src/pages/sources/model/useSourcesPage.ts',
+  'apps/web-legacy/src/pages/sources/ui/SourcesPage.tsx'
 ];
 
 test('Sources console uses Source Reader APIs and retains optimistic plugin switches', () => {
@@ -21,7 +21,7 @@ test('Sources console uses Source Reader APIs and retains optimistic plugin swit
 });
 
 test('Sources console composes all user-facing Source Reader sections', () => {
-  const source = readFileSync('apps/web/src/pages/sources/ui/SourcesPage.tsx', 'utf8');
+  const source = readFileSync('apps/web-legacy/src/pages/sources/ui/SourcesPage.tsx', 'utf8');
   for (const section of ['plugins', 'credentials', 'network', 'challenges', 'inspector']) {
     assert.match(source, new RegExp(`id: '${section}'`));
   }

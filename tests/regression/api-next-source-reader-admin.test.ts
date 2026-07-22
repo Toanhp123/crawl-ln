@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { LogoutCredentialUseCase } from '../../apps/api-next/src/modules/source-reader/application/admin/use-cases/credentials/manage-credentials.usecase.ts';
+import { LogoutCredentialUseCase } from '../../apps/api/src/modules/source-reader/application/admin/use-cases/credentials/manage-credentials.usecase.ts';
 import {
   DenyPluginPermissionsUseCase,
   RemovePluginUseCase
-} from '../../apps/api-next/src/modules/source-reader/application/admin/use-cases/plugins/manage-source-plugins.usecase.ts';
+} from '../../apps/api/src/modules/source-reader/application/admin/use-cases/plugins/manage-source-plugins.usecase.ts';
 
 const actor = { id: 'user-1', roles: ['source-admin'] as const };
 

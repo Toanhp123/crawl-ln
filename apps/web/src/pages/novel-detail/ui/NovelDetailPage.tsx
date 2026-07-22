@@ -12,24 +12,24 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
-import { ChapterList } from '@/entities/chapter/ui/ChapterList';
-import { NovelCover } from '@/entities/novel/ui/NovelCover';
-import { TaskProgress } from '@/entities/task/ui/TaskProgress';
-import { AutoUpdatePanel } from '@/features/auto-update/ui/AutoUpdatePanel';
-import { readLatestReadingPosition } from '@/features/read-chapter/model/readingPositionStorage';
+import { ChapterList } from '@/entities/chapter';
+import { NovelCover } from '@/entities/novel';
+import { TaskProgress } from '@/entities/task';
 import {
   listBookmarks,
   readChapterIds,
+  readLatestReadingPosition,
   removeBookmark,
   useReadingContinuityVersion
-} from '@/features/read-chapter/model/readingContinuityStorage';
+} from '@/features/read-chapter';
+import { useI18n } from '@/shared/i18n';
+import { useScrollRestoration } from '@/shared/lib';
 import {
   Button,
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-  CardTitle,
   Chip,
   ConfirmDialog,
   ErrorBanner,
@@ -44,14 +44,14 @@ import {
   StatCard,
   Text
 } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { useNovelDetailPage } from '../model/useNovelDetailPage';
+import { useNovelDetailPage } from '../model/use-novel-detail-page';
 import { NovelManagementSheet } from './NovelManagementSheet';
 
 export function NovelDetailPage() {
-  const { t, status, relativeTime } = useI18n();
+  const { t, status, relativeTime, errorMessage } = useI18n();
   const params = useParams<{ novelId: string }>();
   const novelId = params.novelId ? decodeURIComponent(params.novelId) : '';
+  useScrollRestoration(`novel-detail:${novelId}`);
   const model = useNovelDetailPage(novelId);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const continuityVersion = useReadingContinuityVersion();
@@ -64,13 +64,19 @@ export function NovelDetailPage() {
   const failed = current?.chapters.filter((chapter) => chapter.status === 'failed').length ?? 0;
   const latestPosition = current ? readLatestReadingPosition(novelId) : null;
   const bookmarks = current ? listBookmarks(novelId) : [];
-  const readChapterIdsValue = current ? readChapterIds(novelId) : new Set<string>();
+  const readIds = current ? readChapterIds(novelId) : new Set<string>();
   const chapterByIndex = new Map(
     current?.chapters.map((chapter) => [chapter.index, chapter]) ?? []
   );
   const readingPercent = Math.max(
     0,
-    Math.min(100, Math.round((latestPosition?.scrollRatio ?? 0) * 100))
+    Math.min(
+      100,
+      Math.round((latestPosition?.bookProgress ?? latestPosition?.scrollRatio ?? 0) * 100)
+    )
+  );
+  const taskActive = ['queued', 'running', 'pausing', 'resuming'].includes(
+    model.task.data?.status ?? ''
   );
   const novelTone =
     current?.novel.status === 'completed'
@@ -82,13 +88,11 @@ export function NovelDetailPage() {
           : ('info' as const);
 
   return (
-    <Page className="pt-2">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="w-fit" onClick={model.openLibrary}>
-          <ArrowLeft size={20} />
-          {t('reader.backLibrary')}
-        </Button>
-      </div>
+    <Page className="max-w-5xl pt-2">
+      <Button variant="ghost" size="sm" className="w-fit" onClick={model.openLibrary}>
+        <ArrowLeft size={20} />
+        {t('reader.backLibrary')}
+      </Button>
       <ErrorBanner error={model.error} />
       {model.detail.isLoading ? (
         <LoadingState title={t('reader.opening')} description={t('reader.openingDescription')} />
@@ -110,7 +114,7 @@ export function NovelDetailPage() {
                   </Text>
                 ) : null}
                 <a
-                  className="mt-2 inline-flex max-w-full items-center gap-1.5 text-primary transition-colors duration-[var(--motion-fast)] hover:text-primary-hover"
+                  className="mt-2 inline-flex max-w-full items-center gap-1.5 text-primary"
                   href={current.novel.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
@@ -118,7 +122,7 @@ export function NovelDetailPage() {
                   <Text as="span" variant="metadata" tone="muted" truncate>
                     {current.novel.sourceName || t('reader.source')}
                   </Text>
-                  <ExternalLink size={20} className="h-4 w-4" />
+                  <ExternalLink size={16} />
                 </a>
                 <Text as="p" variant="caption" tone="muted" className="mt-2">
                   {t('common.updatedAgo', { value: relativeTime(current.novel.updatedAt) })}
@@ -153,33 +157,27 @@ export function NovelDetailPage() {
               >
                 <Play size={20} />
                 <span className="truncate">
-                  {latestPosition
-                    ? `${t('library.continue')} · ${t('common.chapter')} ${latestPosition.chapterIndex}`
-                    : t('reader.read')}
+                  {latestPosition ? t('library.continue') : t('reader.startReading')}
                 </span>
               </Button>
               <NovelManagementSheet
-                novelId={novelId}
-                updateActionState={model.updateNovel.status}
-                crawlActionState={model.crawl.status}
-                taskActive={
-                  model.task.data?.status === 'running' || model.task.data?.status === 'queued'
-                }
-                onUpdate={() => model.updateNovel.mutate(novelId)}
-                onCrawl={() => model.crawl.mutate(novelId)}
+                novel={current.novel}
+                updateActionState={model.refreshMutation.status}
+                crawlActionState={model.importMutation.status}
+                taskActive={taskActive}
+                onUpdate={() => model.refreshMutation.mutate(novelId)}
+                onCrawl={() => model.importMutation.mutate(novelId)}
                 triggerClassName="w-auto shrink-0 whitespace-nowrap px-3"
               />
             </CardFooter>
           </Card>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="hidden sm:block">
-              <StatCard
-                label={t('reader.chapterCount')}
-                value={current.chapters.length}
-                icon={<BookOpen size={20} />}
-              />
-            </div>
+            <StatCard
+              label={t('reader.chapterCount')}
+              value={current.chapters.length}
+              icon={<BookOpen size={20} />}
+            />
             <StatCard
               label={t('reader.downloadedCount')}
               value={fetched}
@@ -190,22 +188,19 @@ export function NovelDetailPage() {
               value={failed}
               icon={<TriangleAlert size={20} />}
             />
-            <div className="hidden sm:block">
-              <StatCard
-                label={t('reader.latestUpdate')}
-                value={relativeTime(current.novel.updatedAt)}
-                icon={<RefreshCw size={20} />}
-              />
-            </div>
+            <StatCard
+              label={t('reader.latestUpdate')}
+              value={relativeTime(current.novel.updatedAt)}
+              icon={<RefreshCw size={20} />}
+            />
           </div>
 
           {bookmarks.length ? (
             <Section title={t('reader.bookmarks')} description={t('reader.bookmarksDescription')}>
               <Card padding="none" elevation="flat" className="overflow-hidden">
                 {bookmarks.slice(0, 8).map((bookmark) => {
-                  const bookmarkChapter = chapterByIndex.get(bookmark.chapterIndex);
-                  const paragraphNumber =
-                    Number(bookmark.paragraphId.match(/(\d+)$/)?.[1] ?? 0) + 1;
+                  const chapter = chapterByIndex.get(bookmark.chapterIndex);
+                  const paragraph = Number(bookmark.paragraphId.match(/(\d+)$/)?.[1] ?? 0) + 1;
                   return (
                     <ListRow
                       key={bookmark.id}
@@ -216,12 +211,10 @@ export function NovelDetailPage() {
                           <Bookmark size={20} />
                         </IconTile>
                       }
-                      title={
-                        bookmarkChapter?.title || `${t('common.chapter')} ${bookmark.chapterIndex}`
-                      }
+                      title={chapter?.title || `${t('common.chapter')} ${bookmark.chapterIndex}`}
                       description={t('reader.bookmarkLocation', {
                         chapter: bookmark.chapterIndex,
-                        paragraph: paragraphNumber
+                        paragraph
                       })}
                       trailing={
                         <IconButton
@@ -243,60 +236,50 @@ export function NovelDetailPage() {
             </Section>
           ) : null}
 
-          <AutoUpdatePanel
-            novel={current.novel}
-            diagnostics={model.autoUpdate.diagnostics.data ?? []}
-            actionState={model.autoUpdate.policy.status}
-            t={t}
-            relativeTime={relativeTime}
-            onChange={(enabled, intervalMinutes) =>
-              model.autoUpdate.policy.mutate({ enabled, intervalMinutes })
-            }
-          />
-
           <Section title={t('reader.chapters')} description={t('reader.chaptersDescription')}>
             <ChapterList
               chapters={current.chapters}
-              readChapterIds={readChapterIdsValue}
-              onSelect={(chapter) => model.openChapter(chapter.index)}
+              readChapterIds={readIds}
+              currentIndex={latestPosition?.chapterIndex}
+              onSelect={(chapter) => {
+                if (chapter.status === 'fetched') model.openChapter(chapter.index);
+              }}
             />
+            {failed > 0 ? (
+              <Panel
+                tone="inset"
+                padding="sm"
+                className="mt-3 border border-danger-state-border bg-danger-subtle"
+              >
+                <Text variant="caption" tone="danger">
+                  {current.chapters
+                    .filter((chapter) => chapter.status === 'failed')
+                    .slice(0, 3)
+                    .map((chapter) => errorMessage(chapter.errorMessage, 'common.requestFailed'))
+                    .join(' · ')}
+                </Text>
+              </Panel>
+            ) : null}
           </Section>
 
           <Section title={t('reader.dangerZone')} description={t('reader.dangerZoneDescription')}>
-            <Panel tone="default" className="border-danger-state-border bg-danger-subtle">
-              <div className="flex items-start gap-3">
-                <IconTile size="md" shape="circle" tone="danger">
-                  <Trash2 size={20} />
-                </IconTile>
-                <div className="min-w-0 flex-1">
-                  <CardTitle>{t('reader.deleteLabel')}</CardTitle>
-                  <Text variant="supporting" tone="muted" className="mt-1 block">
-                    {t('reader.deleteDescription')}
-                  </Text>
-                </div>
-              </div>
-              <Button
-                variant="danger"
-                className="mt-4 w-full sm:w-auto"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 size={20} />
-                {t('reader.deleteLabel')}
-              </Button>
-            </Panel>
+            <Button variant="danger" onClick={() => setDeleteOpen(true)}>
+              <Trash2 size={18} />
+              {t('reader.deleteLabel')}
+            </Button>
           </Section>
+          <ConfirmDialog
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            title={t('reader.deleteTitle')}
+            description={t('reader.deleteDescription')}
+            confirmText={t('reader.deleteConfirm')}
+            danger
+            actionState={model.removeMutation.status}
+            onConfirm={() => model.removeMutation.mutate(novelId)}
+          />
         </>
       )}
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        danger
-        actionState={model.removeNovel.status}
-        title={t('reader.deleteTitle')}
-        description={t('reader.deleteDescription')}
-        confirmText={t('reader.deleteConfirm')}
-        onConfirm={() => model.removeNovel.mutate(novelId)}
-      />
     </Page>
   );
 }

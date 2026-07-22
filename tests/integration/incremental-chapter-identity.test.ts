@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { SqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
-import { NovelAnalysisSqliteAdapter } from '../../apps/api/src/modules/novels/infrastructure/sqlite/novel-analysis-sqlite.adapter.ts';
-import { ChapterSqliteRepository } from '../../apps/api/src/modules/chapters/infrastructure/sqlite/chapter-sqlite.repository.ts';
+import { SqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
+import { NovelAnalysisSqliteAdapter } from '../../apps/api-legacy/src/modules/novels/infrastructure/sqlite/novel-analysis-sqlite.adapter.ts';
+import { ChapterSqliteRepository } from '../../apps/api-legacy/src/modules/chapters/infrastructure/sqlite/chapter-sqlite.repository.ts';
 
 const now = '2026-07-16T00:00:00.000Z';
 const novel = {

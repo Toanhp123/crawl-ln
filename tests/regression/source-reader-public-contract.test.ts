@@ -4,11 +4,11 @@ import type {
   SourceCapability,
   SourceReaderApi,
   SourceReaderResult
-} from '../../apps/api/src/modules/source-reader/public/source-reader.api.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/public/source-reader.api.ts';
 import {
   SourceReaderError,
   type SourceReaderErrorCode
-} from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
 
 test('source reader exposes stable capability and result contracts', () => {
   const capabilities: SourceCapability[] = [

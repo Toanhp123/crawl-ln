@@ -1,16 +1,17 @@
-import type { SourceReaderAuthChallenge } from '@novel-tool/shared';
 import type { ReactNode } from 'react';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Badge, ListRow } from '@/shared/ui';
+import { useI18n } from '../../../shared/i18n';
+import { Badge, ListRow } from '../../../shared/ui';
+import type { SourceAuthChallenge } from '../model/types';
 
 export function SourceAuthChallengeRow({
   challenge,
   trailing
 }: {
-  challenge: SourceReaderAuthChallenge;
+  challenge: SourceAuthChallenge;
   trailing?: ReactNode;
 }) {
   const { relativeTime, status, t } = useI18n();
+
   return (
     <ListRow
       title={`${challenge.pluginId} · ${status(challenge.type)}`}

@@ -1,20 +1,22 @@
-import type { Chapter } from '@novel-tool/shared';
-import { BottomSheet } from '@/shared/ui';
-import { ChapterList } from '@/entities/chapter/ui/ChapterList';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import type { Chapter } from '../../../entities/chapter';
+import { ChapterList } from '../../../entities/chapter';
+import { useI18n } from '../../../shared/i18n';
+import { BottomSheet } from '../../../shared/ui';
 
 export function ChapterListSheet({
   open,
   onOpenChange,
   chapters,
   onSelect,
-  currentIndex
+  currentIndex,
+  readChapterIds
 }: {
   open: boolean;
   onOpenChange: (value: boolean) => void;
   chapters: Chapter[];
   onSelect: (index: number) => void;
   currentIndex?: number;
+  readChapterIds?: ReadonlySet<string>;
 }) {
   const { t } = useI18n();
   return (
@@ -27,6 +29,7 @@ export function ChapterListSheet({
       <ChapterList
         chapters={chapters}
         currentIndex={currentIndex}
+        readChapterIds={readChapterIds}
         onSelect={(chapter) => {
           onSelect(chapter.index);
           onOpenChange(false);

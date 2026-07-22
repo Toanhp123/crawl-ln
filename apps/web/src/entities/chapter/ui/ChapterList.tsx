@@ -1,4 +1,4 @@
-import type { Chapter } from '@novel-tool/shared';
+import type { Chapter } from '../api/chapter-api';
 import { CheckCircle2, Clock3, Eye, LocateFixed, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -11,8 +11,8 @@ import {
   SearchInput,
   Surface,
   Text
-} from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+} from '../../../shared/ui';
+import { useI18n } from '../../../shared/i18n';
 
 const PAGE_SIZE = 20;
 function tone(status: string) {

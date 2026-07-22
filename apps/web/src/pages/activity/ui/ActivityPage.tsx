@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { CrawlTaskCard } from '@/widgets/crawl-task-card/ui/CrawlTaskCard';
+import { useI18n } from '@/shared/i18n';
 import { EmptyState, ErrorBanner, LoadingState, Page, PageHeader, Section } from '@/shared/ui';
-import { useActivityPage } from '../model/useActivityPage';
+import { CrawlTaskCard } from '@/widgets/crawl-task-card';
+import { useActivityPage } from '../model/use-activity-page';
 
 export function ActivityPage() {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ export function ActivityPage() {
       ))}
     </div>
   );
+
   return (
     <Page className="max-w-5xl">
       <PageHeader title={t('nav.activity')} description={t('activity.description')} />

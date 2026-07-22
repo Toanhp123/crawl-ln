@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import JSZip from 'jszip';
-import { createExportModule } from '../../apps/api-next/src/modules/export/export.module.ts';
-import { EpubExportWriter } from '../../apps/api-next/src/modules/export/infrastructure/epub/epub-export.writer.ts';
-import { createLibraryModule } from '../../apps/api-next/src/modules/library/library.module.ts';
-import { createEnvironment } from '../../apps/api-next/src/platform/config/environment.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
+import { createExportModule } from '../../apps/api/src/modules/export/export.module.ts';
+import { EpubExportWriter } from '../../apps/api/src/modules/export/infrastructure/epub/epub-export.writer.ts';
+import { createLibraryModule } from '../../apps/api/src/modules/library/library.module.ts';
+import { createEnvironment } from '../../apps/api/src/platform/config/environment.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
 
 const analyzedAt = '2026-07-21T08:00:00.000Z';
 

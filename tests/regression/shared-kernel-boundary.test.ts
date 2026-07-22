@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import test from 'node:test';
 
 test('shared kernel does not own source or chapter URL business policies', () => {
-  const sharedDomain = resolve('apps/api/src/shared/domain');
+  const sharedDomain = resolve('apps/api-legacy/src/shared/domain');
   assert.equal(existsSync(sharedDomain), false);
 
   const architectureGuard = readFileSync(resolve('scripts/check-api-architecture.mjs'), 'utf8');

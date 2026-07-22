@@ -4,9 +4,9 @@ import test from 'node:test';
 import {
   BoundedSourceReaderStructuredLogger,
   type SourceReaderStructuredLogger
-} from '../../apps/api/src/modules/source-reader/application/services/source-reader-structured-logger.ts';
-import { PluginContextFactory } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/plugin-context.factory.ts';
-import { ExternalProcessSupervisor } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/application/services/source-reader-structured-logger.ts';
+import { PluginContextFactory } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/plugin-context.factory.ts';
+import { ExternalProcessSupervisor } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts';
 
 const secrets = [
   'password-secret',

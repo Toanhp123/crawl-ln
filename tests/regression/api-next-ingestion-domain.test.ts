@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { IngestionJobEntity } from '../../apps/api-next/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
-import { IngestionError } from '../../apps/api-next/src/modules/ingestion/domain/errors/ingestion.error.ts';
-import type { IngestionJob } from '../../apps/api-next/src/modules/ingestion/domain/ingestion.models.ts';
+import { IngestionJobEntity } from '../../apps/api/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
+import { IngestionError } from '../../apps/api/src/modules/ingestion/domain/errors/ingestion.error.ts';
+import type { IngestionJob } from '../../apps/api/src/modules/ingestion/domain/ingestion.models.ts';
 
 const now = '2026-07-21T00:00:00.000Z';
 

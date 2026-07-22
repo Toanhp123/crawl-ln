@@ -11,7 +11,9 @@ function walk(dir: string): string[] {
 }
 
 test('backend application layers own their contracts instead of importing shared transport DTOs', () => {
-  const files = walk('apps/api/src/modules').filter((path) => path.includes('/application/'));
+  const files = walk('apps/api-legacy/src/modules').filter((path) =>
+    path.includes('/application/')
+  );
   const offenders = files.filter((path) =>
     readFileSync(path, 'utf8').includes("'@novel-tool/shared'")
   );

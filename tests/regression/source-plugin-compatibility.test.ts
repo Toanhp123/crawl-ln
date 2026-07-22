@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PluginCompatibilityService } from '../../apps/api/src/modules/source-reader/application/services/plugin-compatibility.service.ts';
-import { SOURCE_READER_HOST_COMPATIBILITY } from '../../apps/api/src/modules/source-reader/domain/plugin/source-reader-host-compatibility.ts';
-import type { SourcePluginManifest } from '../../apps/api/src/modules/source-reader/domain/plugin/source-plugin.ts';
+import { PluginCompatibilityService } from '../../apps/api-legacy/src/modules/source-reader/application/services/plugin-compatibility.service.ts';
+import { SOURCE_READER_HOST_COMPATIBILITY } from '../../apps/api-legacy/src/modules/source-reader/domain/plugin/source-reader-host-compatibility.ts';
+import type { SourcePluginManifest } from '../../apps/api-legacy/src/modules/source-reader/domain/plugin/source-plugin.ts';
 
 function manifest(overrides: Partial<SourcePluginManifest> = {}): SourcePluginManifest {
   return {

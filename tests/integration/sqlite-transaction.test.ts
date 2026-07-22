@@ -5,25 +5,25 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 const { CURRENT_SCHEMA_VERSION, createSqliteDatabase } =
-  await import('../../apps/api/src/shared/database/sqlite.ts');
+  await import('../../apps/api-legacy/src/shared/database/sqlite.ts');
 const { NovelSqliteRepository } =
-  await import('../../apps/api/src/modules/novels/infrastructure/sqlite/novel-sqlite.repository.ts');
+  await import('../../apps/api-legacy/src/modules/novels/infrastructure/sqlite/novel-sqlite.repository.ts');
 const { NovelAnalysisSqliteAdapter } =
-  await import('../../apps/api/src/modules/novels/infrastructure/sqlite/novel-analysis-sqlite.adapter.ts');
+  await import('../../apps/api-legacy/src/modules/novels/infrastructure/sqlite/novel-analysis-sqlite.adapter.ts');
 const { ChapterSqliteRepository } =
-  await import('../../apps/api/src/modules/chapters/infrastructure/sqlite/chapter-sqlite.repository.ts');
+  await import('../../apps/api-legacy/src/modules/chapters/infrastructure/sqlite/chapter-sqlite.repository.ts');
 const { TaskSqliteRepository } =
-  await import('../../apps/api/src/modules/task/infrastructure/sqlite/task-sqlite.repository.ts');
+  await import('../../apps/api-legacy/src/modules/task/infrastructure/sqlite/task-sqlite.repository.ts');
 const { CrawlTaskEntity } =
-  await import('../../apps/api/src/modules/task/domain/entities/task.entity.ts');
+  await import('../../apps/api-legacy/src/modules/task/domain/entities/task.entity.ts');
 const { CrawlRunSqliteUnitOfWork } =
-  await import('../../apps/api/src/shared/database/crawl-run-sqlite.unit-of-work.ts');
+  await import('../../apps/api-legacy/src/shared/database/crawl-run-sqlite.unit-of-work.ts');
 const { ChapterCrawlSqliteWriter } =
-  await import('../../apps/api/src/modules/chapters/infrastructure/sqlite/chapter-crawl-sqlite.writer.ts');
+  await import('../../apps/api-legacy/src/modules/chapters/infrastructure/sqlite/chapter-crawl-sqlite.writer.ts');
 const { TaskCrawlSqliteWriter } =
-  await import('../../apps/api/src/modules/task/infrastructure/sqlite/task-crawl-sqlite.writer.ts');
+  await import('../../apps/api-legacy/src/modules/task/infrastructure/sqlite/task-crawl-sqlite.writer.ts');
 const { NovelCrawlSqliteWriter } =
-  await import('../../apps/api/src/modules/novels/infrastructure/sqlite/novel-crawl-sqlite.writer.ts');
+  await import('../../apps/api-legacy/src/modules/novels/infrastructure/sqlite/novel-crawl-sqlite.writer.ts');
 
 const now = '2026-07-16T00:00:00.000Z';
 

@@ -1,27 +1,26 @@
-import { Play } from 'lucide-react';
-import { Button, type ActionState } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { Download } from 'lucide-react';
+import { useI18n } from '../../../shared/i18n';
+import { Button, type ButtonProps } from '../../../shared/ui';
+import { useCrawlNovel } from '../model/use-crawl-novel';
 
 export function CrawlNovelButton({
-  actionState,
-  disabled,
-  onClick
-}: {
-  actionState: ActionState;
-  disabled?: boolean;
-  onClick: () => void;
-}) {
+  novelId,
+  children,
+  ...props
+}: ButtonProps & { novelId: string }) {
+  const mutation = useCrawlNovel();
   const { t } = useI18n();
   return (
     <Button
-      onClick={onClick}
-      actionState={actionState}
-      leadingIcon={<Play size={17} />}
-      disabled={disabled}
-      full
-      className="sm:w-auto"
+      {...props}
+      actionState={mutation.status}
+      leadingIcon={props.leadingIcon ?? <Download size={17} />}
+      onClick={(event) => {
+        props.onClick?.(event);
+        if (!event.defaultPrevented) mutation.mutate(novelId);
+      }}
     >
-      {t('crawl.start')}
+      {children ?? t('crawlNovel.action')}
     </Button>
   );
 }

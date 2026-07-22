@@ -15,7 +15,7 @@ async function readTree(directory: string, root = directory): Promise<string> {
 }
 
 test('library page composes public slices and owns only URL and view state', async () => {
-  const source = await readTree('apps/web-next/src/pages/library');
+  const source = await readTree('apps/web/src/pages/library');
   assert.match(source, /useNovels/);
   assert.match(source, /LibraryGrid/);
   assert.match(source, /LibrarySearchPanel|useSearchLibraryFeature/);
@@ -30,7 +30,7 @@ test('library page composes public slices and owns only URL and view state', asy
 });
 
 test('library preserves twelve-card skeleton geometry pagination and stable route state', async () => {
-  const source = await readTree('apps/web-next/src/pages/library');
+  const source = await readTree('apps/web/src/pages/library');
   assert.match(source, /LIBRARY_PAGE_SIZE\s*=\s*12/);
   assert.match(source, /Array\.from\(\{\s*length:\s*LIBRARY_PAGE_SIZE/);
   assert.match(
@@ -44,8 +44,8 @@ test('library preserves twelve-card skeleton geometry pagination and stable rout
 });
 
 test('continue reading matches list summaries to continuity without detail fallbacks', async () => {
-  const page = await readTree('apps/web-next/src/pages/library');
-  const widget = await readTree('apps/web-next/src/widgets/continue-reading');
+  const page = await readTree('apps/web/src/pages/library');
+  const widget = await readTree('apps/web/src/widgets/continue-reading');
   assert.match(page, /listReadingHistory/);
   assert.match(page, /new Map/);
   assert.match(page, /items\.find/);
@@ -54,7 +54,7 @@ test('continue reading matches list summaries to continuity without detail fallb
 });
 
 test('activity page groups tasks and uses disconnected-only polling fallback', async () => {
-  const source = await readTree('apps/web-next/src/pages/activity');
+  const source = await readTree('apps/web/src/pages/activity');
   assert.match(source, /useTasks/);
   assert.match(source, /groupActivityTasks/);
   assert.match(source, /running/);
@@ -66,7 +66,7 @@ test('activity page groups tasks and uses disconnected-only polling fallback', a
 });
 
 test('crawl task card renders outcome and progress from public entity types', async () => {
-  const source = await readTree('apps/web-next/src/widgets/crawl-task-card');
+  const source = await readTree('apps/web/src/widgets/crawl-task-card');
   assert.match(source, /CrawlTask/);
   assert.match(source, /taskOutcomeLabel/);
   assert.match(source, /ProgressRing/);
@@ -75,7 +75,7 @@ test('crawl task card renders outcome and progress from public entity types', as
 });
 
 test('task detail composes separate task-control features and no mutations', async () => {
-  const source = await readTree('apps/web-next/src/pages/task-detail');
+  const source = await readTree('apps/web/src/pages/task-detail');
   assert.match(source, /PauseTaskButton/);
   assert.match(source, /ResumeTaskButton/);
   assert.match(source, /CancelTaskButton/);
@@ -86,7 +86,7 @@ test('task detail composes separate task-control features and no mutations', asy
 });
 
 test('task detail preserves progress telemetry outcome and event timeline', async () => {
-  const source = await readTree('apps/web-next/src/pages/task-detail');
+  const source = await readTree('apps/web/src/pages/task-detail');
   for (const marker of [
     /taskOutcomeLabel/,
     /currentSpeed/,
@@ -106,30 +106,30 @@ test('task detail preserves progress telemetry outcome and event timeline', asyn
 
 test('all Task 13 slices expose public indexes and avoid external deep imports', async () => {
   for (const directory of [
-    'apps/web-next/src/widgets/continue-reading',
-    'apps/web-next/src/widgets/library-grid',
-    'apps/web-next/src/widgets/crawl-task-card',
-    'apps/web-next/src/pages/library',
-    'apps/web-next/src/pages/activity',
-    'apps/web-next/src/pages/task-detail'
+    'apps/web/src/widgets/continue-reading',
+    'apps/web/src/widgets/library-grid',
+    'apps/web/src/widgets/crawl-task-card',
+    'apps/web/src/pages/library',
+    'apps/web/src/pages/activity',
+    'apps/web/src/pages/task-detail'
   ]) {
     assert.match(await readFile(`${directory}/index.ts`, 'utf8'), /export/);
   }
   const source = [
-    await readTree('apps/web-next/src/widgets/continue-reading'),
-    await readTree('apps/web-next/src/widgets/library-grid'),
-    await readTree('apps/web-next/src/widgets/crawl-task-card'),
-    await readTree('apps/web-next/src/pages/library'),
-    await readTree('apps/web-next/src/pages/activity'),
-    await readTree('apps/web-next/src/pages/task-detail')
+    await readTree('apps/web/src/widgets/continue-reading'),
+    await readTree('apps/web/src/widgets/library-grid'),
+    await readTree('apps/web/src/widgets/crawl-task-card'),
+    await readTree('apps/web/src/pages/library'),
+    await readTree('apps/web/src/pages/activity'),
+    await readTree('apps/web/src/pages/task-detail')
   ].join('\n');
   assert.doesNotMatch(source, /@\/entities\/[^/'"]+\/(?:api|model|ui)\//);
   assert.doesNotMatch(source, /@\/features\/[^/'"]+\/(?:api|model|ui|lib)\//);
 });
 
 test('router loaders now point to the three real Task 13 page modules', async () => {
-  const preload = await readFile('apps/web-next/src/app/router/route-preload.ts', 'utf8');
-  const router = await readFile('apps/web-next/src/app/router/AppRouter.tsx', 'utf8');
+  const preload = await readFile('apps/web/src/app/router/route-preload.ts', 'utf8');
+  const router = await readFile('apps/web/src/app/router/AppRouter.tsx', 'utf8');
   assert.match(preload, /import\(['"]@\/pages\/library['"]\)/);
   assert.match(preload, /import\(['"]@\/pages\/activity['"]\)/);
   assert.match(preload, /import\(['"]@\/pages\/task-detail['"]\)/);

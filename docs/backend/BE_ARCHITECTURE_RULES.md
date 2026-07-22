@@ -57,6 +57,6 @@ Crawler, novels, chapters and controllers must not contain website-specific sele
 
 ## Adding functionality
 
-Before adding a dependency between modules, define the smallest public operation or outbound port required. Register its concrete implementation in `apps/api/src/shared/container`; do not import an internal repository from the consumer module.
+Before adding a dependency between modules, define the smallest public operation or outbound port required. Register its concrete implementation in `apps/api-legacy/src/shared/container`; do not import an internal repository from the consumer module.
 
 Run `npm run check:arch` and `npm run check:crawler` after changing boundaries.

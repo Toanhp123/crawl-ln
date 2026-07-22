@@ -6,7 +6,7 @@ import {
   createActionFeedbackController,
   type ActionFeedbackPhase,
   type ActionFeedbackScheduler
-} from '../../apps/web/src/shared/ui/actions/actionFeedback.ts';
+} from '../../apps/web-legacy/src/shared/ui/actions/actionFeedback.ts';
 
 class FakeScheduler implements ActionFeedbackScheduler {
   private current = 0;
@@ -103,12 +103,12 @@ test('disposing the controller cancels pending feedback timers', () => {
 });
 
 test('button feedback timing and outcome are centralized', () => {
-  const button = readFileSync('apps/web/src/shared/ui/actions/Button.tsx', 'utf8');
+  const button = readFileSync('apps/web-legacy/src/shared/ui/actions/Button.tsx', 'utf8');
   const sourceTestAction = readFileSync(
-    'apps/web/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx',
+    'apps/web-legacy/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx',
     'utf8'
   );
-  const confirm = readFileSync('apps/web/src/shared/ui/overlay/ConfirmDialog.tsx', 'utf8');
+  const confirm = readFileSync('apps/web-legacy/src/shared/ui/overlay/ConfirmDialog.tsx', 'utf8');
 
   assert.match(button, /actionState\?: ActionState/);
   assert.match(button, /feedbackPolicy\?: ActionFeedbackPolicyName/);
@@ -124,9 +124,12 @@ test('button feedback timing and outcome are centralized', () => {
 });
 
 test('source plugin rows remain non-interactive when action controls are present', () => {
-  const row = readFileSync('apps/web/src/entities/source-plugin/ui/SourcePluginRow.tsx', 'utf8');
+  const row = readFileSync(
+    'apps/web-legacy/src/entities/source-plugin/ui/SourcePluginRow.tsx',
+    'utf8'
+  );
   const overview = readFileSync(
-    'apps/web/src/widgets/source-reader-overview/ui/SourceReaderOverview.tsx',
+    'apps/web-legacy/src/widgets/source-reader-overview/ui/SourceReaderOverview.tsx',
     'utf8'
   );
 

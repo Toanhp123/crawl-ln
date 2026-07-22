@@ -1,15 +1,7 @@
 import type { ExportWriterPort } from '../../application/ports/export-writer.port.js';
-import type { ExportBook } from '../../domain/export.js';
-function safeName(value: string) {
-  return (
-    value
-      .normalize('NFKD')
-      .replace(/[^\w\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '-')
-      .toLowerCase() || 'novel'
-  );
-}
+import type { ExportBook } from '../../domain/export.models.js';
+import { safeExportBaseName } from '../export-filename.js';
+
 export class TextExportWriter implements ExportWriterPort {
   async write(book: ExportBook) {
     const lines = [
@@ -27,11 +19,10 @@ export class TextExportWriter implements ExportWriterPort {
         ''
       ])
     ];
-    const content = Buffer.from(`\uFEFF${lines.join('\n')}`, 'utf8');
     return {
-      filename: `${safeName(book.novel.title)}.txt`,
+      filename: `${safeExportBaseName(book.novel.title)}.txt`,
       contentType: 'text/plain; charset=utf-8',
-      content,
+      content: Buffer.from(`\uFEFF${lines.join('\n')}`, 'utf8'),
       chapterCount: book.chapters.length
     };
   }

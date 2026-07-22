@@ -6,11 +6,11 @@ import test from 'node:test';
 import {
   CURRENT_SCHEMA_VERSION,
   createSqliteDatabase
-} from '../../apps/api/src/shared/database/sqlite.ts';
-import { JsZipBackupArchive } from '../../apps/api/src/modules/backup/infrastructure/archive/jszip-backup.archive.ts';
-import { SqliteBackupStore } from '../../apps/api/src/modules/backup/infrastructure/sqlite/sqlite-backup.store.ts';
-import { CreateBackupUseCase } from '../../apps/api/src/modules/backup/application/use-cases/create-backup.usecase.ts';
-import { RestoreBackupUseCase } from '../../apps/api/src/modules/backup/application/use-cases/restore-backup.usecase.ts';
+} from '../../apps/api-legacy/src/shared/database/sqlite.ts';
+import { JsZipBackupArchive } from '../../apps/api-legacy/src/modules/backup/infrastructure/archive/jszip-backup.archive.ts';
+import { SqliteBackupStore } from '../../apps/api-legacy/src/modules/backup/infrastructure/sqlite/sqlite-backup.store.ts';
+import { CreateBackupUseCase } from '../../apps/api-legacy/src/modules/backup/application/use-cases/create-backup.usecase.ts';
+import { RestoreBackupUseCase } from '../../apps/api-legacy/src/modules/backup/application/use-cases/restore-backup.usecase.ts';
 
 const clock = { now: () => new Date('2026-07-16T00:00:00.000Z') };
 

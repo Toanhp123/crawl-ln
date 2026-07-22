@@ -4,7 +4,7 @@ import { join, relative } from 'node:path';
 import test from 'node:test';
 
 const root = process.cwd();
-const webSourceRoot = join(root, 'apps/web/src');
+const webSourceRoot = join(root, 'apps/web-legacy/src');
 
 function collectTsxFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((entry) => {

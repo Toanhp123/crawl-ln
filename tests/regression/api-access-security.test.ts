@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { NextFunction, Request, Response } from 'express';
-import { createEnvironment } from '../../apps/api/src/shared/config/env.ts';
-import { apiAccessMiddleware } from '../../apps/api/src/shared/http/api-access.middleware.ts';
-import { createCorsOptions } from '../../apps/api/src/shared/http/cors-options.ts';
-import { isLoopbackAddress } from '../../apps/api/src/shared/http/network-address.ts';
+import { createEnvironment } from '../../apps/api-legacy/src/shared/config/env.ts';
+import { apiAccessMiddleware } from '../../apps/api-legacy/src/shared/http/api-access.middleware.ts';
+import { createCorsOptions } from '../../apps/api-legacy/src/shared/http/cors-options.ts';
+import { isLoopbackAddress } from '../../apps/api-legacy/src/shared/http/network-address.ts';
 
 test('loopback detection accepts IPv4, IPv6, and IPv4-mapped loopback only', () => {
   for (const address of ['127.0.0.1', '127.12.34.56', '::1', '::ffff:127.0.0.1']) {

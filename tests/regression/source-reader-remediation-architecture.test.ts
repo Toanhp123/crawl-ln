@@ -3,9 +3,9 @@ import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const productionFiles = [
-  'apps/api/src/modules/source-reader/infrastructure/runtime',
-  'apps/api/src/modules/source-reader/application',
-  'apps/api/src/modules/source-reader/presentation'
+  'apps/api-legacy/src/modules/source-reader/infrastructure/runtime',
+  'apps/api-legacy/src/modules/source-reader/application',
+  'apps/api-legacy/src/modules/source-reader/presentation'
 ];
 
 async function exists(path: string): Promise<boolean> {
@@ -19,7 +19,9 @@ async function exists(path: string): Promise<boolean> {
 
 test('legacy worker runtime is removed and external plugins use only the process sandbox', async () => {
   assert.equal(
-    await exists('apps/api/src/modules/source-reader/infrastructure/runtime/isolated-worker'),
+    await exists(
+      'apps/api-legacy/src/modules/source-reader/infrastructure/runtime/isolated-worker'
+    ),
     false
   );
   const architecture = await readFile('scripts/check-api-architecture.mjs', 'utf8');
@@ -31,7 +33,7 @@ test('legacy worker runtime is removed and external plugins use only the process
 
 test('external RPC schemas never expose ambient context, repository, or vault fields', async () => {
   const schema = await readFile(
-    'apps/api/src/modules/source-reader/infrastructure/runtime/external-process/sandbox-protocol.schema.ts',
+    'apps/api-legacy/src/modules/source-reader/infrastructure/runtime/external-process/sandbox-protocol.schema.ts',
     'utf8'
   );
   assert.doesNotMatch(schema, /\bcontext\s*:/);
@@ -41,7 +43,7 @@ test('external RPC schemas never expose ambient context, repository, or vault fi
 
 test('admin surface exposes safe plugin diagnostics and no force-enable route', async () => {
   const routes = await readFile(
-    'apps/api/src/modules/source-reader/presentation/routes/source-reader.routes.ts',
+    'apps/api-legacy/src/modules/source-reader/presentation/routes/source-reader.routes.ts',
     'utf8'
   );
   assert.match(routes, /router\.get\('\/plugins\/:pluginId'/);

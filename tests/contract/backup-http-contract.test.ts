@@ -60,7 +60,7 @@ const currentRuntime: HttpContractRuntime = {
     const previousStorage = process.env.STORAGE_DIR;
     process.env.STORAGE_DIR = storageDirectory;
     try {
-      const { createAppRuntime } = await import('../../apps/api/src/app.ts');
+      const { createAppRuntime } = await import('../../apps/api-legacy/src/app.ts');
       const runtime = createAppRuntime({ startBackgroundServices: false });
       seedCurrent(join(storageDirectory, 'novel-tool.sqlite'));
       return {
@@ -83,15 +83,14 @@ const currentRuntime: HttpContractRuntime = {
 const nextRuntime: HttpContractRuntime = {
   async create() {
     const storageDirectory = await mkdtemp(join(tmpdir(), 'novel-tool-next-backup-http-'));
-    const { createEnvironment } =
-      await import('../../apps/api-next/src/platform/config/environment.ts');
-    const { createNextAppRuntime } = await import('../../apps/api-next/src/app.ts');
+    const { createEnvironment } = await import('../../apps/api/src/platform/config/environment.ts');
+    const { createAppRuntime } = await import('../../apps/api/src/app.ts');
     const environment = createEnvironment({
       ...process.env,
-      NEXT_STORAGE_DIR: storageDirectory,
+      STORAGE_DIR: storageDirectory,
       SOURCE_READER_PLUGIN_DIR: join(storageDirectory, 'source-plugins')
     });
-    const runtime = createNextAppRuntime({ environment });
+    const runtime = createAppRuntime({ environment });
     await runtime.ready;
     seedNext(environment.databasePath);
     return {

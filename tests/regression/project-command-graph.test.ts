@@ -15,8 +15,8 @@ async function readPackage(path: string): Promise<PackageJson> {
 test('root build prepares shared and SDK once while workspace builds remain local', async () => {
   const [root, api, web] = await Promise.all([
     readPackage('package.json'),
-    readPackage('apps/api/package.json'),
-    readPackage('apps/web/package.json')
+    readPackage('apps/api-legacy/package.json'),
+    readPackage('apps/web-legacy/package.json')
   ]);
 
   assert.equal(root.scripts.build, 'npm run prepare:packages && npm run build:prepared');
@@ -26,11 +26,11 @@ test('root build prepares shared and SDK once while workspace builds remain loca
   assert.equal(root.scripts['build:prepared'], 'node scripts/build-prepared.mjs');
   assert.equal(
     root.scripts['build:api'],
-    'npm run prepare:packages && npm run build -w @novel-tool/api'
+    'npm run prepare:packages && npm run build -w @novel-tool/api-legacy'
   );
   assert.equal(
     root.scripts['build:web'],
-    'npm run prepare:packages && npm run build -w @novel-tool/web'
+    'npm run prepare:packages && npm run build -w @novel-tool/web-legacy'
   );
 
   assert.equal(api.scripts.build, 'node scripts/build.mjs');
@@ -44,8 +44,8 @@ test('root build prepares shared and SDK once while workspace builds remain loca
 test('root check prepares shared and SDK once while workspace checks remain local', async () => {
   const [root, api, web] = await Promise.all([
     readPackage('package.json'),
-    readPackage('apps/api/package.json'),
-    readPackage('apps/web/package.json')
+    readPackage('apps/api-legacy/package.json'),
+    readPackage('apps/web-legacy/package.json')
   ]);
 
   assert.equal(root.scripts.check, 'npm run prepare:packages && npm run check:prepared');
@@ -54,11 +54,11 @@ test('root check prepares shared and SDK once while workspace checks remain loca
   assert.equal(root.scripts['check:prepared'], 'node scripts/check-prepared.mjs');
   assert.equal(
     root.scripts['check:api'],
-    'npm run prepare:packages && npm run check -w @novel-tool/api'
+    'npm run prepare:packages && npm run check -w @novel-tool/api-legacy'
   );
   assert.equal(
     root.scripts['check:web'],
-    'npm run prepare:packages && npm run check -w @novel-tool/web'
+    'npm run prepare:packages && npm run check -w @novel-tool/web-legacy'
   );
 
   assert.equal(api.scripts.build, 'node scripts/build.mjs');

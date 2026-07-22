@@ -6,11 +6,11 @@ import test from 'node:test';
 const read = (path: string) => readFileSync(resolve(path), 'utf8');
 
 const dataPages = [
-  'apps/web/src/pages/library/ui/LibraryPage.tsx',
-  'apps/web/src/pages/activity/ui/ActivityPage.tsx',
-  'apps/web/src/app/layouts/GlobalAddNovelOverlay.tsx',
-  'apps/web/src/pages/task-detail/ui/TaskDetailPage.tsx',
-  'apps/web/src/pages/novel-detail/ui/NovelDetailPage.tsx'
+  'apps/web-legacy/src/pages/library/ui/LibraryPage.tsx',
+  'apps/web-legacy/src/pages/activity/ui/ActivityPage.tsx',
+  'apps/web-legacy/src/app/layouts/GlobalAddNovelOverlay.tsx',
+  'apps/web-legacy/src/pages/task-detail/ui/TaskDetailPage.tsx',
+  'apps/web-legacy/src/pages/novel-detail/ui/NovelDetailPage.tsx'
 ];
 
 test('realtime data pages do not expose manual refresh controls or background refresh indicators', () => {
@@ -27,9 +27,9 @@ test('realtime data pages do not expose manual refresh controls or background re
 });
 
 test('real load failures retain explicit retry actions', () => {
-  const library = read('apps/web/src/pages/library/ui/LibraryPage.tsx');
-  const libraryModel = read('apps/web/src/pages/library/model/useLibraryPage.ts');
-  const taskDetail = read('apps/web/src/pages/task-detail/ui/TaskDetailPage.tsx');
+  const library = read('apps/web-legacy/src/pages/library/ui/LibraryPage.tsx');
+  const libraryModel = read('apps/web-legacy/src/pages/library/model/useLibraryPage.ts');
+  const taskDetail = read('apps/web-legacy/src/pages/task-detail/ui/TaskDetailPage.tsx');
 
   assert.match(library, /actionLabel=\{t\('common\.retry'\)\}/);
   assert.match(library, /model\.retryLoad\(\)/);
@@ -39,9 +39,11 @@ test('real load failures retain explicit retry actions', () => {
 });
 
 test('business reload and retry actions remain available', () => {
-  const sourceTest = read('apps/web/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx');
-  const novelUpdate = read('apps/web/src/features/update-novel/ui/UpdateNovelButton.tsx');
-  const addOverlay = read('apps/web/src/app/layouts/GlobalAddNovelOverlay.tsx');
+  const sourceTest = read(
+    'apps/web-legacy/src/features/test-source-plugin/ui/TestSourcePluginButton.tsx'
+  );
+  const novelUpdate = read('apps/web-legacy/src/features/update-novel/ui/UpdateNovelButton.tsx');
+  const addOverlay = read('apps/web-legacy/src/app/layouts/GlobalAddNovelOverlay.tsx');
 
   assert.match(sourceTest, /mutation\.mutate\(\)/);
   assert.match(sourceTest, /FlaskConical/);
@@ -50,9 +52,15 @@ test('business reload and retry actions remain available', () => {
 });
 
 test('obsolete refresh indicator components are removed from the shared UI surface', () => {
-  assert.equal(existsSync(resolve('apps/web/src/shared/ui/feedback/RefreshIndicator.tsx')), false);
-  assert.equal(existsSync(resolve('apps/web/src/shared/ui/feedback/SyncIndicator.tsx')), false);
+  assert.equal(
+    existsSync(resolve('apps/web-legacy/src/shared/ui/feedback/RefreshIndicator.tsx')),
+    false
+  );
+  assert.equal(
+    existsSync(resolve('apps/web-legacy/src/shared/ui/feedback/SyncIndicator.tsx')),
+    false
+  );
 
-  const exports = read('apps/web/src/shared/ui/index.ts');
+  const exports = read('apps/web-legacy/src/shared/ui/index.ts');
   assert.doesNotMatch(exports, /RefreshIndicator|SyncIndicator/);
 });

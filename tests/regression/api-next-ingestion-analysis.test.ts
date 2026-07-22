@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CreateIngestionJobCommandHandler } from '../../apps/api-next/src/modules/ingestion/application/commands/create-ingestion-job.command.ts';
-import type { IngestionSourceReaderPort } from '../../apps/api-next/src/modules/ingestion/application/ports/source-reader.port.ts';
-import { AnalyzeNovelWorkflow } from '../../apps/api-next/src/modules/ingestion/application/services/analyze-novel.workflow.ts';
-import { SourcePolicyService } from '../../apps/api-next/src/modules/ingestion/application/services/source-policy.service.ts';
-import { RefreshNovelWorkflow } from '../../apps/api-next/src/modules/ingestion/application/services/refresh-novel.workflow.ts';
-import { IngestionJobEntity } from '../../apps/api-next/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
-import { IngestionError } from '../../apps/api-next/src/modules/ingestion/domain/errors/ingestion.error.ts';
-import type { LibraryNovelDetail } from '../../apps/api-next/src/modules/library/public/library.api.ts';
+import { CreateIngestionJobCommandHandler } from '../../apps/api/src/modules/ingestion/application/commands/create-ingestion-job.command.ts';
+import type { IngestionSourceReaderPort } from '../../apps/api/src/modules/ingestion/application/ports/source-reader.port.ts';
+import { AnalyzeNovelWorkflow } from '../../apps/api/src/modules/ingestion/application/services/analyze-novel.workflow.ts';
+import { SourcePolicyService } from '../../apps/api/src/modules/ingestion/application/services/source-policy.service.ts';
+import { RefreshNovelWorkflow } from '../../apps/api/src/modules/ingestion/application/services/refresh-novel.workflow.ts';
+import { IngestionJobEntity } from '../../apps/api/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
+import { IngestionError } from '../../apps/api/src/modules/ingestion/domain/errors/ingestion.error.ts';
+import type { LibraryNovelDetail } from '../../apps/api/src/modules/library/public/library.api.ts';
 
 const now = '2026-07-21T00:00:00.000Z';
 const sourceUrl = 'https://www.example.test/book?ref=input';

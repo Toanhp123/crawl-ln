@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SourceReaderCircuitBreaker } from '../../apps/api/src/modules/source-reader/application/services/source-reader-circuit-breaker.ts';
+import { SourceReaderCircuitBreaker } from '../../apps/api-legacy/src/modules/source-reader/application/services/source-reader-circuit-breaker.ts';
 
 test('auth failures do not open the shared plugin circuit', () => {
   const breaker = new SourceReaderCircuitBreaker({ failureThreshold: 3, openMs: 60_000 });

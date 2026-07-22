@@ -3,7 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import test from 'node:test';
 
-const root = 'apps/web-next/src/shared';
+const root = 'apps/web/src/shared';
 
 async function readTree(directory: string): Promise<string> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -61,10 +61,10 @@ test('shared realtime exposes only generic transport and batching primitives', a
 });
 
 test('shared public APIs expose the platform foundation', async () => {
-  const api = await import('../../apps/web-next/src/shared/api/index.ts');
-  const i18n = await import('../../apps/web-next/src/shared/i18n/index.ts');
-  const lib = await import('../../apps/web-next/src/shared/lib/index.ts');
-  const realtime = await import('../../apps/web-next/src/shared/realtime/index.ts');
+  const api = await import('../../apps/web/src/shared/api/index.ts');
+  const i18n = await import('../../apps/web/src/shared/i18n/index.ts');
+  const lib = await import('../../apps/web/src/shared/lib/index.ts');
+  const realtime = await import('../../apps/web/src/shared/realtime/index.ts');
 
   assert.equal(typeof api.http, 'function');
   assert.equal(typeof api.createQueryClient, 'function');
@@ -76,14 +76,13 @@ test('shared public APIs expose the platform foundation', async () => {
 });
 
 test('catalog composition is ordered and immutable by convention', async () => {
-  const { mergeCatalogs } = await import('../../apps/web-next/src/shared/i18n/catalog.ts');
+  const { mergeCatalogs } = await import('../../apps/web/src/shared/i18n/catalog.ts');
   const merged = mergeCatalogs({ a: 'first', shared: 'old' }, { b: 'second', shared: 'new' });
   assert.deepEqual(merged, { a: 'first', b: 'second', shared: 'new' });
 });
 
 test('event stream parses JSON through the caller decoder and reports connection state', async () => {
-  const { createEventStream } =
-    await import('../../apps/web-next/src/shared/realtime/event-stream.ts');
+  const { createEventStream } = await import('../../apps/web/src/shared/realtime/event-stream.ts');
   const statuses: string[] = [];
   const values: number[] = [];
   let closed = false;
@@ -121,8 +120,7 @@ test('event stream parses JSON through the caller decoder and reports connection
 });
 
 test('batch queue groups caller values and disposes pending work', async () => {
-  const { createBatchQueue } =
-    await import('../../apps/web-next/src/shared/realtime/batch-queue.ts');
+  const { createBatchQueue } = await import('../../apps/web/src/shared/realtime/batch-queue.ts');
   const batches: number[][] = [];
   const queue = createBatchQueue<number>((values) => batches.push([...values]), { windowMs: 5 });
   queue.enqueue(1);

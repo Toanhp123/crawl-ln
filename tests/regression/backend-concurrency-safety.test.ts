@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CrawlQueueService } from '../../apps/api/src/modules/crawler/application/services/crawl-queue.service.ts';
-import { CreateCrawlJobUseCase } from '../../apps/api/src/modules/crawler/application/use-cases/create-crawl-job.usecase.ts';
-import type { TaskRepository } from '../../apps/api/src/modules/task/domain/repositories/task.repository.ts';
-import type { CrawlJobRunnerService } from '../../apps/api/src/modules/crawler/application/services/crawl-job-runner.service.ts';
+import { CrawlQueueService } from '../../apps/api-legacy/src/modules/crawler/application/services/crawl-queue.service.ts';
+import { CreateCrawlJobUseCase } from '../../apps/api-legacy/src/modules/crawler/application/use-cases/create-crawl-job.usecase.ts';
+import type { TaskRepository } from '../../apps/api-legacy/src/modules/task/domain/repositories/task.repository.ts';
+import type { CrawlJobRunnerService } from '../../apps/api-legacy/src/modules/crawler/application/services/crawl-job-runner.service.ts';
 
 const task = {
   id: 't1',

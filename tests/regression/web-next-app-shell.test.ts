@@ -19,7 +19,7 @@ function escapeRegExp(value: string): string {
 }
 
 test('web-next preserves the public route table and keeps mutations out of app', async () => {
-  const router = await readFile('apps/web-next/src/app/router/AppRouter.tsx', 'utf8');
+  const router = await readFile('apps/web/src/app/router/AppRouter.tsx', 'utf8');
   for (const route of [
     '/library',
     '/library/:novelId',
@@ -37,7 +37,7 @@ test('web-next preserves the public route table and keeps mutations out of app',
   assert.match(router, /routeLoaders/);
   assert.doesNotMatch(router, /<Suspense\s+fallback=/);
 
-  const app = await readTree('apps/web-next/src/app');
+  const app = await readTree('apps/web/src/app');
   assert.doesNotMatch(
     app,
     /useMutation|method:\s*['"]POST|method:\s*['"]PUT|method:\s*['"]PATCH|method:\s*['"]DELETE/
@@ -45,7 +45,7 @@ test('web-next preserves the public route table and keeps mutations out of app',
 });
 
 test('app shell keeps navigation mounted and composes the global add-novel feature', async () => {
-  const shell = await readFile('apps/web-next/src/app/layouts/AppShell.tsx', 'utf8');
+  const shell = await readFile('apps/web/src/app/layouts/AppShell.tsx', 'utf8');
   assert.match(shell, /<Suspense\s+fallback=\{<RouteLoading\s*\/>\}>/);
   assert.match(shell, /<Outlet\s*\/>/);
   assert.match(shell, /AddNovelProvider/);
@@ -59,7 +59,7 @@ test('app shell keeps navigation mounted and composes the global add-novel featu
 });
 
 test('provider composition preserves startup ownership and maintenance behavior', async () => {
-  const providers = await readFile('apps/web-next/src/app/providers/AppProviders.tsx', 'utf8');
+  const providers = await readFile('apps/web/src/app/providers/AppProviders.tsx', 'utf8');
   const order = [
     'AppThemeProvider',
     'I18nProvider',
@@ -79,7 +79,7 @@ test('provider composition preserves startup ownership and maintenance behavior'
   }
 
   const maintenance = await readFile(
-    'apps/web-next/src/shared/maintenance/MaintenanceProvider.tsx',
+    'apps/web/src/shared/maintenance/MaintenanceProvider.tsx',
     'utf8'
   );
   assert.match(providers, /from ['"]@\/shared\/maintenance['"]/);
@@ -88,7 +88,7 @@ test('provider composition preserves startup ownership and maintenance behavior'
   assert.match(maintenance, /useMaintenanceOperation/);
 
   const errorBoundary = await readFile(
-    'apps/web-next/src/app/providers/ErrorBoundaryProvider.tsx',
+    'apps/web/src/app/providers/ErrorBoundaryProvider.tsx',
     'utf8'
   );
   assert.match(errorBoundary, /getDerivedStateFromError/);
@@ -96,11 +96,8 @@ test('provider composition preserves startup ownership and maintenance behavior'
 });
 
 test('query provider injects the exact lightweight persistence policy', async () => {
-  const queryProvider = await readFile('apps/web-next/src/app/providers/QueryProvider.tsx', 'utf8');
-  const queryPolicy = await readFile(
-    'apps/web-next/src/app/providers/query-persistence.ts',
-    'utf8'
-  );
+  const queryProvider = await readFile('apps/web/src/app/providers/QueryProvider.tsx', 'utf8');
+  const queryPolicy = await readFile('apps/web/src/app/providers/query-persistence.ts', 'utf8');
   for (const marker of [
     /root\s*===\s*['"]novels['"].*scope\s*===\s*['"]list['"]/s,
     /root\s*===\s*['"]tasks['"].*scope\s*===\s*['"]summary['"]/s,
@@ -113,12 +110,12 @@ test('query provider injects the exact lightweight persistence policy', async ()
   assert.doesNotMatch(queryPolicy, /chapters|events/);
   assert.match(queryProvider, /shouldPersistAppQueryKey\(query\.queryKey\)/);
   assert.match(queryProvider, /ToastProvider/);
-  const appProviders = await readFile('apps/web-next/src/app/providers/AppProviders.tsx', 'utf8');
+  const appProviders = await readFile('apps/web/src/app/providers/AppProviders.tsx', 'utf8');
   assert.match(appProviders, /RealtimeProvider/);
 });
 
 test('query cache restores before mount and persistence starts after mount', async () => {
-  const main = await readFile('apps/web-next/src/main.tsx', 'utf8');
+  const main = await readFile('apps/web/src/main.tsx', 'utf8');
   const restoreIndex = main.indexOf('await restoreQueryCache');
   const renderIndex = main.indexOf('createRoot');
   const persistenceIndex = main.lastIndexOf('startQueryCachePersistence(');
@@ -127,25 +124,22 @@ test('query cache restores before mount and persistence starts after mount', asy
 });
 
 test('route preloading is centralized and respects constrained networks', async () => {
-  const preload = await readFile('apps/web-next/src/app/router/route-preload.ts', 'utf8');
+  const preload = await readFile('apps/web/src/app/router/route-preload.ts', 'utf8');
   assert.match(preload, /requestIdleCallback/);
   assert.match(preload, /saveData/);
   assert.match(preload, /effectiveType/);
   assert.match(preload, /preloadRoute/);
   assert.match(preload, /scheduleIdleRoutePreload/);
 
-  const home = await readFile('apps/web-next/src/app/router/HomeRedirect.tsx', 'utf8');
+  const home = await readFile('apps/web/src/app/router/HomeRedirect.tsx', 'utf8');
   assert.match(home, /<Navigate\s+to="\/library"\s+replace\s*\/>/);
   assert.doesNotMatch(home, /useQuery|LoadingState/);
 });
 
 test('navigation widgets expose preload intent and persistent route chrome', async () => {
-  const header = await readFile('apps/web-next/src/widgets/app-header/ui/AppHeader.tsx', 'utf8');
-  const bottom = await readFile(
-    'apps/web-next/src/widgets/bottom-tabs/ui/AppBottomTabs.tsx',
-    'utf8'
-  );
-  const sidebar = await readFile('apps/web-next/src/app/layouts/AppSidebar.tsx', 'utf8');
+  const header = await readFile('apps/web/src/widgets/app-header/ui/AppHeader.tsx', 'utf8');
+  const bottom = await readFile('apps/web/src/widgets/bottom-tabs/ui/AppBottomTabs.tsx', 'utf8');
+  const sidebar = await readFile('apps/web/src/app/layouts/AppSidebar.tsx', 'utf8');
   assert.match(header, /onRouteIntent/);
   assert.match(bottom, /onRouteIntent/);
   assert.match(bottom, /onAddNovel/);
@@ -155,7 +149,7 @@ test('navigation widgets expose preload intent and persistent route chrome', asy
 });
 
 test('reader shell is nested, modal, focus-safe, and outside the app scroll viewport', async () => {
-  const shell = await readFile('apps/web-next/src/app/layouts/ReaderShell.tsx', 'utf8');
+  const shell = await readFile('apps/web/src/app/layouts/ReaderShell.tsx', 'utf8');
   assert.match(shell, /createPortal/);
   assert.match(shell, /aria-modal="true"/);
   assert.match(shell, /setAttribute\(['"]inert['"]/);
@@ -163,12 +157,12 @@ test('reader shell is nested, modal, focus-safe, and outside the app scroll view
   assert.match(shell, /reader-scroll-root/);
   assert.match(shell, /<Outlet\s*\/>/);
 
-  const router = await readFile('apps/web-next/src/app/router/AppRouter.tsx', 'utf8');
+  const router = await readFile('apps/web/src/app/router/AppRouter.tsx', 'utf8');
   assert.match(router, /<Route\s+element=\{<ReaderShell\s*\/>\}>/);
 });
 
 test('app i18n merges shell and public slice catalogs with typed error translation', async () => {
-  const catalog = await readFile('apps/web-next/src/app/i18n/catalog.ts', 'utf8');
+  const catalog = await readFile('apps/web/src/app/i18n/catalog.ts', 'utf8');
   assert.match(catalog, /mergeCatalogs/);
   assert.match(catalog, /@\/features\/add-novel/);
   assert.match(catalog, /@\/features\/reader-preferences/);
@@ -178,7 +172,7 @@ test('app i18n merges shell and public slice catalogs with typed error translati
   assert.match(catalog, /appMessagesEn/);
   assert.match(catalog, /appMessagesVi/);
 
-  const errors = await readFile('apps/web-next/src/app/i18n/error-catalog.ts', 'utf8');
+  const errors = await readFile('apps/web/src/app/i18n/error-catalog.ts', 'utf8');
   assert.match(errors, /ApiError/);
   assert.match(errors, /NOT_FOUND/);
   assert.match(errors, /VALIDATION_ERROR/);

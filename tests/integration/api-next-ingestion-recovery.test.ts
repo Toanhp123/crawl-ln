@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { IngestionQueriesService } from '../../apps/api-next/src/modules/ingestion/application/queries/ingestion-queries.service.ts';
-import { IngestionQueueService } from '../../apps/api-next/src/modules/ingestion/application/services/ingestion-queue.service.ts';
-import { IngestionJobEntity } from '../../apps/api-next/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
-import type { IngestionJob } from '../../apps/api-next/src/modules/ingestion/domain/ingestion.models.ts';
-import { ingestionMigrations } from '../../apps/api-next/src/modules/ingestion/index.ts';
-import { createIngestionModule } from '../../apps/api-next/src/modules/ingestion/ingestion.module.ts';
-import { IngestionSqliteRepository } from '../../apps/api-next/src/modules/ingestion/infrastructure/sqlite/ingestion-sqlite.repository.ts';
-import { MigrationRegistry } from '../../apps/api-next/src/platform/database/migration-registry.ts';
-import { runRegisteredMigrations } from '../../apps/api-next/src/platform/database/migration-runner.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
+import { IngestionQueriesService } from '../../apps/api/src/modules/ingestion/application/queries/ingestion-queries.service.ts';
+import { IngestionQueueService } from '../../apps/api/src/modules/ingestion/application/services/ingestion-queue.service.ts';
+import { IngestionJobEntity } from '../../apps/api/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
+import type { IngestionJob } from '../../apps/api/src/modules/ingestion/domain/ingestion.models.ts';
+import { ingestionMigrations } from '../../apps/api/src/modules/ingestion/index.ts';
+import { createIngestionModule } from '../../apps/api/src/modules/ingestion/ingestion.module.ts';
+import { IngestionSqliteRepository } from '../../apps/api/src/modules/ingestion/infrastructure/sqlite/ingestion-sqlite.repository.ts';
+import { MigrationRegistry } from '../../apps/api/src/platform/database/migration-registry.ts';
+import { runRegisteredMigrations } from '../../apps/api/src/platform/database/migration-runner.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
 
 const now = '2026-07-21T00:00:00.000Z';
 

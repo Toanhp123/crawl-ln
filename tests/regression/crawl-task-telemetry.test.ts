@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CrawlTaskEntity } from '../../apps/api/src/modules/task/domain/entities/task.entity.ts';
+import { CrawlTaskEntity } from '../../apps/api-legacy/src/modules/task/domain/entities/task.entity.ts';
 
 test('graceful pause lifecycle preserves progress and clears live telemetry', () => {
   const task = CrawlTaskEntity.createQueued({

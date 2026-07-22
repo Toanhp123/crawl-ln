@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SourceReaderMaintenanceService } from '../../apps/api/src/modules/source-reader/application/services/source-reader-maintenance.service.ts';
+import { SourceReaderMaintenanceService } from '../../apps/api-legacy/src/modules/source-reader/application/services/source-reader-maintenance.service.ts';
 
 test('maintenance expires cache, sessions, and challenges in one pass', async () => {
   const calls: string[] = [];

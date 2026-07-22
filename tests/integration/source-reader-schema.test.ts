@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { createSqliteDatabase } from '../../apps/api/src/shared/database/sqlite.ts';
+import { createSqliteDatabase } from '../../apps/api-legacy/src/shared/database/sqlite.ts';
 
 const root = await mkdtemp(join(tmpdir(), 'source-reader-schema-'));
 const database = createSqliteDatabase(join(root, 'test.sqlite'));

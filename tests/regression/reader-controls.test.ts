@@ -5,8 +5,10 @@ import { readFileSync } from 'node:fs';
 const read = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
 test('reader preferences expose brightness and advanced typography controls', () => {
-  const theme = read('apps/web/src/shared/theme/runtime/ThemeProvider.tsx');
-  const sheet = read('apps/web/src/features/reader-preferences/ui/ReaderPreferencesSheet.tsx');
+  const theme = read('apps/web-legacy/src/shared/theme/runtime/ThemeProvider.tsx');
+  const sheet = read(
+    'apps/web-legacy/src/features/reader-preferences/ui/ReaderPreferencesSheet.tsx'
+  );
   assert.match(theme, /brightness:\s*number/);
   assert.match(theme, /--reader-dim-opacity/);
   for (const setting of [
@@ -23,9 +25,11 @@ test('reader preferences expose brightness and advanced typography controls', ()
 });
 
 test('reader controls provide live progress, adjacent prefetch and guarded swipe navigation', () => {
-  const page = read('apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
-  const model = read('apps/web/src/pages/chapter-reader/model/useChapterReaderPage.ts');
-  const swipe = read('apps/web/src/features/read-chapter/model/useSwipeChapterNavigation.ts');
+  const page = read('apps/web-legacy/src/pages/chapter-reader/ui/ChapterReaderPage.tsx');
+  const model = read('apps/web-legacy/src/pages/chapter-reader/model/useChapterReaderPage.ts');
+  const swipe = read(
+    'apps/web-legacy/src/features/read-chapter/model/useSwipeChapterNavigation.ts'
+  );
   assert.match(page, /useReaderProgress/);
   assert.match(page, /useSwipeChapterNavigation/);
   assert.match(page, /currentIndex=\{stream\.activeIndex\}/);

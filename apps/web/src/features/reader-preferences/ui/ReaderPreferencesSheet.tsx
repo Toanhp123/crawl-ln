@@ -1,11 +1,8 @@
 import { Minus, Plus, RotateCcw, SunMedium } from 'lucide-react';
-import { BottomSheet, Button, IconButton, SegmentedControl, Switch } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import {
-  defaultReaderPreferences,
-  useTheme,
-  type ReaderPreferences
-} from '@/shared/theme/runtime/ThemeProvider';
+import { useI18n } from '../../../shared/i18n';
+import { BottomSheet, Button, IconButton, SegmentedControl, Switch } from '../../../shared/ui';
+import { useReaderPreferences } from '../model/ReaderPreferencesProvider';
+import { defaultReaderPreferences, type ReaderPreferences } from '../model/preferences';
 
 export function ReaderPreferencesSheet({
   open,
@@ -15,9 +12,10 @@ export function ReaderPreferencesSheet({
   onOpenChange: (value: boolean) => void;
 }) {
   const { t, number } = useI18n();
-  const { reader, setReader } = useTheme();
+  const { preferences, setPreferences } = useReaderPreferences();
   const update = <K extends keyof ReaderPreferences>(key: K, value: ReaderPreferences[K]) =>
-    setReader((current) => ({ ...current, [key]: value }));
+    setPreferences((current) => ({ ...current, [key]: value }));
+
   return (
     <BottomSheet
       open={open}
@@ -32,7 +30,7 @@ export function ReaderPreferencesSheet({
         <label className="grid gap-2 type-label font-bold">
           {t('settings.appearance')}
           <SegmentedControl
-            value={reader.colorScheme}
+            value={preferences.colorScheme}
             items={[
               { id: 'system', label: t('settings.theme.system') },
               { id: 'light', label: t('settings.theme.light') },
@@ -50,7 +48,7 @@ export function ReaderPreferencesSheet({
               <SunMedium size={17} />
               {t('settings.brightness')}
             </span>
-            <span>{number(reader.brightness)}%</span>
+            <span>{number(preferences.brightness)}%</span>
           </div>
           <input
             aria-label={t('settings.brightness')}
@@ -58,7 +56,7 @@ export function ReaderPreferencesSheet({
             min="45"
             max="100"
             step="5"
-            value={reader.brightness}
+            value={preferences.brightness}
             onChange={(event) => update('brightness', Number(event.target.value))}
             className="h-11 w-full accent-[hsl(var(--color-primary))]"
           />
@@ -66,7 +64,7 @@ export function ReaderPreferencesSheet({
         <label className="grid gap-2 type-label font-bold">
           {t('settings.fontFamily')}
           <SegmentedControl
-            value={reader.fontFamily}
+            value={preferences.fontFamily}
             items={[
               { id: 'serif', label: t('settings.value.serif') },
               { id: 'sans', label: t('settings.value.sans') }
@@ -82,18 +80,22 @@ export function ReaderPreferencesSheet({
             <IconButton
               variant="ghost"
               aria-label={t('reader.decreaseFont')}
-              onClick={() => update('fontSize', reader.fontSize === 'large' ? 'medium' : 'small')}
-              disabled={reader.fontSize === 'small'}
+              onClick={() =>
+                update('fontSize', preferences.fontSize === 'large' ? 'medium' : 'small')
+              }
+              disabled={preferences.fontSize === 'small'}
             >
               <Minus size={18} />
             </IconButton>
             <div className="rounded-[var(--radius-md)] bg-surface2 py-3 text-center type-label font-bold">
-              {t(`settings.value.${reader.fontSize}`)}
+              {t(`settings.value.${preferences.fontSize}`)}
             </div>
             <IconButton
               aria-label={t('reader.increaseFont')}
-              onClick={() => update('fontSize', reader.fontSize === 'small' ? 'medium' : 'large')}
-              disabled={reader.fontSize === 'large'}
+              onClick={() =>
+                update('fontSize', preferences.fontSize === 'small' ? 'medium' : 'large')
+              }
+              disabled={preferences.fontSize === 'large'}
             >
               <Plus size={18} />
             </IconButton>
@@ -102,7 +104,7 @@ export function ReaderPreferencesSheet({
         <label className="grid gap-2 type-label font-bold">
           {t('settings.lineHeight')}
           <SegmentedControl
-            value={reader.lineHeight}
+            value={preferences.lineHeight}
             items={[
               { id: 'compact', label: t('settings.value.compact') },
               { id: 'comfortable', label: t('settings.value.comfortable') },
@@ -116,7 +118,7 @@ export function ReaderPreferencesSheet({
         <label className="grid gap-2 type-label font-bold">
           {t('settings.paragraphSpacing')}
           <SegmentedControl
-            value={reader.paragraphSpacing}
+            value={preferences.paragraphSpacing}
             items={[
               { id: 'tight', label: t('settings.value.tight') },
               { id: 'normal', label: t('settings.value.normal') },
@@ -130,7 +132,7 @@ export function ReaderPreferencesSheet({
         <label className="grid gap-2 type-label font-bold">
           {t('settings.contentWidth')}
           <SegmentedControl
-            value={reader.pageMargin}
+            value={preferences.pageMargin}
             items={[
               { id: 'narrow', label: t('settings.value.wide') },
               { id: 'normal', label: t('settings.value.normal') },
@@ -144,7 +146,7 @@ export function ReaderPreferencesSheet({
         <label className="grid gap-2 type-label font-bold">
           {t('settings.alignment')}
           <SegmentedControl
-            value={reader.alignment}
+            value={preferences.alignment}
             items={[
               { id: 'left', label: t('settings.value.left') },
               { id: 'justify', label: t('settings.value.justify') }
@@ -157,7 +159,7 @@ export function ReaderPreferencesSheet({
         <label className="grid gap-2 type-label font-bold">
           {t('settings.fontWeight')}
           <SegmentedControl
-            value={reader.fontWeight}
+            value={preferences.fontWeight}
             items={[
               { id: 'regular', label: t('settings.value.regular') },
               { id: 'medium', label: t('settings.value.medium') }
@@ -170,27 +172,27 @@ export function ReaderPreferencesSheet({
         <div className="grid grid-cols-2 gap-2">
           <Switch
             label={t('settings.indent')}
-            checked={reader.indent}
+            checked={preferences.indent}
             onCheckedChange={(value) => update('indent', value)}
           />
           <Switch
             label={t('settings.hyphenation')}
-            checked={reader.hyphenation}
+            checked={preferences.hyphenation}
             onCheckedChange={(value) => update('hyphenation', value)}
           />
           <Switch
             label={t('settings.dropCap')}
-            checked={reader.dropCap}
+            checked={preferences.dropCap}
             onCheckedChange={(value) => update('dropCap', value)}
           />
           <Switch
             label={t('settings.keepAwake')}
-            checked={reader.keepAwake}
+            checked={preferences.keepAwake}
             onCheckedChange={(value) => update('keepAwake', value)}
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="secondary" onClick={() => setReader(defaultReaderPreferences)}>
+          <Button variant="secondary" onClick={() => setPreferences(defaultReaderPreferences)}>
             <RotateCcw size={17} />
             {t('common.reset')}
           </Button>

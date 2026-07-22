@@ -1,12 +1,13 @@
 import { KeyRound, Network, Plus, ShieldQuestion } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SourcePluginRow, useSourcePluginsQuery } from '@/entities/source-plugin';
-import { useSourceCredentialsQuery } from '@/entities/source-credential';
-import { useSourceNetworkProfilesQuery } from '@/entities/source-network-profile';
-import { useSourceAuthChallengesQuery } from '@/entities/source-auth-challenge';
+import { useSourceAuthChallenges } from '@/entities/source-auth-challenge';
+import { useSourceCredentials } from '@/entities/source-credential';
+import { useSourceNetworkProfiles } from '@/entities/source-network-profile';
+import { SourcePluginRow, useSourcePlugins } from '@/entities/source-plugin';
 import { SourcePluginEnableSwitch } from '@/features/manage-source-plugins';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useConnectionStatus } from '@/shared/realtime';
+import { useI18n } from '@/shared/i18n';
 import {
   Button,
   EmptyState,
@@ -21,10 +22,11 @@ import {
 export function SourceReaderOverview() {
   const { t, number } = useI18n();
   const navigate = useNavigate();
-  const plugins = useSourcePluginsQuery();
-  const credentials = useSourceCredentialsQuery();
-  const networks = useSourceNetworkProfilesQuery();
-  const challenges = useSourceAuthChallengesQuery(true);
+  const connectionState = useConnectionStatus();
+  const plugins = useSourcePlugins();
+  const credentials = useSourceCredentials();
+  const networks = useSourceNetworkProfiles();
+  const challenges = useSourceAuthChallenges({ connectionState, pollingIntervalMs: 5_000 });
   const [search, setSearch] = useState('');
   const filtered = useMemo(() => {
     const value = search.trim().toLowerCase();
@@ -36,6 +38,7 @@ export function SourceReaderOverview() {
         )
     );
   }, [plugins.data, search]);
+
   return (
     <div className="space-y-5">
       <div className="grid gap-2 sm:grid-cols-3">
@@ -87,9 +90,7 @@ export function SourceReaderOverview() {
                 plugin={plugin}
                 trailing={
                   <div className="flex items-center gap-2">
-                    <div className="w-14">
-                      <SourcePluginEnableSwitch plugin={plugin} compact />
-                    </div>
+                    <SourcePluginEnableSwitch plugin={plugin} />
                     <Button
                       size="sm"
                       variant="ghost"

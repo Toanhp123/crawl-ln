@@ -2,11 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 test('query persistence accepts only the intended exact key shapes', async () => {
-  const policy =
-    (await import('../../apps/web-next/src/app/providers/query-persistence.ts')) as Record<
-      string,
-      unknown
-    >;
+  const policy = (await import('../../apps/web/src/app/providers/query-persistence.ts')) as Record<
+    string,
+    unknown
+  >;
   assert.equal(typeof policy.shouldPersistAppQueryKey, 'function');
   if (typeof policy.shouldPersistAppQueryKey !== 'function') return;
 

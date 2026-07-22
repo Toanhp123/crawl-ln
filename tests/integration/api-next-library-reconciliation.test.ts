@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ReconcileAnalysisCommandHandler } from '../../apps/api-next/src/modules/library/application/commands/reconcile-analysis.command.ts';
-import { LibraryError } from '../../apps/api-next/src/modules/library/domain/errors/library.error.ts';
-import type { ReconcileAnalysisCommand } from '../../apps/api-next/src/modules/library/domain/library.contracts.ts';
-import { libraryMigrations } from '../../apps/api-next/src/modules/library/index.ts';
-import { LibrarySqliteRepository } from '../../apps/api-next/src/modules/library/infrastructure/sqlite/library-sqlite.repository.ts';
-import { LibrarySqliteUnitOfWork } from '../../apps/api-next/src/modules/library/infrastructure/sqlite/library-sqlite.unit-of-work.ts';
-import { MigrationRegistry } from '../../apps/api-next/src/platform/database/migration-registry.ts';
-import { runRegisteredMigrations } from '../../apps/api-next/src/platform/database/migration-runner.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
+import { ReconcileAnalysisCommandHandler } from '../../apps/api/src/modules/library/application/commands/reconcile-analysis.command.ts';
+import { LibraryError } from '../../apps/api/src/modules/library/domain/errors/library.error.ts';
+import type { ReconcileAnalysisCommand } from '../../apps/api/src/modules/library/domain/library.contracts.ts';
+import { libraryMigrations } from '../../apps/api/src/modules/library/index.ts';
+import { LibrarySqliteRepository } from '../../apps/api/src/modules/library/infrastructure/sqlite/library-sqlite.repository.ts';
+import { LibrarySqliteUnitOfWork } from '../../apps/api/src/modules/library/infrastructure/sqlite/library-sqlite.unit-of-work.ts';
+import { MigrationRegistry } from '../../apps/api/src/platform/database/migration-registry.ts';
+import { runRegisteredMigrations } from '../../apps/api/src/platform/database/migration-runner.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
 
 const firstAnalyzedAt = '2026-07-21T00:00:00.000Z';
 const secondAnalyzedAt = '2026-07-21T01:00:00.000Z';

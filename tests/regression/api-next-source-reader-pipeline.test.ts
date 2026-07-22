@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SourceReaderFacade } from '../../apps/api-next/src/modules/source-reader/application/source-reader.facade.ts';
-import { CandidateResolver } from '../../apps/api-next/src/modules/source-reader/application/services/candidate-resolver.ts';
-import { HealthFallbackPolicy } from '../../apps/api-next/src/modules/source-reader/application/services/health-fallback.policy.ts';
-import { InvocationCoordinator } from '../../apps/api-next/src/modules/source-reader/application/services/invocation-coordinator.ts';
-import { PaginationCoordinator } from '../../apps/api-next/src/modules/source-reader/application/services/pagination-coordinator.ts';
-import { ReaderCachePolicy } from '../../apps/api-next/src/modules/source-reader/application/services/reader-cache-policy.ts';
-import { SourceResultValidator } from '../../apps/api-next/src/modules/source-reader/application/services/source-result-validator.ts';
+import { SourceReaderFacade } from '../../apps/api/src/modules/source-reader/application/source-reader.facade.ts';
+import { CandidateResolver } from '../../apps/api/src/modules/source-reader/application/services/candidate-resolver.ts';
+import { HealthFallbackPolicy } from '../../apps/api/src/modules/source-reader/application/services/health-fallback.policy.ts';
+import { InvocationCoordinator } from '../../apps/api/src/modules/source-reader/application/services/invocation-coordinator.ts';
+import { PaginationCoordinator } from '../../apps/api/src/modules/source-reader/application/services/pagination-coordinator.ts';
+import { ReaderCachePolicy } from '../../apps/api/src/modules/source-reader/application/services/reader-cache-policy.ts';
+import { SourceResultValidator } from '../../apps/api/src/modules/source-reader/application/services/source-result-validator.ts';
 import type {
   SourceReaderCandidate,
   SourceReaderPipelinePorts
-} from '../../apps/api-next/src/modules/source-reader/application/source-reader.ports.ts';
-import { SourceReaderError } from '../../apps/api-next/src/modules/source-reader/domain/errors/source-reader.error.ts';
+} from '../../apps/api/src/modules/source-reader/application/source-reader.ports.ts';
+import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
 
 const sourceUrl = 'https://example.test/book';
 const now = new Date('2026-07-21T00:00:00.000Z');

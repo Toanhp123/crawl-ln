@@ -1,12 +1,13 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { readBackgroundScrollKey } from '@/shared/navigation/readerReturnState';
 import { ScrollViewport } from '@/shared/ui';
 
 const MAX_SCROLL_POSITIONS = 80;
 const appScrollPositions = new Map<string, number>();
 
-function rememberScrollPosition(key: string, value: number) {
+type ScrollState = { backgroundScrollKey?: string } | null;
+
+function rememberScrollPosition(key: string, value: number): void {
   appScrollPositions.delete(key);
   appScrollPositions.set(key, value);
   while (appScrollPositions.size > MAX_SCROLL_POSITIONS) {
@@ -21,7 +22,8 @@ export function AppScrollViewport({ children }: { children: ReactNode }) {
   const viewportRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const restoringRef = useRef(false);
-  const scrollKey = readBackgroundScrollKey(location.state) ?? location.key;
+  const state = location.state as ScrollState;
+  const scrollKey = state?.backgroundScrollKey ?? location.key;
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;

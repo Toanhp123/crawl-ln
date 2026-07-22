@@ -8,14 +8,15 @@ const storageDir = await mkdtemp(join(tmpdir(), 'novel-tool-task-constraint-'));
 process.env.STORAGE_DIR = storageDir;
 
 const { NovelSqliteRepository } =
-  await import('../../apps/api/src/modules/novels/infrastructure/sqlite/novel-sqlite.repository.ts');
+  await import('../../apps/api-legacy/src/modules/novels/infrastructure/sqlite/novel-sqlite.repository.ts');
 const { NovelAnalysisSqliteAdapter } =
-  await import('../../apps/api/src/modules/novels/infrastructure/sqlite/novel-analysis-sqlite.adapter.ts');
+  await import('../../apps/api-legacy/src/modules/novels/infrastructure/sqlite/novel-analysis-sqlite.adapter.ts');
 const { TaskSqliteRepository } =
-  await import('../../apps/api/src/modules/task/infrastructure/sqlite/task-sqlite.repository.ts');
+  await import('../../apps/api-legacy/src/modules/task/infrastructure/sqlite/task-sqlite.repository.ts');
 const { CrawlTaskEntity } =
-  await import('../../apps/api/src/modules/task/domain/entities/task.entity.ts');
-const { createSqliteDatabase } = await import('../../apps/api/src/shared/database/sqlite.ts');
+  await import('../../apps/api-legacy/src/modules/task/domain/entities/task.entity.ts');
+const { createSqliteDatabase } =
+  await import('../../apps/api-legacy/src/shared/database/sqlite.ts');
 
 const database = createSqliteDatabase(join(storageDir, 'constraint.sqlite'));
 const analysis = new NovelAnalysisSqliteAdapter(database);

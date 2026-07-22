@@ -54,8 +54,7 @@ function registrySpy(calls: string[]) {
 }
 
 test('realtime resources call only public entity invalidation adapters', async () => {
-  const { routeRealtimeEvent } =
-    await import('../../apps/web-next/src/app/realtime/event-router.ts');
+  const { routeRealtimeEvent } = await import('../../apps/web/src/app/realtime/event-router.ts');
   const calls: string[] = [];
   const registry = registrySpy(calls);
 
@@ -76,8 +75,7 @@ test('realtime resources call only public entity invalidation adapters', async (
 });
 
 test('scheduler, search, plugins, and all use their app-owned public adapters', async () => {
-  const { routeRealtimeEvent } =
-    await import('../../apps/web-next/src/app/realtime/event-router.ts');
+  const { routeRealtimeEvent } = await import('../../apps/web/src/app/realtime/event-router.ts');
   const calls: string[] = [];
   const registry = registrySpy(calls);
   const queryCalls: unknown[] = [];
@@ -113,7 +111,7 @@ test('scheduler, search, plugins, and all use their app-owned public adapters', 
 
 test('source reader aggregate invalidates all four read-only entity collections', async () => {
   const { createRealtimeInvalidationRegistry } =
-    await import('../../apps/web-next/src/app/realtime/event-router.ts');
+    await import('../../apps/web/src/app/realtime/event-router.ts');
   const registry = createRealtimeInvalidationRegistry();
   const keys: readonly unknown[][] = [];
   const client = {
@@ -134,7 +132,7 @@ test('source reader aggregate invalidates all four read-only entity collections'
 
 test('realtime parsing validates the frozen event schema and exposes only safe error metadata', async () => {
   const { decodeRealtimeEvent, getRealtimeErrorMetadata } =
-    await import('../../apps/web-next/src/app/realtime/event-router.ts');
+    await import('../../apps/web/src/app/realtime/event-router.ts');
   const valid = event({ resources: ['plugins', 'search'], chapterIndex: 3 });
   assert.deepEqual(decodeRealtimeEvent(valid), valid);
 
@@ -157,10 +155,10 @@ test('realtime parsing validates the frozen event schema and exposes only safe e
 });
 
 test('shared realtime remains generic and app owns batching plus browser lifecycle', async () => {
-  const shared = await readTree('apps/web-next/src/shared/realtime');
+  const shared = await readTree('apps/web/src/shared/realtime');
   assert.doesNotMatch(shared, /novels|tasks|scheduler|plugins|search|sourceReader/i);
 
-  const provider = await readFile('apps/web-next/src/app/realtime/RealtimeProvider.tsx', 'utf8');
+  const provider = await readFile('apps/web/src/app/realtime/RealtimeProvider.tsx', 'utf8');
   assert.match(provider, /createBatchQueue/);
   assert.match(provider, /windowMs:\s*150/);
   assert.match(provider, /createEventStream/);
@@ -173,7 +171,7 @@ test('shared realtime remains generic and app owns batching plus browser lifecyc
   );
   assert.match(provider, /console\.warn\([^)]*getRealtimeErrorMetadata\(error\)/s);
 
-  const appProviders = await readFile('apps/web-next/src/app/providers/AppProviders.tsx', 'utf8');
+  const appProviders = await readFile('apps/web/src/app/providers/AppProviders.tsx', 'utf8');
   assert.match(appProviders, /QueryClientProvider/);
   assert.match(appProviders, /RealtimeProvider/);
 });

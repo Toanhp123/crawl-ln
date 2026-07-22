@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { AnalyzeSourcePreviewService } from '../../apps/api-next/src/modules/ingestion/application/services/analyze-source-preview.service.ts';
-import { RefreshNovelSummaryService } from '../../apps/api-next/src/modules/ingestion/application/services/refresh-novel-summary.service.ts';
-import { ResumePausedJobsService } from '../../apps/api-next/src/modules/ingestion/application/services/resume-paused-jobs.service.ts';
-import type { IngestionJob } from '../../apps/api-next/src/modules/ingestion/public/ingestion.api.ts';
+import { AnalyzeSourcePreviewService } from '../../apps/api/src/modules/ingestion/application/services/analyze-source-preview.service.ts';
+import { RefreshNovelSummaryService } from '../../apps/api/src/modules/ingestion/application/services/refresh-novel-summary.service.ts';
+import { ResumePausedJobsService } from '../../apps/api/src/modules/ingestion/application/services/resume-paused-jobs.service.ts';
+import type { IngestionJob } from '../../apps/api/src/modules/ingestion/public/ingestion.api.ts';
 
 const now = '2026-07-21T13:00:00.000Z';
 
@@ -33,11 +33,11 @@ function job(id: string, status: IngestionJob['status'] = 'paused'): IngestionJo
 
 test('HTTP-only query options do not expand immutable Library and Ingestion APIs', () => {
   const libraryQuery = interfaceBody(
-    'apps/api-next/src/modules/library/domain/library.contracts.ts',
+    'apps/api/src/modules/library/domain/library.contracts.ts',
     'ListLibraryNovelsQuery'
   );
   const ingestionQueries = interfaceBody(
-    'apps/api-next/src/modules/ingestion/public/ingestion.contracts.ts',
+    'apps/api/src/modules/ingestion/public/ingestion.contracts.ts',
     'IngestionQueries'
   );
 

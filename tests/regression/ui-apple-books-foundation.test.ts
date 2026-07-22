@@ -6,7 +6,7 @@ const root = new URL('../../', import.meta.url);
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8');
 
 test('Apple Books Compact typography is the canonical application scale', () => {
-  const css = read('apps/web/src/shared/theme/typography.css');
+  const css = read('apps/web-legacy/src/shared/theme/typography.css');
 
   assert.match(css, /--type-display-size:\s*22px/);
   assert.match(css, /--type-display-line:\s*27px/);
@@ -19,10 +19,10 @@ test('Apple Books Compact typography is the canonical application scale', () => 
 });
 
 test('foundation uses the approved spacing, radius, motion, and icon scales', () => {
-  const spacing = read('apps/web/src/shared/theme/spacing.css');
-  const radius = read('apps/web/src/shared/theme/radius.css');
-  const motion = read('apps/web/src/shared/theme/motion.css');
-  const size = read('apps/web/src/shared/theme/size.css');
+  const spacing = read('apps/web-legacy/src/shared/theme/spacing.css');
+  const radius = read('apps/web-legacy/src/shared/theme/radius.css');
+  const motion = read('apps/web-legacy/src/shared/theme/motion.css');
+  const size = read('apps/web-legacy/src/shared/theme/size.css');
 
   assert.match(spacing, /--space-10:\s*2\.5rem/);
   assert.doesNotMatch(spacing, /--space-5:/);
@@ -40,7 +40,7 @@ test('foundation uses the approved spacing, radius, motion, and icon scales', ()
 });
 
 test('typed design token map exposes the same semantic contract', () => {
-  const source = read('apps/web/src/design/tokens.ts');
+  const source = read('apps/web-legacy/src/design/tokens.ts');
 
   for (const group of ['typography', 'spacing', 'radius', 'motion', 'icons', 'layout', 'colors']) {
     assert.match(source, new RegExp(`${group}:\\s*\\{`));

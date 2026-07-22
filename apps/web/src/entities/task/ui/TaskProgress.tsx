@@ -1,9 +1,16 @@
-import { taskOutcomeLabel } from '@/entities/task/model/outcome';
-import type { Chapter } from '@novel-tool/shared';
-import type { CrawlTask } from '../model/types';
-import { Badge, Progress } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-export function TaskProgress({ chapters, task }: { chapters: Chapter[]; task?: CrawlTask | null }) {
+import { taskOutcomeLabel } from '../model/outcome';
+import type { CrawlTask } from '../api/task-api';
+import { Badge, Progress } from '../../../shared/ui';
+import { useI18n } from '../../../shared/i18n';
+export type TaskProgressChapter = { status: 'pending' | 'fetched' | 'failed' };
+
+export function TaskProgress({
+  chapters,
+  task
+}: {
+  chapters: TaskProgressChapter[];
+  task?: CrawlTask | null;
+}) {
   const { t, status } = useI18n();
   const total = task?.totalChapters ?? chapters.length;
   const fetched = task?.fetchedChapters ?? chapters.filter((c) => c.status === 'fetched').length;

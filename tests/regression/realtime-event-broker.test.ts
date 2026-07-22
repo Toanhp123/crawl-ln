@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { InMemoryRealtimeEventBroker } from '../../apps/api/src/shared/realtime/realtime-event-broker.ts';
+import { InMemoryRealtimeEventBroker } from '../../apps/api-legacy/src/shared/realtime/realtime-event-broker.ts';
 
 test('realtime broker assigns monotonic ids, replays recent events, and unsubscribes listeners', () => {
   const broker = new InMemoryRealtimeEventBroker({

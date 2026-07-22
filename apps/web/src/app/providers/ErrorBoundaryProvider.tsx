@@ -1,16 +1,24 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { useI18n } from '@/shared/i18n';
 import { ErrorState } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+
 type Props = { children: ReactNode; title: string; description: string; reload: string };
 type State = { error: Error | null };
+
 class Boundary extends Component<Props, State> {
   state: State = { error: null };
+
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
+
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[app-error-boundary]', error, info.componentStack);
+    console.error('[app-error-boundary]', {
+      errorClass: error.name || 'Error',
+      componentStack: info.componentStack
+    });
   }
+
   render() {
     return this.state.error ? (
       <ErrorState
@@ -24,6 +32,7 @@ class Boundary extends Component<Props, State> {
     );
   }
 }
+
 export function ErrorBoundaryProvider({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   return (

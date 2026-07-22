@@ -11,7 +11,7 @@ function files(root: string): string[] {
 }
 
 test('only source reader infrastructure queries source_reader tables', () => {
-  for (const file of files('apps/api/src')) {
+  for (const file of files('apps/api-legacy/src')) {
     const source = readFileSync(file, 'utf8');
     if (!/\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+source_reader_/i.test(source)) continue;
     assert.match(

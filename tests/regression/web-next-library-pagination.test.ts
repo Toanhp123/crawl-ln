@@ -4,12 +4,12 @@ import test from 'node:test';
 
 test('library and content search keep pagination authority in their own scope', async () => {
   const libraryPagination =
-    (await import('../../apps/web-next/src/pages/library/model/library-pagination.ts')) as Record<
+    (await import('../../apps/web/src/pages/library/model/library-pagination.ts')) as Record<
       string,
       unknown
     >;
   const searchPagination =
-    (await import('../../apps/web-next/src/features/search-library/model/search-pagination.ts')) as Record<
+    (await import('../../apps/web/src/features/search-library/model/search-pagination.ts')) as Record<
       string,
       unknown
     >;
@@ -42,10 +42,7 @@ test('library and content search keep pagination authority in their own scope', 
 });
 
 test('library page delegates clamping to its scope-owned helper', async () => {
-  const source = await readFile(
-    'apps/web-next/src/pages/library/model/use-library-page.ts',
-    'utf8'
-  );
+  const source = await readFile('apps/web/src/pages/library/model/use-library-page.ts', 'utf8');
   assert.match(source, /novelPageClampTarget/);
   assert.doesNotMatch(source, /if \(page > totalPages\) setPage\(totalPages\)/);
 });

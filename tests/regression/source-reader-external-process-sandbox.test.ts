@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { mkdtemp } from 'node:fs/promises';
 import test from 'node:test';
 import { randomUUID } from 'node:crypto';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
-import { ExternalProcessSupervisor } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
+import { ExternalProcessSupervisor } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/external-process/external-process-supervisor.ts';
 
 const fixture = (name: string) => resolve(`tests/fixtures/source-reader/external-plugins/${name}`);
 

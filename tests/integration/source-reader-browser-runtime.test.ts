@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import test from 'node:test';
-import { BrowserRuntimeCoordinator } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.ts';
+import { BrowserRuntimeCoordinator } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/runtime/browser-worker/browser-runtime.coordinator.ts';
 
 test(
   'browser runtime blocks navigation outside approved hosts and disables downloads',

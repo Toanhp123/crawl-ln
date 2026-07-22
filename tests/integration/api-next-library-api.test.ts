@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { LibraryError } from '../../apps/api-next/src/modules/library/domain/errors/library.error.ts';
-import type { ReconcileAnalysisCommand } from '../../apps/api-next/src/modules/library/domain/library.contracts.ts';
-import { libraryMigrations } from '../../apps/api-next/src/modules/library/index.ts';
-import { createLibraryModule } from '../../apps/api-next/src/modules/library/library.module.ts';
-import { MigrationRegistry } from '../../apps/api-next/src/platform/database/migration-registry.ts';
-import { runRegisteredMigrations } from '../../apps/api-next/src/platform/database/migration-runner.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
+import { LibraryError } from '../../apps/api/src/modules/library/domain/errors/library.error.ts';
+import type { ReconcileAnalysisCommand } from '../../apps/api/src/modules/library/domain/library.contracts.ts';
+import { libraryMigrations } from '../../apps/api/src/modules/library/index.ts';
+import { createLibraryModule } from '../../apps/api/src/modules/library/library.module.ts';
+import { MigrationRegistry } from '../../apps/api/src/platform/database/migration-registry.ts';
+import { runRegisteredMigrations } from '../../apps/api/src/platform/database/migration-runner.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
 
 const now = '2026-07-21T00:00:00.000Z';
 

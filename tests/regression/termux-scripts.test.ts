@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const webPackageUrl = new URL('../../apps/web/package.json', import.meta.url);
+const webPackageUrl = new URL('../../apps/web-legacy/package.json', import.meta.url);
 
 test('web scripts invoke Vite through Node for Termux compatibility', async () => {
   const packageJson = JSON.parse(await readFile(webPackageUrl, 'utf8')) as {

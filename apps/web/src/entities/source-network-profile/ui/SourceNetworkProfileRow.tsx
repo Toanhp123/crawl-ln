@@ -1,20 +1,21 @@
-import type { SourceReaderNetworkProfileMetadata } from '@novel-tool/shared';
 import type { ReactNode } from 'react';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { Badge, ListRow } from '@/shared/ui';
-import { sourceNetworkTone } from '../model/sourceNetworkProfile';
+import { useI18n } from '../../../shared/i18n';
+import { Badge, ListRow } from '../../../shared/ui';
+import { sourceNetworkTone } from '../model/source-network-profile';
+import type { SourceNetworkProfile } from '../model/types';
 
 export function SourceNetworkProfileRow({
   profile,
   trailing
 }: {
-  profile: SourceReaderNetworkProfileMetadata;
+  profile: SourceNetworkProfile;
   trailing?: ReactNode;
 }) {
   const { status, t } = useI18n();
   const scope =
     profile.regions.join(', ') ||
     t(profile.ownerType === 'system' ? 'sources.common.system' : 'sources.common.user');
+
   return (
     <ListRow
       title={profile.name}

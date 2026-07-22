@@ -4,12 +4,12 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { ExternalPluginRegistrationFactory } from '../../apps/api/src/modules/source-reader/application/services/external-plugin-registration.factory.ts';
-import { PluginActivationService } from '../../apps/api/src/modules/source-reader/application/services/plugin-activation.service.ts';
-import type { ExternalPluginRequest } from '../../apps/api/src/modules/source-reader/application/ports/external-plugin-supervisor.port.ts';
-import type { StoredPluginVersion } from '../../apps/api/src/modules/source-reader/application/ports/plugin-store.port.ts';
-import { ExternalPluginLoader } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts';
-import { InMemoryPluginRegistry } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.ts';
+import { ExternalPluginRegistrationFactory } from '../../apps/api-legacy/src/modules/source-reader/application/services/external-plugin-registration.factory.ts';
+import { PluginActivationService } from '../../apps/api-legacy/src/modules/source-reader/application/services/plugin-activation.service.ts';
+import type { ExternalPluginRequest } from '../../apps/api-legacy/src/modules/source-reader/application/ports/external-plugin-supervisor.port.ts';
+import type { StoredPluginVersion } from '../../apps/api-legacy/src/modules/source-reader/application/ports/plugin-store.port.ts';
+import { ExternalPluginLoader } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/package-loader/external-plugin.loader.ts';
+import { InMemoryPluginRegistry } from '../../apps/api-legacy/src/modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.ts';
 
 const manifest = {
   id: 'registration-parity-demo',

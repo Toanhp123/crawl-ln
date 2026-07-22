@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from '../../../../shared/database/sqlite.js';
+import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import type {
   NetworkProfileHandle,
   NetworkProfileRepository
@@ -6,6 +6,7 @@ import type {
 import type { SealedSecret, SecretVault } from '../../application/ports/secret-vault.port.js';
 import { SourceReaderError } from '../../domain/errors/source-reader.error.js';
 import { sealJson, unsealJson } from './encrypted-json.js';
+import { sqliteUpsertUpdate } from './sqlite-syntax.js';
 
 interface NetworkRow {
   id: string;
@@ -72,7 +73,7 @@ export class SqliteNetworkProfileRepository implements NetworkProfileRepository 
           encrypted_config, encryption_metadata_json, enabled, health_status,
           created_at, updated_at
         ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(id) DO UPDATE SET
+        ON CONFLICT(id) ${sqliteUpsertUpdate}
           owner_type=excluded.owner_type, owner_id=excluded.owner_id,
           name=excluded.name, route_type=excluded.route_type,
           regions_json=excluded.regions_json, tags_json=excluded.tags_json,

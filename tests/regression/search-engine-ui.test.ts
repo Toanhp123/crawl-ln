@@ -7,9 +7,9 @@ const read = (path: string) => readFile(new URL(path, root), 'utf8');
 
 test('full-text search is embedded in library instead of a standalone route', async () => {
   const [router, page, content] = await Promise.all([
-    read('apps/web/src/app/router/AppRouter.tsx'),
-    read('apps/web/src/pages/library/ui/LibraryPage.tsx'),
-    read('apps/web/src/features/search-library/ui/LibraryContentSearch.tsx')
+    read('apps/web-legacy/src/app/router/AppRouter.tsx'),
+    read('apps/web-legacy/src/pages/library/ui/LibraryPage.tsx'),
+    read('apps/web-legacy/src/features/search-library/ui/LibraryContentSearch.tsx')
   ]);
 
   assert.doesNotMatch(router, /path="\/search"/);
@@ -18,7 +18,9 @@ test('full-text search is embedded in library instead of a standalone route', as
 });
 
 test('search snippets are rendered safely', async () => {
-  const content = await read('apps/web/src/features/search-library/ui/LibraryContentSearch.tsx');
+  const content = await read(
+    'apps/web-legacy/src/features/search-library/ui/LibraryContentSearch.tsx'
+  );
   assert.match(content, /function Highlighted/);
   assert.doesNotMatch(content, /dangerouslySetInnerHTML/);
 });

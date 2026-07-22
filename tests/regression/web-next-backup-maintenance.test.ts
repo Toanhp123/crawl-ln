@@ -5,7 +5,7 @@ import test from 'node:test';
 
 test('backup settings round-trip the reader preference namespace', async () => {
   const { applyBackupSettings, collectBackupSettings } =
-    await import('../../apps/web-next/src/features/backup-library/lib/settings.ts');
+    await import('../../apps/web/src/features/backup-library/lib/settings.ts');
   const storage = new Map<string, string>([
     ['novel-tool-theme', 'dark'],
     ['novel-tool-reader', '{"fontSize":18}'],
@@ -30,12 +30,12 @@ test('backup settings round-trip the reader preference namespace', async () => {
 
 test('backup restore uses the shared maintenance boundary and reload contract', async () => {
   const [providers, backupHook, sharedMaintenance] = await Promise.all([
-    readFile('apps/web-next/src/app/providers/AppProviders.tsx', 'utf8'),
-    readFile('apps/web-next/src/features/backup-library/model/use-backup-library.ts', 'utf8'),
-    readFile('apps/web-next/src/shared/maintenance/index.ts', 'utf8').catch(() => '')
+    readFile('apps/web/src/app/providers/AppProviders.tsx', 'utf8'),
+    readFile('apps/web/src/features/backup-library/model/use-backup-library.ts', 'utf8'),
+    readFile('apps/web/src/shared/maintenance/index.ts', 'utf8').catch(() => '')
   ]);
 
-  assert.equal(existsSync('apps/web-next/src/app/providers/MaintenanceProvider.tsx'), false);
+  assert.equal(existsSync('apps/web/src/app/providers/MaintenanceProvider.tsx'), false);
   assert.match(providers, /from ['"]@\/shared\/maintenance['"]/);
   assert.match(sharedMaintenance, /MaintenanceProvider/);
   assert.match(backupHook, /useMaintenanceOperation/);

@@ -3,8 +3,8 @@ import test from 'node:test';
 import {
   buildSourceReaderCacheKey,
   type SourceReaderCacheIdentity
-} from '../../apps/api/src/modules/source-reader/application/services/source-reader-cache-key.ts';
-import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
+} from '../../apps/api-legacy/src/modules/source-reader/application/services/source-reader-cache-key.ts';
+import { SourceReaderError } from '../../apps/api-legacy/src/modules/source-reader/domain/errors/source-reader.error.ts';
 
 const base: Omit<SourceReaderCacheIdentity, 'scope' | 'scopeIdentity'> = {
   pluginId: 'demo',

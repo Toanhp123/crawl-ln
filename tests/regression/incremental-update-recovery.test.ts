@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Chapter, CrawlTask, Novel } from '@novel-tool/shared';
-import { UpdateNovelUseCase } from '../../apps/api/src/modules/novels/application/use-cases/update-novel.usecase.ts';
-import { CreateCrawlJobUseCase } from '../../apps/api/src/modules/crawler/application/use-cases/create-crawl-job.usecase.ts';
-import type { AnalyzeNovelUseCase } from '../../apps/api/src/modules/novels/application/use-cases/analyze-novel.usecase.ts';
-import { NovelDetailQueryService } from '../../apps/api/src/modules/novels/application/services/novel-detail-query.service.ts';
-import type { NovelRepository } from '../../apps/api/src/modules/novels/domain/repositories/novel.repository.ts';
-import type { TaskRepository } from '../../apps/api/src/modules/task/domain/repositories/task.repository.ts';
-import { CrawlTaskEntity } from '../../apps/api/src/modules/task/domain/entities/task.entity.ts';
+import { UpdateNovelUseCase } from '../../apps/api-legacy/src/modules/novels/application/use-cases/update-novel.usecase.ts';
+import { CreateCrawlJobUseCase } from '../../apps/api-legacy/src/modules/crawler/application/use-cases/create-crawl-job.usecase.ts';
+import type { AnalyzeNovelUseCase } from '../../apps/api-legacy/src/modules/novels/application/use-cases/analyze-novel.usecase.ts';
+import { NovelDetailQueryService } from '../../apps/api-legacy/src/modules/novels/application/services/novel-detail-query.service.ts';
+import type { NovelRepository } from '../../apps/api-legacy/src/modules/novels/domain/repositories/novel.repository.ts';
+import type { TaskRepository } from '../../apps/api-legacy/src/modules/task/domain/repositories/task.repository.ts';
+import { CrawlTaskEntity } from '../../apps/api-legacy/src/modules/task/domain/entities/task.entity.ts';
 
 const now = '2026-07-16T00:00:00.000Z';
 const novel: Novel = {

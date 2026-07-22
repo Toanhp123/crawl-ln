@@ -4,13 +4,13 @@ import test from 'node:test';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
-const size = read('apps/web/src/shared/theme/size.css');
-const spacing = read('apps/web/src/shared/theme/spacing.css');
-const components = read('apps/web/src/shared/theme/component-tokens.css');
-const card = read('apps/web/src/shared/ui/layout/Card.tsx');
-const panel = read('apps/web/src/shared/ui/layout/Panel.tsx');
-const section = read('apps/web/src/shared/ui/layout/Section.tsx');
-const listRow = read('apps/web/src/shared/ui/data-display/ListRow.tsx');
+const size = read('apps/web-legacy/src/shared/theme/size.css');
+const spacing = read('apps/web-legacy/src/shared/theme/spacing.css');
+const components = read('apps/web-legacy/src/shared/theme/component-tokens.css');
+const card = read('apps/web-legacy/src/shared/ui/layout/Card.tsx');
+const panel = read('apps/web-legacy/src/shared/ui/layout/Panel.tsx');
+const section = read('apps/web-legacy/src/shared/ui/layout/Section.tsx');
+const listRow = read('apps/web-legacy/src/shared/ui/data-display/ListRow.tsx');
 
 test('density has explicit compact and comfortable layout/control contracts', () => {
   assert.doesNotMatch(size, /--density-space/);

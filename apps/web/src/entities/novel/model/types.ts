@@ -1,1 +1,1 @@
-export type { NovelDetail, NovelStats } from '@novel-tool/shared';
+export type { Novel, NovelDetail, NovelStats, PaginatedNovels } from '@novel-tool/shared';

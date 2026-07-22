@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createLibraryModule } from '../../apps/api-next/src/modules/library/library.module.ts';
-import { createSearchModule } from '../../apps/api-next/src/modules/search/search.module.ts';
-import { SqliteDatabase } from '../../apps/api-next/src/platform/database/sqlite-database.ts';
-import { InMemoryEventBus } from '../../apps/api-next/src/platform/events/in-memory-event-bus.ts';
+import { createLibraryModule } from '../../apps/api/src/modules/library/library.module.ts';
+import { createSearchModule } from '../../apps/api/src/modules/search/search.module.ts';
+import { SqliteDatabase } from '../../apps/api/src/platform/database/sqlite-database.ts';
+import { InMemoryEventBus } from '../../apps/api/src/platform/events/in-memory-event-bus.ts';
 
 const analyzedAt = '2026-07-21T08:00:00.000Z';
 const savedAt = '2026-07-21T08:05:00.000Z';

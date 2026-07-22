@@ -6,7 +6,7 @@ import type {
   StoredPluginVersion
 } from '../../../application/ports/plugin-store.port.js';
 import type { RegisteredPlugin } from '../../../application/ports/plugin-registry.port.js';
-import { ExternalPluginRegistrationFactory } from '../../../application/services/external-plugin-registration.factory.js';
+import { ExternalPluginRegistrationFactory } from '../../../application/admin/services/external-plugin-registration.factory.js';
 
 const INTEGRITY_FAILURE = 'PACKAGE_INTEGRITY_FAILED';
 const UNCHECKED_FILES = new Set(['checksums.json', 'signature.json']);

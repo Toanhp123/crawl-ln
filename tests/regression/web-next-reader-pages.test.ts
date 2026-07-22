@@ -15,7 +15,7 @@ async function readTree(directory: string, root = directory): Promise<string> {
 }
 
 test('novel detail page composes public reads actions and continuity without owning transport', async () => {
-  const source = await readTree('apps/web-next/src/pages/novel-detail');
+  const source = await readTree('apps/web/src/pages/novel-detail');
   assert.match(source, /useNovel\(/);
   assert.match(source, /useNovelTask\(/);
   assert.match(source, /useUpdateNovel\(/);
@@ -29,7 +29,7 @@ test('novel detail page composes public reads actions and continuity without own
 });
 
 test('novel detail preserves management chapter error and last-position behavior', async () => {
-  const source = await readTree('apps/web-next/src/pages/novel-detail');
+  const source = await readTree('apps/web/src/pages/novel-detail');
   assert.match(source, /NovelManagementSheet/);
   assert.match(source, /ChapterList/);
   assert.match(source, /TaskProgress/);
@@ -41,7 +41,7 @@ test('novel detail preserves management chapter error and last-position behavior
 });
 
 test('reader page delegates persistence and bounded loading to reader features', async () => {
-  const source = await readTree('apps/web-next/src/pages/chapter-reader');
+  const source = await readTree('apps/web/src/pages/chapter-reader');
   assert.match(source, /useReaderController/);
   assert.match(source, /useReaderProgress/);
   assert.match(source, /readReadingPosition/);
@@ -52,7 +52,7 @@ test('reader page delegates persistence and bounded loading to reader features',
 });
 
 test('reader page renders at most the controller window and wires route synchronization', async () => {
-  const source = await readTree('apps/web-next/src/pages/chapter-reader');
+  const source = await readTree('apps/web/src/pages/chapter-reader');
   assert.match(source, /windowLimit:\s*5/);
   assert.match(source, /controller\.chapters\.map/);
   assert.match(source, /onActiveIndexChange/);
@@ -61,7 +61,7 @@ test('reader page renders at most the controller window and wires route synchron
 });
 
 test('reader preserves scroll anchoring navigation wake lock and auto-hiding chrome', async () => {
-  const source = await readTree('apps/web-next/src/pages/chapter-reader');
+  const source = await readTree('apps/web/src/pages/chapter-reader');
   assert.match(source, /captureReadingAnchor/);
   assert.match(source, /restoreReadingAnchor/);
   assert.match(source, /useSwipeChapterNavigation/);
@@ -74,9 +74,9 @@ test('reader preserves scroll anchoring navigation wake lock and auto-hiding chr
 
 test('reader widgets are presentation-only public slices', async () => {
   for (const directory of [
-    'apps/web-next/src/widgets/reader-toolbar',
-    'apps/web-next/src/widgets/reader-progress',
-    'apps/web-next/src/widgets/reader-bottom-bar'
+    'apps/web/src/widgets/reader-toolbar',
+    'apps/web/src/widgets/reader-progress',
+    'apps/web/src/widgets/reader-bottom-bar'
   ]) {
     assert.match(await readFile(`${directory}/index.ts`, 'utf8'), /export/);
     const source = await readTree(directory);
@@ -85,7 +85,7 @@ test('reader widgets are presentation-only public slices', async () => {
 });
 
 test('reader page displays offline loading retry chapter list preferences and continuity controls', async () => {
-  const source = await readTree('apps/web-next/src/pages/chapter-reader');
+  const source = await readTree('apps/web/src/pages/chapter-reader');
   assert.match(source, /ReaderOfflineBanner/);
   assert.match(source, /ErrorState/);
   assert.match(source, /controller\.retry/);
@@ -98,11 +98,11 @@ test('reader page displays offline loading retry chapter list preferences and co
 
 test('Task 14 pages and widgets use public slice imports only', async () => {
   const source = [
-    await readTree('apps/web-next/src/pages/novel-detail'),
-    await readTree('apps/web-next/src/pages/chapter-reader'),
-    await readTree('apps/web-next/src/widgets/reader-toolbar'),
-    await readTree('apps/web-next/src/widgets/reader-progress'),
-    await readTree('apps/web-next/src/widgets/reader-bottom-bar')
+    await readTree('apps/web/src/pages/novel-detail'),
+    await readTree('apps/web/src/pages/chapter-reader'),
+    await readTree('apps/web/src/widgets/reader-toolbar'),
+    await readTree('apps/web/src/widgets/reader-progress'),
+    await readTree('apps/web/src/widgets/reader-bottom-bar')
   ].join('\n');
   assert.doesNotMatch(source, /@\/entities\/[^/'"]+\/(?:api|model|ui)\//);
   assert.doesNotMatch(source, /@\/features\/[^/'"]+\/(?:api|model|ui|lib)\//);
@@ -110,8 +110,8 @@ test('Task 14 pages and widgets use public slice imports only', async () => {
 });
 
 test('router loaders point to real novel detail and chapter reader pages', async () => {
-  const preload = await readFile('apps/web-next/src/app/router/route-preload.ts', 'utf8');
-  const router = await readFile('apps/web-next/src/app/router/AppRouter.tsx', 'utf8');
+  const preload = await readFile('apps/web/src/app/router/route-preload.ts', 'utf8');
+  const router = await readFile('apps/web/src/app/router/AppRouter.tsx', 'utf8');
   assert.match(preload, /import\(['"]@\/pages\/novel-detail['"]\)/);
   assert.match(preload, /import\(['"]@\/pages\/chapter-reader['"]\)/);
   assert.match(router, /module\.NovelDetailPage/);

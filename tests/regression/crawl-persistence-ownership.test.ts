@@ -17,14 +17,14 @@ async function exists(path: string): Promise<boolean> {
 test('crawl persistence is coordinated outside crawler infrastructure and writes through module-owned adapters', async () => {
   assert.equal(
     await exists(
-      'apps/api/src/modules/crawler/infrastructure/sqlite/crawl-persistence-sqlite.adapter.ts'
+      'apps/api-legacy/src/modules/crawler/infrastructure/sqlite/crawl-persistence-sqlite.adapter.ts'
     ),
     false,
     'crawler must not own a SQLite adapter that writes chapters, tasks, and novels'
   );
 
   const crawlerModule = await readFile(
-    file('apps/api/src/shared/container/modules/crawler.module.ts'),
+    file('apps/api-legacy/src/shared/container/modules/crawler.module.ts'),
     'utf8'
   );
   assert.doesNotMatch(crawlerModule, /CrawlPersistenceSqliteAdapter/);
@@ -34,7 +34,7 @@ test('crawl persistence is coordinated outside crawler infrastructure and writes
   assert.match(crawlerModule, /novels\.persistence\.crawlWriter/);
 
   const coordinator = await readFile(
-    file('apps/api/src/shared/database/crawl-run-sqlite.unit-of-work.ts'),
+    file('apps/api-legacy/src/shared/database/crawl-run-sqlite.unit-of-work.ts'),
     'utf8'
   );
   assert.match(coordinator, /implements CrawlPersistencePort/);

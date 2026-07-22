@@ -11,6 +11,7 @@ export {
 } from './api/task-api';
 export { taskInvalidation, type TaskInvalidationApi } from './api/task-invalidation';
 export { taskKeys } from './api/task-keys';
+export { taskCatalogs } from './i18n/catalog';
 export {
   useNovelTask,
   useTask,

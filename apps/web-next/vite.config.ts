@@ -21,6 +21,20 @@ function gitBuildId(): string | undefined {
 }
 
 const buildId = process.env.APP_BUILD ?? gitBuildId() ?? packageJson.version;
+const webNextSourceRoot = fileURLToPath(new URL('./src/', import.meta.url))
+  .replaceAll('\\', '/')
+  .replace(/\/$/, '');
+
+const slicedSourceModulePattern = /^\/(?:entities|features)\/.*\.(?:cts|mts|ts|tsx)(?:\?.*)?$/;
+
+// FSD slice modules are pure, so catalog imports can drop sibling UI/API re-exports.
+export function webNextModuleSideEffects(id: string): boolean | undefined {
+  const normalizedId = id.replaceAll('\\', '/');
+  return normalizedId.startsWith(`${webNextSourceRoot}/`) &&
+    slicedSourceModulePattern.test(normalizedId.slice(webNextSourceRoot.length))
+    ? false
+    : undefined;
+}
 
 export default defineConfig({
   plugins: [react()],
@@ -31,6 +45,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  build: {
+    rollupOptions: {
+      treeshake: {
+        moduleSideEffects: webNextModuleSideEffects
+      }
     }
   },
   server: {

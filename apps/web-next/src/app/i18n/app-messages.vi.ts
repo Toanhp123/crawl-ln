@@ -5,7 +5,7 @@ export const appMessagesVi = {
   'app.localData': 'Thư viện của bạn được lưu trên thiết bị này.',
   'nav.library': 'Thư viện',
   'nav.activity': 'Hoạt động',
-  'nav.sources': 'Nguồn',
+  'nav.sources': 'Nguồn truyện',
   'nav.settings': 'Cài đặt',
   'common.skipToContent': 'Bỏ qua đến nội dung',
   'common.skipToReader': 'Bỏ qua đến trình đọc',

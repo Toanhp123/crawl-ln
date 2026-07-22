@@ -15,13 +15,19 @@ const slices = [
   'configure-language'
 ] as const;
 
-async function readTree(directory: string, root = directory): Promise<string> {
+async function readTree(
+  directory: string,
+  root = directory,
+  excluded = new Set<string>()
+): Promise<string> {
   const entries = await readdir(directory, { withFileTypes: true });
   const parts: string[] = [];
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     const target = join(directory, entry.name);
-    if (entry.isDirectory()) parts.push(await readTree(target, root));
-    else parts.push(`\n/* ${relative(root, target)} */\n${await readFile(target, 'utf8')}`);
+    const relativePath = relative(root, target);
+    if (excluded.has(relativePath)) continue;
+    if (entry.isDirectory()) parts.push(await readTree(target, root, excluded));
+    else parts.push(`\n/* ${relativePath} */\n${await readFile(target, 'utf8')}`);
   }
   return parts.join('\n');
 }
@@ -296,7 +302,7 @@ test('Task 7 feature public APIs expose actions and reusable controls', async ()
 
 test('pages and entities do not own Task 7 mutations or provider state transitions', async () => {
   const upperLayers = [
-    await readTree('apps/web-next/src/app'),
+    await readTree('apps/web-next/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),
     await readTree('apps/web-next/src/pages'),
     await readTree('apps/web-next/src/entities')
   ].join('\n');

@@ -3,7 +3,8 @@ const SETTINGS_KEYS = [
   'novel-tool-accent',
   'novel-tool-density',
   'novel-tool-app-font',
-  'novel-tool-language'
+  'novel-tool-language',
+  'novel-tool-reader'
 ] as const;
 
 export interface StorageLike {

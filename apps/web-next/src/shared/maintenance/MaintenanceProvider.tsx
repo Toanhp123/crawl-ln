@@ -8,8 +8,8 @@ import {
   useRef,
   useState
 } from 'react';
-import { useI18n } from '@/shared/i18n';
-import { Card, LoadingState, Text } from '@/shared/ui';
+import { useI18n } from '../i18n';
+import { Card, LoadingState, Text } from '../ui';
 
 type MaintenanceOptions = { reloadOnSuccess?: boolean };
 type MaintenanceContextValue = {

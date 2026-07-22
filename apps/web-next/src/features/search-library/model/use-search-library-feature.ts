@@ -5,17 +5,28 @@ import {
   type SearchResultItem
 } from '../../../entities/search';
 
-export function useSearchLibraryFeature(
-  options: {
-    initialType?: SearchDocumentType;
-    pageSize?: number;
-    novelId?: string;
-    onSelect?: (item: SearchResultItem) => void;
-  } = {}
-) {
-  const [query, setQuery] = useState('');
-  const [type, setType] = useState<SearchDocumentType>(options.initialType ?? 'all');
-  const [page, setPage] = useState(1);
+export interface UseSearchLibraryFeatureOptions {
+  initialType?: SearchDocumentType;
+  pageSize?: number;
+  novelId?: string;
+  onSelect?: (item: SearchResultItem) => void;
+  query?: string;
+  onQueryChange?: (value: string) => void;
+  type?: SearchDocumentType;
+  onTypeChange?: (value: SearchDocumentType) => void;
+  page?: number;
+  onPageChange?: (value: number) => void;
+}
+
+export function useSearchLibraryFeature(options: UseSearchLibraryFeatureOptions = {}) {
+  const [internalQuery, setInternalQuery] = useState('');
+  const [internalType, setInternalType] = useState<SearchDocumentType>(
+    options.initialType ?? 'all'
+  );
+  const [internalPage, setInternalPage] = useState(1);
+  const query = options.query ?? internalQuery;
+  const type = options.type ?? internalType;
+  const page = options.page ?? internalPage;
   const pageSize = options.pageSize ?? 20;
   const normalized = query.trim();
   const result = useLibrarySearch({
@@ -29,13 +40,19 @@ export function useSearchLibraryFeature(
     () => Math.max(1, Math.ceil((result.data?.total ?? 0) / pageSize)),
     [pageSize, result.data?.total]
   );
+  const updatePage = (value: number) => {
+    if (options.onPageChange) options.onPageChange(value);
+    else setInternalPage(value);
+  };
   const updateQuery = (value: string) => {
-    setQuery(value);
-    setPage(1);
+    if (options.onQueryChange) options.onQueryChange(value);
+    else setInternalQuery(value);
+    updatePage(1);
   };
   const updateType = (value: SearchDocumentType) => {
-    setType(value);
-    setPage(1);
+    if (options.onTypeChange) options.onTypeChange(value);
+    else setInternalType(value);
+    updatePage(1);
   };
   return {
     query,
@@ -43,7 +60,7 @@ export function useSearchLibraryFeature(
     type,
     setType: updateType,
     page,
-    setPage,
+    setPage: updatePage,
     totalPages,
     result,
     select: (item: SearchResultItem) => options.onSelect?.(item)

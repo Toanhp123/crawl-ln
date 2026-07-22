@@ -1,11 +1,14 @@
 const foundationPage = () => import('@/pages/foundation');
+const libraryPage = () => import('@/pages/library');
+const activityPage = () => import('@/pages/activity');
+const taskDetailPage = () => import('@/pages/task-detail');
 
 export const routeLoaders = {
-  library: foundationPage,
+  library: libraryPage,
   novelDetail: foundationPage,
   reader: foundationPage,
-  taskDetail: foundationPage,
-  activity: foundationPage,
+  taskDetail: taskDetailPage,
+  activity: activityPage,
   sources: foundationPage,
   sourcePlugin: foundationPage,
   settings: foundationPage

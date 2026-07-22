@@ -1,15 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { RealtimeEvent } from '@novel-tool/shared';
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type PropsWithChildren
-} from 'react';
+import { useEffect, useRef, type PropsWithChildren } from 'react';
 import { API_BASE_URL } from '../../shared/config';
-import { createBatchQueue, createEventStream, type ConnectionState } from '../../shared/realtime';
+import {
+  createBatchQueue,
+  createEventStream,
+  setConnectionStatus,
+  useConnectionStatus,
+  type ConnectionState
+} from '../../shared/realtime';
 import {
   createRealtimeInvalidationRegistry,
   decodeRealtimeEvent,
@@ -17,12 +16,10 @@ import {
   routeRealtimeEvents
 } from './event-router';
 
-const RealtimeStatusContext = createContext<ConnectionState>('disconnected');
 const invalidationRegistry = createRealtimeInvalidationRegistry();
 
 export function RealtimeProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<ConnectionState>('connecting');
   const connectedOnce = useRef(false);
 
   useEffect(() => {
@@ -35,7 +32,7 @@ export function RealtimeProvider({ children }: PropsWithChildren) {
       decoder: decodeRealtimeEvent,
       onValue: queue.enqueue,
       onStatus(nextStatus) {
-        setStatus(nextStatus);
+        setConnectionStatus(nextStatus);
         if (nextStatus !== 'connected') return;
         if (connectedOnce.current) {
           void queryClient.invalidateQueries({ type: 'active' });
@@ -55,15 +52,16 @@ export function RealtimeProvider({ children }: PropsWithChildren) {
     document.addEventListener('visibilitychange', reconcileVisibleQueries);
 
     return () => {
+      setConnectionStatus('disconnected');
       document.removeEventListener('visibilitychange', reconcileVisibleQueries);
       queue.dispose();
       stream.close();
     };
   }, [queryClient]);
 
-  return <RealtimeStatusContext.Provider value={status}>{children}</RealtimeStatusContext.Provider>;
+  return children;
 }
 
 export function useRealtimeStatus(): ConnectionState {
-  return useContext(RealtimeStatusContext);
+  return useConnectionStatus();
 }

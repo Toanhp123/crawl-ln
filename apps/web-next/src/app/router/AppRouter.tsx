@@ -6,7 +6,7 @@ import { HomeRedirect } from './HomeRedirect';
 import { routeLoaders } from './route-preload';
 
 const LibraryPage = lazy(() =>
-  routeLoaders.library().then((module) => ({ default: module.FoundationPage }))
+  routeLoaders.library().then((module) => ({ default: module.LibraryPage }))
 );
 const NovelDetailPage = lazy(() =>
   routeLoaders.novelDetail().then((module) => ({ default: module.FoundationPage }))
@@ -15,10 +15,10 @@ const ChapterReaderPage = lazy(() =>
   routeLoaders.reader().then((module) => ({ default: module.FoundationPage }))
 );
 const TaskDetailPage = lazy(() =>
-  routeLoaders.taskDetail().then((module) => ({ default: module.FoundationPage }))
+  routeLoaders.taskDetail().then((module) => ({ default: module.TaskDetailPage }))
 );
 const ActivityPage = lazy(() =>
-  routeLoaders.activity().then((module) => ({ default: module.FoundationPage }))
+  routeLoaders.activity().then((module) => ({ default: module.ActivityPage }))
 );
 const SourcesPage = lazy(() =>
   routeLoaders.sources().then((module) => ({ default: module.FoundationPage }))

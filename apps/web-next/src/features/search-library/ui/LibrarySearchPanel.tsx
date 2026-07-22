@@ -15,24 +15,62 @@ import { useSearchLibraryFeature } from '../model/use-search-library-feature';
 
 const types: SearchDocumentType[] = ['all', 'novel', 'chapter'];
 
-export function LibrarySearchPanel({ onSelect }: { onSelect?: (item: SearchResultItem) => void }) {
-  const model = useSearchLibraryFeature({ onSelect });
+export interface LibrarySearchPanelProps {
+  onSelect?: (item: SearchResultItem) => void;
+  query?: string;
+  onQueryChange?: (value: string) => void;
+  type?: SearchDocumentType;
+  onTypeChange?: (value: SearchDocumentType) => void;
+  page?: number;
+  onPageChange?: (value: number) => void;
+  showSearchInput?: boolean;
+  showTypeFilters?: boolean;
+}
+
+export function LibrarySearchPanel({
+  onSelect,
+  query,
+  onQueryChange,
+  type,
+  onTypeChange,
+  page,
+  onPageChange,
+  showSearchInput = true,
+  showTypeFilters = true
+}: LibrarySearchPanelProps) {
+  const model = useSearchLibraryFeature({
+    onSelect,
+    query,
+    onQueryChange,
+    type,
+    onTypeChange,
+    page,
+    onPageChange
+  });
   const { t } = useI18n();
   const items = model.result.data?.items ?? [];
   return (
     <Stack gap="md">
-      <SearchInput
-        value={model.query}
-        onChange={model.setQuery}
-        placeholder={t('search.placeholder')}
-      />
-      <div className="flex flex-wrap gap-2">
-        {types.map((type) => (
-          <FilterChip key={type} selected={model.type === type} onClick={() => model.setType(type)}>
-            {t(`search.type.${type}`)}
-          </FilterChip>
-        ))}
-      </div>
+      {showSearchInput ? (
+        <SearchInput
+          value={model.query}
+          onChange={model.setQuery}
+          placeholder={t('search.placeholder')}
+        />
+      ) : null}
+      {showTypeFilters ? (
+        <div className="flex flex-wrap gap-2">
+          {types.map((searchType) => (
+            <FilterChip
+              key={searchType}
+              selected={model.type === searchType}
+              onClick={() => model.setType(searchType)}
+            >
+              {t(`search.type.${searchType}`)}
+            </FilterChip>
+          ))}
+        </div>
+      ) : null}
       {!model.query.trim() ? (
         <EmptyState title={t('search.emptyTitle')} description={t('search.emptyDescription')} />
       ) : model.result.isLoading ? (

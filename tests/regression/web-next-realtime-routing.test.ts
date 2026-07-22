@@ -35,7 +35,7 @@ function registrySpy(calls: string[]) {
     tasks: {
       invalidateAll: call('tasks:all'),
       invalidateDetail: (_client: QueryClient, id: string) => call(`tasks:detail:${id}`)(),
-      invalidateNovel: (_client: QueryClient, id: string) => call(`tasks:novel:${id}`)()
+      invalidateForNovel: (_client: QueryClient, id: string) => call(`tasks:novel:${id}`)()
     },
     novels: {
       invalidateList: call('novels:list'),

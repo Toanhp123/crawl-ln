@@ -44,7 +44,7 @@ test('core entity public APIs export reads, keys, invalidation adapters, and reu
   assert.equal(typeof task.useTaskSummary, 'function');
   assert.equal(typeof task.useNovelTask, 'function');
   assert.deepEqual(task.taskKeys.novel('novel-1'), ['tasks', 'novel', 'novel-1']);
-  assert.equal(typeof task.taskInvalidation.invalidateNovel, 'function');
+  assert.equal(typeof task.taskInvalidation.invalidateForNovel, 'function');
   assert.equal(typeof task.TaskProgress, 'function');
 
   assert.equal(typeof scheduler.useSchedulerStatus, 'function');
@@ -162,7 +162,7 @@ test('entity invalidation adapters target only their owned query roots', async (
   await novel.novelInvalidation.invalidateStats(client as never);
   await task.taskInvalidation.invalidateAll(client as never);
   await task.taskInvalidation.invalidateDetail(client as never, 'task-1');
-  await task.taskInvalidation.invalidateNovel(client as never, 'novel-1');
+  await task.taskInvalidation.invalidateForNovel(client as never, 'novel-1');
   await scheduler.schedulerInvalidation.invalidateStatus(client as never);
   await scheduler.schedulerInvalidation.invalidateNovelDiagnostics(client as never, 'novel-1');
   await search.searchInvalidation.invalidateAll(client as never);

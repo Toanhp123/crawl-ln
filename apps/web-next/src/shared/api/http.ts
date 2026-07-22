@@ -38,14 +38,16 @@ export async function readApiSuccess<T>(response: Response): Promise<T> {
     throw new ApiError('The API returned an invalid response envelope', {
       status: response.status,
       code: 'INTERNAL_ERROR',
-      details: payload
+      details: payload,
+      requestId: response.headers.get('x-request-id') ?? undefined
     });
   }
   if (payload.error !== null) {
     throw new ApiError(payload.error.message, {
       status: response.status,
       code: payload.error.code,
-      details: payload.error.details
+      details: payload.error.details,
+      requestId: response.headers.get('x-request-id') ?? undefined
     });
   }
   return payload.data;

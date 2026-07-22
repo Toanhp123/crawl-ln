@@ -45,8 +45,8 @@ A lower layer never imports a higher layer. Slices in `entities`, `features`, `w
 - Interactive targets and responsive behavior follow the mobile acceptance document.
 - Secrets remain local write-only form state and never enter query keys or persisted cache.
 
-## Reader module
+## Reader feature
 
-`src/modules/reader` exposes a narrow reader engine façade. It is not a general alternative to FSD and must not accumulate unrelated screen/business code.
+`features/read-chapter` owns reader orchestration, navigation, offline cache adapters and reader-specific UI. It consumes the narrow public contract from `@novel-tool/reader-engine`; the package is a domain library, not a second frontend layer.
 
 Run `npm run check:web-arch` after moving or adding slices.

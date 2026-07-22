@@ -4,7 +4,7 @@ export const manifest = {
   id: 'fiction-example',
   name: 'Fiction Example',
   version: '1.0.0',
-  engines: { sourceReader: '^2.9.6' },
+  engines: { sourceReader: '^3.0.0' },
   capabilities: ['identify', 'metadata', 'chapter-list', 'chapter-content'],
   contracts: {
     identify: 1,

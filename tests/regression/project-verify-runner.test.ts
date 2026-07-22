@@ -17,6 +17,7 @@ test('verify runner executes canonical gates without nested npm test scripts', a
       'command:prepare:packages',
       'command:check:prepared',
       'command:build:prepared',
+      'suite:contract',
       'suite:regression',
       'suite:integration'
     ]

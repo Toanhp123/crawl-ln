@@ -28,6 +28,7 @@ export const verificationSteps = [
     command: process.execPath,
     args: ['scripts/build-prepared.mjs']
   },
+  { type: 'suite', name: 'contract' },
   { type: 'suite', name: 'regression' },
   { type: 'suite', name: 'integration' }
 ];

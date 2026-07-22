@@ -18,7 +18,7 @@ Not every module needs every folder. Add a layer only when it owns behavior for 
 ```text
 presentation → application → domain
 infrastructure → application/domain ports
-shared/container → module construction and wiring only
+bootstrap → module construction and wiring only
 ```
 
 Rules:
@@ -44,19 +44,19 @@ Website selectors, parsing and source quirks belong only in Source Reader plugin
 modules/source-reader/infrastructure/plugins/
 ```
 
-Crawler, novels, chapters and controllers must not contain website-specific selectors or load plugin packages directly. Crawler depends only on its Source Reader port.
+Ingestion, Library and presentation code must not contain website-specific selectors or load plugin packages directly. Ingestion depends only on the Source Reader public port.
 
 ## Persistence ownership
 
-- Novels own novel metadata and update settings.
-- Chapters own chapter records/content.
-- Task owns task queries and status representation.
-- Crawler owns job orchestration and crawl persistence ports.
+- Library owns novel metadata, chapter content and reading records.
+- Ingestion owns job orchestration, progress and ingestion persistence ports.
+- Scheduler owns update policies and diagnostics while calling public Library/Ingestion APIs.
+- Search and Export own their projections/output without taking ownership of Library records.
 - Source Reader owns plugin, credential, session, cache, route and challenge state.
 - Backup may coordinate all stores only inside maintenance mode.
 
 ## Adding functionality
 
-Before adding a dependency between modules, define the smallest public operation or outbound port required. Register its concrete implementation in `apps/api-legacy/src/shared/container`; do not import an internal repository from the consumer module.
+Before adding a dependency between modules, define the smallest public operation or outbound port required. Register its concrete implementation in `apps/api/src/bootstrap/app-container.ts`; do not import an internal repository from the consumer module.
 
-Run `npm run check:arch` and `npm run check:crawler` after changing boundaries.
+Run `npm run check:arch` and `npm run check` after changing boundaries.

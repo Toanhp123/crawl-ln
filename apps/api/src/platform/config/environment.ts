@@ -118,7 +118,7 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Envi
       ? resolveApiPath(parsed.DATABASE_PATH)
       : resolve(storageDirectory, 'novel-tool.sqlite'),
     storageDirectory,
-    appVersion: source.APP_VERSION ?? '2.9.6',
+    appVersion: source.APP_VERSION ?? '3.0.0',
     apiCorsOrigins: corsOrigins(parsed.API_CORS_ORIGINS),
     outboxBatchSize: parsed.OUTBOX_BATCH_SIZE,
     outboxIntervalMs: parsed.OUTBOX_INTERVAL_MS,

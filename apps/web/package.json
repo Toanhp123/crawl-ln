@@ -1,16 +1,16 @@
 {
   "name": "@novel-tool/web",
-  "version": "2.9.6",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "tsc -p tsconfig.json && vite build",
-    "preview": "vite preview --host 0.0.0.0",
+    "dev": "node ../../node_modules/vite/bin/vite.js --host 0.0.0.0",
+    "build": "tsc -p tsconfig.json && node ../../node_modules/vite/bin/vite.js build",
+    "preview": "node ../../node_modules/vite/bin/vite.js preview --host 0.0.0.0",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@novel-tool/reader-engine": "2.9.6",
+    "@novel-tool/reader-engine": "3.0.0",
     "@radix-ui/react-dialog": "1.1.1",
     "@radix-ui/react-slot": "1.1.0",
     "@radix-ui/react-toast": "1.2.1",

@@ -88,7 +88,7 @@ export function createAppContainer(environment: Environment) {
     storageDirectory: environment.storageDirectory ?? dirname(environment.databasePath),
     contributors: modules.backupContributors(),
     clock,
-    appVersion: environment.appVersion ?? '2.9.6',
+    appVersion: environment.appVersion ?? '3.0.0',
     schemaVersion: 1,
     maintenance: new BackupMaintenanceCoordinator(ingestion.maintenance, [
       outboxLifecycle,

@@ -5,7 +5,7 @@ const runtime = createAppRuntime();
 await runtime.ready;
 
 const server = runtime.app.listen(environment.port, environment.host, () => {
-  console.log(`API Next running at http://${environment.host}:${environment.port}`);
+  console.log(`API running at http://${environment.host}:${environment.port}`);
 });
 
 let shuttingDown = false;

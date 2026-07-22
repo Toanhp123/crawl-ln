@@ -1,6 +1,6 @@
 {
   "name": "@novel-tool/api",
-  "version": "2.9.6",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "node --experimental-sqlite --watch --import tsx src/main.ts",

@@ -1,6 +1,6 @@
-# Frontend ↔ Backend Contract Baseline (2.9.3)
+# Frontend ↔ Backend Contract Baseline (3.0.0)
 
-The frontend treats backend 2.9.2+ as the single source of truth.
+The frontend treats backend 3.0.0 as the single source of truth.
 
 ## HTTP rules
 

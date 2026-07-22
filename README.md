@@ -1,4 +1,4 @@
-# Novel Tool 2.9.6
+# Novel Tool 3.0.0
 
 Novel Tool là ứng dụng mobile-first để phân tích nguồn, crawl, lưu, đọc, tìm kiếm và xuất light novel. Repository là npm monorepo gồm API TypeScript modular monolith, web React theo Feature-Sliced Design và package contract dùng chung.
 
@@ -14,7 +14,7 @@ Checkout hoặc archive sạch:
 
 ```bash
 npm ci
-cp apps/api-legacy/.env.example apps/api-legacy/.env
+cp apps/api/.env.example apps/api/.env
 npm run dev
 ```
 
@@ -36,8 +36,8 @@ npm run dev:termux
 ## Cấu trúc
 
 ```text
-apps/api-legacy          Express, SQLite, crawl queue, Source Reader
-apps/web-legacy          React, Vite, Tailwind, TanStack Query, FSD
+apps/api                 Express, SQLite, ingestion queue, Source Reader
+apps/web                 React, Vite, Tailwind, TanStack Query, FSD
 packages/shared   Zod schemas và public transport contracts
 tests             Regression, integration và Playwright E2E
 ```
@@ -63,15 +63,15 @@ npm run test:integration            # integration tests, tự chuẩn bị share
 npm run test:e2e:install            # cài Chromium cho Playwright
 npm run test:e2e                    # browser E2E
 npm run verify                      # lockfile, check, build, regression, integration
+npm run verify:release              # full release gate, browser E2E and rollback rehearsal
 npm run rehearse:v3:cutover        # migration, cutover, rollback and hash-restore rehearsal
-npm run db:reset -w @novel-tool/api-legacy # reset SQLite local
 ```
 
 `npm run clean` chỉ dùng khi cần loại bỏ output cũ hoặc debug cache; build bình thường không tự clean để giữ tốc độ lặp lại.
 
 ## Cấu hình API
 
-Các giá trị thường dùng nằm trong `apps/api-legacy/.env.example`:
+Các giá trị thường dùng nằm trong `apps/api/.env.example`:
 
 ```env
 PORT=3000
@@ -86,7 +86,7 @@ SOURCE_READER_MEMORY_CACHE_ENTRIES=500
 
 ### Chế độ local an toàn
 
-API mặc định bind `127.0.0.1` và chỉ chấp nhận origin local được khai báo trong `API_CORS_ORIGINS`. File `apps/api-legacy/.env.example` bật `SOURCE_READER_LOCAL_ADMIN=true` để console quản trị hoạt động sau khi bạn chủ động copy file cấu hình. Nếu không có `.env`, Source Reader chỉ cấp quyền đọc. Request local không gửi `x-source-reader-user-id` dùng actor ID ổn định `local-user` làm owner mặc định.
+API mặc định bind `127.0.0.1` và chỉ chấp nhận origin local được khai báo trong `API_CORS_ORIGINS`. File `apps/api/.env.example` bật `SOURCE_READER_LOCAL_ADMIN=true` để console quản trị hoạt động sau khi bạn chủ động copy file cấu hình. Nếu không có `.env`, Source Reader chỉ cấp quyền đọc. Request local không gửi `x-source-reader-user-id` dùng actor ID ổn định `local-user` làm owner mặc định.
 
 ### Truy cập LAN có chủ đích
 

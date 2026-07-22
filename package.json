@@ -1,7 +1,7 @@
 {
   "name": "novel-tool",
   "private": true,
-  "version": "2.9.6",
+  "version": "3.0.0",
   "type": "module",
   "workspaces": [
     "apps/*",
@@ -36,9 +36,8 @@
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
     "verify": "node scripts/verify.mjs",
-    "verify:v3:foundation": "npm run check:arch && npm run check:api && npm run test:contract && node --experimental-sqlite --import tsx --test tests/integration/api-next-*.test.ts",
-    "verify:v3:backend": "npm run check:arch && npm run check:api && npm run build:api && npm run test:contract && npm run test:regression && npm run test:integration",
     "verify:v3": "node scripts/verify-v3.mjs",
+    "verify:release": "npm run verify && npm run test:e2e && npm run rehearse:v3:cutover",
     "migrate:v3:dry-run": "node --experimental-sqlite scripts/v3/migrate-storage.mjs --mode dry-run",
     "smoke:v3:candidate": "node --experimental-sqlite scripts/v3/smoke-candidate.mjs",
     "cutover:v3:storage": "node --experimental-sqlite scripts/v3/cutover-storage.mjs",

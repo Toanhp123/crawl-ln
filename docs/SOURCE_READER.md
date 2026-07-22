@@ -1,12 +1,12 @@
 # Source Reader
 
-Source Reader is the only runtime boundary for identifying novel URLs, reading metadata, listing chapters, fetching chapter content, searching supported sources, and managing source plugins. The crawler depends on the public `SourceReaderApi`; it does not load selectors, plugin files, credentials, or network routes directly.
+Source Reader is the only runtime boundary for identifying novel URLs, reading metadata, listing chapters, fetching chapter content, searching supported sources, and managing source plugins. The ingestion module depends on the public `SourceReaderApi`; it does not load selectors, plugin files, credentials, or network routes directly.
 
 ## Architecture and module boundary
 
-The bounded context lives at `apps/api-legacy/src/modules/source-reader`. Its public reader and management façades are exported from `public/`, application policies own fallback and authorization, infrastructure owns SQLite, HTTP, browser, crypto, cache, and plugin execution, and presentation maps typed errors to HTTP responses. Other modules may depend only on the public façades passed through the composition root.
+The bounded context lives at `apps/api/src/modules/source-reader`. Its public reader and management façades are exported from `public/`, application policies own fallback and authorization, infrastructure owns SQLite, HTTP, browser, crypto, cache, and plugin execution, and presentation maps typed errors to HTTP responses. Other modules may depend only on the public façades passed through the composition root.
 
-Source Reader never writes novels, chapters, or crawl jobs. It returns source data to the crawler, which coordinates persistence through the owning modules.
+Source Reader never writes novels, chapters, or ingestion jobs. It returns source data to the ingestion module, which coordinates persistence through the owning modules.
 
 ## Built-in and external plugins
 
@@ -133,7 +133,7 @@ The console exposes five user-facing sections:
 - **Challenges** — poll pending OTP, approval, CAPTCHA, or browser-interaction challenges and submit, reject, complete, or cancel the supported response types.
 - **Inspector** — invoke identify, metadata, chapter-list, chapter-content, search, and latest-updates with optional credential, network, cache, timeout, cursor, and limit controls.
 
-`streamChapterList` remains an internal crawler capability and is intentionally not exposed to the browser. Credential and proxy secret values are write-only form state: they are cleared after mutations, never placed in query keys, never persisted by the browser query cache, and never rendered back by list APIs.
+`streamChapterList` remains an internal ingestion capability and is intentionally not exposed to the browser. Credential and proxy secret values are write-only form state: they are cleared after mutations, never placed in query keys, never persisted by the browser query cache, and never rendered back by list APIs.
 
 ## Error codes
 
@@ -165,4 +165,4 @@ npm run verify
 npm run test:e2e
 ```
 
-The final architecture guards reject reintroduction of removed source runtimes, cross-module access to Source Reader internals, web calls outside `/api/source-reader/*`, and Source Reader writes to crawler-owned persistence.
+The final architecture guards reject reintroduction of removed source runtimes, cross-module access to Source Reader internals, web calls outside `/api/source-reader/*`, and Source Reader writes to ingestion- or library-owned persistence.

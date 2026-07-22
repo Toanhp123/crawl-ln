@@ -5,14 +5,14 @@ printf '\n[novel-tool] Termux development server\n'
 command -v node >/dev/null 2>&1 || { echo 'Node.js not found. Run: pkg install nodejs'; exit 1; }
 command -v npm >/dev/null 2>&1 || { echo 'npm not found. Run: pkg install nodejs'; exit 1; }
 
-mkdir -p apps/api-legacy/storage
-if [ ! -f apps/api-legacy/.env ]; then
-  if [ -f apps/api-legacy/.env.termux.example ]; then
-    cp apps/api-legacy/.env.termux.example apps/api-legacy/.env
+mkdir -p apps/api/storage
+if [ ! -f apps/api/.env ]; then
+  if [ -f apps/api/.env.termux.example ]; then
+    cp apps/api/.env.termux.example apps/api/.env
   else
-    cp apps/api-legacy/.env.example apps/api-legacy/.env
+    cp apps/api/.env.example apps/api/.env
   fi
-  printf '[novel-tool] Created apps/api-legacy/.env\n'
+  printf '[novel-tool] Created apps/api/.env\n'
 fi
 
 if [ ! -d node_modules ]; then

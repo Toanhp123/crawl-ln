@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0 - 2026-07-21
+
+- Promoted the TypeScript modular-monolith API and Feature-Sliced React web app to the canonical `apps/api` and `apps/web` workspaces.
+- Consolidated backend ownership around `ingestion`, `library`, `source-reader`, `search`, `export`, `backup`, and `scheduler` modules wired by the bootstrap composition root.
+- Moved reader orchestration into the `features/read-chapter` slice and the shared `@novel-tool/reader-engine` package with bounded offline caching and navigation.
+- Added copy-only schema migration, integrity manifests, journaled storage cutover, rollback rehearsal, and acceptance-gated legacy cleanup.
+- Kept Source Plugin SDK capability contract version `1`, sandbox protocol version `1`, and public HTTP response/route contracts unchanged.
+
 ## Unreleased - Source Reader Platform
 
 - Added the official zero-runtime-dependency `@novel-tool/source-plugin-sdk` workspace package as the canonical external plugin contract, including asynchronous sandbox context types, manifest/models, lifecycle and authentication operations, capability mapping, and allowlisted typed errors preserved across process isolation.

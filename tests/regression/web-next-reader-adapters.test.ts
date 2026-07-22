@@ -115,11 +115,11 @@ test('reader action slices expose only public APIs and feature-owned CSS', async
   assert.match(selectChapter, /ChapterListSheet/);
 });
 
-test('web-next declares its reader-engine workspace dependency', async () => {
+test('canonical web declares its reader-engine workspace dependency', async () => {
   const packageJson = JSON.parse(await readFile('apps/web/package.json', 'utf8')) as {
     dependencies?: Record<string, string>;
   };
-  assert.equal(packageJson.dependencies?.['@novel-tool/reader-engine'], '2.9.6');
+  assert.equal(packageJson.dependencies?.['@novel-tool/reader-engine'], '3.0.0');
 });
 
 test('reader preference normalization rejects invalid stored values and clamps brightness', async () => {

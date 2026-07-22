@@ -7,11 +7,12 @@ import {
   useReadingContinuityVersion,
   type ReadingHistoryEntry
 } from '@/features/read-chapter';
-import { useConnectionStatus } from '@/shared/realtime';
 import { useDebouncedValue } from '@/shared/lib';
+import { useConnectionStatus } from '@/shared/realtime';
+import { novelPageClampTarget, type LibrarySearchScope } from './library-pagination';
 
 export const LIBRARY_PAGE_SIZE = 12;
-export type LibrarySearchScope = 'novels' | 'content';
+export type { LibrarySearchScope } from './library-pagination';
 export type LibrarySort = 'reading' | 'recent' | 'created' | 'title' | 'chapters';
 export type LibraryFilter = 'all' | 'reading' | 'unread' | 'completed' | 'importing' | 'failed';
 
@@ -126,9 +127,10 @@ export function useLibraryPage() {
       nextPage === 1 ? searchParams.delete('page') : searchParams.set('page', String(nextPage));
     });
 
+  const pageClampTarget = novelPageClampTarget(scope, page, totalPages);
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+    if (pageClampTarget !== null) setPage(pageClampTarget);
+  }, [pageClampTarget]);
 
   const readingHistory: Array<{ entry: ReadingHistoryEntry; novel: (typeof items)[number] }> =
     primaryEntry && primaryNovel ? [{ entry: primaryEntry, novel: primaryNovel }] : [];

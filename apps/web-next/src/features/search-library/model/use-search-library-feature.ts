@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useLibrarySearch,
   type SearchDocumentType,
   type SearchResultItem
 } from '../../../entities/search';
+import { searchPageClampTarget } from './search-pagination';
 
 export interface UseSearchLibraryFeatureOptions {
   initialType?: SearchDocumentType;
@@ -44,6 +45,10 @@ export function useSearchLibraryFeature(options: UseSearchLibraryFeatureOptions 
     if (options.onPageChange) options.onPageChange(value);
     else setInternalPage(value);
   };
+  useEffect(() => {
+    const target = searchPageClampTarget(page, totalPages, result.isPlaceholderData);
+    if (target !== null) updatePage(target);
+  }, [page, result.isPlaceholderData, totalPages]);
   const updateQuery = (value: string) => {
     if (options.onQueryChange) options.onQueryChange(value);
     else setInternalQuery(value);

@@ -3,6 +3,7 @@ import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import prettier from 'prettier';
 import { checkDocumentation } from './check-docs.mjs';
+import { checkReaderEngineArchitecture } from './check-reader-engine-architecture.mjs';
 import { checkTypeScriptProject } from './typescript-project.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -54,6 +55,12 @@ export async function runPreparedChecks({ skipTypeScript = false } = {}) {
   await import('./check-web-architecture.mjs');
   await import('./check-web-contracts.mjs');
 
+  const readerEngineErrors = await checkReaderEngineArchitecture(projectRoot);
+  if (readerEngineErrors.length > 0) {
+    throw new Error(`Reader engine architecture check failed:\n${readerEngineErrors.join('\n')}`);
+  }
+  console.log('Reader engine architecture is pure.');
+
   const documentation = await checkDocumentation(projectRoot);
   if (!documentation.ok) {
     throw new Error(`Documentation check failed:\n${documentation.errors.join('\n')}`);
@@ -62,6 +69,7 @@ export async function runPreparedChecks({ skipTypeScript = false } = {}) {
 
   await checkFormatting();
   if (!skipTypeScript) {
+    checkTypeScriptProject(join(projectRoot, 'packages', 'reader-engine', 'tsconfig.json'));
     checkTypeScriptProject(join(projectRoot, 'packages', 'source-plugin-sdk', 'tsconfig.json'));
     checkTypeScriptProject(join(projectRoot, 'apps', 'api', 'tsconfig.json'));
     checkTypeScriptProject(join(projectRoot, 'apps', 'web', 'tsconfig.json'));

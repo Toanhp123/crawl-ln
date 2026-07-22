@@ -53,7 +53,12 @@
     "check:prepared": "node scripts/check-prepared.mjs",
     "prepare:shared": "node scripts/prepare-shared.mjs",
     "prepare:sdk": "node scripts/prepare-sdk.mjs",
-    "prepare:packages": "node scripts/prepare-packages.mjs"
+    "prepare:packages": "node scripts/prepare-packages.mjs",
+    "build:reader-engine": "node scripts/prepare-reader-engine.mjs",
+    "check:reader-engine": "npm run check -w @novel-tool/reader-engine",
+    "check:reader-engine-arch": "node scripts/check-reader-engine-architecture.mjs",
+    "test:reader-engine": "npm run test -w @novel-tool/reader-engine",
+    "prepare:reader-engine": "node scripts/prepare-reader-engine.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

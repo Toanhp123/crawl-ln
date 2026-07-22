@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { prepareReaderEngine } from './prepare-reader-engine.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -17,6 +18,7 @@ function run(command, args, cwd = projectRoot) {
 }
 
 export async function runPreparedBuild() {
+  prepareReaderEngine();
   const webRoot = join(projectRoot, 'apps', 'web');
   await run(process.execPath, [join(projectRoot, 'apps', 'api', 'scripts', 'build.mjs')]);
   await run(process.execPath, [

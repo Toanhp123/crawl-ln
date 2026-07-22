@@ -1,9 +1,11 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { prepareReaderEngine } from './prepare-reader-engine.mjs';
 import { prepareSdk } from './prepare-sdk.mjs';
 import { prepareShared } from './prepare-shared.mjs';
 
 export function preparePackages() {
+  prepareReaderEngine();
   prepareShared();
   prepareSdk();
 }

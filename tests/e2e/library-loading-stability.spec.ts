@@ -50,7 +50,7 @@ test('stale continue-reading history does not shift the library search controls'
     });
   });
 
-  await installE2eRuntime(page);
+  await installE2eRuntime(page, { mockNovels: false });
 
   const novelsResponse = page.waitForResponse(
     (response) => new URL(response.url()).pathname === '/api/novels'

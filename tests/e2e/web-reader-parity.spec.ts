@@ -57,7 +57,6 @@ async function installReaderMocks(page: Page, chapterCount = 20) {
       body: JSON.stringify({ data: null, error: null })
     })
   );
-  await page.route('**/api/events', (route) => route.abort());
   await installE2eRuntime(page);
 }
 

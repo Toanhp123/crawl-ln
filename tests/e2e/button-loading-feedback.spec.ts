@@ -58,13 +58,6 @@ async function installButtonFeedbackApi(
 
     await fulfillJson(route, []);
   });
-
-  await page.route('**/api/tasks/summary', (route) =>
-    fulfillJson(route, { activeCount: 0, queuedCount: 0, failedCount: 0 })
-  );
-
-  // Do not let a catch-all JSON mock impersonate the realtime event stream.
-  await page.route('**/api/events', (route) => route.fulfill({ status: 204, body: '' }));
 }
 
 test('source switch shows stable in-place loading feedback even for a fast request', async ({

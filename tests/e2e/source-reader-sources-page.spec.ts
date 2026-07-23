@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { installE2eRuntime } from './runtime.fixture';
 
 const ok = (data: unknown) => ({ data, error: null });
 
@@ -74,6 +75,7 @@ test('Sources page loads Source Reader plugins and rolls back a failed switch', 
 }) => {
   await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await mockSourceReader(page, { failDisable: true });
+  await installE2eRuntime(page);
 
   await page.goto('/sources');
   const toggle = page.getByRole('switch', { name: 'Enable NovelCool', exact: true });
@@ -85,6 +87,7 @@ test('Sources page loads Source Reader plugins and rolls back a failed switch', 
 test('Sources console navigates all sections and runs the Source Inspector', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await mockSourceReader(page);
+  await installE2eRuntime(page);
 
   await page.goto('/sources?section=credentials');
   await expect(

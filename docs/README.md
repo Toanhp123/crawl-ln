@@ -1,14 +1,13 @@
 # Documentation
 
-Tài liệu trong working tree chỉ mô tả hệ thống hiện tại và các quy tắc còn hiệu lực.
+Tài liệu trong working tree mô tả hệ thống hiện tại và các quy tắc còn hiệu lực.
 
 ## System
 
 - [Architecture](ARCHITECTURE.md)
 - [Source Reader](SOURCE_READER.md)
 - [E2E test checklist](E2E_TEST_CHECKLIST.md)
-- [V3 storage cutover](V3_CUTOVER.md)
-- [V3 storage rollback](V3_ROLLBACK.md)
+- [Termux acceptance](TERMUX_ACCEPTANCE.md)
 
 ## Backend
 
@@ -24,14 +23,6 @@ Tài liệu trong working tree chỉ mô tả hệ thống hiện tại và các
 - [Settings capability matrix](frontend/SETTINGS_CAPABILITY_MATRIX.md)
 - [UI state matrix](frontend/UI_STATE_MATRIX.md)
 
-## Historical material
+## Engineering history
 
-Completed plans, specs, checkpoints, audits and one-off review reports are preserved in Git rather than the active tree:
-
-```bash
-git log --all -- docs
-git log --all -- path/to/removed-file.md
-git show <commit>:path/to/removed-file.md
-```
-
-`CHANGELOG.md` remains the canonical release history and may mention retired behavior in older entries.
+Các design, implementation plan và checkpoint Markdown dưới `specs/` được giữ để truy vết. Chúng không định nghĩa command hoặc runbook đang hoạt động. `CHANGELOG.md` là lịch sử phát hành và có thể nhắc tới hành vi đã bị loại bỏ.

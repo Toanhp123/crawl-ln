@@ -10,7 +10,9 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@novel-tool/shared": ["../../packages/shared/src/index.ts"],
+      "@novel-tool/reader-engine": ["../../packages/reader-engine/src/index.ts"]
     },
     "types": ["vite/client"]
   },

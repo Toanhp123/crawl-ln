@@ -1,10 +1,9 @@
-import { spawn } from 'node:child_process';
 import { copyFile, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { emitTypeScriptProject } from '../../../scripts/typescript-project.mjs';
 
 const defaultApiRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const projectRoot = resolve(defaultApiRoot, '..', '..');
 const sandboxRelative = join(
   'modules',
   'source-reader',
@@ -13,18 +12,6 @@ const sandboxRelative = join(
   'external-process',
   'sandbox-entry.mjs'
 );
-
-function run(command, args, cwd) {
-  return new Promise((resolveRun, rejectRun) => {
-    const child = spawn(command, args, { cwd, env: process.env, stdio: 'inherit' });
-    child.once('error', rejectRun);
-    child.once('exit', (code, signal) => {
-      if (code === 0) return resolveRun();
-      const reason = signal ? `signal ${signal}` : `exit code ${code ?? 'unknown'}`;
-      rejectRun(new Error(`${command} ${args.join(' ')} failed with ${reason}`));
-    });
-  });
-}
 
 export async function copySourceReaderRuntimeAssets({
   apiRoot = defaultApiRoot,
@@ -35,10 +22,20 @@ export async function copySourceReaderRuntimeAssets({
   await copyFile(join(apiRoot, 'src', sandboxRelative), output);
 }
 
-export async function runApiBuild() {
-  const tsc = join(projectRoot, 'node_modules', 'typescript', 'bin', 'tsc');
-  await run(process.execPath, [tsc, '-p', join(defaultApiRoot, 'tsconfig.json')], defaultApiRoot);
-  await copySourceReaderRuntimeAssets();
+export async function runApiBuild({
+  apiRoot = defaultApiRoot,
+  outputRoot = join(apiRoot, 'dist')
+} = {}) {
+  const root = resolve(apiRoot, '..', '..');
+  emitTypeScriptProject(join(apiRoot, 'tsconfig.json'), {
+    outDir: outputRoot,
+    baseUrl: root,
+    paths: {
+      '@novel-tool/shared': ['packages/shared/dist/index.d.ts'],
+      '@novel-tool/source-plugin-sdk': ['packages/source-plugin-sdk/dist/index.d.ts']
+    }
+  });
+  await copySourceReaderRuntimeAssets({ apiRoot, outputRoot });
 }
 
 const isMain =

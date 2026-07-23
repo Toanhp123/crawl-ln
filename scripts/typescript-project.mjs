@@ -29,13 +29,15 @@ function createProject(configPath, compilerOptions = {}) {
   });
 }
 
-export function checkTypeScriptProject(configPath) {
-  const diagnostics = ts.getPreEmitDiagnostics(createProject(configPath, { noEmit: true }));
+export function checkTypeScriptProject(configPath, compilerOptions = {}) {
+  const diagnostics = ts.getPreEmitDiagnostics(
+    createProject(configPath, { ...compilerOptions, noEmit: true })
+  );
   if (diagnostics.length > 0) throw new Error(formatDiagnostics(diagnostics));
 }
 
-export function emitTypeScriptProject(configPath) {
-  const program = createProject(configPath, { noEmit: false });
+export function emitTypeScriptProject(configPath, compilerOptions = {}) {
+  const program = createProject(configPath, { ...compilerOptions, noEmit: false });
   const emit = program.emit();
   const diagnostics = [...ts.getPreEmitDiagnostics(program), ...emit.diagnostics];
   if (diagnostics.length > 0 || emit.emitSkipped) {

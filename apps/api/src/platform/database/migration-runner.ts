@@ -1,3 +1,4 @@
+import { assertCurrentOrEmptyDatabase } from './database-compatibility.js';
 import type { MigrationRegistry } from './migration-registry.js';
 import type { SqliteDatabase } from './sqlite-database.js';
 
@@ -5,6 +6,7 @@ export function runRegisteredMigrations(
   database: SqliteDatabase,
   registry: MigrationRegistry
 ): void {
+  assertCurrentOrEmptyDatabase(database);
   database.connection.exec(`
     CREATE TABLE IF NOT EXISTS platform_module_migrations (
       module_name TEXT NOT NULL,

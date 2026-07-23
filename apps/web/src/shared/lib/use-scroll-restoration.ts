@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const keyPrefix = 'novel-tool:scroll:';
+const keyPrefix = 'novel-tool-scroll:';
 
 export function useScrollRestoration(routeKey: string) {
   useEffect(() => {

@@ -14,11 +14,11 @@ test('test runner discovers only sorted test files and forbids shared-process es
       writeFile(join(root, 'suite', 'helper.ts'), '')
     ]);
 
-    const { collectTestFiles } = await import('../../scripts/run-test-files.mjs');
+    const { collectTestFiles } = await import('../../scripts/cli/lib/test-runner.mjs');
     const files = await collectTestFiles(join(root, 'suite'));
     assert.deepEqual(files, [join(root, 'suite', 'a.test.ts'), join(root, 'suite', 'b.test.ts')]);
 
-    const runnerSource = await readFile('scripts/run-test-files.mjs', 'utf8');
+    const runnerSource = await readFile('scripts/cli/lib/test-runner.mjs', 'utf8');
     assert.equal(runnerSource.includes('--experimental-test-isolation=none'), false);
     assert.equal(runnerSource.includes('--test-force-exit'), false);
   } finally {
@@ -27,7 +27,7 @@ test('test runner discovers only sorted test files and forbids shared-process es
 });
 
 test('test runner summarizes isolated TAP results without streaming successful child output', async () => {
-  const { parseTestSummary } = await import('../../scripts/run-test-files.mjs');
+  const { parseTestSummary } = await import('../../scripts/cli/lib/test-runner.mjs');
   assert.deepEqual(
     parseTestSummary(
       `# tests 4\n# suites 1\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 1\n# todo 0\n`
@@ -35,12 +35,12 @@ test('test runner summarizes isolated TAP results without streaming successful c
     { tests: 4, pass: 3, fail: 0, skipped: 1 }
   );
 
-  const runnerSource = await readFile('scripts/run-test-files.mjs', 'utf8');
+  const runnerSource = await readFile('scripts/cli/lib/test-runner.mjs', 'utf8');
   assert.equal(runnerSource.includes("stdio: 'inherit'"), false);
 });
 
 test('canonical regression files use the regular isolated runner partition', async () => {
-  const { partitionTestFiles } = await import('../../scripts/run-test-files.mjs');
+  const { partitionTestFiles } = await import('../../scripts/cli/lib/test-runner.mjs');
   const files = [
     '/repo/tests/regression/a.test.ts',
     '/repo/tests/regression/source-reader-external-process-sandbox.test.ts',

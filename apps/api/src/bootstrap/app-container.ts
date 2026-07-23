@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { createBackupModule } from '../modules/backup/backup.module.js';
 import { BackupController } from '../modules/backup/presentation/backup.controller.js';
 import { createExportModule } from '../modules/export/export.module.js';
@@ -26,9 +26,23 @@ import { ApplicationEventToRealtimeAdapter } from '../platform/realtime/applicat
 import { InMemoryRealtimeEventBroker } from '../platform/realtime/in-memory-realtime-event-broker.js';
 import { RealtimeController } from '../platform/realtime/realtime.controller.js';
 import { SystemClock } from '../platform/system/system-clock.js';
+import {
+  ensureExternalDataOwnership,
+  ensureRuntimeInstance
+} from '../platform/runtime/runtime-instance.js';
 import { ModuleRegistry } from './module-registry.js';
 
 export function createAppContainer(environment: Environment) {
+  const storageDirectory = resolve(environment.storageDirectory);
+  const runtimeInstance = ensureRuntimeInstance(storageDirectory, {
+    allowKnownDefault: environment.storageDirectoryIsDefault
+  });
+  ensureExternalDataOwnership({
+    storageDirectory,
+    databasePath: environment.databasePath,
+    pluginDirectory: environment.sourceReaderPluginDir,
+    instance: runtimeInstance
+  });
   const database = new SqliteDatabase(environment.databasePath, { open: false });
   const modules = new ModuleRegistry();
   const clock = new SystemClock();
@@ -132,5 +146,5 @@ export function createAppContainer(environment: Environment) {
     backups: Object.freeze({ controller: backupController })
   });
 
-  return { lifecycle, presentation };
+  return { lifecycle, presentation, runtimeInstance };
 }

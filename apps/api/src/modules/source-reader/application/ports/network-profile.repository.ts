@@ -1,11 +1,9 @@
 export type NetworkRouteType = 'direct' | 'http-proxy' | 'https-proxy' | 'socks-proxy';
-export type PersistedNetworkRouteType = NetworkRouteType | 'vpn-gateway';
-
 export interface NetworkProfileHandle {
   id: string;
   ownerType: 'system' | 'user';
   ownerId?: string;
-  routeType: PersistedNetworkRouteType;
+  routeType: NetworkRouteType;
   regions: string[];
   tags: string[];
   healthStatus: 'unknown' | 'healthy' | 'degraded' | 'offline';

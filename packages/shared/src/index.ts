@@ -246,6 +246,11 @@ export type ApiSuccess<T> = {
   error: null;
 };
 
+export interface RuntimeInstance {
+  formatVersion: 1;
+  instanceId: string;
+}
+
 export type SourceReaderApiErrorCode =
   | 'SOURCE_NOT_SUPPORTED'
   | 'CAPABILITY_NOT_SUPPORTED'
@@ -410,8 +415,7 @@ export type SourceReaderAuthenticationResult =
       };
     };
 
-export type SourceReaderNetworkRouteType =
-  'direct' | 'http-proxy' | 'https-proxy' | 'socks-proxy' | 'vpn-gateway';
+export type SourceReaderNetworkRouteType = 'direct' | 'http-proxy' | 'https-proxy' | 'socks-proxy';
 
 export interface SourceReaderNetworkProfileMetadata {
   id: string;
@@ -430,7 +434,7 @@ export interface SourceReaderNetworkProfileMetadata {
 export interface SourceReaderNetworkProfileCreateRequest {
   ownerType: SourceReaderOwnerType;
   name: string;
-  routeType: Exclude<SourceReaderNetworkRouteType, 'vpn-gateway'>;
+  routeType: SourceReaderNetworkRouteType;
   regions: string[];
   tags: string[];
   config?: Record<string, unknown>;
@@ -441,7 +445,7 @@ export interface SourceReaderNetworkProfileCreateResult {
   name: string;
   ownerType: SourceReaderOwnerType;
   ownerId?: string;
-  routeType: Exclude<SourceReaderNetworkRouteType, 'vpn-gateway'>;
+  routeType: SourceReaderNetworkRouteType;
 }
 
 export type SourceReaderNetworkProfileUpdateRequest = Partial<

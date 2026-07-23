@@ -1,45 +1,101 @@
 # Novel Tool 3.0.0
 
-Novel Tool là ứng dụng mobile-first để phân tích nguồn, crawl, lưu, đọc, tìm kiếm và xuất light novel. Repository là npm monorepo gồm API TypeScript modular monolith, web React theo Feature-Sliced Design và package contract dùng chung.
+Novel Tool là ứng dụng mobile-first để phân tích nguồn, crawl, lưu, đọc, tìm kiếm và xuất light novel. Repository là npm monorepo gồm API TypeScript modular monolith, web React theo Feature-Sliced Design và các package contract dùng chung.
 
 ## Yêu cầu
 
 - Node.js `>=22.12.0`; phiên bản tham chiếu nằm trong `.nvmrc`.
-- npm `>=10`; lockfile hiện được tạo bằng npm `10.9.2`.
-- Không đặt project trong Android shared storage như `/storage/emulated/0/Download`, vì npm workspace cần symlink hoạt động đúng.
+- npm `>=10.0.0`; lockfile được duy trì bằng npm `10.9.2`.
+- Windows x64/ARM64, macOS Intel/Apple Silicon, glibc Linux x64/ARM64 và Termux Android ARM64 là các nền tảng chính.
+- Trên Android, không đặt project trong shared storage như `/storage/emulated/0/Download`; npm workspaces cần filesystem hỗ trợ symlink.
 
-## Cài đặt
+## Bắt đầu
 
-Checkout hoặc archive sạch:
+Từ checkout hoặc archive sạch:
 
 ```bash
-npm ci
+npm run setup
 cp apps/api/.env.example apps/api/.env
 npm run dev
 ```
 
-Chỉ dùng `npm install` khi chủ động thay dependency và muốn cập nhật lockfile.
-
-Termux:
+`setup` kiểm tra phiên bản Node/npm, lockfile và native binding, chạy `npm ci`, rồi probe toolchain thật. Chromium không được cài trong setup thông thường. Khi cần browser crawl hoặc E2E:
 
 ```bash
-pkg install nodejs
-npm run setup:termux
-npm run dev:termux
+npm run setup -- --browser
 ```
 
-Địa chỉ mặc định:
+Địa chỉ development mặc định:
 
 - Web: `http://127.0.0.1:5173`
 - API health: `http://127.0.0.1:3000/health`
+
+## Tám lệnh công khai
+
+| Lệnh             | Hành vi                                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `npm run setup`  | Cài sạch dependencies và kiểm tra toolchain; thêm `-- --browser` để cài hoặc kiểm tra Chromium tùy chọn              |
+| `npm run dev`    | Chạy API và Vite cùng nhau; `-- --target api` hoặc `-- --target web` chỉ chạy một phía                               |
+| `npm run build`  | Tạo production artifact hoàn chỉnh tại root `dist/`; `-- --target api\|web` chỉ tạo build chẩn đoán                  |
+| `npm run start`  | Kiểm tra manifest rồi phục vụ API và SPA bằng một Node process, một port                                             |
+| `npm run check`  | Chạy format check, TypeScript, architecture, docs, command boundary và lockfile; chọn một nhóm bằng `-- --group ...` |
+| `npm test`       | Chạy reader-engine, contract, regression và integration; chọn một suite bằng `-- --suite ...`                        |
+| `npm run format` | Áp dụng Prettier cho toàn bộ source; chọn scope bằng `-- --target ...`                                               |
+| `npm run clean`  | Xóa build/cache/report tạm; `-- --data` thêm development data vào kế hoạch xóa và yêu cầu xác nhận                   |
+
+Mọi lệnh hỗ trợ `--help`, từ chối option không hợp lệ và dùng named flags. Workspace scripts là chi tiết nội bộ, không phải giao diện người dùng.
+
+### Test trình duyệt
+
+Browser E2E luôn được yêu cầu rõ ràng:
+
+```bash
+npm run setup -- --browser
+npm test -- --suite e2e
+```
+
+Thiếu browser capability làm lệnh E2E thất bại rõ ràng; không có skip-and-green.
+
+### Build và production
+
+```bash
+npm run build
+npm run start
+```
+
+Build hoàn chỉnh được dựng trong staging rồi mới thay thế root `dist/`. Production phục vụ `/health`, `/api/*`, static assets và SPA fallback từ cùng một host/port. `HOST`, `PORT`, storage và security tiếp tục được cấu hình qua environment.
+
+### Cleanup và reset dữ liệu
+
+```bash
+npm run clean
+npm run clean -- --data
+npm run clean -- --data --yes
+```
+
+`clean` thông thường giữ nguyên `.env`, database, plugin, credential và browser state. `clean --data` in các đường dẫn tuyệt đối, kiểm tra marker sở hữu ứng dụng và hỏi xác nhận. `--yes` chỉ bỏ qua prompt, không bỏ qua kiểm tra an toàn.
+
+## Termux
+
+Cài Node.js từ Termux, giữ project trong `$HOME`, rồi dùng cùng tám lệnh như desktop:
+
+```bash
+pkg install nodejs
+npm run setup
+npm run dev
+```
+
+Playwright không tự tải browser chuẩn trên Android. Chỉ yêu cầu browser khi đã cấu hình executable tương thích qua `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` hoặc `SOURCE_READER_BROWSER_EXECUTABLE`. Xem [Termux acceptance](docs/TERMUX_ACCEPTANCE.md).
 
 ## Cấu trúc
 
 ```text
 apps/api                 Express, SQLite, ingestion queue, Source Reader
-apps/web                 React, Vite, Tailwind, TanStack Query, FSD
-packages/shared   Zod schemas và public transport contracts
-tests             Regression, integration và Playwright E2E
+apps/web                 React, Vite, TanStack Query, Feature-Sliced Design
+packages/shared          Public transport contracts
+packages/source-plugin-sdk  Source plugin contracts
+packages/reader-engine   Reader session engine
+tests                    Contract, regression, integration và Playwright E2E
 ```
 
 Backend modules chỉ giao tiếp qua public API/ports được composition root truyền vào. Frontend tuân theo:
@@ -47,27 +103,6 @@ Backend modules chỉ giao tiếp qua public API/ports được composition root
 ```text
 app → pages → widgets → features → entities → shared
 ```
-
-## Lệnh chính
-
-```bash
-npm run dev                         # API + Web
-npm run dev:api                     # chỉ API
-npm run dev:web                     # chỉ Web
-npm run dev:termux                  # Termux setup nhẹ + dev
-npm run clean                       # xóa output sinh ra, không xóa storage/.env
-npm run check                       # architecture, docs, format và TypeScript
-npm run build                       # production build toàn monorepo
-npm run test:regression             # regression tests
-npm run test:integration            # integration tests, tự chuẩn bị shared
-npm run test:e2e:install            # cài Chromium cho Playwright
-npm run test:e2e                    # browser E2E
-npm run verify                      # lockfile, check, build, regression, integration
-npm run verify:release              # full release gate, browser E2E and rollback rehearsal
-npm run rehearse:v3:cutover        # migration, cutover, rollback and hash-restore rehearsal
-```
-
-`npm run clean` chỉ dùng khi cần loại bỏ output cũ hoặc debug cache; build bình thường không tự clean để giữ tốc độ lặp lại.
 
 ## Cấu hình API
 
@@ -86,7 +121,7 @@ SOURCE_READER_MEMORY_CACHE_ENTRIES=500
 
 ### Chế độ local an toàn
 
-API mặc định bind `127.0.0.1` và chỉ chấp nhận origin local được khai báo trong `API_CORS_ORIGINS`. File `apps/api/.env.example` bật `SOURCE_READER_LOCAL_ADMIN=true` để console quản trị hoạt động sau khi bạn chủ động copy file cấu hình. Nếu không có `.env`, Source Reader chỉ cấp quyền đọc. Request local không gửi `x-source-reader-user-id` dùng actor ID ổn định `local-user` làm owner mặc định.
+API mặc định bind `127.0.0.1` và chỉ chấp nhận origin local được khai báo trong `API_CORS_ORIGINS`. File `apps/api/.env.example` bật `SOURCE_READER_LOCAL_ADMIN=true` để console quản trị hoạt động sau khi bạn chủ động copy file cấu hình. Nếu không có `.env`, Source Reader chỉ cấp quyền đọc.
 
 ### Truy cập LAN có chủ đích
 
@@ -94,14 +129,12 @@ API mặc định bind `127.0.0.1` và chỉ chấp nhận origin local được
 
 ```env
 HOST=0.0.0.0
-API_CORS_ORIGINS=http://192.168.1.50:5173
+API_CORS_ORIGINS=http://192.168.1.50:3000
 API_REMOTE_TOKEN=replace-with-at-least-32-random-characters
 SOURCE_READER_TRUST_ROLE_HEADERS=false
 ```
 
-Startup sẽ từ chối cấu hình LAN thiếu token mạnh. Mọi request trực tiếp từ máy khác tới `/api/*` phải gửi `Authorization: Bearer <API_REMOTE_TOKEN>`; `/health` vẫn công khai cho process supervisor. Không đặt token trong URL hoặc log. Web UI hiện được thiết kế cho local mode và không tự lưu bearer token. Client LAN phải tự thêm header. Nếu đặt reverse proxy trước API loopback, proxy đó phải tự xác thực người dùng vì backend sẽ nhìn thấy kết nối từ loopback.
-
-Bearer token chỉ mở ranh giới API; Source Reader remote vẫn giữ role `reader` và bỏ qua actor ID do client khai báo theo mặc định. Chỉ bật `SOURCE_READER_TRUST_ROLE_HEADERS=true` cho client quản trị đã tin cậy. Sau khi bearer token được xác thực, tùy chọn này cho phép client gửi cả `x-source-reader-user-id` và `x-source-reader-roles`; không bật nó cho client công cộng.
+Startup từ chối cấu hình LAN thiếu token mạnh. Request từ máy khác tới `/api/*` phải gửi `Authorization: Bearer <API_REMOTE_TOKEN>`; `/health` vẫn công khai cho process supervisor. Không đặt token trong URL hoặc log.
 
 ## Web routes
 
@@ -132,17 +165,9 @@ Crawler chỉ đọc website qua Source Reader. Logic riêng theo website nằm 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Source Reader and plugin authoring](docs/SOURCE_READER.md)
 - [E2E checklist](docs/E2E_TEST_CHECKLIST.md)
+- [Termux acceptance](docs/TERMUX_ACCEPTANCE.md)
 - [Backend architecture rules](docs/backend/BE_ARCHITECTURE_RULES.md)
 - [Frontend FSD rules](docs/frontend/FSD.md)
 - [Design system](docs/frontend/DESIGN_SYSTEM_V2.md)
 
-Completed plans, reviews and checkpoints are intentionally absent from the working tree. Retrieve them through Git history when needed.
-
-## V3 cutover safety
-
-The V3 candidate is migrated into a sibling staging directory and must pass the
-verification and candidate-smoke gates before storage roles change. The storage
-cutover writes a journal and retains the V22 backup; rollback restores the exact
-source manifest and keeps failed V3 storage for diagnosis. Run
-`npm run rehearse:v3:cutover` before an operator-led swap, then follow the
-[cutover](docs/V3_CUTOVER.md) and [rollback](docs/V3_ROLLBACK.md) runbooks.
+Các design, plan và checkpoint Markdown dưới `specs/` là lịch sử kỹ thuật để truy vết, không phải hướng dẫn vận hành hiện tại.

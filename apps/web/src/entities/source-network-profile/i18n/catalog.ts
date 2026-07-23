@@ -10,8 +10,7 @@ export const sourceNetworkProfileCatalogs = {
     'common.status.http-proxy': 'HTTP proxy',
     'common.status.https-proxy': 'HTTPS proxy',
     'common.status.offline': 'Offline',
-    'common.status.socks-proxy': 'SOCKS proxy',
-    'common.status.vpn-gateway': 'Legacy VPN gateway'
+    'common.status.socks-proxy': 'SOCKS proxy'
   },
   vi: {
     'sources.common.system': 'Hệ thống',
@@ -22,7 +21,6 @@ export const sourceNetworkProfileCatalogs = {
     'common.status.http-proxy': 'Proxy HTTP',
     'common.status.https-proxy': 'Proxy HTTPS',
     'common.status.offline': 'Ngoại tuyến',
-    'common.status.socks-proxy': 'Proxy SOCKS',
-    'common.status.vpn-gateway': 'Cổng VPN cũ'
+    'common.status.socks-proxy': 'Proxy SOCKS'
   }
 } as const satisfies Record<'en' | 'vi', Catalog>;

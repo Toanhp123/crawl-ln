@@ -11,7 +11,6 @@ test-results/
 .env
 .env.*
 !apps/api/.env.example
-!apps/api/.env.termux.example
 .DS_Store
 apps/api/storage/
 

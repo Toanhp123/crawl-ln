@@ -22,7 +22,8 @@ export interface Environment {
   host: string;
   port: number;
   databasePath: string;
-  storageDirectory?: string;
+  storageDirectory: string;
+  storageDirectoryIsDefault: boolean;
   appVersion?: string;
   apiCorsOrigins?: string[];
   outboxBatchSize: number;
@@ -118,6 +119,7 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Envi
       ? resolveApiPath(parsed.DATABASE_PATH)
       : resolve(storageDirectory, 'novel-tool.sqlite'),
     storageDirectory,
+    storageDirectoryIsDefault: configuredStorageDirectory === undefined,
     appVersion: source.APP_VERSION ?? '3.0.0',
     apiCorsOrigins: corsOrigins(parsed.API_CORS_ORIGINS),
     outboxBatchSize: parsed.OUTBOX_BATCH_SIZE,

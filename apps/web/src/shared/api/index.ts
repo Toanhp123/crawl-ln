@@ -17,6 +17,7 @@ export {
 export { http, httpFormData, httpVoid, readApiSuccess } from './http';
 export { createQueryClient, queryClient } from './query-client';
 export {
+  removeQueryCache,
   restoreQueryCache,
   startQueryCachePersistence,
   type QueryPersistenceOptions

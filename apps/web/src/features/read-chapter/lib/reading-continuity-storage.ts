@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import type { StoredReadingPositionV3 } from './reading-position-storage';
+import type { StoredReadingPosition } from './reading-position-storage';
 
-export interface ReadingHistoryEntry extends StoredReadingPositionV3 {
+export interface ReadingHistoryEntry extends StoredReadingPosition {
   lastOpenedAt: string;
 }
 
@@ -15,9 +15,9 @@ export interface ParagraphBookmark {
   createdAt: string;
 }
 
-const HISTORY_KEY = 'novel-tool-reading-history:v2';
-const BOOKMARKS_KEY = 'novel-tool-bookmarks:v2';
-const READ_KEY_PREFIX = 'novel-tool-read-chapters:v2:';
+const HISTORY_KEY = 'novel-tool-reader-history';
+const BOOKMARKS_KEY = 'novel-tool-reader-bookmarks';
+const READ_KEY_PREFIX = 'novel-tool-reader-read:';
 const CHANGE_EVENT = 'novel-tool-reading-continuity-change';
 const MAX_HISTORY = 50;
 
@@ -47,7 +47,7 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
-export function recordReadingActivity(position: StoredReadingPositionV3): void {
+export function recordReadingActivity(position: StoredReadingPosition): void {
   const history = readJson<ReadingHistoryEntry[]>(HISTORY_KEY, []);
   const entry = { ...position, lastOpenedAt: new Date().toISOString() };
   writeJson(
@@ -80,7 +80,7 @@ export function isBookmarked(novelId: string, chapterId: string, paragraphId: st
 
 export function toggleBookmark(
   position: Pick<
-    StoredReadingPositionV3,
+    StoredReadingPosition,
     'novelId' | 'chapterId' | 'chapterIndex' | 'paragraphId' | 'paragraphOffset'
   >
 ): boolean {

@@ -50,7 +50,7 @@ export function networkProfileFormFromProfile(
   return {
     ownerType: profile.ownerType,
     name: profile.name,
-    routeType: profile.routeType === 'vpn-gateway' ? 'direct' : profile.routeType,
+    routeType: profile.routeType,
     regions: profile.regions.join(', '),
     tags: profile.tags.join(', '),
     proxyUrl: '',

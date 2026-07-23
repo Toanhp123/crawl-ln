@@ -18,7 +18,7 @@ import {
   useReadingContinuityVersion,
   useSwipeChapterNavigation,
   ReaderOfflineBanner,
-  type StoredReadingPositionV3
+  type StoredReadingPosition
 } from '@/features/read-chapter';
 import { ReaderPreferencesSheet, useReaderPreferences } from '@/features/reader-preferences';
 import { ChapterListSheet } from '@/features/select-chapter';
@@ -211,8 +211,8 @@ export function ChapterReaderPage() {
       viewport;
     const anchor = captureReadingAnchor(viewport, chapterRoot);
     currentAnchor.current = anchor;
-    const position: StoredReadingPositionV3 = {
-      version: 3,
+    const position: StoredReadingPosition = {
+      schemaVersion: 1,
       novelId,
       chapterId: activeSummary.id,
       chapterIndex: activeSummary.index,

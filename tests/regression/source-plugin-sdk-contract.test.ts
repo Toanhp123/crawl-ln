@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -39,7 +40,8 @@ test('sdk source never imports API internals', () => {
 });
 
 test('external plugin fixture type-checks against asynchronous sdk context', () => {
-  const tsc = join(root, 'node_modules/typescript/bin/tsc');
+  const requireFromRoot = createRequire(join(root, 'package.json'));
+  const tsc = join(dirname(requireFromRoot.resolve('typescript/package.json')), 'bin', 'tsc');
   const result = spawnSync(
     process.execPath,
     [tsc, '-p', 'tests/fixtures/source-reader/sdk-plugin/tsconfig.json'],

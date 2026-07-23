@@ -72,13 +72,11 @@ export function SourceNetworkProfileActions({ profile }: { profile: SourceNetwor
   const remove = useDeleteSourceNetworkProfile(profile.id, () => setDeleteOpen(false));
   const test = useTestSourceNetworkProfile(profile.id);
   const toggle = useUpdateSourceNetworkProfile(profile.id);
-  const legacy = profile.routeType === 'vpn-gateway';
   return (
     <div className="space-y-2">
       <Switch
         checked={profile.enabled}
         label={t('manageSourceNetworkProfile.enabled')}
-        disabled={legacy}
         actionState={toggle.status}
         onCheckedChange={(enabled) => toggle.mutate({ enabled })}
       />
@@ -90,7 +88,6 @@ export function SourceNetworkProfileActions({ profile }: { profile: SourceNetwor
             reset();
             setEditOpen(true);
           }}
-          disabled={legacy}
         >
           {t('manageSourceNetworkProfile.edit')}
         </Button>
@@ -99,7 +96,6 @@ export function SourceNetworkProfileActions({ profile }: { profile: SourceNetwor
           variant="secondary"
           leadingIcon={<Wifi size={16} />}
           actionState={test.status}
-          disabled={legacy}
           onClick={() => test.mutate()}
         >
           {t('manageSourceNetworkProfile.test')}

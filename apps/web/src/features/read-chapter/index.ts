@@ -32,14 +32,10 @@ export {
 } from './lib/reading-continuity-storage';
 export {
   readLatestReadingPosition,
-  readLegacyLatestReadingPosition,
   readReadingPosition,
   saveReadingPosition,
   type ChapterPositionIdentity,
-  type StoredReadingPosition,
-  type StoredReadingPositionV1,
-  type StoredReadingPositionV2,
-  type StoredReadingPositionV3
+  type StoredReadingPosition
 } from './lib/reading-position-storage';
 export {
   useReaderController,

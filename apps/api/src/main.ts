@@ -1,23 +1,25 @@
-import { createAppRuntime } from './app.js';
-import { environment } from './platform/config/environment.js';
+import { startServer } from './server.js';
 
-const runtime = createAppRuntime();
-await runtime.ready;
+const running = await startServer();
+console.log(`API running at ${running.url}`);
 
-const server = runtime.app.listen(environment.port, environment.host, () => {
-  console.log(`API running at http://${environment.host}:${environment.port}`);
-});
-
-let shuttingDown = false;
-const shutdown = async () => {
-  if (shuttingDown) return;
-  shuttingDown = true;
-  await runtime.lifecycle.stop();
-  server.close((error) => {
-    if (error) console.error(error.stack ?? error.message);
-    process.exit(error ? 1 : 0);
-  });
+let shutdownPromise: Promise<void> | undefined;
+const shutdown = () => {
+  shutdownPromise ??= running
+    .close()
+    .catch((error: unknown) => {
+      console.error(error instanceof Error ? (error.stack ?? error.message) : String(error));
+      process.exitCode = 1;
+    })
+    .finally(() => {
+      process.removeListener('SIGINT', onSignal);
+      process.removeListener('SIGTERM', onSignal);
+    });
+  return shutdownPromise;
+};
+const onSignal = () => {
+  void shutdown();
 };
 
-process.once('SIGINT', shutdown);
-process.once('SIGTERM', shutdown);
+process.once('SIGINT', onSignal);
+process.once('SIGTERM', onSignal);

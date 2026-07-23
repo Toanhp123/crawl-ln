@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installE2eRuntime } from './runtime.fixture';
 
 const plugin = {
   id: 'novelcool',
@@ -56,6 +57,7 @@ test('source switch shows stable in-place loading feedback even for a fast reque
     });
   });
 
+  await installE2eRuntime(page);
   await page.goto('/sources');
 
   const toggle = page.getByRole('switch', { name: 'Enable NovelCool', exact: true });
@@ -122,6 +124,7 @@ test('source switch reports an error phase instead of a success check on failure
     });
   });
 
+  await installE2eRuntime(page);
   await page.goto('/sources');
   const toggle = page.getByRole('switch', { name: 'Enable NovelCool', exact: true });
   await expect(toggle).toBeChecked();

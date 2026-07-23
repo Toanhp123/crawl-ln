@@ -11,7 +11,7 @@ export function shouldPersistAppQuery(query: Query): boolean {
 export { shouldPersistAppQueryKey } from './query-persistence';
 
 export const appQueryPersistenceOptions: QueryPersistenceOptions = {
-  buster: 'v3-app-shell-v1',
+  buster: 'app-shell-schema-1',
   maxAgeMs: 12 * 60 * 60 * 1000,
   shouldPersist: shouldPersistAppQuery
 };

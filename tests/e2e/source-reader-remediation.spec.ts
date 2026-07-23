@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installE2eRuntime } from './runtime.fixture';
 
 const secret = 'SERVER_SIDE_SECRET_MARKER_9f31';
 const ok = (data: unknown) => ({ data, error: null });
@@ -81,6 +82,7 @@ test('remediated Sources UI shows safe quarantine and diagnostics without secret
     })
   );
 
+  await installE2eRuntime(page);
   await page.goto('/sources');
   await expect(page.getByText('Unsafe Demo', { exact: true })).toBeVisible();
   await expect(page.getByText('Quarantined', { exact: true })).toBeVisible();

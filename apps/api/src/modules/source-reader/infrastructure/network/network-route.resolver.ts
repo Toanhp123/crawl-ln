@@ -35,9 +35,6 @@ export class NetworkRouteResolver implements NetworkRouteResolverPort {
 
   async resolve(handle?: NetworkProfileHandle): Promise<ResolvedNetworkRoute> {
     if (!handle || handle.routeType === 'direct') return { kind: 'direct', identity: 'direct' };
-    if (handle.routeType === 'vpn-gateway') {
-      return unsupported('Legacy VPN gateway profiles are no longer supported');
-    }
     const config = await this.profiles.resolveConfig(handle);
     if (!config) {
       throw new SourceReaderError(

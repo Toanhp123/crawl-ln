@@ -82,7 +82,7 @@ Network profiles are actor-owned routes of these supported types:
 - `https-proxy`
 - `socks-proxy`
 
-A profile exposes only metadata and an opaque handle to the runtime. Resolution enforces ownership, region and tag requirements, health state, and session binding. Persisted legacy `vpn-gateway` rows are not executable and fail closed with `NETWORK_ROUTE_UNSUPPORTED`; the current create/update API does not accept that route type.
+A profile exposes only metadata and an opaque handle to the runtime. Resolution enforces ownership, region and tag requirements, health state, and session binding. Supported routes are direct, HTTP proxy, HTTPS proxy, and SOCKS proxy.
 
 ## Cache scopes and invalidation
 
@@ -129,7 +129,7 @@ The console exposes five user-facing sections:
 
 - **Plugins** — list, search, install, enable, disable, test, remove, inspect diagnostics and health, and approve or deny version-scoped permissions.
 - **Credentials** — create write-only cookie, bearer, basic, form-login, or custom secrets; replace or remove secrets; login, logout, and test through an optional network profile.
-- **Network** — create, update, enable, disable, test, and remove direct, HTTP, HTTPS, or SOCKS routes. Persisted legacy VPN rows remain visible but read-only.
+- **Network** — create, update, enable, disable, test, and remove direct, HTTP, HTTPS, or SOCKS routes.
 - **Challenges** — poll pending OTP, approval, CAPTCHA, or browser-interaction challenges and submit, reject, complete, or cancel the supported response types.
 - **Inspector** — invoke identify, metadata, chapter-list, chapter-content, search, and latest-updates with optional credential, network, cache, timeout, cursor, and limit controls.
 
@@ -161,7 +161,8 @@ npm run check
 npm run build
 npm run test:regression
 npm run test:integration
-npm run verify
+npm run check
+npm test
 npm run test:e2e
 ```
 

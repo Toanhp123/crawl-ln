@@ -3,7 +3,7 @@ import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { runTestFile } from '../../scripts/run-test-files.mjs';
+import { runTestFile } from '../../scripts/cli/lib/test-runner.mjs';
 
 async function exists(path: string) {
   try {

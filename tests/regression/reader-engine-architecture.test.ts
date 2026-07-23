@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { checkReaderEngineArchitecture } from '../../scripts/check-reader-engine-architecture.mjs';
+import { checkReaderEngineArchitecture } from '../../scripts/lib/reader-engine-architecture.mjs';
 
 test('reader engine imports no framework, browser, app, or transport dependency', async () => {
   assert.deepEqual(await checkReaderEngineArchitecture(process.cwd()), []);

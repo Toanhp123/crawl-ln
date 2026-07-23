@@ -71,7 +71,7 @@ async function writeCache(cache: PersistedQueryCache): Promise<void> {
   }
 }
 
-async function removeCache(): Promise<void> {
+export async function removeQueryCache(): Promise<void> {
   if (!canUseIndexedDb()) return;
   const database = await openDatabase();
   try {
@@ -110,7 +110,7 @@ export async function restoreQueryCache(
     if (!persisted) return;
     const expired = Date.now() - persisted.savedAt > options.maxAgeMs;
     if (persisted.buster !== options.buster || expired) {
-      await removeCache();
+      await removeQueryCache();
       return;
     }
     hydrate(queryClient, persisted.state);

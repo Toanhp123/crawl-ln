@@ -1,37 +1,51 @@
 # E2E Test Checklist
 
-Use a source you are authorized to access. Start with a small chapter limit and explicit allowlist.
+Browser automation là capability tùy chọn và luôn phải được yêu cầu rõ ràng. Thiếu Chromium hoặc executable tương thích phải làm bước E2E thất bại, không được bỏ qua.
 
-## 1. Prepare environment
+## 1. Chuẩn bị
 
 ```bash
+npm run setup -- --browser
 cp apps/api/.env.example apps/api/.env
-node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 ```
 
-Set at least:
+Khi kiểm thử crawl thật, chỉ dùng nguồn bạn được phép truy cập. Đặt allowlist rõ ràng, giới hạn số chương và concurrency thấp:
 
 ```env
 SOURCE_ALLOWLIST=your-allowed-domain.example
-SOURCE_READER_MASTER_KEY=<generated-base64-key>
 MAX_CHAPTERS_PER_RUN=5
 CRAWLER_CONCURRENCY=1
 CRAWLER_DELAY_MS=1200
 ```
 
-## 2. Start and check health
+## 2. Chạy browser suite
+
+```bash
+npm test -- --suite e2e
+```
+
+Playwright khởi động web qua public command `npm run dev -- --target web`. API request trong test được mock theo từng spec; runtime-instance bootstrap cũng được mock bằng fixture dùng chung.
+
+## 3. Manual Source Reader smoke
+
+Chạy development đầy đủ:
 
 ```bash
 npm run dev
+```
+
+Kiểm tra:
+
+```bash
 curl http://127.0.0.1:3000/health
 curl http://127.0.0.1:3000/api/source-reader/plugins
 ```
 
-In `/sources`, verify the required plugin is installed, compatible, enabled and healthy. Approve only the exact permissions it needs. Configure credential or network profiles only when the source requires them.
+Trong `/sources`, xác nhận plugin cần thiết đã cài, compatible, enabled và healthy. Chỉ cấp đúng permission cần thiết. Credential hoặc network profile chỉ được cấu hình khi nguồn yêu cầu.
 
-## 3. Inspect the source before saving
+## 4. Inspect trước khi lưu
 
-Use the Source Inspector in `/sources`, or call:
+Dùng Source Inspector trong `/sources`, hoặc gọi:
 
 ```bash
 curl -X POST http://127.0.0.1:3000/api/source-reader/metadata \
@@ -43,9 +57,9 @@ curl -X POST http://127.0.0.1:3000/api/source-reader/chapter-list \
   -d '{"url":"https://your-allowed-domain.example/novel-page","limit":10,"freshOnly":true}'
 ```
 
-Confirm metadata is correct and chapter items are real source URLs. If the list is empty, debug the plugin parser or upstream challenge rather than changing crawler core.
+Xác nhận metadata đúng và chapter items là URL nguồn thật. Danh sách rỗng phải được debug ở plugin parser hoặc upstream challenge, không sửa crawler core để lách lỗi.
 
-## 4. Analyze and create a crawl job
+## 5. Crawl và persistence
 
 ```bash
 curl -X POST http://127.0.0.1:3000/api/novels/analyze \
@@ -53,48 +67,17 @@ curl -X POST http://127.0.0.1:3000/api/novels/analyze \
   -d '{"url":"https://your-allowed-domain.example/novel-page"}'
 ```
 
-Copy the returned novel id, then:
+Dùng novel id trả về để tạo job, sau đó kiểm tra task, chapter order, retry/pause/resume/cancel và persisted progress.
+
+## 6. Web, reader và export
+
+Mở Library, novel detail và Reader ở mobile/desktop widths. Kiểm tra loading, empty, error, offline-safe state, reading continuity và export EPUB/TXT.
+
+## 7. Production smoke
 
 ```bash
-curl -X POST http://127.0.0.1:3000/api/crawl/jobs \
-  -H 'Content-Type: application/json' \
-  -d '{"novelId":"PASTE_NOVEL_ID"}'
-```
-
-## 5. Verify persistence
-
-```bash
-curl http://127.0.0.1:3000/api/novels/PASTE_NOVEL_ID/task
-curl http://127.0.0.1:3000/api/novels/PASTE_NOVEL_ID/chapters
-```
-
-Check task progress, chapter order, titles and content. Retry/pause/resume/cancel behavior should preserve persisted progress.
-
-## 6. Verify web and export
-
-Open Library, novel detail and Reader at mobile and desktop widths. Confirm loading, empty, error and offline-safe states. Create an EPUB or TXT export from the novel detail screen and verify the downloaded file opens correctly.
-
-## 7. Automated gates
-
-```bash
-npm run check
-npm run test:regression
-npm run test:integration
 npm run build
-npm run test:e2e
+npm run start
 ```
 
-## 8. V3 cutover rehearsal
-
-Run the complete copy, migration, candidate evidence, storage swap, live smoke,
-rollback and hash-restore rehearsal before a production cutover:
-
-```bash
-npm run rehearse:v3:cutover
-```
-
-The rehearsal intentionally injects one live-smoke failure so the rollback path
-is exercised. Review `.artifacts/v3/rollback-rehearsal.json`; the eight steps
-must be ordered as copy, migrate, validate, candidate-smoke, cutover, live-smoke,
-rollback and hash-verify. Use [V3 Storage Cutover](V3_CUTOVER.md) and [V3 Storage
-Rollback](V3_ROLLBACK.md) for the operator procedure and recovery commands.
+Xác nhận một Node process phục vụ cả `/health` và SPA trên cùng port, API miss vẫn trả JSON và non-API GET/HEAD dùng SPA fallback.

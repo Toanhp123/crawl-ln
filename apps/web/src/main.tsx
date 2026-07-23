@@ -1,11 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { synchronizeRuntimeInstance } from '@/app/bootstrap/runtime-instance';
 import { AppProviders } from '@/app/providers/AppProviders';
 import { appQueryPersistenceOptions } from '@/app/providers/QueryProvider';
 import { AppRouter } from '@/app/router/AppRouter';
 import { queryClient, restoreQueryCache, startQueryCachePersistence } from '@/shared/api';
 import '@/app/styles/index.css';
 
+await synchronizeRuntimeInstance();
 await restoreQueryCache(queryClient, appQueryPersistenceOptions);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

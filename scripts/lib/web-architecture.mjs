@@ -25,6 +25,7 @@ const queryHookPattern = /^use.*Quer(?:y|ies)$/;
 const mutationHookPattern = /^use.*Mutat/;
 const mutatingHttpMethods = new Set(['DELETE', 'PATCH', 'POST', 'PUT']);
 const sharedStyleTokenPattern = /(?:\.[a-z_][a-z0-9_-]*|data-[a-z0-9_-]+|--[a-z0-9_-]+)/gi;
+const approvedSharedInfrastructure = new Set(['src/shared/storage/novel-tool-storage.ts']);
 const readerCssPatterns = [
   /data-reader-[a-z0-9_-]+/gi,
   /--reader-[a-z0-9_-]+/gi,
@@ -407,6 +408,7 @@ function domainCssMarkers(value) {
 }
 
 function inspectSharedTypeScript(projectRoot, file, sourceFile, violations) {
+  if (approvedSharedInfrastructure.has(sourceLocation(projectRoot, file))) return;
   const reportedDomain = new Set();
   const reportedCss = new Set();
   const reportDomain = (value) => {

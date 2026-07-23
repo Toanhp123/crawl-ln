@@ -20,14 +20,17 @@ import { errorMiddleware } from './platform/http/error.middleware.js';
 import { notFoundMiddleware } from './platform/http/not-found.middleware.js';
 import { createRealtimeRoutes } from './platform/realtime/realtime.routes.js';
 import { ok } from './platform/http/api-response.js';
+import { mountSpa } from './platform/http/spa.middleware.js';
 
-export interface NextAppRuntime {
+export interface AppRuntime {
   app: Express;
   ready: Promise<void>;
   lifecycle: { stop(): Promise<void> };
 }
 
-export function createAppRuntime(options: { environment?: Environment } = {}): NextAppRuntime {
+export function createAppRuntime(
+  options: { environment?: Environment; publicDirectory?: string } = {}
+): AppRuntime {
   const app = express();
   const runtimeEnvironment = options.environment ?? environment;
   const container = createAppContainer(runtimeEnvironment);
@@ -40,6 +43,7 @@ export function createAppRuntime(options: { environment?: Environment } = {}): N
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_request, response) => ok(response, { ok: true, name: 'novel-tool' }));
   app.use('/api', apiAccessMiddleware({ remoteToken: runtimeEnvironment.apiRemoteToken }));
+  app.get('/api/runtime', (_request, response) => ok(response, container.runtimeInstance));
   app.use('/api/events', createRealtimeRoutes(container.presentation.realtime));
   app.use('/api/novels', createLibraryRoutes(container.presentation.library.controller));
   app.use('/api/crawl', createIngestionRoutes(container.presentation.ingestion.controller));
@@ -50,6 +54,8 @@ export function createAppRuntime(options: { environment?: Environment } = {}): N
   app.use('/api/exports', createExportRoutes(container.presentation.exports.controller));
   app.use('/api/search', createSearchRoutes(container.presentation.search.controller));
   app.use('/api/source-reader', createSourceReaderRoutes(container.presentation.sourceReader));
+  app.use('/api', notFoundMiddleware);
+  if (options.publicDirectory) mountSpa(app, options.publicDirectory);
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);
 

@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { installE2eRuntime } from './runtime.fixture';
 
 const staleHistory = [
   {
-    version: 3,
+    schemaVersion: 1,
     novelId: 'missing-novel',
     chapterId: 'missing-chapter',
     chapterIndex: 12,
@@ -19,7 +20,7 @@ test('stale continue-reading history does not shift the library search controls'
 }) => {
   await page.addInitScript((history) => {
     localStorage.setItem('novel-tool-language', 'en');
-    localStorage.setItem('novel-tool-reading-history:v2', JSON.stringify(history));
+    localStorage.setItem('novel-tool-reader-history', JSON.stringify(history));
   }, staleHistory);
 
   await page.route('**/api/novels**', async (route) => {
@@ -48,6 +49,8 @@ test('stale continue-reading history does not shift the library search controls'
       })
     });
   });
+
+  await installE2eRuntime(page);
 
   const novelsResponse = page.waitForResponse(
     (response) => new URL(response.url()).pathname === '/api/novels'

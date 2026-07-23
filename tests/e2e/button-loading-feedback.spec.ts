@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
 import { installE2eRuntime } from './runtime.fixture';
 
 const plugin = {
@@ -16,20 +16,24 @@ const plugin = {
 
 const success = (data: unknown) => JSON.stringify({ data, error: null });
 
-test('source switch shows stable in-place loading feedback even for a fast request', async ({
-  page
-}) => {
-  await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
-  await page.route('**/api/**', async (route) => {
+async function fulfillJson(route: Route, data: unknown, status = 200): Promise<void> {
+  await route.fulfill({
+    status,
+    contentType: 'application/json',
+    body: success(data)
+  });
+}
+
+async function installButtonFeedbackApi(
+  page: Page,
+  options: { failDisable?: boolean } = {}
+): Promise<void> {
+  await page.route('**/api/source-reader/**', async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
 
     if (pathname === '/api/source-reader/plugins' && request.method() === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: success([plugin])
-      });
+      await fulfillJson(route, [plugin]);
       return;
     }
 
@@ -37,26 +41,37 @@ test('source switch shows stable in-place loading feedback even for a fast reque
       pathname === '/api/source-reader/plugins/novelcool/disable' &&
       request.method() === 'POST'
     ) {
+      if (options.failDisable) {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: null,
+            error: { code: 'INTERNAL_ERROR', message: 'Toggle failed', details: null }
+          })
+        });
+        return;
+      }
       await route.fulfill({ status: 204, body: '' });
       return;
     }
 
-    if (pathname === '/api/tasks/summary') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: success({ activeCount: 0, queuedCount: 0, failedCount: 0 })
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: success([])
-    });
+    await fulfillJson(route, []);
   });
 
+  await page.route('**/api/tasks/summary', (route) =>
+    fulfillJson(route, { activeCount: 0, queuedCount: 0, failedCount: 0 })
+  );
+
+  // Do not let a catch-all JSON mock impersonate the realtime event stream.
+  await page.route('**/api/events', (route) => route.fulfill({ status: 204, body: '' }));
+}
+
+test('source switch shows stable in-place loading feedback even for a fast request', async ({
+  page
+}) => {
+  await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
+  await installButtonFeedbackApi(page);
   await installE2eRuntime(page);
   await page.goto('/sources');
 
@@ -80,52 +95,10 @@ test('source switch reports an error phase instead of a success check on failure
   page
 }) => {
   await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
-  await page.route('**/api/**', async (route) => {
-    const request = route.request();
-    const pathname = new URL(request.url()).pathname;
-
-    if (pathname === '/api/source-reader/plugins' && request.method() === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: success([plugin])
-      });
-      return;
-    }
-
-    if (
-      pathname === '/api/source-reader/plugins/novelcool/disable' &&
-      request.method() === 'POST'
-    ) {
-      await route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          data: null,
-          error: { code: 'INTERNAL_ERROR', message: 'Toggle failed', details: null }
-        })
-      });
-      return;
-    }
-
-    if (pathname === '/api/tasks/summary') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: success({ activeCount: 0, queuedCount: 0, failedCount: 0 })
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: success([])
-    });
-  });
-
+  await installButtonFeedbackApi(page, { failDisable: true });
   await installE2eRuntime(page);
   await page.goto('/sources');
+
   const toggle = page.getByRole('switch', { name: 'Enable NovelCool', exact: true });
   await expect(toggle).toBeChecked();
   await toggle.click();

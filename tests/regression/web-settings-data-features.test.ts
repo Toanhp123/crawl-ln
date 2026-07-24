@@ -288,7 +288,8 @@ test('Task 7 feature public APIs expose actions and reusable controls', async ()
   assert.equal(typeof autoUpdate.useUpdateAutoUpdate, 'function');
   assert.equal(typeof autoUpdate.AutoUpdateControl, 'function');
   assert.equal(typeof scheduler.useRunScheduler, 'function');
-  assert.equal(typeof scheduler.RunSchedulerButton, 'function');
+  assert.equal(typeof scheduler.SchedulerControls, 'function');
+  assert.equal('RunSchedulerButton' in scheduler, false);
   assert.equal(typeof search.useSearchLibraryFeature, 'function');
   assert.equal(typeof search.LibrarySearchPanel, 'function');
   assert.equal(typeof rebuild.useRebuildSearchIndex, 'function');

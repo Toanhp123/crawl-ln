@@ -2,6 +2,7 @@ import type { Page, Route } from '@playwright/test';
 
 export interface E2eRuntimeOptions {
   mockNovels?: boolean;
+  mockEvents?: boolean;
 }
 
 const envelope = (data: unknown) => JSON.stringify({ data, error: null });
@@ -16,12 +17,14 @@ async function fulfillJson(route: Route, data: unknown): Promise<void> {
 
 export async function installE2eRuntime(
   page: Page,
-  { mockNovels = true }: E2eRuntimeOptions = {}
+  { mockNovels = true, mockEvents = true }: E2eRuntimeOptions = {}
 ): Promise<void> {
   await page.route('**/api/runtime', (route) =>
     fulfillJson(route, { formatVersion: 1, instanceId: 'e2e' })
   );
-  await page.route('**/api/events', (route) => route.fulfill({ status: 204, body: '' }));
+  if (mockEvents) {
+    await page.route('**/api/events', (route) => route.fulfill({ status: 204, body: '' }));
+  }
   await page.route('**/api/tasks/summary', (route) =>
     fulfillJson(route, { activeCount: 0, queuedCount: 0, failedCount: 0 })
   );

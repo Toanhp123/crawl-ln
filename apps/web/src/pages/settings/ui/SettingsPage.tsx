@@ -14,7 +14,7 @@ import { AppearanceControls, useAppearanceConfiguration } from '@/features/confi
 import { LanguageControls, useLanguageConfiguration } from '@/features/configure-language';
 import { ReaderPreferencesSheet } from '@/features/reader-preferences';
 import { RebuildSearchIndexButton } from '@/features/rebuild-search-index';
-import { RunSchedulerButton } from '@/features/run-scheduler';
+import { SchedulerControls } from '@/features/run-scheduler';
 import { BackupLibraryPanel } from '@/features/backup-library';
 import { APP_BUILD, APP_VERSION } from '@/shared/config';
 import { useI18n } from '@/shared/i18n';
@@ -137,14 +137,7 @@ export function SettingsPage() {
           </Stack>
         ) : null}
         {panel === 'language' ? <LanguageControls /> : null}
-        {panel === 'scheduler' ? (
-          <Panel className="space-y-3">
-            <Text variant="supporting" tone="muted">
-              {t('settings.schedulerDescription')}
-            </Text>
-            <RunSchedulerButton />
-          </Panel>
-        ) : null}
+        {panel === 'scheduler' ? <SchedulerControls /> : null}
         {panel === 'storage' ? <BackupLibraryPanel /> : null}
         {panel === 'search' ? (
           <Panel className="space-y-3">

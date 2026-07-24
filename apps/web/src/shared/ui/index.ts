@@ -30,6 +30,7 @@ export * from './feedback/LoadingState';
 export * from './feedback/Toast';
 
 export * from './data-display/StatCard';
+export * from './data-display/StatusList';
 export * from './data-display/Chip';
 export * from './data-display/DataTable';
 export * from './data-display/ListRow';

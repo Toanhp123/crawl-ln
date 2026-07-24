@@ -1,12 +1,44 @@
 export const runSchedulerCatalogs = {
   en: {
     'scheduler.runNow': 'Run scheduler now',
+    'scheduler.runningAction': 'Running',
     'scheduler.completed': 'Scheduler check completed',
-    'scheduler.failed': 'Scheduler check failed'
+    'scheduler.failed': 'Scheduler check failed',
+    'scheduler.statusList': 'Scheduler status',
+    'scheduler.timingList': 'Scheduler timing',
+    'scheduler.state': 'Scheduler',
+    'scheduler.state.running': 'Running',
+    'scheduler.state.enabled': 'Enabled',
+    'scheduler.state.disabled': 'Disabled',
+    'scheduler.monitoredNovels': 'Monitored novels',
+    'scheduler.dueNovels': 'Due novels',
+    'scheduler.activeRuns': 'Active runs',
+    'scheduler.lastRun': 'Last run',
+    'scheduler.nextRun': 'Next run',
+    'scheduler.neverRun': 'Never run',
+    'scheduler.notScheduled': 'Not scheduled',
+    'scheduler.loadFailedTitle': 'Unable to load Scheduler status',
+    'scheduler.retry': 'Retry'
   },
   vi: {
     'scheduler.runNow': 'Chạy lịch ngay',
+    'scheduler.runningAction': 'Đang chạy',
     'scheduler.completed': 'Đã kiểm tra lịch',
-    'scheduler.failed': 'Kiểm tra lịch thất bại'
+    'scheduler.failed': 'Kiểm tra lịch thất bại',
+    'scheduler.statusList': 'Trạng thái lịch tự động',
+    'scheduler.timingList': 'Nhịp chạy lịch tự động',
+    'scheduler.state': 'Lịch tự động',
+    'scheduler.state.running': 'Đang chạy',
+    'scheduler.state.enabled': 'Đã bật',
+    'scheduler.state.disabled': 'Đã tắt',
+    'scheduler.monitoredNovels': 'Truyện đang theo dõi',
+    'scheduler.dueNovels': 'Truyện đến hạn',
+    'scheduler.activeRuns': 'Lượt đang chạy',
+    'scheduler.lastRun': 'Lần chạy gần nhất',
+    'scheduler.nextRun': 'Lần chạy tiếp theo',
+    'scheduler.neverRun': 'Chưa chạy',
+    'scheduler.notScheduled': 'Chưa lên lịch',
+    'scheduler.loadFailedTitle': 'Không tải được trạng thái lịch tự động',
+    'scheduler.retry': 'Thử lại'
   }
 } as const;

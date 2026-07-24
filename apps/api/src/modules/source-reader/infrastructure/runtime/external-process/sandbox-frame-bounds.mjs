@@ -16,10 +16,7 @@ export function isSandboxFrameWithinBounds(root) {
     while (stack.length > 0) {
       const current = stack.pop();
       nodes += 1;
-      if (
-        nodes > MAX_SANDBOX_PROTOCOL_NODES ||
-        current.depth > MAX_SANDBOX_PROTOCOL_DEPTH
-      ) {
+      if (nodes > MAX_SANDBOX_PROTOCOL_NODES || current.depth > MAX_SANDBOX_PROTOCOL_DEPTH) {
         return false;
       }
 

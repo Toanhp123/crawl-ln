@@ -44,16 +44,18 @@ export function SystemHealthCard() {
       <div className="grid gap-2 md:grid-cols-2">
         {rows.map(({ icon: Icon, label, value, tone, detail }) => (
           <Panel key={label}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2 type-body-sm font-bold">
-                <Icon size={16} />
-                {label}
-              </span>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="flex items-center gap-2 type-body-sm font-bold">
+                  <Icon size={16} />
+                  {label}
+                </span>
+                <Text variant="caption" tone="muted" className="mt-2">
+                  {detail}
+                </Text>
+              </div>
               <Badge tone={tone}>{value}</Badge>
             </div>
-            <Text variant="caption" tone="muted" className="mt-2">
-              {detail}
-            </Text>
           </Panel>
         ))}
       </div>

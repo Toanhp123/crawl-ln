@@ -50,11 +50,13 @@ export async function runStaticGroup(group, context = {}) {
       { checkApiArchitecture },
       { checkWebArchitecture },
       { checkWebContracts },
+      { checkWebThemeContracts },
       { checkReaderEngineArchitecture }
     ] = await Promise.all([
       import('../../lib/api-architecture.mjs'),
       import('../../lib/web-architecture.mjs'),
       import('../../lib/web-contracts.mjs'),
+      import('../../lib/web-theme-contracts.mjs'),
       import('../../lib/reader-engine-architecture.mjs')
     ]);
     await failForErrors(
@@ -68,6 +70,10 @@ export async function runStaticGroup(group, context = {}) {
     await failForErrors(
       'Web contracts',
       await checkWebContracts(join(projectRoot, 'apps/web/src'))
+    );
+    await failForErrors(
+      'Web theme contracts',
+      await checkWebThemeContracts(join(projectRoot, 'apps/web/src'), projectRoot)
     );
     await failForErrors(
       'Reader engine architecture',

@@ -21,6 +21,7 @@ Tài liệu trong working tree mô tả hệ thống hiện tại và các quy t
 - [Mobile UX acceptance](frontend/MOBILE_UX_ACCEPTANCE.md)
 - [Performance baseline](frontend/PERFORMANCE_BASELINE.md)
 - [Settings capability matrix](frontend/SETTINGS_CAPABILITY_MATRIX.md)
+- [Shared theme and Settings control contract](frontend/SHARED_THEME_CONTRACT.md)
 - [UI state matrix](frontend/UI_STATE_MATRIX.md)
 
 ## Engineering history

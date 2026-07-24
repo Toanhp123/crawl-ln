@@ -8,6 +8,11 @@ import { projectRoot } from './repository.mjs';
 const maxCapturedOutputBytes = 4 * 1024 * 1024;
 const exclusiveRegressionFiles = new Set([]);
 
+export function tsxTsconfigPath(suiteName, file) {
+  if (suiteName !== 'regression' || !basename(file).startsWith('web-')) return undefined;
+  return join(projectRoot, 'apps', 'web', 'tsconfig.json');
+}
+
 const suites = {
   regression: {
     concurrency: Number(process.env.REGRESSION_TEST_CONCURRENCY ?? 8),
@@ -131,6 +136,7 @@ export async function runTestFile({
     Object.entries(baseEnv).filter(([name]) => !name.startsWith('NODE_TEST'))
   );
 
+  const tsconfigPath = tsxTsconfigPath(suiteName, file);
   const startedAt = performance.now();
   try {
     const summary = await new Promise((resolveRun, rejectRun) => {
@@ -138,6 +144,7 @@ export async function runTestFile({
         cwd: projectRoot,
         env: {
           ...childEnvironment,
+          ...(tsconfigPath ? { TSX_TSCONFIG_PATH: tsconfigPath } : {}),
           NODE_ENV: 'test',
           STORAGE_DIR: storageDir,
           SOURCE_READER_PLUGIN_DIR: pluginDir

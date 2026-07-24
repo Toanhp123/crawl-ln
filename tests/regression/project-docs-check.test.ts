@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -122,4 +122,26 @@ test('active documentation and CI use only the eight-command interface', async (
   assert.match(termux, /npm test/);
   assert.match(termux, /npm run build/);
   assert.match(termux, /npm run dev/);
+});
+
+test('frontend docs publish the shared theme and Settings control contract', async () => {
+  const [index, contract] = await Promise.all([
+    readFile('docs/README.md', 'utf8'),
+    readFile('docs/frontend/SHARED_THEME_CONTRACT.md', 'utf8')
+  ]);
+  assert.match(index, /SHARED_THEME_CONTRACT\.md/);
+  for (const requirement of [
+    '44 CSS pixels',
+    'SettingsChoiceGroup',
+    'SettingsOptionList',
+    'SegmentedControl',
+    'shared/ui',
+    'shared/theme',
+    'compact',
+    'comfortable',
+    'prefers-reduced-motion'
+  ]) {
+    assert.match(contract, new RegExp(requirement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.match(contract, /must not define a shared control height inside a feature/i);
 });

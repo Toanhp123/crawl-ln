@@ -19,7 +19,8 @@ const slices = [
   'export-novel',
   'backup-library',
   'configure-appearance',
-  'configure-language'
+  'configure-language',
+  'configure-app-font'
 ] as const;
 
 async function readTree(
@@ -282,6 +283,7 @@ test('Task 7 feature public APIs expose actions and reusable controls', async ()
   const backup = await import('../../apps/web/src/features/backup-library/index.ts');
   const appearance = await import('../../apps/web/src/features/configure-appearance/index.ts');
   const language = await import('../../apps/web/src/features/configure-language/index.ts');
+  const appFont = await import('../../apps/web/src/features/configure-app-font/index.ts');
 
   assert.equal(typeof autoUpdate.useUpdateAutoUpdate, 'function');
   assert.equal(typeof autoUpdate.AutoUpdateControl, 'function');
@@ -300,6 +302,8 @@ test('Task 7 feature public APIs expose actions and reusable controls', async ()
   assert.equal(typeof appearance.AppearanceControls, 'function');
   assert.equal(typeof language.useLanguageConfiguration, 'function');
   assert.equal(typeof language.LanguageControls, 'function');
+  assert.equal(typeof appFont.useAppFontConfiguration, 'function');
+  assert.equal(typeof appFont.AppFontControls, 'function');
 
   for (const slice of slices) {
     assert.equal((await stat(join(featureRoot, slice, 'index.ts'))).isFile(), true);
@@ -322,7 +326,7 @@ test('pages and entities do not own Task 7 mutations or provider state transitio
   ).join('\n');
   assert.doesNotMatch(
     task7Source,
-    /features\/(?:update-auto-update|run-scheduler|search-library|rebuild-search-index|export-novel|backup-library|configure-appearance|configure-language)\//
+    /features\/(?:update-auto-update|run-scheduler|search-library|rebuild-search-index|export-novel|backup-library|configure-appearance|configure-language|configure-app-font)\//
   );
   assert.match(task7Source, /schedulerInvalidation/);
   assert.match(task7Source, /searchInvalidation/);

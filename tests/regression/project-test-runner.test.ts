@@ -51,3 +51,20 @@ test('canonical regression files use the regular isolated runner partition', asy
     exclusive: []
   });
 });
+
+test('web regression files use the web tsconfig for the automatic JSX runtime', async () => {
+  const { tsxTsconfigPath } = await import('../../scripts/cli/lib/test-runner.mjs');
+  assert.equal(
+    tsxTsconfigPath('regression', 'C:/repo/tests/regression/web-segmented-control.test.ts'),
+    join(process.cwd(), 'apps', 'web', 'tsconfig.json')
+  );
+  assert.equal(
+    tsxTsconfigPath('regression', 'C:/repo/tests/regression/project-test-runner.test.ts'),
+    undefined
+  );
+  assert.equal(
+    tsxTsconfigPath('integration', 'C:/repo/tests/integration/web-example.test.ts'),
+    undefined
+  );
+});
+

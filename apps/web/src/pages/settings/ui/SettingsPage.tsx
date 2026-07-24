@@ -8,9 +8,10 @@ import {
   Palette,
   Search
 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
-import { AppearanceControls } from '@/features/configure-appearance';
-import { LanguageControls } from '@/features/configure-language';
+import { useState } from 'react';
+import { AppFontControls, useAppFontConfiguration } from '@/features/configure-app-font';
+import { AppearanceControls, useAppearanceConfiguration } from '@/features/configure-appearance';
+import { LanguageControls, useLanguageConfiguration } from '@/features/configure-language';
 import { ReaderPreferencesSheet } from '@/features/reader-preferences';
 import { RebuildSearchIndexButton } from '@/features/rebuild-search-index';
 import { RunSchedulerButton } from '@/features/run-scheduler';
@@ -25,13 +26,16 @@ import {
   CardTitle,
   Chip,
   IconTile,
+  ListRow,
   Page,
   PageHeader,
   Panel,
   Section,
+  Stack,
   Text
 } from '@/shared/ui';
 import { SystemHealthCard } from '@/widgets/system-health';
+import { SettingsHubCard } from './SettingsHubCard';
 
 type SettingsPanel =
   | 'appearance'
@@ -44,45 +48,13 @@ type SettingsPanel =
   | 'about'
   | null;
 
-function SettingsHubCard({
-  icon,
-  title,
-  description,
-  status,
-  onClick
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  status?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button type="button" className="block w-full text-left" onClick={onClick}>
-      <Card interactive>
-        <CardHeader className="items-center">
-          <div className="flex min-w-0 items-center gap-3">
-            <IconTile size="md" tone="primary">
-              {icon}
-            </IconTile>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle>{title}</CardTitle>
-                {status ? <Chip tone="info">{status}</Chip> : null}
-              </div>
-              <CardDescription className="max-w-[36ch]">{description}</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-    </button>
-  );
-}
-
 export function SettingsPage() {
   const { t } = useI18n();
   const [panel, setPanel] = useState<SettingsPanel>(null);
   const [readerOpen, setReaderOpen] = useState(false);
+  const appearance = useAppearanceConfiguration();
+  const language = useLanguageConfiguration();
+  const appFont = useAppFontConfiguration();
 
   return (
     <Page className="max-w-5xl">
@@ -126,20 +98,25 @@ export function SettingsPage() {
       </Section>
 
       <Section title={t('settings.preferences')}>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3" data-settings-preferences-grid="">
           <SettingsHubCard
+            cardId="appearance"
             icon={<Palette size={20} />}
             title={t('settings.appearance')}
             description={t('settings.appearanceDescription')}
+            currentValue={`${appearance.summary} · ${appFont.currentLabel}`}
             onClick={() => setPanel('appearance')}
           />
           <SettingsHubCard
+            cardId="language"
             icon={<Languages size={20} />}
             title={t('settings.language')}
             description={t('settings.languageDescription')}
+            currentValue={language.currentLabel}
             onClick={() => setPanel('language')}
           />
           <SettingsHubCard
+            cardId="reader"
             icon={<BookOpen size={20} />}
             title={t('settings.reader')}
             description={t('settings.readerDescription')}
@@ -153,7 +130,12 @@ export function SettingsPage() {
         onOpenChange={(open) => !open && setPanel(null)}
         title={panel ? t(`settings.panel.${panel}`) : ''}
       >
-        {panel === 'appearance' ? <AppearanceControls /> : null}
+        {panel === 'appearance' ? (
+          <Stack gap="lg">
+            <AppearanceControls />
+            <AppFontControls />
+          </Stack>
+        ) : null}
         {panel === 'language' ? <LanguageControls /> : null}
         {panel === 'scheduler' ? (
           <Panel className="space-y-3">
@@ -187,15 +169,16 @@ export function SettingsPage() {
           </Panel>
         ) : null}
         {panel === 'about' ? (
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <Text variant="label">{t('settings.version')}</Text>
-              <Text variant="supporting">{APP_VERSION}</Text>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <Text variant="label">{t('settings.build')}</Text>
-              <Text variant="supporting">{APP_BUILD}</Text>
-            </div>
+          <Card padding="none" elevation="flat" className="overflow-hidden">
+            <ListRow
+              title={t('settings.version')}
+              trailing={<Text variant="supporting">{APP_VERSION}</Text>}
+              divided
+            />
+            <ListRow
+              title={t('settings.build')}
+              trailing={<Text variant="supporting">{APP_BUILD}</Text>}
+            />
           </Card>
         ) : null}
       </BottomSheet>

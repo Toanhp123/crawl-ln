@@ -38,7 +38,7 @@ export function ReaderPreferencesSheet({
               { id: 'dark', label: t('settings.theme.dark') }
             ]}
             onChange={(value) => update('colorScheme', value)}
-            columns={4}
+            columns="auto"
             ariaLabel={t('settings.appearance')}
           />
         </label>
@@ -91,6 +91,7 @@ export function ReaderPreferencesSheet({
               {t(`settings.value.${preferences.fontSize}`)}
             </div>
             <IconButton
+              variant="ghost"
               aria-label={t('reader.increaseFont')}
               onClick={() =>
                 update('fontSize', preferences.fontSize === 'small' ? 'medium' : 'large')

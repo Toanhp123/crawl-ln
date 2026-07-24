@@ -30,6 +30,7 @@ export function BottomSheet({
   if (title.trim()) lastTitleRef.current = title;
   const resolvedTitle = title.trim() || lastTitleRef.current || t('common.details');
   const dragStateRef = useRef<DragState | null>(null);
+  const contentDescriptionProps = description ? {} : { 'aria-describedby': undefined };
 
   useEffect(() => {
     if (!open) dragStateRef.current = null;
@@ -77,7 +78,10 @@ export function BottomSheet({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="motion-overlay-fade fixed inset-0 z-40 bg-[hsl(var(--color-overlay)/0.58)] backdrop-blur-[2px]" />
-        <Dialog.Content className="motion-sheet-slide-up fixed inset-x-0 bottom-0 z-50 flex max-h-[calc(100dvh-env(safe-area-inset-top)-var(--space-2))] flex-col overflow-hidden rounded-t-[var(--sheet-radius)] border border-b-0 border-border bg-[hsl(var(--color-bg-elevated))] shadow-[var(--elevation-3)] outline-none md:left-1/2 md:right-auto md:max-h-[var(--bottom-sheet-height)] md:w-[min(32rem,calc(100vw-2rem))] md:-translate-x-1/2 md:rounded-[var(--sheet-radius)] md:border">
+        <Dialog.Content
+          {...contentDescriptionProps}
+          className="motion-sheet-slide-up fixed inset-x-0 bottom-0 z-50 flex max-h-[calc(100dvh-env(safe-area-inset-top)-var(--space-2))] flex-col overflow-hidden rounded-t-[var(--sheet-radius)] border border-b-0 border-border bg-[hsl(var(--color-bg-elevated))] shadow-[var(--elevation-3)] outline-none md:left-1/2 md:right-auto md:max-h-[var(--bottom-sheet-height)] md:w-[min(32rem,calc(100vw-2rem))] md:-translate-x-1/2 md:rounded-[var(--sheet-radius)] md:border"
+        >
           <div
             className="flex h-6 shrink-0 touch-none cursor-grab items-center justify-center active:cursor-grabbing md:hidden"
             data-sheet-drag-region="handle"

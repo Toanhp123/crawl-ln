@@ -10,6 +10,7 @@ import { authenticateSourceCredentialCatalogs } from '@/features/authenticate-so
 import { backupLibraryCatalogs } from '@/features/backup-library';
 import { cancelTaskCatalogs } from '@/features/cancel-task';
 import { configureAppearanceCatalogs } from '@/features/configure-appearance';
+import { configureAppFontCatalogs } from '@/features/configure-app-font';
 import { configureLanguageCatalogs } from '@/features/configure-language';
 import { crawlNovelCatalogs } from '@/features/crawl-novel';
 import { deleteNovelCatalogs } from '@/features/delete-novel';
@@ -49,6 +50,7 @@ const sliceCatalogs = [
   backupLibraryCatalogs,
   cancelTaskCatalogs,
   configureAppearanceCatalogs,
+  configureAppFontCatalogs,
   configureLanguageCatalogs,
   crawlNovelCatalogs,
   deleteNovelCatalogs,

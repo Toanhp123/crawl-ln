@@ -35,7 +35,10 @@
   --icon-box-md: 2.25rem;
   --icon-box-lg: 2.5rem;
   --focus-ring: 0 0 0 3px var(--state-focus-ring);
-  --control-min: 2.75rem;
+  --control-touch-min: 2.75rem;
+  --setting-choice-height: var(--density-setting-choice-height);
+  --setting-row-height: var(--density-setting-row-height);
+  --control-min: var(--control-touch-min);
   --control-large: 3rem;
   --app-nav-height: 3.5rem;
   --app-nav-total: calc(var(--app-nav-height) + env(safe-area-inset-bottom));
@@ -73,6 +76,8 @@
   --density-list-item-gap: var(--space-2);
   --density-table-cell-x: var(--space-4);
   --density-table-cell-y: var(--space-3);
+  --density-setting-choice-height: 2.75rem;
+  --density-setting-row-height: 3.25rem;
   --density-list-row-height: 3.25rem;
 }
 
@@ -91,6 +96,8 @@
   --density-list-item-gap: var(--space-3);
   --density-table-cell-x: var(--space-6);
   --density-table-cell-y: var(--space-4);
+  --density-setting-choice-height: 3rem;
+  --density-setting-row-height: 3.75rem;
   --density-list-row-height: 3.75rem;
 }
 

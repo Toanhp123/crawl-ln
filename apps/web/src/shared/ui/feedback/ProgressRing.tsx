@@ -23,7 +23,7 @@ export function ProgressRing({
       : tone === 'danger'
         ? 'hsl(var(--color-danger))'
         : tone === 'muted'
-          ? 'hsl(var(--color-text-muted))'
+          ? 'hsl(var(--color-muted))'
           : 'hsl(var(--color-primary))';
   return (
     <div

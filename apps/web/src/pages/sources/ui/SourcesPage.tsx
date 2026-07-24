@@ -21,17 +21,19 @@ export function SourcesPage() {
   return (
     <Page className="max-w-6xl">
       <PageHeader title={t('nav.sources')} description={t('sources.console.description')} />
-      <Panel tone="inset" padding="sm" className="overflow-x-auto">
-        <div className="flex min-w-max gap-2" role="navigation" aria-label={t('nav.sources')}>
-          {items.map((item) => (
-            <FilterChip
-              key={item.id}
-              selected={model.section === item.id}
-              onClick={() => model.setSection(item.id)}
-            >
-              {item.label}
-            </FilterChip>
-          ))}
+      <Panel tone="inset" padding="none" className="overflow-hidden">
+        <div className="no-scrollbar overflow-x-auto p-[var(--panel-padding-sm)]">
+          <div className="flex min-w-max gap-2" role="navigation" aria-label={t('nav.sources')}>
+            {items.map((item) => (
+              <FilterChip
+                key={item.id}
+                selected={model.section === item.id}
+                onClick={() => model.setSection(item.id)}
+              >
+                {item.label}
+              </FilterChip>
+            ))}
+          </div>
         </div>
       </Panel>
       {model.section === 'plugins' ? <SourceReaderOverview /> : null}

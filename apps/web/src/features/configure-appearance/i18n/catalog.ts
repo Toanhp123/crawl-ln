@@ -3,7 +3,6 @@ export const configureAppearanceCatalogs = {
     'appearance.theme': 'Theme',
     'appearance.accent': 'Accent',
     'appearance.density': 'Density',
-    'appearance.font': 'App font size',
     'appearance.system': 'System',
     'appearance.dark': 'Dark',
     'appearance.light': 'Light',
@@ -12,17 +11,12 @@ export const configureAppearanceCatalogs = {
     'appearance.emerald': 'Green',
     'appearance.amber': 'Amber',
     'appearance.compact': 'Compact',
-    'appearance.comfortable': 'Comfortable',
-    'appearance.small': 'Small',
-    'appearance.medium': 'Medium',
-    'appearance.large': 'Large',
-    'appearance.extra-large': 'Extra large'
+    'appearance.comfortable': 'Comfortable'
   },
   vi: {
     'appearance.theme': 'Giao diện',
     'appearance.accent': 'Màu nhấn',
     'appearance.density': 'Mật độ',
-    'appearance.font': 'Cỡ chữ ứng dụng',
     'appearance.system': 'Hệ thống',
     'appearance.dark': 'Tối',
     'appearance.light': 'Sáng',
@@ -31,10 +25,6 @@ export const configureAppearanceCatalogs = {
     'appearance.emerald': 'Xanh lá',
     'appearance.amber': 'Hổ phách',
     'appearance.compact': 'Gọn',
-    'appearance.comfortable': 'Thoải mái',
-    'appearance.small': 'Nhỏ',
-    'appearance.medium': 'Vừa',
-    'appearance.large': 'Lớn',
-    'appearance.extra-large': 'Rất lớn'
+    'appearance.comfortable': 'Thoải mái'
   }
 } as const;

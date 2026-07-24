@@ -1,5 +1,6 @@
 import 'ses';
 import { ModuleSource } from '@endo/module-source';
+import { isSandboxFrameWithinBounds } from './sandbox-frame-bounds.mjs';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { dirname, extname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -49,19 +50,34 @@ const locate = async (specifier, referrer = pathToFileURL(entryPath).href) => {
   throw Object.assign(new Error(`Module not found: ${specifier}`), { code: 'MODULE_NOT_FOUND' });
 };
 
+const protocolError = () =>
+  Object.assign(new Error('Sandbox RPC frame is invalid'), {
+    code: 'PLUGIN_RPC_PROTOCOL_INVALID'
+  });
+
+const sendFrame = (frame) => {
+  if (!isSandboxFrameWithinBounds(frame)) throw protocolError();
+  process.send?.(frame);
+};
+
 const hostCall = (requestId, service, method, args = []) => {
   const callId = `${requestId}:${++hostCallSequence}`;
   return new Promise((resolveCall, rejectCall) => {
     pendingHostCalls.set(callId, { resolve: resolveCall, reject: rejectCall });
-    process.send?.({
-      protocolVersion,
-      type: 'host-call',
-      requestId,
-      callId,
-      service,
-      method,
-      args
-    });
+    try {
+      sendFrame({
+        protocolVersion,
+        type: 'host-call',
+        requestId,
+        callId,
+        service,
+        method,
+        args
+      });
+    } catch (error) {
+      pendingHostCalls.delete(callId);
+      rejectCall(error);
+    }
   });
 };
 
@@ -204,7 +220,7 @@ process.on('message', async (frame) => {
   if (frame.type !== 'request') return;
   try {
     const value = await execute(frame);
-    process.send?.({
+    sendFrame({
       protocolVersion,
       type: 'response',
       requestId: frame.requestId,
@@ -212,7 +228,7 @@ process.on('message', async (frame) => {
       value
     });
   } catch (error) {
-    process.send?.({
+    sendFrame({
       protocolVersion,
       type: 'response',
       requestId: frame.requestId,
@@ -228,4 +244,4 @@ process.on('message', async (frame) => {
   }
 });
 
-process.send?.({ protocolVersion, type: 'hello' });
+sendFrame({ protocolVersion, type: 'hello' });

@@ -157,12 +157,16 @@ test('source reader migration creates the complete module-owned schema', (t) => 
 
 test('api build copies the external sandbox entry into its output tree', async (t) => {
   const root = await mkdtemp(resolve(tmpdir(), 'api-build-assets-'));
-  const source = resolve(
+  const sourceDirectory = resolve(
     root,
-    'src/modules/source-reader/infrastructure/runtime/external-process/sandbox-entry.mjs'
+    'src/modules/source-reader/infrastructure/runtime/external-process'
   );
-  await mkdir(resolve(source, '..'), { recursive: true });
-  await writeFile(source, 'export const sandbox = true;');
+  await mkdir(sourceDirectory, { recursive: true });
+  await writeFile(resolve(sourceDirectory, 'sandbox-entry.mjs'), 'export const sandbox = true;');
+  await writeFile(
+    resolve(sourceDirectory, 'sandbox-frame-bounds.mjs'),
+    'export const bounds = true;'
+  );
   t.after(() => rm(root, { recursive: true, force: true }));
 
   await copySourceReaderRuntimeAssets({ apiRoot: root, outputRoot: resolve(root, 'dist') });
@@ -176,6 +180,16 @@ test('api build copies the external sandbox entry into its output tree', async (
       'utf8'
     ),
     'export const sandbox = true;'
+  );
+  assert.equal(
+    await readFile(
+      resolve(
+        root,
+        'dist/modules/source-reader/infrastructure/runtime/external-process/sandbox-frame-bounds.mjs'
+      ),
+      'utf8'
+    ),
+    'export const bounds = true;'
   );
 });
 

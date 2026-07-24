@@ -4,22 +4,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { emitTypeScriptProject } from '../../../scripts/typescript-project.mjs';
 
 const defaultApiRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const sandboxRelative = join(
-  'modules',
-  'source-reader',
-  'infrastructure',
-  'runtime',
-  'external-process',
-  'sandbox-entry.mjs'
+const sandboxRuntimeAssets = ['sandbox-entry.mjs', 'sandbox-frame-bounds.mjs'].map((name) =>
+  join('modules', 'source-reader', 'infrastructure', 'runtime', 'external-process', name)
 );
 
 export async function copySourceReaderRuntimeAssets({
   apiRoot = defaultApiRoot,
   outputRoot = join(apiRoot, 'dist')
 } = {}) {
-  const output = join(outputRoot, sandboxRelative);
-  await mkdir(dirname(output), { recursive: true });
-  await copyFile(join(apiRoot, 'src', sandboxRelative), output);
+  for (const relativePath of sandboxRuntimeAssets) {
+    const output = join(outputRoot, relativePath);
+    await mkdir(dirname(output), { recursive: true });
+    await copyFile(join(apiRoot, 'src', relativePath), output);
+  }
 }
 
 export async function runApiBuild({

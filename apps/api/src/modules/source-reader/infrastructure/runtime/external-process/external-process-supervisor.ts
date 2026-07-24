@@ -373,6 +373,16 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
       void dispatchHostCall(this.child, frame, pending);
       return;
     }
+    if (!frame.ok && frame.error?.code === 'PLUGIN_RPC_PROTOCOL_INVALID') {
+      this.failAll(
+        new SourceReaderError('PLUGIN_RPC_PROTOCOL_INVALID', 'Sandbox response is invalid', {
+          retryable: false,
+          fallbackAllowed: false
+        })
+      );
+      void this.terminate('invalid-rpc-frame');
+      return;
+    }
     if (!pending) return;
     this.pending.delete(frame.requestId);
     pending.htmlHandles?.release();
@@ -427,6 +437,7 @@ export class ExternalProcessSupervisor implements ExternalPluginSupervisorPort {
     this.assertNodeVersion();
     const verified = await validateSandboxPackage(input);
     const entry = sandboxEntryPath();
+    const frameBounds = resolve(dirname(entry), 'sandbox-frame-bounds.mjs');
     const repositoryNodeModules = resolve(
       dirname(fileURLToPath(import.meta.url)),
       '../../../../../../../../node_modules'
@@ -436,6 +447,7 @@ export class ExternalProcessSupervisor implements ExternalPluginSupervisorPort {
         '--permission',
         '--max-old-space-size=128',
         `--allow-fs-read=${entry}`,
+        `--allow-fs-read=${frameBounds}`,
         `--allow-fs-read=${verified.packageRoot}`,
         `--allow-fs-read=${repositoryNodeModules}`,
         '--disable-proto=delete'

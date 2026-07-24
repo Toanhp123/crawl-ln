@@ -14,8 +14,14 @@ test('Settings composes three preference cards and nests App Font inside Appeara
   }
   assert.doesNotMatch(source, /cardId=["']appFont["']/);
   assert.doesNotMatch(source, /panel === ["']appFont["']/);
-  assert.match(source, /currentValue=\{\`\$\{appearance\.summary\} · \$\{appFont\.currentLabel\}\`\}/);
-  assert.match(source, /panel === 'appearance'[\s\S]*?<AppearanceControls \/>[\s\S]*?<AppFontControls \/>/);
+  assert.match(
+    source,
+    /currentValue=\{\`\$\{appearance\.summary\} · \$\{appFont\.currentLabel\}\`\}/
+  );
+  assert.match(
+    source,
+    /panel === 'appearance'[\s\S]*?<AppearanceControls \/>[\s\S]*?<AppFontControls \/>/
+  );
   assert.match(source, /currentValue=\{language\.currentLabel\}/);
 });
 

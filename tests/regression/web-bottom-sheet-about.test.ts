@@ -14,9 +14,7 @@ test('BottomSheet explicitly disables aria-describedby when no description is re
 
 test('About panel uses full-height divided setting rows instead of compressed flex lines', async () => {
   const source = await readFile('apps/web/src/pages/settings/ui/SettingsPage.tsx', 'utf8');
-  const aboutPanel = source.match(
-    /\{panel === 'about'[\s\S]*?\) : null\}/
-  )?.[0];
+  const aboutPanel = source.match(/\{panel === 'about'[\s\S]*?\) : null\}/)?.[0];
   assert.ok(aboutPanel, 'About panel source must exist');
   assert.match(aboutPanel, /<Card padding="none" elevation="flat" className="overflow-hidden">/);
   assert.equal((aboutPanel.match(/<ListRow/g) ?? []).length, 2);

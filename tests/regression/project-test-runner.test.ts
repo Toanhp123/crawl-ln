@@ -67,4 +67,3 @@ test('web regression files use the web tsconfig for the automatic JSX runtime', 
     undefined
   );
 });
-

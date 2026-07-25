@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getErrorMessage } from '../api/errors';
+import { BACKUP_SETTINGS_APPLIED_EVENT } from '../events/backup-settings';
 import { genericCatalogs, mergeCatalogs, type Catalog } from './catalog';
 
 export type Language = keyof typeof genericCatalogs;
@@ -43,6 +44,14 @@ export function I18nProvider({
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    const reloadBackupLanguage = () => {
+      setLanguageState(localStorage.getItem('novel-tool-language') === 'en' ? 'en' : 'vi');
+    };
+    window.addEventListener(BACKUP_SETTINGS_APPLIED_EVENT, reloadBackupLanguage);
+    return () => window.removeEventListener(BACKUP_SETTINGS_APPLIED_EVENT, reloadBackupLanguage);
+  }, []);
 
   const setLanguage = (value: Language) => {
     localStorage.setItem('novel-tool-language', value);

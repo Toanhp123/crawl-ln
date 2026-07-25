@@ -102,8 +102,21 @@ test('scheduler, search rebuild, and backup clients preserve current mutation co
     const data =
       path === '/api/search/rebuild'
         ? { indexedDocuments: 12 }
-        : path === '/api/backups/restore'
-          ? { mode: 'merge', restored: { novels: 1 }, settings: null, safetyBackupPath: null }
+        : path === '/api/backups/restore-sessions/session-1/restore'
+          ? {
+              id: 'restore-operation-1',
+              kind: 'restore',
+              mode: 'merge',
+              state: 'queued',
+              stage: 'queued',
+              cancellable: true,
+              progress: { current: 0, total: 9 },
+              startedAt: '2026-07-25T00:00:00.000Z',
+              updatedAt: '2026-07-25T00:00:00.000Z',
+              finishedAt: null,
+              error: null,
+              result: null
+            }
           : path.includes('/auto-update')
             ? { id: 'novel-1', title: 'Book' }
             : {
@@ -114,7 +127,7 @@ test('scheduler, search rebuild, and backup clients preserve current mutation co
                 activeRuns: 0
               };
     return new Response(JSON.stringify({ data, error: null }), {
-      status: 200,
+      status: path.includes('/restore-sessions/') ? 202 : 200,
       headers: { 'content-type': 'application/json' }
     });
   }) as typeof fetch;
@@ -126,8 +139,10 @@ test('scheduler, search rebuild, and backup clients preserve current mutation co
       await import('../../apps/web/src/features/run-scheduler/api/run-scheduler.ts');
     const { rebuildSearchIndex } =
       await import('../../apps/web/src/features/rebuild-search-index/api/rebuild-search-index.ts');
-    const { createLibraryBackup, restoreLibraryBackup } =
+    const { createLibraryBackup } =
       await import('../../apps/web/src/features/backup-library/api/backup-library.ts');
+    const { startRestoreOperation } =
+      await import('../../apps/web/src/features/backup-library/api/backup-operation-commands.ts');
 
     await updateAutoUpdate({ novelId: 'novel/1', enabled: true, intervalMinutes: 360 });
     await runScheduler();
@@ -138,16 +153,18 @@ test('scheduler, search rebuild, and backup clients preserve current mutation co
     });
     assert.equal(artifact.filename, 'library.nvt');
     assert.deepEqual([...artifact.content], [9, 8, 7]);
-    assert.deepEqual(
-      await restoreLibraryBackup({
-        content: new Blob([new Uint8Array([9, 8, 7])]),
-        password: 'secret',
-        mode: 'merge',
-        settingsMode: 'keep-current',
+    const restore = await startRestoreOperation(
+      'session-1',
+      'session-secret',
+      {
+        inspectionToken: 'inspection-secret',
+        planFingerprint: `sha256-plan-v1:${'a'.repeat(64)}`,
+        confirmation: { accepted: true },
         currentSettings: { 'novel-tool-theme': 'light' }
-      }),
-      { mode: 'merge', restored: { novels: 1 }, settings: null, safetyBackupPath: null }
+      },
+      'restore-idempotency'
     );
+    assert.equal(restore.id, 'restore-operation-1');
   } finally {
     globalThis.fetch = previousFetch;
   }
@@ -157,9 +174,8 @@ test('scheduler, search rebuild, and backup clients preserve current mutation co
       path: requestPath(url),
       method: init?.method,
       contentType: new Headers(init?.headers).get('content-type'),
-      restoreMode: new Headers(init?.headers).get('x-restore-mode'),
-      settingsMode: new Headers(init?.headers).get('x-settings-mode'),
-      hasPassword: new Headers(init?.headers).get('x-backup-password') === 'secret',
+      sessionToken: new Headers(init?.headers).get('session-token'),
+      idempotencyKey: new Headers(init?.headers).get('idempotency-key'),
       body: typeof init?.body === 'string' ? init.body : undefined
     })),
     [
@@ -167,46 +183,46 @@ test('scheduler, search rebuild, and backup clients preserve current mutation co
         path: '/api/novels/novel%2F1/auto-update',
         method: 'PUT',
         contentType: 'application/json',
-        restoreMode: null,
-        settingsMode: null,
-        hasPassword: false,
+        sessionToken: null,
+        idempotencyKey: null,
         body: JSON.stringify({ enabled: true, intervalMinutes: 360 })
       },
       {
         path: '/api/scheduler/tick',
         method: 'POST',
         contentType: 'application/json',
-        restoreMode: null,
-        settingsMode: null,
-        hasPassword: false,
+        sessionToken: null,
+        idempotencyKey: null,
         body: undefined
       },
       {
         path: '/api/search/rebuild',
         method: 'POST',
         contentType: 'application/json',
-        restoreMode: null,
-        settingsMode: null,
-        hasPassword: false,
+        sessionToken: null,
+        idempotencyKey: null,
         body: undefined
       },
       {
         path: '/api/backups',
         method: 'POST',
         contentType: 'application/json',
-        restoreMode: null,
-        settingsMode: null,
-        hasPassword: false,
+        sessionToken: null,
+        idempotencyKey: null,
         body: JSON.stringify({ password: 'secret', settings: { 'novel-tool-theme': 'dark' } })
       },
       {
-        path: '/api/backups/restore',
+        path: '/api/backups/restore-sessions/session-1/restore',
         method: 'POST',
-        contentType: 'application/octet-stream',
-        restoreMode: 'merge',
-        settingsMode: 'keep-current',
-        hasPassword: true,
-        body: undefined
+        contentType: 'application/json',
+        sessionToken: 'session-secret',
+        idempotencyKey: 'restore-idempotency',
+        body: JSON.stringify({
+          inspectionToken: 'inspection-secret',
+          planFingerprint: `sha256-plan-v1:${'a'.repeat(64)}`,
+          confirmation: { accepted: true },
+          currentSettings: { 'novel-tool-theme': 'light' }
+        })
       }
     ]
   );
@@ -216,24 +232,9 @@ test('backup restore validation and settings helpers remain feature-owned', asyn
   const backup = await import('../../apps/web/src/features/backup-library/index.ts');
   assert.equal(backup.requiresRestoreConfirmation('replace'), true);
   assert.equal(backup.requiresRestoreConfirmation('merge'), true);
-  assert.deepEqual(
-    backup.validateRestoreResult({
-      mode: 'replace',
-      restored: { novels: 2 },
-      settings: { 'novel-tool-language': 'vi' },
-      safetyBackupPath: '/tmp/safety.nvt'
-    }),
-    {
-      mode: 'replace',
-      restored: { novels: 2 },
-      settings: { 'novel-tool-language': 'vi' },
-      safetyBackupPath: '/tmp/safety.nvt'
-    }
-  );
-  assert.throws(
-    () => backup.validateRestoreResult({ mode: 'replace', restored: null }),
-    /invalid backup restore response/i
-  );
+  assert.equal(backup.REPLACE_CONFIRMATION_PHRASE, 'THAY THẾ DỮ LIỆU');
+  assert.equal(typeof backup.useRestoreWizard, 'function');
+  assert.equal(typeof backup.startRestoreOperation, 'function');
 
   const storage = new Map<string, string>([
     ['novel-tool-theme', 'dark'],
@@ -254,7 +255,8 @@ test('backup restore validation and settings helpers remain feature-owned', asyn
   });
   backup.applyBackupSettings(
     { 'novel-tool-theme': 'light', unrelated: 'ignored' },
-    localStorageLike
+    localStorageLike,
+    null
   );
   assert.equal(storage.get('novel-tool-theme'), 'light');
   assert.equal(storage.get('unrelated'), 'ignore');
@@ -300,6 +302,9 @@ test('Task 7 feature public APIs expose actions and reusable controls', async ()
   assert.equal(typeof exportNovel.ExportNovelControl, 'function');
   assert.equal(typeof backup.createBackupClient, 'function');
   assert.equal(typeof backup.BackupLibraryPanel, 'function');
+  assert.equal(typeof backup.RestoreWizard, 'function');
+  assert.equal(typeof backup.useRestoreWizard, 'function');
+  assert.equal(typeof backup.startRestoreOperation, 'function');
   assert.equal(typeof appearance.useAppearanceConfiguration, 'function');
   assert.equal(typeof appearance.AppearanceControls, 'function');
   assert.equal(typeof language.useLanguageConfiguration, 'function');
@@ -337,6 +342,6 @@ test('pages and entities do not own Task 7 mutations or provider state transitio
     join(featureRoot, 'backup-library', 'ui', 'BackupLibraryPanel.tsx'),
     'utf8'
   );
-  assert.match(backupPanel, /<ConfirmDialog[\s\S]*actionState=\{restoreBackup\.status\}/);
-  assert.match(backupPanel, /<ConfirmDialog[\s\S]*danger=\{mode === ['"]replace['"]\}/);
+  assert.match(backupPanel, /<RestoreWizard/);
+  assert.doesNotMatch(backupPanel, /ConfirmDialog|LegacyRestoreCard|restoreLibraryBackup/);
 });

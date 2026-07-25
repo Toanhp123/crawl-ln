@@ -62,16 +62,26 @@ A Source Reader outage blocks new ingestion but does not block reading, searchin
 
 ## Lifecycle and persistence
 
-SQLite is opened by the platform database adapter and closed only after ingestion, scheduler and Source Reader shutdown. Ordered migrations own schema changes. Multi-record operations use synchronous SQLite transaction bodies. Backup/restore enters maintenance mode before replacing or merging storage.
+SQLite is opened by the platform database adapter and closed only after ingestion, scheduler and Source Reader shutdown. Ordered migrations own schema changes. Multi-record operations use synchronous SQLite transaction bodies.
+
+## Backup and Restore control plane
+
+Backup and Restore orchestration is persisted in a separate `backup-control.sqlite` database under the configured storage directory. The control plane stores operation, preparation-session, artifact and hashed-token metadata; it is not included in user backups. Private uploads, staging files and downloadable artifacts live under `backup-temp` and are addressed by server-generated identifiers rather than user filenames or filesystem paths.
+
+A Backup/Restore **operation** is durable execution state. A Restore **session** is the resumable upload, inspection and planning state that exists before execution. Only one Backup or Restore operation may be queued or running globally, and only one Restore preparation session may exist globally. Realtime invalidation uses the `backup` resource; the browser polls only when realtime is disconnected.
+
+Merge Restore recomputes its reviewed plan inside one outer SQLite write transaction and rolls every contributor back together when the target changed or any contributor fails. Replace Restore first creates and validates an unencrypted safety artifact, then promotes an adjacent `.new` database with a durable journal and `.rollback` file. Startup reconciles that journal before opening the primary database.
+
+Operations are never resumed automatically after an API restart. Persisted queued/running work is marked interrupted, while Replace journal recovery restores a valid database before normal startup continues.
 
 ## Verification
 
 ```bash
 npm run check
 npm run build
-npm run test:regression
-npm run test:integration
-npm run verify
+npm test -- --suite regression
+npm test -- --suite integration
+npm test -- --suite e2e
 ```
 
 `npm run check` includes API modular-monolith, FSD, HTTP-contract, documentation, formatting and TypeScript checks.

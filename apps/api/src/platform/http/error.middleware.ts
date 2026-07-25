@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
+import { BackupOperationError } from '../../modules/backup/application/errors/backup.error.js';
 import { SourceReaderError } from '../../modules/source-reader/domain/errors/source-reader.error.js';
 import type { SourceReaderErrorCode } from '../../modules/source-reader/domain/errors/source-reader.error.js';
 import { redactStructuredValue } from '../../modules/source-reader/application/services/source-reader-structured-logger.js';
@@ -38,6 +39,13 @@ function applicationFailureResponse(error: ApplicationFailure): {
 }
 
 export const errorMiddleware: ErrorRequestHandler = (error, _request, response, _next) => {
+  if (error instanceof BackupOperationError) {
+    return fail(response, error.status, error.code, error.message, {
+      retryable: error.retryable,
+      ...(error.details ?? {})
+    });
+  }
+
   if (error instanceof ZodError) {
     return fail(response, 400, 'VALIDATION_ERROR', 'Validation failed', error.issues);
   }

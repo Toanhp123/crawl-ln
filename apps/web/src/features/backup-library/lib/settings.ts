@@ -1,3 +1,7 @@
+import { BACKUP_SETTINGS_APPLIED_EVENT } from '../../../shared/events/backup-settings';
+
+export { BACKUP_SETTINGS_APPLIED_EVENT };
+
 const SETTINGS_KEYS = [
   'novel-tool-theme',
   'novel-tool-accent',
@@ -22,12 +26,14 @@ export function collectBackupSettings(
 
 export function applyBackupSettings(
   settings: Record<string, unknown>,
-  storage: StorageLike = localStorage
+  storage: StorageLike = localStorage,
+  target: Pick<Window, 'dispatchEvent'> | null = typeof window === 'undefined' ? null : window
 ): void {
   for (const key of SETTINGS_KEYS) {
     const value = settings[key];
     if (typeof value === 'string') storage.setItem(key, value);
   }
+  target?.dispatchEvent(new Event(BACKUP_SETTINGS_APPLIED_EVENT));
 }
 
 export function encodeSettingsHeader(settings: Record<string, unknown>): string {

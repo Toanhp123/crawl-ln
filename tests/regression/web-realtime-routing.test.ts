@@ -49,6 +49,7 @@ function registrySpy(calls: string[]) {
         call(`scheduler:novel:${id}`)()
     },
     search: { invalidateAll: call('search:all') },
+    backup: { invalidateAll: call('backup:all') },
     sourceReader: { invalidateAll: call('source-reader:all') }
   };
 }
@@ -107,6 +108,20 @@ test('scheduler, search, plugins, and all use their app-owned public adapters', 
   );
   assert.deepEqual(calls, []);
   assert.deepEqual(queryCalls, ['all']);
+});
+
+test('backup realtime events invalidate only the backup operation namespace', async () => {
+  const { routeRealtimeEvent } = await import('../../apps/web/src/app/realtime/event-router.ts');
+  const calls: string[] = [];
+  const registry = registrySpy(calls);
+
+  await routeRealtimeEvent(
+    event({ resources: ['backup'], reason: 'backup.operation.stage-changed' }),
+    registry,
+    {} as QueryClient
+  );
+
+  assert.deepEqual(calls, ['backup:all']);
 });
 
 test('source reader aggregate invalidates all four read-only entity collections', async () => {

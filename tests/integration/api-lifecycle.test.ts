@@ -60,6 +60,48 @@ test('api starts migrations before background dispatch and closes in reverse ord
   ]);
 });
 
+test('startup preflight runs before opening the primary database', async () => {
+  const order: string[] = [];
+  const runtime = createAppLifecycle({
+    beforeDatabaseOpen: async () => {
+      order.push('backup.preflight');
+    },
+    database: {
+      open() {
+        order.push('database.open');
+      },
+      close() {
+        order.push('database.close');
+      }
+    },
+    migrations: {
+      run() {
+        order.push('migrations.run');
+      }
+    },
+    modules: [],
+    outbox: {
+      start() {
+        order.push('outbox.start');
+      },
+      async stop() {
+        order.push('outbox.stop');
+      }
+    }
+  });
+
+  await runtime.start();
+  await runtime.stop();
+  assert.deepEqual(order, [
+    'backup.preflight',
+    'database.open',
+    'migrations.run',
+    'outbox.start',
+    'outbox.stop',
+    'database.close'
+  ]);
+});
+
 test('composition root exposes lifecycle, presentation and runtime identity', async (t) => {
   const storageDirectory = mkdtempSync(join(tmpdir(), 'novel-tool-container-'));
   t.after(() => rmSync(storageDirectory, { recursive: true, force: true }));

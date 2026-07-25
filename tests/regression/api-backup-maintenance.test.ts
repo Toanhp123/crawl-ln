@@ -110,3 +110,82 @@ test('backup maintenance attempts every restart before releasing the queue', asy
     'queue.end'
   ]);
 });
+
+test('backup maintenance rejects overlapping work without touching the queue twice', async () => {
+  const trace: string[] = [];
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const maintenance = new BackupMaintenanceCoordinator(
+    {
+      begin() {
+        trace.push('queue.begin');
+      },
+      end() {
+        trace.push('queue.end');
+      }
+    },
+    []
+  );
+
+  const first = maintenance.runExclusive(async () => {
+    trace.push('first.work');
+    await gate;
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  await assert.rejects(
+    () => maintenance.runExclusive(async () => trace.push('second.work')),
+    /already running/
+  );
+  assert.deepEqual(trace, ['queue.begin', 'first.work']);
+  release();
+  await first;
+  assert.deepEqual(trace, ['queue.begin', 'first.work', 'queue.end']);
+});
+
+test('backup maintenance restarts only successfully stopped services when quiescing fails', async () => {
+  const trace: string[] = [];
+  const maintenance = new BackupMaintenanceCoordinator(
+    {
+      begin() {
+        trace.push('queue.begin');
+      },
+      end() {
+        trace.push('queue.end');
+      }
+    },
+    [
+      {
+        stop() {
+          trace.push('outbox.stop');
+        },
+        start() {
+          trace.push('outbox.start');
+        }
+      },
+      {
+        stop() {
+          trace.push('scheduler.stop');
+          throw new Error('scheduler stop failed');
+        },
+        start() {
+          trace.push('scheduler.start');
+        }
+      }
+    ]
+  );
+
+  await assert.rejects(
+    () => maintenance.runExclusive(async () => trace.push('work')),
+    /scheduler stop failed/
+  );
+  assert.deepEqual(trace, [
+    'queue.begin',
+    'outbox.stop',
+    'scheduler.stop',
+    'outbox.start',
+    'queue.end'
+  ]);
+});

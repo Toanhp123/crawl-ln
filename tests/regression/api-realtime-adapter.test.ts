@@ -126,3 +126,17 @@ test('application event adapter maps durable module events to realtime resources
   });
   assert.equal(received.length, 6);
 });
+
+test('realtime broker accepts backup invalidations as a first-class resource', () => {
+  const realtime = new InMemoryRealtimeEventBroker({ now: () => new Date(occurredAt) });
+  const received: unknown[] = [];
+  realtime.subscribe((event) => received.push(event));
+
+  realtime.publish({
+    type: 'data.changed',
+    resources: ['backup'],
+    reason: 'backup.operation.stage-changed'
+  });
+
+  assert.equal((received[0] as { resources: string[] }).resources[0], 'backup');
+});

@@ -17,8 +17,15 @@ export interface BackupImportContext {
   identities?: BackupIdentityRegistry;
 }
 
-export interface BackupContributor {
+export interface BackupContributorImpact {
   module: string;
+  counts: Record<string, number>;
+  details?: Record<string, number | string | boolean | null>;
+}
+
+export interface BackupContributor {
+  readonly module: string;
+  readonly fingerprintTables: readonly string[];
   exportMergeData(): Promise<unknown>;
-  importMergeData(data: unknown, context: BackupImportContext): Promise<void>;
+  importMergeData(data: unknown, context: BackupImportContext): Promise<BackupContributorImpact>;
 }

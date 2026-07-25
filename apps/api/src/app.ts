@@ -48,7 +48,13 @@ export function createAppRuntime(
   app.use('/api/novels', createLibraryRoutes(container.presentation.library.controller));
   app.use('/api/crawl', createIngestionRoutes(container.presentation.ingestion.controller));
   app.use('/api/tasks', createTaskRoutes(container.presentation.ingestion.controller));
-  app.use('/api/backups', createBackupRoutes(container.presentation.backups.controller));
+  app.use(
+    '/api/backups',
+    createBackupRoutes(
+      container.presentation.backups.controller,
+      container.presentation.backups.restoreSessions
+    )
+  );
   app.use('/api/scheduler', createSchedulerRoutes(container.presentation.scheduler.controller));
   app.use('/api/novels', createSchedulerNovelRoutes(container.presentation.scheduler.controller));
   app.use('/api/exports', createExportRoutes(container.presentation.exports.controller));

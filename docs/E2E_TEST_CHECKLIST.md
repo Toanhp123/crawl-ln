@@ -81,3 +81,26 @@ npm run start
 ```
 
 Xác nhận một Node process phục vụ cả `/health` và SPA trên cùng port, API miss vẫn trả JSON và non-API GET/HEAD dùng SPA fallback.
+
+## 8. Backup and Restore Phase 2C
+
+The route-controlled browser suite must cover all of these acceptance scenarios; integration tests remain the source of truth for physical SQLite rollback and filesystem crash recovery.
+
+1. Create an unencrypted Backup only after explicit warning acceptance, then download the artifact.
+2. Validate an encrypted Backup password and download the encrypted artifact.
+3. Upload multiple Restore chunks, lose one response, and continue from the server-confirmed offset.
+4. Reload during upload, reselect the matching file, and resume from acknowledged bytes.
+5. Reject a different file fingerprint after reload.
+6. For an encrypted archive, reject one wrong password and accept the next correct password.
+7. Delete the Restore session after the fifth wrong password and require a new file selection.
+8. Show privacy-safe inventory counts without novel titles, source URLs, chapter content, credentials or raw settings.
+9. Return a stale Merge plan to Impact after target data changes.
+10. Complete Merge without page reload and apply allowlisted settings through the settings event.
+11. Require exact equality with `THAY THẾ DỮ LIỆU` for Replace.
+12. Block maintenance when the Replace safety backup fails and allow retry from the ready session.
+13. Complete Replace, expose the unencrypted safety artifact, reload exactly once, and reopen Result.
+14. Close and reopen Settings during an operation and reconnect to server truth.
+15. Use one-second active polling while SSE is disconnected and stop fallback polling after reconnect.
+16. Mark work interrupted after API restart and never auto-resume it.
+17. Treat an operation conflict as synchronization and monitor the current operation.
+18. Offer cancellation before the irreversible boundary and remove it after the boundary.

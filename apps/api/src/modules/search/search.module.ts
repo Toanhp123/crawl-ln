@@ -29,8 +29,9 @@ interface SearchModuleOptions {
 export function createSearchModule(options: SearchModuleOptions) {
   const repository = new SearchSqliteRepository(options.database);
   const queries = new SearchQueryService(repository);
+  const searchSource = new LibraryQuerySearchSourceAdapter(options.library);
   const maintenance = new SearchIndexMaintenanceService(
-    new LibraryQuerySearchSourceAdapter(options.library),
+    searchSource,
     repository,
     new EventBusSearchRebuildLifecyclePublisher(options.events, options.clock, options.ids),
     options.clock
@@ -52,7 +53,7 @@ export function createSearchModule(options: SearchModuleOptions) {
     name: 'search',
     migrations: searchMigrations,
     api,
-    backup: new SearchBackupContributor(api.commands),
+    backup: new SearchBackupContributor(searchSource, repository, options.clock),
     presentation: { controller: new SearchController(api) },
     async start() {
       if (unsubscribers.length > 0) return;

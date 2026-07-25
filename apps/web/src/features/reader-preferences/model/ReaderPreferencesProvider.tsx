@@ -8,6 +8,7 @@ import {
   type ReactNode,
   type SetStateAction
 } from 'react';
+import { BACKUP_SETTINGS_APPLIED_EVENT } from '../../../shared/events/backup-settings';
 import {
   applyReaderPreferences,
   readReaderPreferences,
@@ -29,6 +30,13 @@ export function ReaderPreferencesProvider({ children }: { children: ReactNode })
     applyReaderPreferences(preferences);
     writeReaderPreferences(preferences);
   }, [preferences]);
+
+  useEffect(() => {
+    const reloadBackupReaderSettings = () => setPreferences(readReaderPreferences());
+    window.addEventListener(BACKUP_SETTINGS_APPLIED_EVENT, reloadBackupReaderSettings);
+    return () =>
+      window.removeEventListener(BACKUP_SETTINGS_APPLIED_EVENT, reloadBackupReaderSettings);
+  }, []);
 
   const value = useMemo(() => ({ preferences, setPreferences }), [preferences]);
   return (

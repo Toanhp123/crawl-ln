@@ -157,6 +157,19 @@ export class SearchSqliteRepository implements SearchRepository {
     });
   }
 
+  replaceAllForRestore(documents: SearchDocument[], rebuiltAt: string): SearchIndexRebuildResult {
+    this.database.connection.exec('DELETE FROM search_documents;');
+    for (const document of documents) this.insertDocument(document);
+    this.database.connection
+      .prepare(
+        `INSERT OR REPLACE INTO search_index_metadata(
+           id, last_rebuilt_at, last_indexed_documents
+         ) VALUES (1, ?, ?)`
+      )
+      .run(rebuiltAt, documents.length);
+    return { indexedDocuments: documents.length, rebuiltAt };
+  }
+
   async replaceNovelForEvent(
     event: SearchProjectionEvent,
     novelId: string,

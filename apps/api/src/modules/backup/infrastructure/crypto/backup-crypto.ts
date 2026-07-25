@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
-import { BackupBadRequestError } from '../../application/errors/backup.error.js';
+import { BackupPasswordInvalidError } from '../../application/errors/backup.error.js';
 
 const KEY_LENGTH = 32;
 
@@ -32,6 +32,6 @@ export function decryptPayload(
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(content), decipher.final()]);
   } catch {
-    throw new BackupBadRequestError('Invalid backup password or corrupted encrypted payload');
+    throw new BackupPasswordInvalidError();
   }
 }

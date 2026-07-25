@@ -1,12 +1,18 @@
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
 import { z } from 'zod';
-import { BackupBadRequestError } from '../../application/errors/backup.error.js';
+import {
+  BackupBadRequestError,
+  BackupOperationError,
+  BackupPasswordInvalidError
+} from '../../application/errors/backup.error.js';
 import type {
+  BackupArchiveCreateHooks,
   BackupArchivePort,
   OpenedBackup
 } from '../../application/ports/backup-archive.port.js';
 import type { BackupManifest, BackupSnapshot } from '../../domain/backup.models.js';
+import { assertSafeZipEntries, loadSafeZip } from './backup-archive-safety.js';
 import { decryptPayload, encryptPayload } from '../crypto/backup-crypto.js';
 
 const manifestSchema = z
@@ -44,7 +50,7 @@ const DEFAULT_LIMITS: BackupArchiveLimits = {
   maxArchiveBytes: 512 * 1024 * 1024,
   maxDatabaseBytes: 384 * 1024 * 1024,
   maxMetadataBytes: 16 * 1024 * 1024,
-  maxEntries: 8
+  maxEntries: 10_000
 };
 
 function sha256(content: Buffer): string {
@@ -59,6 +65,12 @@ function parseJsonRecord(content: string, label: string): Record<string, unknown
   }
 }
 
+interface ReadEnvelopeResult {
+  outer: JSZip;
+  manifest: BackupManifest;
+  storedPayload: Buffer;
+}
+
 export class JsZipBackupArchive implements BackupArchivePort {
   private readonly limits: BackupArchiveLimits;
 
@@ -71,11 +83,13 @@ export class JsZipBackupArchive implements BackupArchivePort {
 
   async create(
     snapshot: BackupSnapshot,
-    password?: string
+    password?: string,
+    hooks: BackupArchiveCreateHooks = {}
   ): Promise<{ content: Buffer; manifest: BackupManifest }> {
     if (snapshot.database.length > this.limits.maxDatabaseBytes) {
       throw new BackupBadRequestError('Backup database is too large');
     }
+    hooks.throwIfCancelled?.();
     const contributors = Buffer.from(JSON.stringify(snapshot.contributors, null, 2));
     const settings = Buffer.from(JSON.stringify(snapshot.settings, null, 2));
     if (contributors.length + settings.length > this.limits.maxMetadataBytes) {
@@ -86,11 +100,15 @@ export class JsZipBackupArchive implements BackupArchivePort {
     payload.file('database.sqlite', snapshot.database);
     payload.file('contributors.json', contributors);
     payload.file('settings.json', settings);
-    const payloadContent = await payload.generateAsync({
-      type: 'nodebuffer',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
-    });
+    hooks.onStage?.('archiving');
+    const payloadContent = await payload.generateAsync(
+      {
+        type: 'nodebuffer',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
+      },
+      () => hooks.throwIfCancelled?.()
+    );
     if (payloadContent.length > this.limits.maxArchiveBytes) {
       throw new BackupBadRequestError('Backup payload is too large');
     }
@@ -99,6 +117,8 @@ export class JsZipBackupArchive implements BackupArchivePort {
     const encrypted = Boolean(password);
     let storedPayload = payloadContent;
     if (password) {
+      hooks.throwIfCancelled?.();
+      hooks.onStage?.('encrypting');
       const encryptedPayload = encryptPayload(payloadContent, password);
       storedPayload = encryptedPayload.encrypted;
       outer.file(
@@ -122,63 +142,44 @@ export class JsZipBackupArchive implements BackupArchivePort {
       checksumSha256: sha256(storedPayload),
       payloadSize: storedPayload.length
     };
+    hooks.throwIfCancelled?.();
     outer.file('manifest.json', JSON.stringify(manifest, null, 2));
     outer.file(encrypted ? 'payload.enc' : 'payload.zip', storedPayload);
-    const content = await outer.generateAsync({ type: 'nodebuffer', compression: 'STORE' });
+    const content = await outer.generateAsync({ type: 'nodebuffer', compression: 'STORE' }, () =>
+      hooks.throwIfCancelled?.()
+    );
+    hooks.throwIfCancelled?.();
     if (content.length > this.limits.maxArchiveBytes) {
       throw new BackupBadRequestError('Backup archive is too large');
     }
     return { content, manifest };
   }
 
+  async readManifest(content: Buffer): Promise<BackupManifest> {
+    return (await this.readEnvelope(content)).manifest;
+  }
+
   async open(content: Buffer, password?: string): Promise<OpenedBackup> {
-    if (content.length > this.limits.maxArchiveBytes) {
-      throw new BackupBadRequestError('Backup archive is too large');
-    }
-
-    let outer: JSZip;
-    try {
-      outer = await JSZip.loadAsync(content);
-    } catch {
-      throw new BackupBadRequestError('Invalid backup archive');
-    }
-
-    const manifestFile = outer.file('manifest.json');
-    if (!manifestFile) throw new BackupBadRequestError('Backup manifest is missing');
-    let manifest: BackupManifest;
-    try {
-      manifest = manifestSchema.parse(JSON.parse(await manifestFile.async('string')));
-    } catch (error) {
-      throw new BackupBadRequestError('Invalid backup manifest', error);
-    }
-    if (manifest.schemaVersion > this.options.schemaVersion) {
-      throw new BackupBadRequestError('Backup schema is newer than this application');
-    }
-    if (manifest.encrypted !== (manifest.algorithm === 'aes-256-gcm')) {
-      throw new BackupBadRequestError('Backup encryption manifest is inconsistent');
-    }
-    if (Object.keys(outer.files).length > this.limits.maxEntries) {
-      throw new BackupBadRequestError('Backup archive contains too many entries');
-    }
-
-    const payloadFile = outer.file(manifest.encrypted ? 'payload.enc' : 'payload.zip');
-    if (!payloadFile) throw new BackupBadRequestError('Backup payload is missing');
-    const storedPayload = await payloadFile.async('nodebuffer');
-    if (storedPayload.length !== manifest.payloadSize) {
-      throw new BackupBadRequestError('Backup payload size mismatch');
-    }
-    if (sha256(storedPayload) !== manifest.checksumSha256) {
-      throw new BackupBadRequestError('Backup checksum mismatch');
-    }
-
-    try {
-      let payloadContent = storedPayload;
-      if (manifest.encrypted) {
-        if (!password) throw new BackupBadRequestError('Backup password is required');
-        const cryptoFile = outer.file('crypto.json');
-        if (!cryptoFile) {
-          throw new BackupBadRequestError('Backup encryption metadata is missing');
+    const envelope = await this.readEnvelope(content);
+    if (envelope.manifest.schemaVersion > this.options.schemaVersion) {
+      throw new BackupOperationError(
+        'BACKUP_SCHEMA_NEWER_THAN_APP',
+        422,
+        'Backup schema is newer than this application',
+        false,
+        {
+          sourceSchemaVersion: envelope.manifest.schemaVersion,
+          targetSchemaVersion: this.options.schemaVersion
         }
+      );
+    }
+
+    try {
+      let payloadContent = envelope.storedPayload;
+      if (envelope.manifest.encrypted) {
+        if (!password) throw new BackupBadRequestError('Backup password is required');
+        const cryptoFile = envelope.outer.file('crypto.json');
+        if (!cryptoFile) throw new BackupBadRequestError('Backup encryption metadata is missing');
         const crypto = cryptoMetadataSchema.parse(JSON.parse(await cryptoFile.async('string')));
         const salt = Buffer.from(crypto.salt, 'base64');
         const iv = Buffer.from(crypto.iv, 'base64');
@@ -186,10 +187,10 @@ export class JsZipBackupArchive implements BackupArchivePort {
         if (salt.length !== 16 || iv.length !== 12 || tag.length !== 16) {
           throw new BackupBadRequestError('Invalid backup encryption metadata');
         }
-        payloadContent = decryptPayload(storedPayload, password, salt, iv, tag);
+        payloadContent = decryptPayload(envelope.storedPayload, password, salt, iv, tag);
       }
 
-      const payload = await JSZip.loadAsync(payloadContent);
+      const payload = await loadSafeZip(payloadContent, 'inner payload');
       if (Object.keys(payload.files).length > this.limits.maxEntries) {
         throw new BackupBadRequestError('Backup payload contains too many entries');
       }
@@ -213,14 +214,72 @@ export class JsZipBackupArchive implements BackupArchivePort {
         throw new BackupBadRequestError('Backup metadata is too large');
       }
       return {
-        manifest,
+        manifest: envelope.manifest,
         database,
         contributors: parseJsonRecord(contributorsText, 'contributor data'),
         settings: parseJsonRecord(settingsText, 'settings')
       };
     } catch (error) {
-      if (error instanceof BackupBadRequestError) throw error;
+      if (
+        error instanceof BackupBadRequestError ||
+        error instanceof BackupOperationError ||
+        error instanceof BackupPasswordInvalidError
+      ) {
+        throw error;
+      }
       throw new BackupBadRequestError('Invalid or corrupted backup archive', error);
     }
+  }
+
+  private async readEnvelope(content: Buffer): Promise<ReadEnvelopeResult> {
+    if (content.length > this.limits.maxArchiveBytes) {
+      throw new BackupBadRequestError('Backup archive is too large');
+    }
+    const outer = await loadSafeZip(content, 'outer archive');
+    assertSafeZipEntries(outer, 'outer archive');
+    if (Object.keys(outer.files).length > this.limits.maxEntries) {
+      throw new BackupBadRequestError('Backup archive contains too many entries');
+    }
+
+    const manifestFile = outer.file('manifest.json');
+    if (!manifestFile) throw new BackupBadRequestError('Backup manifest is missing');
+    let manifest: BackupManifest;
+    try {
+      manifest = manifestSchema.parse(JSON.parse(await manifestFile.async('string')));
+    } catch (error) {
+      throw new BackupBadRequestError('Invalid backup manifest', error);
+    }
+    if (manifest.encrypted !== (manifest.algorithm === 'aes-256-gcm')) {
+      throw new BackupBadRequestError('Backup encryption manifest is inconsistent');
+    }
+
+    const payloadName = manifest.encrypted ? 'payload.enc' : 'payload.zip';
+    const payloadFile = outer.file(payloadName);
+    if (!payloadFile) throw new BackupBadRequestError('Backup payload is missing');
+    const storedPayload = await payloadFile.async('nodebuffer');
+    if (storedPayload.length !== manifest.payloadSize) {
+      throw new BackupBadRequestError('Backup payload size mismatch');
+    }
+    if (sha256(storedPayload) !== manifest.checksumSha256) {
+      throw new BackupBadRequestError('Backup checksum mismatch');
+    }
+
+    if (manifest.encrypted) {
+      const cryptoFile = outer.file('crypto.json');
+      if (!cryptoFile) throw new BackupBadRequestError('Backup encryption metadata is missing');
+      try {
+        const crypto = cryptoMetadataSchema.parse(JSON.parse(await cryptoFile.async('string')));
+        const salt = Buffer.from(crypto.salt, 'base64');
+        const iv = Buffer.from(crypto.iv, 'base64');
+        const tag = Buffer.from(crypto.tag, 'base64');
+        if (salt.length !== 16 || iv.length !== 12 || tag.length !== 16) {
+          throw new Error('invalid crypto lengths');
+        }
+      } catch (error) {
+        throw new BackupBadRequestError('Invalid backup encryption metadata', error);
+      }
+    }
+
+    return { outer, manifest, storedPayload };
   }
 }

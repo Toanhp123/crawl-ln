@@ -145,3 +145,35 @@ test('frontend docs publish the shared theme and Settings control contract', asy
   }
   assert.match(contract, /must not define a shared control height inside a feature/i);
 });
+
+test('Phase 2C architecture and E2E acceptance documentation remain complete', async () => {
+  const [architecture, e2e, changelog] = await Promise.all([
+    readFile('docs/ARCHITECTURE.md', 'utf8'),
+    readFile('docs/E2E_TEST_CHECKLIST.md', 'utf8'),
+    readFile('CHANGELOG.md', 'utf8')
+  ]);
+
+  for (const requirement of [
+    'backup-control.sqlite',
+    'backup-temp',
+    'operation',
+    'session',
+    'globally',
+    'Merge Restore',
+    'Replace Restore',
+    '.rollback',
+    'backup` resource',
+    'never resumed automatically'
+  ]) {
+    assert.match(
+      architecture,
+      new RegExp(requirement.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'), 'i')
+    );
+  }
+  const matrix = e2e.match(/^\d+\. /gm) ?? [];
+  assert.ok(matrix.length >= 18);
+  assert.match(e2e, /THAY THẾ DỮ LIỆU/);
+  assert.match(e2e, /reload exactly once/i);
+  assert.match(changelog, /Phase 2C Backup and Restore/);
+  assert.equal((changelog.match(/Phase 2C Backup and Restore/g) ?? []).length, 1);
+});

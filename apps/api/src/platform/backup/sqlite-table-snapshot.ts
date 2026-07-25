@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
 import { z } from 'zod';
 
@@ -39,6 +40,11 @@ export interface ImportSqliteTablesOptions {
     importedRow: Record<string, SQLInputValue>,
     changes: number
   ): void;
+}
+
+export interface SqliteImportResult {
+  insertedByTable: Record<string, number>;
+  skippedByTable: Record<string, number>;
 }
 
 function quoteIdentifier(value: string): string {
@@ -103,10 +109,11 @@ export function importSqliteTables(
   data: unknown,
   ownedTables: readonly string[],
   options: ImportSqliteTablesOptions = {}
-): Record<string, number> {
+): SqliteImportResult {
   const snapshot = moduleSnapshotSchema.parse(data);
   const allowed = new Set(ownedTables);
-  const imported: Record<string, number> = {};
+  const insertedByTable = Object.fromEntries(ownedTables.map((table) => [table, 0]));
+  const skippedByTable = Object.fromEntries(ownedTables.map((table) => [table, 0]));
 
   for (const table of snapshot.tables) {
     if (!allowed.has(table.name)) throw new Error(`Backup table is not owned: ${table.name}`);
@@ -115,7 +122,7 @@ export function importSqliteTables(
       .map((column, index) => ({ column, index }))
       .filter(({ column }) => targetColumns.has(column));
     if (selected.length === 0) {
-      imported[table.name] = 0;
+      skippedByTable[table.name] = (skippedByTable[table.name] ?? 0) + table.rows.length;
       continue;
     }
     const statement = database.prepare(
@@ -123,7 +130,6 @@ export function importSqliteTables(
        (${selected.map(({ column }) => quoteIdentifier(column)).join(', ')})
        VALUES (${selected.map(() => '?').join(', ')})`
     );
-    let count = 0;
     for (const row of table.rows) {
       if (row.length !== table.columns.length) {
         throw new Error(`Backup row width is invalid for ${table.name}`);
@@ -134,16 +140,97 @@ export function importSqliteTables(
       const importedRow = options.transformRow
         ? options.transformRow(table.name, sourceRow)
         : sourceRow;
-      if (!importedRow) continue;
+      if (!importedRow) {
+        skippedByTable[table.name] = (skippedByTable[table.name] ?? 0) + 1;
+        continue;
+      }
       const result = statement.run(...selected.map(({ column }) => importedRow[column] ?? null));
       const changes = Number(result.changes);
-      count += changes;
+      insertedByTable[table.name] = (insertedByTable[table.name] ?? 0) + changes;
+      if (changes === 0) skippedByTable[table.name] = (skippedByTable[table.name] ?? 0) + 1;
       options.afterRow?.(table.name, sourceRow, importedRow, changes);
     }
-    imported[table.name] = count;
   }
 
-  return imported;
+  return { insertedByTable, skippedByTable };
+}
+
+function writeLength(hash: ReturnType<typeof createHash>, length: number): void {
+  const buffer = Buffer.allocUnsafe(8);
+  buffer.writeBigUInt64BE(BigInt(length));
+  hash.update(buffer);
+}
+
+function hashBytes(hash: ReturnType<typeof createHash>, tag: string, content: Uint8Array): void {
+  hash.update(tag, 'utf8');
+  writeLength(hash, content.byteLength);
+  hash.update(content);
+}
+
+function hashValue(hash: ReturnType<typeof createHash>, value: unknown): void {
+  if (value === null) {
+    hash.update('N');
+    return;
+  }
+  if (typeof value === 'string') {
+    hashBytes(hash, 'S', Buffer.from(value, 'utf8'));
+    return;
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new Error('Cannot fingerprint non-finite SQLite number');
+    hashBytes(hash, 'D', Buffer.from(Object.is(value, -0) ? '-0' : String(value), 'utf8'));
+    return;
+  }
+  if (typeof value === 'bigint') {
+    hashBytes(hash, 'I', Buffer.from(value.toString(), 'utf8'));
+    return;
+  }
+  if (value instanceof Uint8Array) {
+    hashBytes(hash, 'B', value);
+    return;
+  }
+  throw new Error(`Unsupported SQLite fingerprint value: ${typeof value}`);
+}
+
+export function fingerprintSqliteTables(database: DatabaseSync, tables: readonly string[]): string {
+  const schemaRows = database
+    .prepare("SELECT name, sql FROM sqlite_schema WHERE type = 'table'")
+    .all() as Array<{ name: string; sql: string | null }>;
+  const schema = new Map(schemaRows.map((row) => [row.name, row.sql]));
+  const hash = createHash('sha256');
+
+  for (const table of [...new Set(tables)].sort()) {
+    const createSql = schema.get(table);
+    if (createSql === undefined)
+      throw new Error(`SQLite fingerprint table does not exist: ${table}`);
+    const columns = database
+      .prepare(`PRAGMA table_info(${quoteIdentifier(table)})`)
+      .all() as Array<{ name: string; pk: number }>;
+    if (columns.length === 0) throw new Error(`SQLite fingerprint table has no columns: ${table}`);
+    const primaryKey = columns
+      .filter((column) => Number(column.pk) > 0)
+      .sort((left, right) => Number(left.pk) - Number(right.pk))
+      .map((column) => column.name);
+    const withoutRowid = /\bWITHOUT\s+ROWID\b/i.test(createSql ?? '');
+    const orderBy = primaryKey.length
+      ? primaryKey.map(quoteIdentifier).join(', ')
+      : withoutRowid
+        ? columns.map((column) => quoteIdentifier(column.name)).join(', ')
+        : 'rowid';
+
+    hashBytes(hash, 'T', Buffer.from(table, 'utf8'));
+    for (const column of columns) hashBytes(hash, 'C', Buffer.from(column.name, 'utf8'));
+    const query = database.prepare(
+      `SELECT ${columns.map((column) => quoteIdentifier(column.name)).join(', ')}
+       FROM ${quoteIdentifier(table)} ORDER BY ${orderBy}`
+    );
+    for (const row of query.iterate() as Iterable<Record<string, unknown>>) {
+      hash.update('R');
+      for (const column of columns) hashValue(hash, row[column.name]);
+    }
+  }
+
+  return hash.digest('hex');
 }
 
 export function parseSqliteModuleSnapshot(data: unknown): SqliteModuleSnapshot {

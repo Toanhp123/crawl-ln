@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { RealtimeEvent, RealtimeResource } from '@novel-tool/shared';
+import { backupOperationInvalidation } from '../../entities/backup-operation';
 import { novelInvalidation, type NovelInvalidationApi } from '../../entities/novel';
 import { schedulerInvalidation, type SchedulerInvalidationApi } from '../../entities/scheduler';
 import { searchInvalidation, type SearchInvalidationApi } from '../../entities/search';
@@ -16,6 +17,7 @@ const realtimeResources = new Set<RealtimeResource>([
   'scheduler',
   'plugins',
   'search',
+  'backup',
   'all'
 ]);
 
@@ -27,6 +29,7 @@ export interface RealtimeInvalidationRegistry {
     'invalidateStatus' | 'invalidateDiagnostics' | 'invalidateNovelDiagnostics'
   >;
   search: Pick<SearchInvalidationApi, 'invalidateAll'>;
+  backup: { invalidateAll(client: QueryClient): Promise<unknown> };
   sourceReader: CollectionInvalidationApi;
 }
 
@@ -105,6 +108,7 @@ export function createRealtimeInvalidationRegistry(): RealtimeInvalidationRegist
     novels: novelInvalidation,
     scheduler: schedulerInvalidation,
     search: searchInvalidation,
+    backup: backupOperationInvalidation,
     sourceReader: {
       async invalidateAll(client) {
         await Promise.all([
@@ -167,6 +171,7 @@ export async function routeRealtimeEvents(
   }
 
   if (resources.has('search')) invalidations.push(registry.search.invalidateAll(client));
+  if (resources.has('backup')) invalidations.push(registry.backup.invalidateAll(client));
   if (resources.has('plugins')) invalidations.push(registry.sourceReader.invalidateAll(client));
 
   await Promise.all(invalidations);

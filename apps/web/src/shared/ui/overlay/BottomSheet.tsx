@@ -5,6 +5,8 @@ import { useI18n } from '../../i18n';
 import { IconButton } from '../actions/IconButton';
 
 const DISMISS_DISTANCE_PX = 96;
+const INTERACTIVE_DRAG_BLOCK_SELECTOR =
+  'button, a, input, textarea, select, [role="button"], [role="link"], [contenteditable="true"], [data-sheet-no-drag]';
 
 type DragState = {
   pointerId: number;
@@ -44,6 +46,8 @@ export function BottomSheet({
 
   const handleDragStart = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.target instanceof Element && event.target.closest(INTERACTIVE_DRAG_BLOCK_SELECTOR))
+      return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStateRef.current = {
       pointerId: event.pointerId,

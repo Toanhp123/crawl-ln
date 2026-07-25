@@ -301,6 +301,40 @@ export type SourceReaderApiErrorCode =
   | 'SOURCE_READER_CANCELLED'
   | 'SOURCE_READER_INTERNAL_ERROR';
 
+export type BackupOperationApiErrorCode =
+  | 'BACKUP_OPERATION_ACTIVE'
+  | 'BACKUP_OPERATION_NOT_FOUND'
+  | 'BACKUP_OPERATION_NOT_CANCELLABLE'
+  | 'BACKUP_OPERATION_CANCELLED'
+  | 'BACKUP_OPERATION_INTERRUPTED'
+  | 'IDEMPOTENCY_KEY_REUSED'
+  | 'BACKUP_ARTIFACT_EXPIRED'
+  | 'BACKUP_DOWNLOAD_TOKEN_INVALID'
+  | 'BACKUP_PASSWORD_TOO_SHORT'
+  | 'BACKUP_UNENCRYPTED_CONFIRMATION_REQUIRED'
+  | 'RESTORE_SESSION_EXISTS'
+  | 'RESTORE_SESSION_NOT_FOUND'
+  | 'RESTORE_SESSION_TOKEN_INVALID'
+  | 'RESTORE_SESSION_LOCKED'
+  | 'RESTORE_SESSION_EXPIRED'
+  | 'RESTORE_SESSION_STATE_INVALID'
+  | 'RESTORE_PLAN_UNAVAILABLE'
+  | 'RESTORE_PLAN_STALE'
+  | 'RESTORE_INSPECTION_TOKEN_INVALID'
+  | 'RESTORE_CONFIRMATION_INVALID'
+  | 'RESTORE_REPLACE_RECOVERY_FAILED'
+  | 'RESTORE_UPLOAD_INVALID'
+  | 'RESTORE_UPLOAD_INCOMPLETE'
+  | 'RESTORE_UPLOAD_TRUNCATED'
+  | 'RESTORE_FINGERPRINT_INVALID'
+  | 'RESTORE_FILE_FINGERPRINT_MISMATCH'
+  | 'OFFSET_MISMATCH'
+  | 'BACKUP_PASSWORD_INVALID'
+  | 'BACKUP_ARCHIVE_UNSAFE'
+  | 'BACKUP_SCHEMA_UNSUPPORTED'
+  | 'BACKUP_SCHEMA_NEWER_THAN_APP'
+  | 'BACKUP_STAGING_INVALID';
+
 export type ApiErrorCode =
   | 'BAD_REQUEST'
   | 'VALIDATION_ERROR'
@@ -309,6 +343,7 @@ export type ApiErrorCode =
   | 'FORBIDDEN'
   | 'UNAUTHORIZED'
   | 'INTERNAL_ERROR'
+  | BackupOperationApiErrorCode
   | SourceReaderApiErrorCode;
 export type ApiFailure = {
   data: null;
@@ -352,13 +387,62 @@ export type UpdateNovelResult = {
   task: CrawlTask | null;
 };
 
-export type BackupRestoreMode = 'replace' | 'merge';
-export type BackupSettingsMode = 'keep-current' | 'use-backup';
-export type BackupRestoreResult = {
-  mode: BackupRestoreMode;
-  restored: Record<string, number>;
-  settings: Record<string, unknown> | null;
-  safetyBackupPath: string | null;
+export type StartRestoreOperationRequest = {
+  inspectionToken: string;
+  planFingerprint: string;
+  confirmation: {
+    accepted: boolean;
+    typedPhrase?: string;
+  };
+  currentSettings: Record<string, unknown>;
+};
+
+export type BackupRestoreOperationImpact = {
+  novelsNew: number;
+  novelsExisting: number;
+  chaptersAdded: number;
+  chaptersSkipped: number;
+  sourceRemaps: number;
+  tasksRestored: number;
+  schedulerPoliciesRestored: number;
+  searchDocumentsRebuilt: number;
+  settingsOutcome: 'keep-current' | 'use-backup';
+  replaceAll?: true;
+  novelsTotal?: number;
+  chaptersTotal?: number;
+  tasksTotal?: number;
+  schedulerPoliciesTotal?: number;
+  searchDocumentsTotal?: number;
+};
+
+export type BackupOperationSummary = {
+  id: string;
+  kind: 'backup' | 'restore';
+  mode: 'merge' | 'replace' | null;
+  state: 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'cancelled';
+  stage: string;
+  cancellable: boolean;
+  progress: { current: number; total: number };
+  startedAt: string;
+  updatedAt: string;
+  finishedAt: string | null;
+  error: { code: string; retryable: boolean; details: Record<string, unknown> | null } | null;
+  result: {
+    filename?: string;
+    sizeBytes?: number;
+    encrypted?: boolean;
+    artifactId?: string;
+    safetyArtifactId?: string;
+    expiresAt?: string;
+    restoreMode?: 'merge' | 'replace';
+    settingsPolicy?: 'keep-current' | 'use-backup';
+    impact?: BackupRestoreOperationImpact;
+    settingsPending?: boolean;
+  } | null;
+};
+
+export type BackupCurrentOperationResult = {
+  operation: BackupOperationSummary | null;
 };
 
 export type SourceReaderOwnerType = 'system' | 'user';
@@ -659,7 +743,8 @@ export interface SourceReaderPluginDiagnostics {
   policy: { processStartTimeoutMs: number; violationThreshold: number };
 }
 
-export type RealtimeResource = 'novels' | 'tasks' | 'scheduler' | 'plugins' | 'search' | 'all';
+export type RealtimeResource =
+  'novels' | 'tasks' | 'scheduler' | 'plugins' | 'search' | 'backup' | 'all';
 
 export type RealtimeEvent = {
   id: string;

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { BACKUP_SETTINGS_APPLIED_EVENT } from '../../events/backup-settings';
 
 export type ThemePreference = 'system' | 'dark' | 'light';
 export type AccentPreference = 'indigo' | 'blue' | 'emerald' | 'amber';
@@ -66,6 +67,30 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     media.addEventListener('change', apply);
     return () => media.removeEventListener('change', apply);
   }, [theme]);
+
+  useEffect(() => {
+    const reloadBackupSettings = () => {
+      const savedTheme = localStorage.getItem('novel-tool-theme');
+      setThemeState(savedTheme === 'light' || savedTheme === 'system' ? savedTheme : 'dark');
+      const savedAccent = localStorage.getItem('novel-tool-accent');
+      setAccentState(
+        savedAccent === 'blue' || savedAccent === 'emerald' || savedAccent === 'amber'
+          ? savedAccent
+          : 'indigo'
+      );
+      setDensityState(
+        localStorage.getItem('novel-tool-density') === 'comfortable' ? 'comfortable' : 'compact'
+      );
+      const savedFont = localStorage.getItem('novel-tool-app-font');
+      setAppFontState(
+        savedFont === 'small' || savedFont === 'large' || savedFont === 'extra-large'
+          ? savedFont
+          : 'medium'
+      );
+    };
+    window.addEventListener(BACKUP_SETTINGS_APPLIED_EVENT, reloadBackupSettings);
+    return () => window.removeEventListener(BACKUP_SETTINGS_APPLIED_EVENT, reloadBackupSettings);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.accent = accent;

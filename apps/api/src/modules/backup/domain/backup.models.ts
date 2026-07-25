@@ -1,5 +1,6 @@
-export type BackupRestoreMode = 'replace' | 'merge';
-export type BackupSettingsMode = 'keep-current' | 'use-backup';
+export const CURRENT_BACKUP_SCHEMA_VERSION = 2;
+export const MIN_SUPPORTED_BACKUP_SCHEMA_VERSION = 1;
+
 export type BackupSettings = Record<string, unknown>;
 
 export interface BackupManifest {
@@ -25,11 +26,4 @@ export interface BackupArtifact {
   contentType: 'application/vnd.novel-tool.backup';
   content: Buffer;
   encrypted: boolean;
-}
-
-export interface RestoreResult {
-  mode: BackupRestoreMode;
-  restored: Record<string, number>;
-  settings: BackupSettings | null;
-  safetyBackupPath: string | null;
 }

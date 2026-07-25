@@ -1,4 +1,5 @@
-export type RealtimeResource = 'novels' | 'tasks' | 'scheduler' | 'plugins' | 'search' | 'all';
+export type RealtimeResource =
+  'novels' | 'tasks' | 'scheduler' | 'plugins' | 'search' | 'backup' | 'all';
 
 export interface RealtimeEvent {
   id: string;

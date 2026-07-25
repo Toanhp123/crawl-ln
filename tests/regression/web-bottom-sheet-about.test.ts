@@ -22,3 +22,18 @@ test('About panel uses full-height divided setting rows instead of compressed fl
   assert.match(aboutPanel, /title=\{t\('settings\.build'\)\}/);
   assert.doesNotMatch(aboutPanel, /space-y-3/);
 });
+
+test('BottomSheet does not capture drag gestures that start on interactive header controls', async () => {
+  const source = await readFile('apps/web/src/shared/ui/overlay/BottomSheet.tsx', 'utf8');
+  assert.match(source, /INTERACTIVE_DRAG_BLOCK_SELECTOR/);
+  assert.match(source, /event\.target[\s\S]*?\.closest\(INTERACTIVE_DRAG_BLOCK_SELECTOR\)/);
+
+  const handler = source.match(/const handleDragStart = \(event:[\s\S]*?\n  \};/)?.[0];
+  assert.ok(handler, 'handleDragStart must exist');
+  assert.match(handler, /closest\(INTERACTIVE_DRAG_BLOCK_SELECTOR\)[\s\S]*?return;/);
+  assert.ok(
+    handler.indexOf('closest(INTERACTIVE_DRAG_BLOCK_SELECTOR)') <
+      handler.indexOf('setPointerCapture'),
+    'interactive-target guard must run before pointer capture'
+  );
+});

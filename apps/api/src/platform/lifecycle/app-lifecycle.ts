@@ -13,6 +13,7 @@ export function createAppLifecycle(input: {
   migrations: { run(): void };
   modules: LifecycleModule[];
   outbox: { start(): void; stop(): Promise<void> };
+  beforeDatabaseOpen?: () => Promise<void>;
 }): AppLifecycle {
   let started = false;
   let startedModules: LifecycleModule[] = [];
@@ -20,8 +21,9 @@ export function createAppLifecycle(input: {
   return {
     async start() {
       if (started) return;
-      input.database.open();
       try {
+        await input.beforeDatabaseOpen?.();
+        input.database.open();
         input.migrations.run();
         for (const module of input.modules) {
           await module.start?.();

@@ -7,10 +7,17 @@ export interface OpenedBackup {
   settings: BackupSettings;
 }
 
+export interface BackupArchiveCreateHooks {
+  onStage?(stage: 'archiving' | 'encrypting'): void;
+  throwIfCancelled?(): void;
+}
+
 export interface BackupArchivePort {
   create(
     snapshot: BackupSnapshot,
-    password?: string
+    password?: string,
+    hooks?: BackupArchiveCreateHooks
   ): Promise<{ content: Buffer; manifest: BackupManifest }>;
+  readManifest(content: Buffer): Promise<BackupManifest>;
   open(content: Buffer, password?: string): Promise<OpenedBackup>;
 }

@@ -25,6 +25,8 @@ test('manifest accepts only a complete current-version build with safe relative 
     await mkdir(join(root, 'public'), { recursive: true });
     await writeFile(join(root, 'server/server.js'), 'export const startServer = () => {};');
     await writeFile(join(root, 'public/index.html'), '<div id="root"></div>');
+    await writeFile(join(root, 'backup-control.sqlite'), 'private runtime state');
+    await mkdir(join(root, 'backup-temp'));
     await createRuntimePackage(root, '@novel-tool/shared');
     await createRuntimePackage(root, '@novel-tool/source-plugin-sdk');
     const { writeBuildManifest, readStartableBuild } =
@@ -44,6 +46,7 @@ test('manifest accepts only a complete current-version build with safe relative 
     assert.equal((await readStartableBuild(root, '3.0.0')).manifest.complete, true);
     await assert.rejects(() => readStartableBuild(root, '4.0.0'), /application version 4\.0\.0/);
     const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
+    assert.doesNotMatch(JSON.stringify(manifest), /backup-control\.sqlite|backup-temp/);
     manifest.serverEntry = '../escape.js';
     await writeFile(join(root, 'manifest.json'), JSON.stringify(manifest));
     await assert.rejects(() => readStartableBuild(root, '3.0.0'), /safe relative path/);

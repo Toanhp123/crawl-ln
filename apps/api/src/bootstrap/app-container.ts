@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { createBackupModule } from '../modules/backup/backup.module.js';
+import { CURRENT_BACKUP_SCHEMA_VERSION } from '../modules/backup/domain/backup.models.js';
 import { BackupController } from '../modules/backup/presentation/backup.controller.js';
+import { RestoreSessionController } from '../modules/backup/presentation/restore-session.controller.js';
 import { createExportModule } from '../modules/export/export.module.js';
 import { createIngestionModule } from '../modules/ingestion/ingestion.module.js';
 import { IngestionController } from '../modules/ingestion/presentation/ingestion.controller.js';
@@ -90,6 +92,7 @@ export function createAppContainer(environment: Environment) {
     maxSourceBytes: environment.maxExportSourceBytes
   });
   modules.register(library, sourceReader, ingestion, scheduler, search, realtimeAdapter, exports);
+  const primaryMigrations = modules.migrationRegistry();
   const outbox = new OutboxDispatcher(modules.outboxSources(), events, clock, logger, {
     batchSize: environment.outboxBatchSize
   });
@@ -100,11 +103,15 @@ export function createAppContainer(environment: Environment) {
   const backups = createBackupModule({
     database,
     databasePath: environment.databasePath,
-    storageDirectory: environment.storageDirectory ?? dirname(environment.databasePath),
+    storageDirectory,
     contributors: modules.backupContributors(),
     clock,
+    ids,
+    logger,
+    realtime,
     appVersion: environment.appVersion ?? '3.0.0',
-    schemaVersion: 1,
+    schemaVersion: CURRENT_BACKUP_SCHEMA_VERSION,
+    primaryMigrations,
     maintenance: new BackupMaintenanceCoordinator(ingestion.maintenance, [
       outboxLifecycle,
       scheduler
@@ -116,7 +123,8 @@ export function createAppContainer(environment: Environment) {
     database,
     migrations: { run: () => runRegisteredMigrations(database, migrations) },
     modules: modules.list(),
-    outbox: outboxLifecycle
+    outbox: outboxLifecycle,
+    beforeDatabaseOpen: backups.beforeDatabaseOpen
   });
   const libraryController = new LibraryController(
     library.api,
@@ -135,7 +143,13 @@ export function createAppContainer(environment: Environment) {
     ids,
     realtime
   );
-  const backupController = new BackupController(backups.api, realtime);
+  const backupController = new BackupController(backups.api);
+  const restoreSessionController = new RestoreSessionController(
+    backups.restorePreparation,
+    backups.restoreInspection,
+    backups.restoreInspectionCoordinator,
+    backups.restoreExecution
+  );
   const presentation = Object.freeze({
     realtime: new RealtimeController(realtime),
     library: Object.freeze({ controller: libraryController }),
@@ -144,7 +158,10 @@ export function createAppContainer(environment: Environment) {
     scheduler: scheduler.presentation,
     search: search.presentation,
     exports: exports.presentation,
-    backups: Object.freeze({ controller: backupController })
+    backups: Object.freeze({
+      controller: backupController,
+      restoreSessions: restoreSessionController
+    })
   });
 
   return { lifecycle, presentation, runtimeInstance };

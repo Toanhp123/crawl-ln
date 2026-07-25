@@ -1,5 +1,6 @@
 import type {
   BackupContributor,
+  BackupContributorImpact,
   BackupImportContext
 } from '../../../../platform/backup/backup-contributor.js';
 import {
@@ -24,6 +25,7 @@ export const sourceReaderBackupTables = [
 
 export class SourceReaderBackupContributor implements BackupContributor {
   readonly module = 'source-reader';
+  readonly fingerprintTables = sourceReaderBackupTables;
 
   constructor(private readonly database: SqliteDatabase) {}
 
@@ -31,10 +33,19 @@ export class SourceReaderBackupContributor implements BackupContributor {
     return Promise.resolve(exportSqliteTables(this.database.connection, sourceReaderBackupTables));
   }
 
-  importMergeData(data: unknown, _context: BackupImportContext): Promise<void> {
-    this.database.transactionSync(() => {
-      importSqliteTables(this.database.connection, data, sourceReaderBackupTables);
+  importMergeData(data: unknown, _context: BackupImportContext): Promise<BackupContributorImpact> {
+    const imported = importSqliteTables(this.database.connection, data, sourceReaderBackupTables);
+    return Promise.resolve({
+      module: this.module,
+      counts: {
+        pluginsAdded: imported.insertedByTable.source_reader_plugins ?? 0,
+        credentialsAdded: imported.insertedByTable.source_reader_credentials ?? 0,
+        networkProfilesAdded: imported.insertedByTable.source_reader_network_profiles ?? 0,
+        rowsSkipped: Object.values(imported.skippedByTable).reduce(
+          (total, value) => total + value,
+          0
+        )
+      }
     });
-    return Promise.resolve();
   }
 }

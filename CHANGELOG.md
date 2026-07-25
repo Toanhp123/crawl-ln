@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased - Phase 2C Backup and Restore
+
+- Replaced synchronous Restore with durable Backup/Restore operations, resumable inspected uploads, atomic Merge, crash-safe Replace with safety artifacts, an eight-step reconnectable wizard, and cross-platform failure coverage.
+
 ## 3.0.0 - 2026-07-21
 
 - Promoted the TypeScript modular-monolith API and Feature-Sliced React web app to the canonical `apps/api` and `apps/web` workspaces.

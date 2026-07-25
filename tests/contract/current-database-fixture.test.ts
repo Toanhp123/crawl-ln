@@ -18,7 +18,7 @@ test('current fixture is created by module migrations and contains retained back
       .all() as any[];
     assert.deepEqual(
       migrations.map((row) => `${row.module_name}:${row.version}`),
-      ['ingestion:1', 'library:1', 'scheduler:1', 'search:1', 'source-reader:1']
+      ['ingestion:1', 'library:1', 'scheduler:1', 'search:1', 'search:2', 'source-reader:1']
     );
   } finally {
     database?.close();

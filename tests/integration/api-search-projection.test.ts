@@ -37,7 +37,8 @@ function fixture(t: test.TestContext) {
     database,
     library: library.api.queries,
     events,
-    clock: { now: () => new Date(savedAt) }
+    clock: { now: () => new Date(savedAt) },
+    ids: { randomId: () => 'search-event-id' }
   });
   for (const migration of [...library.migrations, ...search.migrations]) {
     migration.up(database.connection);
@@ -188,8 +189,14 @@ test('search rebuild projects current Library state through public queries', asy
     offset: 0
   });
 
-  assert.equal(rebuilt.indexedDocuments, 2);
+  assert.deepEqual(rebuilt, { indexedDocuments: 2, rebuiltAt: savedAt });
   assert.equal(documentCount(database), 2);
+  assert.deepEqual(await search.api.queries.status(), {
+    rebuildRunning: false,
+    indexedDocuments: 2,
+    lastRebuiltAt: savedAt,
+    lastIndexedDocuments: 2
+  });
   assert.deepEqual(
     result.items.map((item) => item.documentId),
     ['chapter-1']

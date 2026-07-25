@@ -205,6 +205,13 @@ export async function createCurrentDatabaseFixture(root: string) {
         'Fixture Novel',
         'Fixture chapter content.'
       );
+      database.connection
+        .prepare(
+          `INSERT INTO search_index_metadata(
+             id, last_rebuilt_at, last_indexed_documents
+           ) VALUES (1, ?, ?)`
+        )
+        .run(completedAt, 2);
     });
 
     return {

@@ -4,7 +4,8 @@ import type { SearchController } from './search.controller.js';
 
 export function createSearchRoutes(controller: SearchController) {
   const router = Router();
-  router.get('/', asyncHandler(controller.search));
+  router.get('/status', asyncHandler(controller.status));
   router.post('/rebuild', asyncHandler(controller.rebuild));
+  router.get('/', asyncHandler(controller.search));
   return router;
 }

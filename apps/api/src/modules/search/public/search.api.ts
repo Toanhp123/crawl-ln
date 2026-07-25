@@ -8,6 +8,9 @@ export interface SearchApi {
 export type { SearchCommands, SearchQueries } from './search.contracts.js';
 export type {
   SearchDocumentType,
+  SearchIndexMetadata,
+  SearchIndexRebuildResult,
+  SearchIndexStatus,
   SearchQuery,
   SearchResultItem,
   SearchResultPage

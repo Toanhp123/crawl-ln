@@ -293,7 +293,8 @@ test('Task 7 feature public APIs expose actions and reusable controls', async ()
   assert.equal(typeof search.useSearchLibraryFeature, 'function');
   assert.equal(typeof search.LibrarySearchPanel, 'function');
   assert.equal(typeof rebuild.useRebuildSearchIndex, 'function');
-  assert.equal(typeof rebuild.RebuildSearchIndexButton, 'function');
+  assert.equal(typeof rebuild.SearchIndexControls, 'function');
+  assert.equal('RebuildSearchIndexButton' in rebuild, false);
   assert.equal(typeof exportNovel.createExportClient, 'function');
   assert.equal(typeof exportNovel.useExportNovel, 'function');
   assert.equal(typeof exportNovel.ExportNovelControl, 'function');

@@ -1,3 +1,8 @@
+import {
+  SEARCH_REBUILD_COMPLETED,
+  SEARCH_REBUILD_FAILED,
+  SEARCH_REBUILD_STARTED
+} from '../../modules/search/application/events/search-rebuild.event.js';
 import type { ApplicationEvent } from '../events/application-event.js';
 import type { EventBus } from '../events/event-bus.js';
 import type { RealtimeEventInput, RealtimeEventPublisher } from './realtime-event.js';
@@ -50,7 +55,10 @@ export class ApplicationEventToRealtimeAdapter {
       ),
       this.events.subscribe('scheduler.diagnostic.recorded', (event) =>
         this.publishSchedulerDiagnostic(event)
-      )
+      ),
+      this.events.subscribe(SEARCH_REBUILD_STARTED, (event) => this.publishSearchRebuild(event)),
+      this.events.subscribe(SEARCH_REBUILD_COMPLETED, (event) => this.publishSearchRebuild(event)),
+      this.events.subscribe(SEARCH_REBUILD_FAILED, (event) => this.publishSearchRebuild(event))
     ];
   }
 
@@ -128,6 +136,15 @@ export class ApplicationEventToRealtimeAdapter {
       resources: ['scheduler', 'novels'],
       reason: `scheduler.${result}`,
       ...(string(diagnostic.novelId) ? { novelId: string(diagnostic.novelId) } : {})
+    });
+    return Promise.resolve();
+  }
+
+  private publishSearchRebuild(event: ApplicationEvent): Promise<void> {
+    this.realtime.publish({
+      type: 'data.changed',
+      resources: ['search'],
+      reason: event.type
     });
     return Promise.resolve();
   }

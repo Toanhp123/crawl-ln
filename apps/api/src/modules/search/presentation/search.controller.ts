@@ -20,6 +20,9 @@ export class SearchController {
     );
   };
 
+  status = async (_request: Request, response: Response) =>
+    ok(response, await this.api.queries.status());
+
   rebuild = async (_request: Request, response: Response) =>
     ok(response, await this.api.commands.rebuild());
 }

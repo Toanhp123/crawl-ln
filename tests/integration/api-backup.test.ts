@@ -64,7 +64,8 @@ function contributors(database: SqliteDatabase): BackupContributor[] {
     database,
     library: library.api.queries,
     events: new InMemoryEventBus(),
-    clock: { now: () => now }
+    clock: { now: () => now },
+    ids: { randomId: () => 'search-backup-event-id' }
   });
   return [
     library.backup,

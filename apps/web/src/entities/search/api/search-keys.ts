@@ -12,6 +12,7 @@ function normalize(input: LibrarySearchInput): LibrarySearchInput {
 
 export const searchKeys = {
   all: ['search'] as const,
+  status: () => ['search', 'status'] as const,
   resultsRoot: () => ['search', 'results'] as const,
   results: (input: LibrarySearchInput) => ['search', 'results', normalize(input)] as const
 };

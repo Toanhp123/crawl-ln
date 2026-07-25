@@ -1,14 +1,44 @@
 export const rebuildSearchIndexCatalogs = {
   en: {
+    'searchIndex.statusList': 'Search index status',
+    'searchIndex.state': 'Status',
+    'searchIndex.state.ready': 'Ready',
+    'searchIndex.state.rebuilding': 'Rebuilding',
+    'searchIndex.currentDocuments': 'Current documents',
+    'searchIndex.lastRebuild': 'Last successful rebuild',
+    'searchIndex.lastRebuildDocuments': 'Documents at that rebuild',
+    'searchIndex.neverRebuilt': 'Never rebuilt',
+    'searchIndex.noData': 'No data',
+    'searchIndex.empty': 'Empty',
     'searchIndex.action': 'Rebuild search index',
-    'searchIndex.rebuilt': 'Search index rebuilt',
-    'searchIndex.rebuiltCount': '{count} documents indexed',
-    'searchIndex.failed': 'Could not rebuild the search index'
+    'searchIndex.runningAction': 'Rebuilding',
+    'searchIndex.completed': 'Search index rebuilt',
+    'searchIndex.completedCount': 'Rebuilt the search index with {count} documents.',
+    'searchIndex.completedEmpty': 'Rebuilt the search index. It currently contains no documents.',
+    'searchIndex.failed': 'Could not rebuild the search index',
+    'searchIndex.loadFailedTitle': 'Unable to load Search Index status',
+    'searchIndex.backgroundRefreshFailed': 'Could not refresh Search Index status',
+    'searchIndex.retry': 'Retry'
   },
   vi: {
+    'searchIndex.statusList': 'Trạng thái chỉ mục tìm kiếm',
+    'searchIndex.state': 'Trạng thái',
+    'searchIndex.state.ready': 'Sẵn sàng',
+    'searchIndex.state.rebuilding': 'Đang tạo lại',
+    'searchIndex.currentDocuments': 'Tài liệu hiện có',
+    'searchIndex.lastRebuild': 'Lần tạo lại thành công gần nhất',
+    'searchIndex.lastRebuildDocuments': 'Tài liệu tại lần tạo lại',
+    'searchIndex.neverRebuilt': 'Chưa tạo lại',
+    'searchIndex.noData': 'Chưa có dữ liệu',
+    'searchIndex.empty': 'Trống',
     'searchIndex.action': 'Tạo lại chỉ mục tìm kiếm',
-    'searchIndex.rebuilt': 'Đã tạo lại chỉ mục tìm kiếm',
-    'searchIndex.rebuiltCount': 'Đã lập chỉ mục {count} tài liệu',
-    'searchIndex.failed': 'Không thể tạo lại chỉ mục tìm kiếm'
+    'searchIndex.runningAction': 'Đang tạo lại',
+    'searchIndex.completed': 'Đã tạo lại chỉ mục tìm kiếm',
+    'searchIndex.completedCount': 'Đã tạo lại chỉ mục với {count} tài liệu.',
+    'searchIndex.completedEmpty': 'Đã tạo lại chỉ mục, hiện chưa có tài liệu.',
+    'searchIndex.failed': 'Không thể tạo lại chỉ mục tìm kiếm',
+    'searchIndex.loadFailedTitle': 'Không tải được trạng thái chỉ mục tìm kiếm',
+    'searchIndex.backgroundRefreshFailed': 'Không thể làm mới trạng thái chỉ mục tìm kiếm',
+    'searchIndex.retry': 'Thử lại'
   }
 } as const;

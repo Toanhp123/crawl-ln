@@ -1,5 +1,11 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { searchLibrary, type LibrarySearchInput } from './search-api';
+import type { ConnectionState } from '../../../shared/realtime';
+import {
+  getSearchIndexStatus,
+  searchLibrary,
+  type LibrarySearchInput,
+  type SearchIndexStatus
+} from './search-api';
 import { searchKeys } from './search-keys';
 
 export type SearchQueryOptions = {
@@ -7,6 +13,19 @@ export type SearchQueryOptions = {
   staleTime?: number;
   refetchOnWindowFocus?: boolean;
 };
+
+export type SearchIndexStatusQueryOptions = SearchQueryOptions & {
+  connectionState?: ConnectionState;
+};
+
+export function searchIndexFallbackInterval(
+  connectionState: ConnectionState | undefined,
+  status: SearchIndexStatus | undefined,
+  enabled: boolean
+): number | false {
+  if (!enabled || connectionState === 'connected') return false;
+  return status?.rebuildRunning ? 1_000 : 15_000;
+}
 
 export function useLibrarySearch(input: LibrarySearchInput, options: SearchQueryOptions = {}) {
   const normalized = { ...input, q: input.q.trim() };
@@ -17,6 +36,20 @@ export function useLibrarySearch(input: LibrarySearchInput, options: SearchQuery
     enabled,
     staleTime: options.staleTime,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: options.refetchOnWindowFocus ?? false
+  });
+}
+
+export function useSearchIndexStatus(options: SearchIndexStatusQueryOptions = {}) {
+  const enabled = options.enabled ?? true;
+  return useQuery({
+    queryKey: searchKeys.status(),
+    queryFn: ({ signal }) => getSearchIndexStatus(signal),
+    enabled,
+    staleTime: options.staleTime,
+    refetchInterval: (query) =>
+      searchIndexFallbackInterval(options.connectionState, query.state.data, enabled),
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: options.refetchOnWindowFocus ?? false
   });
 }

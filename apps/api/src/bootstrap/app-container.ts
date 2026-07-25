@@ -82,7 +82,8 @@ export function createAppContainer(environment: Environment) {
     database,
     library: library.api.queries,
     events,
-    clock
+    clock,
+    ids
   });
   const exports = createExportModule({
     library: library.api.queries,

@@ -7,12 +7,18 @@ import type {
 } from '../../application/ports/search.repository.js';
 import type {
   SearchDocument,
+  SearchIndexMetadata,
+  SearchIndexRebuildResult,
   SearchQuery,
   SearchResultItem,
   SearchResultPage
 } from '../../domain/search.models.js';
 
 const countRowSchema = z.object({ count: z.coerce.number().int().nonnegative() });
+const metadataRowSchema = z.object({
+  last_rebuilt_at: z.string().min(1),
+  last_indexed_documents: z.coerce.number().int().nonnegative()
+});
 const searchRowSchema = z.object({
   document_type: z.enum(['novel', 'chapter']),
   document_id: z.string().min(1),
@@ -110,6 +116,47 @@ export class SearchSqliteRepository implements SearchRepository {
     };
   }
 
+  async countDocuments(): Promise<number> {
+    return countRowSchema.parse(
+      this.database.connection.prepare('SELECT COUNT(*) AS count FROM search_documents').get()
+    ).count;
+  }
+
+  async getIndexMetadata(): Promise<SearchIndexMetadata | null> {
+    const row = this.database.connection
+      .prepare(
+        `SELECT last_rebuilt_at, last_indexed_documents
+         FROM search_index_metadata
+         WHERE id = 1`
+      )
+      .get();
+    if (!row) return null;
+
+    const metadata = metadataRowSchema.parse(row);
+    return {
+      lastRebuiltAt: metadata.last_rebuilt_at,
+      lastIndexedDocuments: metadata.last_indexed_documents
+    };
+  }
+
+  async replaceAllForRebuild(
+    documents: SearchDocument[],
+    rebuiltAt: string
+  ): Promise<SearchIndexRebuildResult> {
+    return this.database.transactionSync(() => {
+      this.database.connection.exec('DELETE FROM search_documents;');
+      for (const document of documents) this.insertDocument(document);
+      this.database.connection
+        .prepare(
+          `INSERT OR REPLACE INTO search_index_metadata(
+             id, last_rebuilt_at, last_indexed_documents
+           ) VALUES (1, ?, ?)`
+        )
+        .run(rebuiltAt, documents.length);
+      return { indexedDocuments: documents.length, rebuiltAt };
+    });
+  }
+
   async replaceNovelForEvent(
     event: SearchProjectionEvent,
     novelId: string,
@@ -143,14 +190,6 @@ export class SearchSqliteRepository implements SearchRepository {
       this.database.connection
         .prepare('DELETE FROM search_documents WHERE novel_id = ?')
         .run(novelId);
-    });
-  }
-
-  async replaceAll(documents: SearchDocument[]): Promise<number> {
-    return this.database.transactionSync(() => {
-      this.database.connection.exec('DELETE FROM search_documents;');
-      for (const document of documents) this.insertDocument(document);
-      return documents.length;
     });
   }
 

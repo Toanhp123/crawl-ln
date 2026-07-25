@@ -13,7 +13,7 @@ import { AppFontControls, useAppFontConfiguration } from '@/features/configure-a
 import { AppearanceControls, useAppearanceConfiguration } from '@/features/configure-appearance';
 import { LanguageControls, useLanguageConfiguration } from '@/features/configure-language';
 import { ReaderPreferencesSheet } from '@/features/reader-preferences';
-import { RebuildSearchIndexButton } from '@/features/rebuild-search-index';
+import { SearchIndexControls } from '@/features/rebuild-search-index';
 import { SchedulerControls } from '@/features/run-scheduler';
 import { BackupLibraryPanel } from '@/features/backup-library';
 import { APP_BUILD, APP_VERSION } from '@/shared/config';
@@ -139,14 +139,7 @@ export function SettingsPage() {
         {panel === 'language' ? <LanguageControls /> : null}
         {panel === 'scheduler' ? <SchedulerControls /> : null}
         {panel === 'storage' ? <BackupLibraryPanel /> : null}
-        {panel === 'search' ? (
-          <Panel className="space-y-3">
-            <Text variant="supporting" tone="muted">
-              {t('search.indexDescription')}
-            </Text>
-            <RebuildSearchIndexButton />
-          </Panel>
-        ) : null}
+        {panel === 'search' ? <SearchIndexControls /> : null}
         {panel === 'export' ? (
           <Panel className="space-y-3">
             <Text as="h3" variant="cardTitle">

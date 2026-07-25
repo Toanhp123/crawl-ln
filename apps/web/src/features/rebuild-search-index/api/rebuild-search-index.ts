@@ -2,6 +2,7 @@ import { http } from '../../../shared/api';
 
 export interface RebuildSearchIndexResult {
   indexedDocuments: number;
+  rebuiltAt: string;
 }
 
 export function rebuildSearchIndex(): Promise<RebuildSearchIndexResult> {

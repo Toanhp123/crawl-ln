@@ -35,3 +35,20 @@ export interface SearchResultPage {
   offset: number;
   items: SearchResultItem[];
 }
+
+export interface SearchIndexMetadata {
+  lastRebuiltAt: string;
+  lastIndexedDocuments: number;
+}
+
+export interface SearchIndexRebuildResult {
+  indexedDocuments: number;
+  rebuiltAt: string;
+}
+
+export interface SearchIndexStatus {
+  rebuildRunning: boolean;
+  indexedDocuments: number;
+  lastRebuiltAt: string | null;
+  lastIndexedDocuments: number | null;
+}

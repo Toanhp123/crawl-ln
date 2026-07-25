@@ -17,6 +17,13 @@ export type LibrarySearchInput = {
   offset?: number;
 };
 
+export interface SearchIndexStatus {
+  rebuildRunning: boolean;
+  indexedDocuments: number;
+  lastRebuiltAt: string | null;
+  lastIndexedDocuments: number | null;
+}
+
 export function searchLibrary(input: LibrarySearchInput, signal?: AbortSignal) {
   const query = new URLSearchParams({
     q: input.q,
@@ -26,4 +33,8 @@ export function searchLibrary(input: LibrarySearchInput, signal?: AbortSignal) {
   });
   if (input.novelId) query.set('novelId', input.novelId);
   return http<SearchResultPage>(`/api/search?${query.toString()}`, { signal });
+}
+
+export function getSearchIndexStatus(signal?: AbortSignal) {
+  return http<SearchIndexStatus>('/api/search/status', { signal });
 }

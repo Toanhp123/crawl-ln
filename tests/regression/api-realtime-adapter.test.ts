@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {
+  SEARCH_REBUILD_COMPLETED,
+  SEARCH_REBUILD_FAILED,
+  SEARCH_REBUILD_STARTED
+} from '../../apps/api/src/modules/search/application/events/search-rebuild.event.ts';
 import { InMemoryEventBus } from '../../apps/api/src/platform/events/in-memory-event-bus.ts';
 import { ApplicationEventToRealtimeAdapter } from '../../apps/api/src/platform/realtime/application-event-to-realtime.adapter.ts';
 import { InMemoryRealtimeEventBroker } from '../../apps/api/src/platform/realtime/in-memory-realtime-event-broker.ts';
@@ -50,6 +55,24 @@ test('application event adapter maps durable module events to realtime resources
       retentionLimit: 30
     }
   });
+  await events.publish({
+    id: 'search-started',
+    type: SEARCH_REBUILD_STARTED,
+    occurredAt,
+    payload: {}
+  });
+  await events.publish({
+    id: 'search-completed',
+    type: SEARCH_REBUILD_COMPLETED,
+    occurredAt,
+    payload: { indexedDocuments: 12, rebuiltAt: occurredAt }
+  });
+  await events.publish({
+    id: 'search-failed',
+    type: SEARCH_REBUILD_FAILED,
+    occurredAt,
+    payload: {}
+  });
 
   assert.deepEqual(
     received.map((event) => {
@@ -75,6 +98,21 @@ test('application event adapter maps durable module events to realtime resources
         resources: ['scheduler', 'novels'],
         reason: 'scheduler.failed',
         novelId: 'novel-1'
+      },
+      {
+        type: 'data.changed',
+        resources: ['search'],
+        reason: SEARCH_REBUILD_STARTED
+      },
+      {
+        type: 'data.changed',
+        resources: ['search'],
+        reason: SEARCH_REBUILD_COMPLETED
+      },
+      {
+        type: 'data.changed',
+        resources: ['search'],
+        reason: SEARCH_REBUILD_FAILED
       }
     ]
   );
@@ -86,5 +124,5 @@ test('application event adapter maps durable module events to realtime resources
     occurredAt,
     payload: {}
   });
-  assert.equal(received.length, 3);
+  assert.equal(received.length, 6);
 });

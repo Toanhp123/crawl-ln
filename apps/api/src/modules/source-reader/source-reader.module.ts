@@ -73,7 +73,6 @@ import {
   RobotsTxtAccessPolicyAdapter
 } from './infrastructure/network/robots-txt-access-policy.adapter.js';
 import { RouteAwareHttpClientAdapter } from './infrastructure/network/route-aware-http-client.adapter.js';
-import { novelCoolPlugin } from './infrastructure/plugins/built-in/novelcool/novelcool.plugin.js';
 import {
   ExternalPluginLoader,
   inspectInstalledPluginPackage
@@ -127,11 +126,6 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   const structuredLogger = new BoundedSourceReaderStructuredLogger(hostLogger);
 
   const registry = new InMemoryPluginRegistry();
-  registry.register(novelCoolPlugin, {
-    trustLevel: 'built-in',
-    executionMode: 'in-process',
-    enabled: true
-  });
 
   const vault = new LocalEncryptedVault(environment.sourceReaderMasterKey);
   const credentials = new SqliteCredentialRepository(database, vault);

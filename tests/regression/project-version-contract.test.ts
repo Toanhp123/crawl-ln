@@ -37,15 +37,15 @@ test('Source Plugin SDK capability and sandbox protocol contracts remain version
     'apps/api/src/modules/source-reader/infrastructure/runtime/external-process/sandbox-protocol.ts',
     'utf8'
   );
-  const manifest = await readFile(
-    'apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.manifest.ts',
-    'utf8'
-  );
+  const manifest = JSON.parse(await readFile('plugins/novelcool/manifest.json', 'utf8')) as {
+    contracts?: Record<string, number>;
+  };
   assert.match(compatibility, /sandboxProtocolVersion:\s*1/);
   assert.match(compatibility, /identify:\s*\[1\]/);
   assert.match(compatibility, /metadata:\s*\[1\]/);
   assert.match(sandbox, /SANDBOX_PROTOCOL_VERSION\s*=\s*1/);
-  assert.match(manifest, /sourceReader:\s*['"]>=1\.0\.0 <2\.0\.0['"]/);
+  assert.equal(manifest.contracts?.identify, 1);
+  assert.equal(manifest.contracts?.metadata, 1);
 });
 
 test('first-party NovelCool plugin has the external runtime boundary version', async () => {

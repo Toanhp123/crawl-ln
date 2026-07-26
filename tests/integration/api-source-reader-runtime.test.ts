@@ -16,6 +16,7 @@ import { SourceResultValidator } from '../../apps/api/src/modules/source-reader/
 import { SourceReaderFacade } from '../../apps/api/src/modules/source-reader/application/source-reader.facade.ts';
 import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
 import { parseSourcePluginManifest } from '../../apps/api/src/modules/source-reader/domain/plugin/source-plugin-manifest.schema.ts';
+import { createSourceReaderModule } from '../../apps/api/src/modules/source-reader/source-reader.module.ts';
 import { browserSessionIdentityKey } from '../../apps/api/src/modules/source-reader/infrastructure/browser/browser-runtime.coordinator.ts';
 import { buildChromiumLaunchOptions } from '../../apps/api/src/modules/source-reader/infrastructure/browser/browser-launch-options.ts';
 import { HmacCursorCodec } from '../../apps/api/src/modules/source-reader/infrastructure/runtime/hmac-cursor.codec.ts';
@@ -31,11 +32,6 @@ import { sourceReaderMigrations } from '../../apps/api/src/modules/source-reader
 import { NetworkRouteResolver } from '../../apps/api/src/modules/source-reader/infrastructure/network/network-route.resolver.ts';
 import { ProxyAgentFactory } from '../../apps/api/src/modules/source-reader/infrastructure/network/proxy-agent.factory.ts';
 import { RouteAwareHttpClientAdapter } from '../../apps/api/src/modules/source-reader/infrastructure/network/route-aware-http-client.adapter.ts';
-import {
-  createNovelCoolPlugin,
-  novelCoolPlugin
-} from '../../apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts';
-import { novelCoolChapterUrlKey } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool-chapter-url-key.ts';
 import { SourcePluginPackageVerifier } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.ts';
 import { StaticTrustStore } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.ts';
 import { InMemoryPluginRegistry } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.ts';
@@ -110,6 +106,55 @@ async function signedPackage(): Promise<{
     publicKeyPem: String(publicKey.export({ type: 'spki', format: 'pem' }))
   };
 }
+
+test('source-reader starts without NovelCool and requires an installed external candidate', async (t) => {
+  const database = migratedDatabase(t);
+  const storageDirectory = await mkdtemp(join(tmpdir(), 'source-reader-empty-registry-'));
+  t.after(() => rm(storageDirectory, { recursive: true, force: true }));
+  const module = createSourceReaderModule({
+    database,
+    environment: {
+      host: '127.0.0.1',
+      port: 3000,
+      databasePath: ':memory:',
+      storageDirectory,
+      storageDirectoryIsDefault: false,
+      outboxBatchSize: 50,
+      outboxIntervalMs: 1_000,
+      crawlerDelayMs: 0,
+      maxExportSourceBytes: 128 * 1024 * 1024,
+      sourceAllowlist: [],
+      sourceReaderMasterKey: Buffer.alloc(32, 1),
+      sourceReaderPluginDir: join(storageDirectory, 'plugins')
+    },
+    clock,
+    logger: { error() {} }
+  });
+
+  await module.start();
+  try {
+    assert.deepEqual(
+      await module.management.plugins.list.execute({
+        actor: { id: 'source-admin', roles: ['source-admin'] }
+      }),
+      []
+    );
+  } finally {
+    await module.stop();
+  }
+
+  const resolver = new CandidateResolver(
+    new PipelinePluginRegistryAdapter(new InMemoryPluginRegistry())
+  );
+  await assert.rejects(
+    () =>
+      resolver.resolve({
+        url: 'https://www.novelcool.com/novel/fixture.html',
+        capability: 'metadata'
+      }),
+    (error: unknown) => error instanceof SourceReaderError && error.code === 'SOURCE_NOT_SUPPORTED'
+  );
+});
 
 async function startDestination() {
   let requests = 0;
@@ -403,121 +448,6 @@ test('browser identity and Chromium proxy options bind account session version a
       }
     }).proxy,
     { server: 'socks5://proxy.test:1080', username: 'alice', password: 'secret' }
-  );
-});
-
-test('NovelCool accepts the configured minimum chapter length without reading global env', async () => {
-  const html = await readFile('tests/fixtures/source-reader/novelcool-chapter.html', 'utf8');
-  const plugin = createNovelCoolPlugin({ minimumChapterContentChars: 10_000 });
-  const context = new PluginContextFactory(
-    {
-      async get(url: string) {
-        return { url, status: 200, headers: {}, data: html };
-      },
-      async post(url: string) {
-        return this.get(url);
-      },
-      async head(url: string) {
-        return { url, status: 200, headers: {}, data: '' };
-      }
-    },
-    new CheerioHtmlParserAdapter(),
-    clock,
-    { info() {}, warn() {}, error() {} }
-  ).create({
-    pluginId: 'novelcool',
-    pluginVersion: '1.0.0',
-    capability: 'chapter-content',
-    allowedHosts: ['novelcool.com'],
-    signal: new AbortController().signal,
-    runtimeContext: {
-      resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
-      executionMode: 'in-process',
-      browserRequired: false,
-      cacheIdentity: { public: 'public', network: 'direct' }
-    }
-  });
-
-  await assert.rejects(
-    () =>
-      plugin.readChapterContent!(
-        { url: 'https://www.novelcool.com/chapter/fixture-chapter-1.html' },
-        context
-      ),
-    (error: unknown) =>
-      error instanceof SourceReaderError &&
-      error.code === 'PLUGIN_RESULT_INVALID' &&
-      error.details?.minChapterContentChars === 10_000
-  );
-});
-
-test('NovelCool deduplicates alias chapter URLs by canonical numeric id', async () => {
-  const genericUrl = 'https://novelcool.com/chapter/read-online/14145402.html';
-  const detailedUrl = 'https://www.novelcool.com/chapter/Chapter-655-Misha-s-Move/14145402/';
-  const html = `
-    <html>
-      <head><title>Original</title></head>
-      <body>
-        <h1 class="novel-title">Original</h1>
-        <div class="chapter-list">
-          <a href="${genericUrl}"><span>Chapter 1</span></a>
-          <a href="${detailedUrl}"><span>Chapter 655: Misha's Move</span></a>
-        </div>
-      </body>
-    </html>
-  `;
-  const plugin = createNovelCoolPlugin();
-  const context = new PluginContextFactory(
-    {
-      async get(url: string) {
-        return { url, status: 200, headers: {}, data: html };
-      },
-      async post(url: string) {
-        return this.get(url);
-      },
-      async head(url: string) {
-        return { url, status: 200, headers: {}, data: '' };
-      }
-    },
-    new CheerioHtmlParserAdapter(),
-    clock,
-    { info() {}, warn() {}, error() {} }
-  ).create({
-    pluginId: plugin.manifest.id,
-    pluginVersion: plugin.manifest.version,
-    capability: 'chapter-list',
-    allowedHosts: ['novelcool.com'],
-    signal: new AbortController().signal,
-    runtimeContext: {
-      resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
-      executionMode: 'in-process',
-      browserRequired: false,
-      cacheIdentity: { public: 'public', network: 'direct' }
-    }
-  });
-
-  const result = await plugin.readChapterList!(
-    { url: 'https://www.novelcool.com/novel/original/id-269162.html' },
-    context
-  );
-
-  assert.deepEqual(result.data.items, [
-    {
-      index: 1,
-      title: "Chapter 655: Misha's Move",
-      url: detailedUrl
-    }
-  ]);
-});
-
-test('NovelCool chapter identity owns its numeric-id alias rule', () => {
-  assert.equal(
-    novelCoolChapterUrlKey('https://novelcool.com/chapter/read-online/14145402.html'),
-    novelCoolChapterUrlKey('https://www.novelcool.com/chapter/Chapter-655-Misha-s-Move/14145402/')
-  );
-  assert.notEqual(
-    novelCoolChapterUrlKey('https://novelcool.com/chapter/read-online/14145402.html'),
-    novelCoolChapterUrlKey('https://novelcool.com/chapter/read-online/14145403.html')
   );
 });
 
@@ -918,7 +848,7 @@ test('route-aware HTTP never leaks an untyped direct HTTP status error', async (
   }
 });
 
-test('NovelCool runs through the new pipeline with account-scoped persistent cache', async (t) => {
+test('an in-process plugin runs through the pipeline with account-scoped persistent cache', async (t) => {
   const database = migratedDatabase(t);
   const vault = new LocalEncryptedVault(Buffer.alloc(32, 9));
   const credentials = new SqliteCredentialRepository(database, vault);
@@ -929,7 +859,7 @@ test('NovelCool runs through the new pipeline with account-scoped persistent cac
       id,
       ownerType: 'user',
       ownerId: 'user-1',
-      pluginId: 'novelcool',
+      pluginId: 'cache-demo',
       name: id,
       strategy: 'cookie-import',
       secret: { cookie: id },
@@ -939,12 +869,11 @@ test('NovelCool runs through the new pipeline with account-scoped persistent cac
     });
   }
 
-  const html = await readFile('tests/fixtures/source-reader/novelcool-novel.html', 'utf8');
   let httpCalls = 0;
   const http = {
     async get(url: string) {
       httpCalls += 1;
-      return { url, status: 200, headers: {}, data: html };
+      return { url, status: 200, headers: {}, data: '<html></html>' };
     },
     async post(url: string) {
       return this.get(url);
@@ -955,7 +884,34 @@ test('NovelCool runs through the new pipeline with account-scoped persistent cac
   };
   const logger = { info() {}, warn() {}, error() {} };
   const registry = new InMemoryPluginRegistry();
-  registry.register(novelCoolPlugin);
+  registry.register({
+    manifest: parseSourcePluginManifest({
+      id: 'cache-demo',
+      name: 'Cache Demo',
+      version: '1.0.0',
+      engines: { sourceReader: '>=1.0.0 <2.0.0' },
+      capabilities: ['metadata'],
+      contracts: { metadata: 1 },
+      matchers: [{ hosts: ['example.test'], include: ['/novel/**'], priority: 100 }],
+      runtime: { preferredMode: 'in-process' },
+      permissions: { network: { hosts: ['example.test'] } }
+    }),
+    async readMetadata({ url }, context) {
+      const response = await context.http.get(url);
+      return {
+        data: {
+          title: 'Fixture Novel',
+          sourceName: 'Cache Demo',
+          sourceUrl: context.url.normalize(response.url || url)
+        },
+        cacheHints: {
+          scope: 'public',
+          ttlMs: 30 * 60_000,
+          staleWhileRevalidateMs: 6 * 60 * 60_000
+        }
+      };
+    }
+  });
   const external = new ExternalProcessSupervisor({
     startupTimeoutMs: 30_000,
     cancelGraceMs: 20
@@ -997,7 +953,7 @@ test('NovelCool runs through the new pipeline with account-scoped persistent cac
     validator: new SourceResultValidator()
   });
   const request = {
-    url: 'https://www.novelcool.com/novel/fixture.html',
+    url: 'https://example.test/novel/fixture.html',
     userId: 'user-1',
     credentialProfileId: 'credential-a'
   };
@@ -1024,7 +980,7 @@ test('NovelCool runs through the new pipeline with account-scoped persistent cac
     row.request_fingerprint,
     sha256(
       JSON.stringify({
-        normalizedUrl: 'https://novelcool.com/novel/fixture.html',
+        normalizedUrl: 'https://example.test/novel/fixture.html',
         requestParameters: {}
       })
     )
@@ -1033,7 +989,7 @@ test('NovelCool runs through the new pipeline with account-scoped persistent cac
     .prepare('SELECT tag FROM source_reader_cache_tags ORDER BY tag')
     .all()
     .map((item) => (item as { tag: string }).tag);
-  assert.ok(tags.includes('plugin:novelcool'));
+  assert.ok(tags.includes('plugin:cache-demo'));
   assert.ok(tags.includes('credential:credential-a'));
   assert.ok(tags.includes('user:user-1'));
   const healthRow = database.connection
@@ -1042,7 +998,7 @@ test('NovelCool runs through the new pipeline with account-scoped persistent cac
        FROM source_reader_health_checks ORDER BY checked_at DESC LIMIT 1`
     )
     .get() as { plugin_id: string; capability: string; status: string };
-  assert.equal(healthRow.plugin_id, 'novelcool');
+  assert.equal(healthRow.plugin_id, 'cache-demo');
   assert.equal(healthRow.capability, 'metadata');
   assert.equal(healthRow.status, 'healthy');
 

@@ -109,17 +109,14 @@ test('library chapter source identity preserves meaningful query parameters', ()
   assert.notEqual(first, second);
 });
 
-test('chapter URL identity remains inside its owning domain and plugin slices', async () => {
-  const [libraryKey, novelCoolPlugin] = await Promise.all([
+test('chapter URL identity remains inside its owning domain and external plugin slices', async () => {
+  const [libraryKey, externalPluginSource] = await Promise.all([
     readFile('apps/api/src/modules/library/domain/url/chapter-source-url-key.ts', 'utf8'),
-    readFile(
-      'apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts',
-      'utf8'
-    )
+    readFile('plugins/novelcool/src/index.ts', 'utf8')
   ]);
 
   assert.doesNotMatch(libraryKey, /platform\/url/);
-  assert.match(novelCoolPlugin, /\.\/novelcool-chapter-url-key\.js/);
+  assert.match(externalPluginSource, /\.\/novelcool-url\.js/);
   await assert.rejects(
     readFile('apps/api/src/platform/url/chapter-source-url-key.ts', 'utf8'),
     (error: unknown) => error instanceof Error && 'code' in error && error.code === 'ENOENT'

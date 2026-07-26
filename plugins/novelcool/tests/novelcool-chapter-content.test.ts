@@ -55,6 +55,18 @@ test('extracts and sanitizes valid chapter content', async () => {
   assert.deepEqual(fixture.requests, [htmlUrl]);
 });
 
+test('configured minimum chapter length rejects shorter content', async () => {
+  const fixture = createExternalContextFixture({ responses: { [htmlUrl]: { data: validHtml } } });
+
+  await assert.rejects(async () => {
+    await createNovelCoolPlugin({ minimumChapterContentChars: 10_000 }).readChapterContent!(
+      { url: htmlUrl },
+      fixture.context
+    );
+  }, hasCode('PLUGIN_RESULT_INVALID'));
+  assert.deepEqual(fixture.requests, [htmlUrl]);
+});
+
 test('retries a slash numeric URL once as canonical .html', async () => {
   const fixture = createExternalContextFixture({
     responses: {

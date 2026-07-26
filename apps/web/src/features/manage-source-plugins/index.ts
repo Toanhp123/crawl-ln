@@ -1,4 +1,5 @@
 export {
+  activateLatestSourcePlugin,
   disableSourcePlugin,
   enableSourcePlugin,
   removeSourcePlugin
@@ -13,5 +14,13 @@ export {
   getSourcePluginActivationState,
   type SourcePluginActivationState
 } from './model/source-plugin-activation-state';
-export { useRemoveSourcePlugin, useToggleSourcePlugin } from './model/use-source-plugin-actions';
-export { RemoveSourcePluginButton, SourcePluginEnableSwitch } from './ui/SourcePluginActions';
+export {
+  useActivateLatestSourcePlugin,
+  useRemoveSourcePlugin,
+  useToggleSourcePlugin
+} from './model/use-source-plugin-actions';
+export {
+  ActivateLatestSourcePluginButton,
+  RemoveSourcePluginButton,
+  SourcePluginEnableSwitch
+} from './ui/SourcePluginActions';

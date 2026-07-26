@@ -99,6 +99,12 @@ test('activation state gates pending approval and exposes the exact latest targe
     enabled: true,
     permissionsPending: false
   });
+  const pendingUpgrade = inactivePlugin({
+    activeVersion: '1.0.0',
+    status: 'active',
+    enabled: true,
+    permissionsPending: true
+  });
 
   assert.deepEqual(plugins.getSourcePluginActivationState(pending), {
     targetVersion: '2.0.0',
@@ -120,6 +126,13 @@ test('activation state gates pending approval and exposes the exact latest targe
     hasUpgrade: true,
     canEnable: false,
     canActivateLatest: true
+  });
+  assert.deepEqual(plugins.getSourcePluginActivationState(pendingUpgrade), {
+    targetVersion: '2.0.0',
+    blockedByPermissions: true,
+    hasUpgrade: true,
+    canEnable: false,
+    canActivateLatest: false
   });
 });
 
@@ -145,4 +158,46 @@ test('initial enable action sends the latest reviewed version', async () => {
     enabled: true
   });
   assert.deepEqual(enabled, [['fixture-source', '2.0.0']]);
+});
+
+test('activate-latest client sends the exact selected version to the enable endpoint', async () => {
+  const requests: Array<{ url: string; init?: RequestInit }> = [];
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    requests.push({ url: String(input), init });
+    return new Response(
+      JSON.stringify({
+        data: {
+          pluginId: 'fixture-source',
+          version: '2.0.0',
+          status: 'active',
+          warnings: []
+        },
+        error: null
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } }
+    );
+  }) as typeof fetch;
+
+  try {
+    const plugins = await import('../../apps/web/src/features/manage-source-plugins/index.ts');
+    await plugins.activateLatestSourcePlugin('fixture-source', '2.0.0');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+
+  assert.deepEqual(
+    requests.map(({ url, init }) => ({
+      path: requestPath(url),
+      method: init?.method,
+      body: init?.body
+    })),
+    [
+      {
+        path: '/api/source-reader/plugins/fixture-source/enable',
+        method: 'POST',
+        body: JSON.stringify({ version: '2.0.0' })
+      }
+    ]
+  );
 });

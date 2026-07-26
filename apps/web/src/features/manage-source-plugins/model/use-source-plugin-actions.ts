@@ -3,7 +3,7 @@ import { sourcePluginInvalidation, type SourcePlugin } from '../../../entities/s
 import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
-import { removeSourcePlugin } from '../api/manage-source-plugins';
+import { activateLatestSourcePlugin, removeSourcePlugin } from '../api/manage-source-plugins';
 import { createPluginToggleAction } from './create-plugin-toggle-action';
 
 export function useToggleSourcePlugin() {
@@ -40,6 +40,23 @@ export function useRemoveSourcePlugin(onRemoved?: () => void) {
       toast({ kind: 'success', title: t('manageSourcePlugins.removed') });
       onRemoved?.();
     },
+    onError: (error) =>
+      toast({
+        kind: 'error',
+        title: t('manageSourcePlugins.failed'),
+        description: getPublicErrorDescription(error)
+      }),
+    onSettled: () => sourcePluginInvalidation.invalidateAll(client)
+  });
+}
+
+export function useActivateLatestSourcePlugin() {
+  const client = useQueryClient();
+  const { t } = useI18n();
+  return useMutation({
+    mutationFn: ({ pluginId, version }: { pluginId: string; version: string }) =>
+      activateLatestSourcePlugin(pluginId, version),
+    onSuccess: () => toast({ kind: 'success', title: t('manageSourcePlugins.latestActivated') }),
     onError: (error) =>
       toast({
         kind: 'error',

@@ -4,6 +4,7 @@ import {
   useSourcePlugins
 } from '@/entities/source-plugin';
 import {
+  ActivateLatestSourcePluginButton,
   RemoveSourcePluginButton,
   SourcePluginEnableSwitch
 } from '@/features/manage-source-plugins';
@@ -77,6 +78,7 @@ export function SourcePluginDetails({ pluginId }: { pluginId: string }) {
         </div>
         <SourcePluginEnableSwitch plugin={plugin} />
         <div className="flex flex-wrap gap-2">
+          <ActivateLatestSourcePluginButton plugin={plugin} />
           <TestSourcePluginButton pluginId={plugin.id} />
           <RemoveSourcePluginButton pluginId={plugin.id} />
         </div>

@@ -1,10 +1,14 @@
-import { Trash2 } from 'lucide-react';
+import { ArrowUpCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { SourcePlugin } from '../../../entities/source-plugin';
 import { useI18n } from '../../../shared/i18n';
 import { Button, ConfirmDialog, Switch } from '../../../shared/ui';
 import { getSourcePluginActivationState } from '../model/source-plugin-activation-state';
-import { useRemoveSourcePlugin, useToggleSourcePlugin } from '../model/use-source-plugin-actions';
+import {
+  useActivateLatestSourcePlugin,
+  useRemoveSourcePlugin,
+  useToggleSourcePlugin
+} from '../model/use-source-plugin-actions';
 
 export function SourcePluginEnableSwitch({ plugin }: { plugin: SourcePlugin }) {
   const { t } = useI18n();
@@ -21,6 +25,26 @@ export function SourcePluginEnableSwitch({ plugin }: { plugin: SourcePlugin }) {
       disabled={(toggle.isPending && !owns) || (!plugin.enabled && !activation.canEnable)}
       onCheckedChange={(enabled) => toggle.mutate({ plugin, enabled })}
     />
+  );
+}
+
+export function ActivateLatestSourcePluginButton({ plugin }: { plugin: SourcePlugin }) {
+  const { t } = useI18n();
+  const action = useActivateLatestSourcePlugin();
+  const activation = getSourcePluginActivationState(plugin);
+
+  if (!activation.hasUpgrade) return null;
+
+  return (
+    <Button
+      variant="secondary"
+      leadingIcon={<ArrowUpCircle size={17} />}
+      actionState={action.status}
+      disabled={!activation.canActivateLatest}
+      onClick={() => action.mutate({ pluginId: plugin.id, version: activation.targetVersion })}
+    >
+      {t('manageSourcePlugins.activateLatest')}
+    </Button>
   );
 }
 

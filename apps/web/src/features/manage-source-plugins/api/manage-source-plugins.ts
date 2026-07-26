@@ -7,6 +7,11 @@ export function enableSourcePlugin(pluginId: string, version: string) {
     { method: 'POST', body: JSON.stringify({ version }) }
   );
 }
+
+export function activateLatestSourcePlugin(pluginId: string, version: string) {
+  return enableSourcePlugin(pluginId, version);
+}
+
 export function disableSourcePlugin(pluginId: string) {
   return httpVoid(`/api/source-reader/plugins/${encodeURIComponent(pluginId)}/disable`, {
     method: 'POST'

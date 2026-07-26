@@ -410,6 +410,8 @@ test('Task 8 public APIs expose administration actions, hooks, catalogs, and reu
   assert.equal(typeof modules[0].InstallSourcePluginForm, 'function');
   assert.equal(typeof modules[1].createPluginToggleAction, 'function');
   assert.equal(typeof modules[1].SourcePluginEnableSwitch, 'function');
+  assert.equal(typeof modules[1].useActivateLatestSourcePlugin, 'function');
+  assert.equal(typeof modules[1].ActivateLatestSourcePluginButton, 'function');
   assert.equal(typeof modules[2].ReviewSourcePermissions, 'function');
   assert.equal(typeof modules[3].TestSourcePluginButton, 'function');
   assert.equal(typeof modules[4].CreateSourceCredentialButton, 'function');

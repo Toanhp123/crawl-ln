@@ -71,3 +71,17 @@ export function novelCoolChapterKey(value: string): string {
     return value.split('#', 1)[0] ?? value;
   }
 }
+
+export function canonicalChapterContentUrl(value: string): string | undefined {
+  try {
+    const url = new URL(value);
+    if (!isNovelCoolHost(url.hostname) || !/\/chapter\//i.test(url.pathname)) return undefined;
+    const match = url.pathname.match(/\/(\d+)\/$/);
+    if (!match) return undefined;
+    url.pathname = url.pathname.replace(/\/(\d+)\/$/, '/$1.html');
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}

@@ -1,6 +1,7 @@
 import {
   defineSourcePlugin,
   SourcePluginError,
+  type ChapterContent,
   type ChapterSummary,
   type ExternalPluginContext,
   type ExternalPluginHtmlDocument,
@@ -8,18 +9,29 @@ import {
   type NovelMetadata,
   type Page,
   type PluginOperationResult,
+  type SourcePluginErrorCode,
   type SourceIdentity
 } from '@novel-tool/source-plugin-sdk';
 import {
   NOVELCOOL_AUTHOR_SELECTORS,
+  NOVELCOOL_CHAPTER_TITLE_SELECTORS,
+  NOVELCOOL_CONTENT_REMOVE_SELECTOR,
+  NOVELCOOL_CONTENT_SELECTORS,
   NOVELCOOL_COVER_SELECTORS,
   NOVELCOOL_DESCRIPTION_SELECTORS,
   NOVELCOOL_HOST,
-  NOVELCOOL_METADATA_TITLE_SELECTORS
+  NOVELCOOL_METADATA_TITLE_SELECTORS,
+  novelCoolMinimumChapterContentChars
 } from './novelcool.config.js';
-import { classifyNovelCoolPage, novelCoolChapterSelectors } from './novelcool-page-classifier.js';
-import { firstAttr, firstNodeText, firstText } from './novelcool.parsers.js';
+import { sanitizeChapterText } from './novelcool-content-sanitizer.js';
 import {
+  classifyNovelCoolPage,
+  novelCoolChapterSelectors,
+  type NovelCoolPageDiagnostics
+} from './novelcool-page-classifier.js';
+import { chapterContent, firstAttr, firstNodeText, firstText } from './novelcool.parsers.js';
+import {
+  canonicalChapterContentUrl,
   isNovelCoolContentPath,
   isNovelCoolHost,
   novelCoolChapterKey,
@@ -56,16 +68,55 @@ export async function identifyNovelCool(
   };
 }
 
-function assertReadablePage(diagnostics: Awaited<ReturnType<typeof classifyNovelCoolPage>>): void {
-  if (
-    diagnostics.pageClassification === 'challenge' ||
-    diagnostics.pageClassification === 'login'
-  ) {
-    throw new SourcePluginError(
-      'UPSTREAM_CHALLENGE_DETECTED',
-      'NovelCool returned an access challenge instead of readable content'
-    );
+function pageFailureCode(
+  diagnostics: Awaited<ReturnType<typeof classifyNovelCoolPage>>
+): SourcePluginErrorCode | undefined {
+  switch (diagnostics.pageClassification) {
+    case 'challenge':
+    case 'login':
+      return 'UPSTREAM_CHALLENGE_DETECTED';
+    case 'rate-limited':
+      return 'SOURCE_RATE_LIMITED';
+    case 'unavailable':
+      return 'SOURCE_TEMPORARILY_UNAVAILABLE';
+    default:
+      return undefined;
   }
+}
+
+function throwPageFailure(code: SourcePluginErrorCode): never {
+  switch (code) {
+    case 'UPSTREAM_CHALLENGE_DETECTED':
+      throw new SourcePluginError(
+        code,
+        'NovelCool returned an access challenge instead of readable content'
+      );
+    case 'SOURCE_RATE_LIMITED':
+      throw new SourcePluginError(code, 'NovelCool rate limited the request');
+    case 'SOURCE_TEMPORARILY_UNAVAILABLE':
+      throw new SourcePluginError(code, 'NovelCool content is temporarily unavailable');
+    default:
+      throw new SourcePluginError(code, 'NovelCool source request failed');
+  }
+}
+
+function assertReadablePage(diagnostics: Awaited<ReturnType<typeof classifyNovelCoolPage>>): void {
+  const failureCode = pageFailureCode(diagnostics);
+  if (failureCode) throwPageFailure(failureCode);
+}
+
+function assertUsableHttpStatus(status: number): void {
+  if (status < 400) return;
+  if (status === 429) {
+    throw new SourcePluginError('SOURCE_RATE_LIMITED', 'NovelCool rate limited the request');
+  }
+  if (status === 401 || status === 403) {
+    throw new SourcePluginError('NETWORK_ACCESS_BLOCKED', 'NovelCool blocked source access');
+  }
+  throw new SourcePluginError(
+    'SOURCE_TEMPORARILY_UNAVAILABLE',
+    `NovelCool returned HTTP ${status}`
+  );
 }
 
 export async function readNovelCoolMetadata(
@@ -219,6 +270,190 @@ export async function readNovelCoolChapterList(
   };
 }
 
+export interface NovelCoolChapterAttemptDiagnostics {
+  attempt: number;
+  requestedUrl: string;
+  finalUrl: string;
+  pageClassification: NovelCoolPageDiagnostics['pageClassification'];
+  title: string;
+  selectorCounts: Record<string, number>;
+  rawChars: number;
+  cleanChars: number;
+}
+
+export interface NovelCoolChapterAttempt {
+  usable: boolean;
+  result: PluginOperationResult<ChapterContent>;
+  diagnostics: NovelCoolChapterAttemptDiagnostics;
+  failureCode?: SourcePluginErrorCode;
+}
+
+function boundedDiagnosticUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    url.username = '';
+    url.password = '';
+    url.search = '';
+    url.hash = '';
+    return url.toString().slice(0, 512);
+  } catch {
+    return '[invalid-url]';
+  }
+}
+
+function chapterContentResult(
+  title: string,
+  url: string,
+  rawText: string,
+  cleanText: string
+): PluginOperationResult<ChapterContent> {
+  return {
+    data: { title, url, rawText, cleanText },
+    cacheHints: { scope: 'public', ttlMs: 30 * 24 * 60 * 60_000, immutable: true }
+  };
+}
+
+async function countContentSelectors(
+  document: ExternalPluginHtmlDocument,
+  context: ExternalPluginContext
+): Promise<Record<string, number>> {
+  const counts: Array<readonly [string, number]> = [];
+  for (const selector of NOVELCOOL_CONTENT_SELECTORS) {
+    assertNotCancelled(context);
+    counts.push([selector, (await document.all(selector)).length] as const);
+  }
+  return Object.fromEntries(counts);
+}
+
+export async function readNovelCoolChapterAttempt(
+  url: string,
+  context: ExternalPluginContext,
+  options: { attempt?: number; minimumChapterContentChars?: number } = {}
+): Promise<NovelCoolChapterAttempt> {
+  const minimumChapterContentChars = Math.max(
+    1,
+    Math.trunc(options.minimumChapterContentChars ?? novelCoolMinimumChapterContentChars)
+  );
+  const attempt = Math.max(1, Math.trunc(options.attempt ?? 1));
+
+  assertNotCancelled(context);
+  const response = await context.http.get(url);
+  assertNotCancelled(context);
+  assertUsableHttpStatus(response.status);
+  const finalUrl = response.url || url;
+  const document = context.html.load(response.data);
+  const pageDiagnostics = await classifyNovelCoolPage({ html: response.data, finalUrl, document });
+  const selectorCounts = {
+    ...pageDiagnostics.selectorCounts,
+    ...(await countContentSelectors(document, context))
+  };
+  const pageFailure = pageFailureCode(pageDiagnostics);
+  const title = pageFailure
+    ? pageDiagnostics.title.slice(0, 160) || 'Chapter'
+    : (await firstText(document, NOVELCOOL_CHAPTER_TITLE_SELECTORS)).slice(0, 160) || 'Chapter';
+  if (pageFailure) {
+    const normalizedUrl = await context.url.normalize(finalUrl);
+    return {
+      usable: false,
+      failureCode: pageFailure,
+      result: chapterContentResult(title, normalizedUrl, '', ''),
+      diagnostics: {
+        attempt,
+        requestedUrl: boundedDiagnosticUrl(url),
+        finalUrl: boundedDiagnosticUrl(finalUrl),
+        pageClassification: pageDiagnostics.pageClassification,
+        title,
+        selectorCounts,
+        rawChars: 0,
+        cleanChars: 0
+      }
+    };
+  }
+  assertNotCancelled(context);
+  await document.remove(NOVELCOOL_CONTENT_REMOVE_SELECTOR);
+  const rawText = await chapterContent(document, NOVELCOOL_CONTENT_SELECTORS);
+  const cleanText = sanitizeChapterText(rawText, title);
+  assertNotCancelled(context);
+  const normalizedUrl = await context.url.normalize(finalUrl);
+  const result = chapterContentResult(title, normalizedUrl, rawText, cleanText);
+
+  return {
+    usable: cleanText.length >= minimumChapterContentChars,
+    result,
+    diagnostics: {
+      attempt,
+      requestedUrl: boundedDiagnosticUrl(url),
+      finalUrl: boundedDiagnosticUrl(finalUrl),
+      pageClassification: pageDiagnostics.pageClassification,
+      title,
+      selectorCounts,
+      rawChars: rawText.length,
+      cleanChars: cleanText.length
+    }
+  };
+}
+
+async function logInvalidChapterAttempt(
+  attempt: NovelCoolChapterAttempt,
+  context: ExternalPluginContext
+): Promise<void> {
+  await context.logger.warn('novelcool.chapter_content_invalid', {
+    attempt: attempt.diagnostics.attempt,
+    requestedUrl: attempt.diagnostics.requestedUrl,
+    finalUrl: attempt.diagnostics.finalUrl,
+    pageClassification: attempt.diagnostics.pageClassification,
+    title: attempt.diagnostics.title,
+    selectorCounts: attempt.diagnostics.selectorCounts,
+    rawChars: attempt.diagnostics.rawChars,
+    cleanChars: attempt.diagnostics.cleanChars
+  });
+}
+
+function invalidChapterContent(message: string): SourcePluginError {
+  return new SourcePluginError('PLUGIN_RESULT_INVALID', message);
+}
+
+function throwChapterAttemptFailure(attempt: NovelCoolChapterAttempt): never {
+  if (attempt.failureCode) throwPageFailure(attempt.failureCode);
+  throw invalidChapterContent('NovelCool chapter content was invalid');
+}
+
+export async function readNovelCoolChapterContent(
+  url: string,
+  context: ExternalPluginContext,
+  options: NovelCoolPluginOptions = {}
+): Promise<PluginOperationResult<ChapterContent>> {
+  const minimumChapterContentChars = Math.max(
+    1,
+    Math.trunc(options.minimumChapterContentChars ?? novelCoolMinimumChapterContentChars)
+  );
+  const initial = await readNovelCoolChapterAttempt(url, context, {
+    attempt: 1,
+    minimumChapterContentChars
+  });
+  if (initial.usable) return initial.result;
+  if (initial.failureCode) throwChapterAttemptFailure(initial);
+
+  await logInvalidChapterAttempt(initial, context);
+  assertNotCancelled(context);
+  const fallbackUrl = canonicalChapterContentUrl(url);
+  if (!fallbackUrl) {
+    throw invalidChapterContent('NovelCool chapter content was invalid for the initial URL');
+  }
+
+  const fallback = await readNovelCoolChapterAttempt(fallbackUrl, context, {
+    attempt: 2,
+    minimumChapterContentChars
+  });
+  if (fallback.usable) return fallback.result;
+
+  await logInvalidChapterAttempt(fallback, context);
+  if (fallback.failureCode) throwChapterAttemptFailure(fallback);
+  throw invalidChapterContent(
+    'NovelCool chapter content was invalid for the initial and canonical fallback URLs'
+  );
+}
+
 export function createNovelCoolPlugin(options: NovelCoolPluginOptions = {}): ExternalSourcePlugin {
   return defineSourcePlugin({
     async initialize() {},
@@ -237,6 +472,9 @@ export function createNovelCoolPlugin(options: NovelCoolPluginOptions = {}): Ext
     },
     async readChapterList(request, context) {
       return readNovelCoolChapterList(request.url, request.cursor, context);
+    },
+    async readChapterContent(request, context) {
+      return readNovelCoolChapterContent(request.url, context, options);
     }
   });
 }

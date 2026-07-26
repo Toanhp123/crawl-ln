@@ -47,3 +47,14 @@ export async function firstNodeText(
   }
   return cleanSourceText(await node.text());
 }
+
+export async function chapterContent(
+  document: ExternalPluginHtmlDocument,
+  selectors: readonly string[]
+): Promise<string> {
+  for (const selector of selectors) {
+    const value = cleanSourceText(await document.text(selector));
+    if (value) return value;
+  }
+  return '';
+}

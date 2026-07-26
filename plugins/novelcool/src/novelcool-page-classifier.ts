@@ -10,7 +10,8 @@ export const novelCoolChapterSelectors = [
   'a.chapter-name'
 ] as const;
 
-export type NovelCoolPageClassification = 'challenge' | 'login' | 'novel' | 'chapter' | 'unknown';
+export type NovelCoolPageClassification =
+  'challenge' | 'login' | 'rate-limited' | 'unavailable' | 'novel' | 'chapter' | 'unknown';
 
 export interface NovelCoolPageDiagnostics {
   pageClassification: NovelCoolPageClassification;
@@ -34,6 +35,15 @@ const challengeBodyMarkers = [
   'enable javascript and cookies to continue',
   'complete the security check',
   'cf-chl-widget'
+];
+
+const rateLimitedMarkers = ['too many requests', 'rate limit', 'slow down'];
+const unavailableMarkers = [
+  'chapter not found',
+  'novel not found',
+  'content is unavailable',
+  'page is unavailable',
+  'does not exist'
 ];
 
 const strongChallengeSelectors = [
@@ -93,6 +103,12 @@ export async function classifyNovelCoolPage(input: {
   );
   const hasChallengeBody =
     !hasReadableContent && challengeBodyMarkers.some((marker) => normalizedBody.includes(marker));
+  const hasRateLimitedPage =
+    rateLimitedMarkers.some((marker) => normalizedTitle.includes(marker)) ||
+    (!hasReadableContent && rateLimitedMarkers.some((marker) => normalizedBody.includes(marker)));
+  const hasUnavailablePage =
+    unavailableMarkers.some((marker) => normalizedTitle.includes(marker)) ||
+    (!hasReadableContent && unavailableMarkers.some((marker) => normalizedBody.includes(marker)));
 
   let pageClassification: NovelCoolPageClassification = 'unknown';
   if (
@@ -102,6 +118,10 @@ export async function classifyNovelCoolPage(input: {
     hasChallengeBody
   ) {
     pageClassification = 'challenge';
+  } else if (hasRateLimitedPage) {
+    pageClassification = 'rate-limited';
+  } else if (hasUnavailablePage) {
+    pageClassification = 'unavailable';
   } else if (/\/login(?:\.html)?(?:[/?#]|$)/i.test(input.finalUrl) || /\blog\s*in\b/i.test(title)) {
     pageClassification = 'login';
   } else if (

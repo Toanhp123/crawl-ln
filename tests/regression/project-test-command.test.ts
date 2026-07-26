@@ -86,6 +86,61 @@ test('plugins suite prepares the public SDK and runs only the first-party plugin
   assert.deepEqual(trace, ['prepare:sdk', 'plugins']);
 });
 
+test('default plugin runner executes every discovered test script and accepts zero workspaces', async () => {
+  const { defaultRunPlugins } = await import('../../scripts/cli/commands/test.mjs');
+  const invocations: Array<{ args: string[]; cwd: string; stage: string }> = [];
+  const messages: string[] = [];
+  const npm = (args: string[]) => ({ command: 'npm-cli', args });
+  const run = async (invocation: { args: string[]; cwd: string; stage: string }) => {
+    invocations.push(invocation);
+  };
+
+  await defaultRunPlugins({
+    root: '/fixture-repository',
+    discover: async () => [
+      {
+        workspaceName: '@fixture/alpha',
+        packageJson: { scripts: { test: 'node alpha.test.js' } }
+      },
+      { workspaceName: '@fixture/no-tests', packageJson: { scripts: {} } },
+      {
+        workspaceName: '@fixture/zeta',
+        packageJson: { scripts: { test: 'node zeta.test.js' } }
+      }
+    ],
+    npm,
+    run,
+    stdout: (line: string) => messages.push(line)
+  });
+
+  assert.deepEqual(
+    invocations.map(({ args, cwd, stage }) => ({ args, cwd, stage })),
+    [
+      {
+        args: ['run', 'test', '--workspace', '@fixture/alpha'],
+        cwd: '/fixture-repository',
+        stage: '@fixture/alpha plugin tests'
+      },
+      {
+        args: ['run', 'test', '--workspace', '@fixture/zeta'],
+        cwd: '/fixture-repository',
+        stage: '@fixture/zeta plugin tests'
+      }
+    ]
+  );
+
+  invocations.length = 0;
+  await defaultRunPlugins({
+    root: '/fixture-repository',
+    discover: async () => [],
+    npm,
+    run,
+    stdout: (line: string) => messages.push(line)
+  });
+  assert.deepEqual(invocations, []);
+  assert.equal(messages.at(-1), '[test] no source plugin workspaces discovered');
+});
+
 test('explicit E2E fails at capability probe and never launches Playwright after failure', async () => {
   const { runTestPlan, testPlan } = await import('../../scripts/cli/commands/test.mjs');
   const trace: string[] = [];

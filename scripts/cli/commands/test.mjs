@@ -3,6 +3,7 @@ import { npmInvocation } from '../lib/npm.mjs';
 import { resolveFrom } from '../lib/module-loader.mjs';
 import { runChild } from '../lib/process-runner.mjs';
 import { projectRoot } from '../lib/repository.mjs';
+import { discoverSourcePluginWorkspaces } from '../lib/source-plugin-workspaces.mjs';
 
 const SUITES = ['core', 'reader-engine', 'plugins', 'contract', 'regression', 'integration', 'e2e'];
 const CORE_SUITES = ['reader-engine', 'plugins', 'contract', 'regression', 'integration'];
@@ -59,14 +60,29 @@ async function defaultRunReaderEngine({ signal } = {}) {
   });
 }
 
-async function defaultRunPlugins({ signal } = {}) {
-  await runChild({
-    ...npmInvocation(['run', 'test', '--workspace', '@novel-tool/source-plugin-novelcool']),
-    cwd: projectRoot,
-    stdio: 'inherit',
-    signal,
-    stage: 'first-party source plugin tests'
-  });
+export async function defaultRunPlugins({
+  root = projectRoot,
+  signal,
+  discover = discoverSourcePluginWorkspaces,
+  npm = npmInvocation,
+  run = runChild,
+  stdout = console.log
+} = {}) {
+  const workspaces = await discover(root);
+  if (workspaces.length === 0) {
+    stdout('[test] no source plugin workspaces discovered');
+    return;
+  }
+  for (const workspace of workspaces) {
+    if (typeof workspace.packageJson?.scripts?.test !== 'string') continue;
+    await run({
+      ...npm(['run', 'test', '--workspace', workspace.workspaceName]),
+      cwd: root,
+      stdio: 'inherit',
+      signal,
+      stage: `${workspace.workspaceName} plugin tests`
+    });
+  }
 }
 
 async function defaultRunFileSuite(suite) {

@@ -23,13 +23,13 @@ test('clean removes generated artifacts but preserves data and environment files
       'packages/reader-engine/dist/index.js',
       'apps/api/dist/main.js',
       'apps/web/dist/index.html',
-      'plugins/novelcool/dist/index.js',
+      'plugins/fixture-source/dist/index.js',
       'coverage/lcov.info',
       'playwright-report/index.html',
       'test-results/result.json',
       '.nyc_output/out.json',
       'apps/api/tsconfig.tsbuildinfo',
-      'plugins/novelcool/tsconfig.tsbuildinfo'
+      'plugins/fixture-source/tsconfig.tsbuildinfo'
     ];
     const protectedPaths = [
       '.env',
@@ -44,8 +44,9 @@ test('clean removes generated artifacts but preserves data and environment files
       await writeFile(absolute, path);
     }
     const { cleanGeneratedArtifacts } = await import('../../scripts/cli/commands/clean.mjs');
-    const first = await cleanGeneratedArtifacts({ projectRoot: root });
-    const second = await cleanGeneratedArtifacts({ projectRoot: root });
+    const discover = async () => [{ distPath: join(root, 'plugins', 'fixture-source', 'dist') }];
+    const first = await cleanGeneratedArtifacts({ projectRoot: root, discover });
+    const second = await cleanGeneratedArtifacts({ projectRoot: root, discover });
     for (const path of generated) assert.equal(await exists(join(root, path)), false, path);
     for (const path of protectedPaths) assert.equal(await readFile(join(root, path), 'utf8'), path);
     assert.ok(first.removed.length >= 7);

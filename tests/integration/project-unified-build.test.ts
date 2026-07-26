@@ -6,7 +6,10 @@ import test from 'node:test';
 import { SourcePluginPackageVerifier } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.ts';
 import { StaticTrustStore } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.ts';
 import { readStartableBuild } from '../../scripts/cli/lib/build-manifest.mjs';
-import { buildFullApplication } from '../../scripts/cli/commands/build.mjs';
+import {
+  buildFullApplication,
+  defaultPackageFirstPartyPlugins
+} from '../../scripts/cli/commands/build.mjs';
 import { packageFirstPartySourcePlugin } from '../../scripts/cli/lib/first-party-source-plugin.mjs';
 
 async function exists(path: string): Promise<boolean> {
@@ -15,6 +18,70 @@ async function exists(path: string): Promise<boolean> {
     () => false
   );
 }
+
+test('default plugin packaging iterates discovered workspaces and skips verifier setup when empty', async () => {
+  const calls: Array<{
+    root: string;
+    workspaceRoot: string;
+    outputDirectory: string;
+    verifier: unknown;
+  }> = [];
+  const verifier = { verify: async () => undefined };
+  const discover = async () => [
+    { id: 'alpha-source', workspaceRoot: '/repo/plugins/alpha' },
+    { id: 'zeta-source', workspaceRoot: '/repo/plugins/zeta' }
+  ];
+  const packagePlugin = async (input: {
+    root: string;
+    workspaceRoot: string;
+    outputDirectory: string;
+    verifier: unknown;
+  }) => {
+    calls.push(input);
+    return input.workspaceRoot;
+  };
+
+  const result = await defaultPackageFirstPartyPlugins({
+    root: '/repo',
+    stage: '/stage',
+    outputDirectory: '/stage/plugins',
+    discover,
+    loadVerifier: async () => verifier,
+    packagePlugin
+  });
+  assert.deepEqual(result, ['/repo/plugins/alpha', '/repo/plugins/zeta']);
+  assert.deepEqual(calls, [
+    {
+      root: '/repo',
+      workspaceRoot: '/repo/plugins/alpha',
+      outputDirectory: '/stage/plugins',
+      verifier
+    },
+    {
+      root: '/repo',
+      workspaceRoot: '/repo/plugins/zeta',
+      outputDirectory: '/stage/plugins',
+      verifier
+    }
+  ]);
+
+  let verifierLoads = 0;
+  assert.deepEqual(
+    await defaultPackageFirstPartyPlugins({
+      root: '/repo',
+      stage: '/stage',
+      outputDirectory: '/stage/plugins',
+      discover: async () => [],
+      loadVerifier: async () => {
+        verifierLoads += 1;
+        return verifier;
+      },
+      packagePlugin
+    }),
+    []
+  );
+  assert.equal(verifierLoads, 0);
+});
 
 test('unified build stages server, runtime packages, public assets, and a complete manifest', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'novel-tool-unified-build-'));

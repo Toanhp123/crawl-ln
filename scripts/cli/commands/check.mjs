@@ -3,6 +3,7 @@ import { parseOptions } from '../lib/arguments.mjs';
 import { CommandFailure } from '../lib/errors.mjs';
 import { collectFormatFiles, checkFormatPaths } from '../lib/format-files.mjs';
 import { projectRoot } from '../lib/repository.mjs';
+import { discoverSourcePluginWorkspaces } from '../lib/source-plugin-workspaces.mjs';
 
 const GROUPS = ['format', 'types', 'architecture', 'docs', 'commands', 'lockfile'];
 
@@ -27,23 +28,30 @@ async function failForErrors(label, errors) {
 
 export async function runStaticGroup(group, context = {}) {
   const stdout = context.stdout ?? console.log;
+  const root = context.root ?? projectRoot;
   stdout(`[check] ${group}`);
   if (group === 'format') {
-    await checkFormatPaths(await collectFormatFiles(undefined, projectRoot));
+    await checkFormatPaths(await collectFormatFiles(undefined, root));
     return;
   }
   if (group === 'types') {
-    const { checkTypeScriptProject } = await import('../../typescript-project.mjs');
+    const checkTypeScriptProject =
+      context.checkTypeScriptProject ??
+      (await import('../../typescript-project.mjs')).checkTypeScriptProject;
+    const discover = context.discoverSourcePluginWorkspaces ?? discoverSourcePluginWorkspaces;
+    const pluginConfigs = (await discover(root))
+      .map((workspace) => workspace.tsconfigPath)
+      .filter(Boolean);
     for (const config of [
       'packages/shared/tsconfig.json',
       'packages/source-plugin-sdk/tsconfig.json',
       'packages/reader-engine/tsconfig.json',
       'apps/api/tsconfig.check.json',
-      'apps/web/tsconfig.json',
-      'plugins/novelcool/tsconfig.json'
+      'apps/web/tsconfig.json'
     ]) {
-      checkTypeScriptProject(join(projectRoot, config), { noEmit: true });
+      checkTypeScriptProject(join(root, config), { noEmit: true });
     }
+    for (const config of pluginConfigs) checkTypeScriptProject(config, { noEmit: true });
     return;
   }
   if (group === 'architecture') {
@@ -60,40 +68,25 @@ export async function runStaticGroup(group, context = {}) {
       import('../../lib/web-theme-contracts.mjs'),
       import('../../lib/reader-engine-architecture.mjs')
     ]);
-    await failForErrors(
-      'API architecture',
-      await checkApiArchitecture(join(projectRoot, 'apps/api/src'))
-    );
-    await failForErrors(
-      'Web architecture',
-      await checkWebArchitecture(join(projectRoot, 'apps/web'))
-    );
-    await failForErrors(
-      'Web contracts',
-      await checkWebContracts(join(projectRoot, 'apps/web/src'))
-    );
+    await failForErrors('API architecture', await checkApiArchitecture(join(root, 'apps/api/src')));
+    await failForErrors('Web architecture', await checkWebArchitecture(join(root, 'apps/web')));
+    await failForErrors('Web contracts', await checkWebContracts(join(root, 'apps/web/src')));
     await failForErrors(
       'Web theme contracts',
-      await checkWebThemeContracts(join(projectRoot, 'apps/web/src'), projectRoot)
+      await checkWebThemeContracts(join(root, 'apps/web/src'), root)
     );
-    await failForErrors(
-      'Reader engine architecture',
-      await checkReaderEngineArchitecture(projectRoot)
-    );
+    await failForErrors('Reader engine architecture', await checkReaderEngineArchitecture(root));
     return;
   }
   if (group === 'docs') {
     const { checkDocumentation } = await import('../../lib/documentation.mjs');
-    const result = await checkDocumentation(projectRoot);
+    const result = await checkDocumentation(root);
     await failForErrors('Documentation', result.errors);
     return;
   }
   if (group === 'commands') {
     const { checkRepositoryBoundaries } = await import('../lib/repository-boundaries.mjs');
-    await failForErrors(
-      'Repository command boundaries',
-      await checkRepositoryBoundaries(projectRoot)
-    );
+    await failForErrors('Repository command boundaries', await checkRepositoryBoundaries(root));
     return;
   }
   if (group === 'lockfile') {

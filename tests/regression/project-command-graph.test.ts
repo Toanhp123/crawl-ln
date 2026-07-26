@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import test from 'node:test';
 
 type PackageJson = {
@@ -90,4 +91,44 @@ test('no package script uses retired aliases, shells, orchestration, or physical
       for (const token of forbidden) assert.equal(text.includes(token), false, `${name}: ${token}`);
     }
   }
+});
+
+test('plugin command implementations do not embed a concrete provider identity', async () => {
+  const sources = await Promise.all(
+    ['build.mjs', 'check.mjs', 'test.mjs', 'clean.mjs'].map((file) =>
+      readFile(new URL(`../../scripts/cli/commands/${file}`, import.meta.url), 'utf8')
+    )
+  );
+  for (const source of sources) assert.doesNotMatch(source, /novelcool/i);
+});
+
+test('type checks include discovered plugin projects and accept zero plugin workspaces', async () => {
+  const { runStaticGroup } = await import('../../scripts/cli/commands/check.mjs');
+  const root = resolve('fixture-repository');
+  const pluginConfig = join(root, 'plugins', 'fixture-source', 'tsconfig.json');
+  const checked: string[] = [];
+  const baseConfigs = [
+    'packages/shared/tsconfig.json',
+    'packages/source-plugin-sdk/tsconfig.json',
+    'packages/reader-engine/tsconfig.json',
+    'apps/api/tsconfig.check.json',
+    'apps/web/tsconfig.json'
+  ].map((path) => join(root, path));
+
+  await runStaticGroup('types', {
+    root,
+    discoverSourcePluginWorkspaces: async () => [{ tsconfigPath: pluginConfig }],
+    checkTypeScriptProject: (path: string) => checked.push(path),
+    stdout() {}
+  });
+  assert.deepEqual(checked, [...baseConfigs, pluginConfig]);
+
+  checked.length = 0;
+  await runStaticGroup('types', {
+    root,
+    discoverSourcePluginWorkspaces: async () => [],
+    checkTypeScriptProject: (path: string) => checked.push(path),
+    stdout() {}
+  });
+  assert.deepEqual(checked, baseConfigs);
 });

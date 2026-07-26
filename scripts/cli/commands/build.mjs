@@ -12,6 +12,7 @@ import { prepareInternalPackages } from '../lib/internal-packages.mjs';
 import { importFrom } from '../lib/module-loader.mjs';
 import { projectRoot } from '../lib/repository.mjs';
 import { packageFirstPartySourcePlugin } from '../lib/first-party-source-plugin.mjs';
+import { discoverSourcePluginWorkspaces } from '../lib/source-plugin-workspaces.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -71,7 +72,7 @@ async function defaultBuildWeb({ root, outDir, buildId }) {
   }
 }
 
-async function defaultPackageFirstPartyPlugins({ root, stage, outputDirectory }) {
+async function defaultLoadSourcePluginVerifier(stage) {
   const verifierModule = await import(
     `${
       pathToFileURL(
@@ -87,12 +88,32 @@ async function defaultPackageFirstPartyPlugins({ root, stage, outputDirectory })
       return undefined;
     }
   });
-  return packageFirstPartySourcePlugin({
-    root,
-    workspaceRoot: join(root, 'plugins', 'novelcool'),
-    outputDirectory,
-    verifier
-  });
+  return verifier;
+}
+
+export async function defaultPackageFirstPartyPlugins({
+  root,
+  stage,
+  outputDirectory,
+  discover = discoverSourcePluginWorkspaces,
+  loadVerifier = defaultLoadSourcePluginVerifier,
+  packagePlugin = packageFirstPartySourcePlugin
+}) {
+  const workspaces = await discover(root);
+  if (workspaces.length === 0) return [];
+  const verifier = await loadVerifier(stage);
+  const results = [];
+  for (const workspace of workspaces) {
+    results.push(
+      await packagePlugin({
+        root,
+        workspaceRoot: workspace.workspaceRoot,
+        outputDirectory,
+        verifier
+      })
+    );
+  }
+  return results;
 }
 
 export async function buildFullApplication({

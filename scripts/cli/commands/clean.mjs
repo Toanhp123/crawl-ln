@@ -11,6 +11,7 @@ import {
   isDescendant,
   resolveDevelopmentDataPaths
 } from '../lib/data-paths.mjs';
+import { discoverSourcePluginWorkspaces } from '../lib/source-plugin-workspaces.mjs';
 
 const GENERATED_DIRECTORIES = [
   'dist',
@@ -19,7 +20,6 @@ const GENERATED_DIRECTORIES = [
   'packages/reader-engine/dist',
   'apps/api/dist',
   'apps/web/dist',
-  'plugins/novelcool/dist',
   'apps/web/node_modules/.vite',
   'coverage',
   'playwright-report',
@@ -74,8 +74,13 @@ async function collectTsBuildInfo(root) {
   return matches;
 }
 
-export async function cleanGeneratedArtifacts({ projectRoot = defaultProjectRoot } = {}) {
+export async function cleanGeneratedArtifacts({
+  projectRoot = defaultProjectRoot,
+  discover = discoverSourcePluginWorkspaces
+} = {}) {
   const candidates = GENERATED_DIRECTORIES.map((path) => join(projectRoot, path));
+  const workspaces = await discover(projectRoot);
+  candidates.push(...workspaces.map((workspace) => workspace.distPath));
   for (const entry of await readdir(projectRoot, { withFileTypes: true })) {
     if (
       entry.isDirectory() &&

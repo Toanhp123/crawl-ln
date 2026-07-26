@@ -8,19 +8,23 @@ import { taskCatalogs } from '@/entities/task';
 import { addNovelCatalogs } from '@/features/add-novel';
 import { authenticateSourceCredentialCatalogs } from '@/features/authenticate-source-credential';
 import { backupLibraryCatalogs } from '@/features/backup-library';
+import { buildSourcePluginProjectCatalogs } from '@/features/build-source-plugin-project';
 import { cancelTaskCatalogs } from '@/features/cancel-task';
 import { configureAppearanceCatalogs } from '@/features/configure-appearance';
 import { configureAppFontCatalogs } from '@/features/configure-app-font';
 import { configureLanguageCatalogs } from '@/features/configure-language';
 import { crawlNovelCatalogs } from '@/features/crawl-novel';
+import { createSourcePluginProjectCatalogs } from '@/features/create-source-plugin-project';
 import { deleteNovelCatalogs } from '@/features/delete-novel';
+import { editSourcePluginProjectCatalogs } from '@/features/edit-source-plugin-project';
 import { exportNovelCatalogs } from '@/features/export-novel';
+import { exportSourcePluginProjectCatalogs } from '@/features/export-source-plugin-project';
 import { inspectSourceUrlCatalogs } from '@/features/inspect-source-url';
 import { installSourcePluginCatalogs } from '@/features/install-source-plugin';
+import { installSourcePluginProjectCatalogs } from '@/features/install-source-plugin-project';
 import { manageSourceCredentialCatalogs } from '@/features/manage-source-credential';
 import { manageSourceNetworkProfileCatalogs } from '@/features/manage-source-network-profile';
 import { manageSourcePluginsCatalogs } from '@/features/manage-source-plugins';
-import { manageSourcePluginProjectCatalogs } from '@/features/manage-source-plugin-project';
 import { pauseTaskCatalogs } from '@/features/pause-task';
 import { readChapterCatalogs } from '@/features/read-chapter';
 import { readerPreferencesCatalogs } from '@/features/reader-preferences';
@@ -32,6 +36,7 @@ import { runSchedulerCatalogs } from '@/features/run-scheduler';
 import { searchLibraryCatalogs } from '@/features/search-library';
 import { selectChapterCatalogs } from '@/features/select-chapter';
 import { testSourcePluginCatalogs } from '@/features/test-source-plugin';
+import { testSourcePluginProjectCatalogs } from '@/features/test-source-plugin-project';
 import { updateAutoUpdateCatalogs } from '@/features/update-auto-update';
 import { updateNovelCatalogs } from '@/features/update-novel';
 import { mergeCatalogs, type Catalog, type Language } from '@/shared/i18n';
@@ -49,19 +54,23 @@ const sliceCatalogs = [
   addNovelCatalogs,
   authenticateSourceCredentialCatalogs,
   backupLibraryCatalogs,
+  buildSourcePluginProjectCatalogs,
   cancelTaskCatalogs,
   configureAppearanceCatalogs,
   configureAppFontCatalogs,
   configureLanguageCatalogs,
   crawlNovelCatalogs,
+  createSourcePluginProjectCatalogs,
   deleteNovelCatalogs,
+  editSourcePluginProjectCatalogs,
   exportNovelCatalogs,
+  exportSourcePluginProjectCatalogs,
   inspectSourceUrlCatalogs,
   installSourcePluginCatalogs,
+  installSourcePluginProjectCatalogs,
   manageSourceCredentialCatalogs,
   manageSourceNetworkProfileCatalogs,
   manageSourcePluginsCatalogs,
-  manageSourcePluginProjectCatalogs,
   pauseTaskCatalogs,
   readChapterCatalogs,
   readerPreferencesCatalogs,
@@ -73,6 +82,7 @@ const sliceCatalogs = [
   searchLibraryCatalogs,
   selectChapterCatalogs,
   testSourcePluginCatalogs,
+  testSourcePluginProjectCatalogs,
   updateAutoUpdateCatalogs,
   updateNovelCatalogs
 ] as const;

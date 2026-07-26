@@ -8,7 +8,7 @@ export function SourcePluginStudioPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   return (
-    <Page className="max-w-[96rem]">
+    <Page className="max-w-screen-2xl">
       <PageHeader
         eyebrow={t('pluginStudio.eyebrow')}
         title={t('pluginStudio.title')}

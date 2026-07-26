@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { accepted, noContent, ok } from '../../../platform/http/api-response.js';
+import { accepted, created, noContent, ok } from '../../../platform/http/api-response.js';
 import { requireSourceReaderActor } from '../application/admin/require-source-reader-actor.js';
 import { requireSourcePluginPackage } from '../application/admin/require-source-plugin-package.js';
 import { parseBody } from './source-reader.schemas.js';
@@ -11,6 +11,8 @@ import {
   credentialSecretSchema,
   networkProfileCreateSchema,
   networkProfileUpdateSchema,
+  pluginStudioCreateSchema,
+  pluginStudioUpdateSchema,
   pluginVersionSchema
 } from './source-reader.schemas.js';
 import type { SourceReaderRequest } from './source-reader.middleware.js';
@@ -21,6 +23,87 @@ function requireActor(request: SourceReaderRequest) {
 
 export class SourceReaderAdminController {
   constructor(private readonly management: SourceReaderManagementApi) {}
+
+  listStudioProjects = async (req: SourceReaderRequest, res: Response) =>
+    ok(res, await this.management.studio.list.execute({ actor: requireActor(req) }));
+
+  createStudioProject = async (req: SourceReaderRequest, res: Response) =>
+    created(
+      res,
+      await this.management.studio.create.execute({
+        actor: requireActor(req),
+        ...parseBody(req, pluginStudioCreateSchema)
+      })
+    );
+
+  getStudioProject = async (req: SourceReaderRequest, res: Response) =>
+    ok(
+      res,
+      await this.management.studio.get.execute({
+        actor: requireActor(req),
+        projectId: req.params.projectId
+      })
+    );
+
+  updateStudioProject = async (req: SourceReaderRequest, res: Response) =>
+    ok(
+      res,
+      await this.management.studio.update.execute({
+        actor: requireActor(req),
+        projectId: req.params.projectId,
+        ...parseBody(req, pluginStudioUpdateSchema)
+      })
+    );
+
+  removeStudioProject = async (req: SourceReaderRequest, res: Response) => {
+    await this.management.studio.remove.execute({
+      actor: requireActor(req),
+      projectId: req.params.projectId
+    });
+    return noContent(res);
+  };
+
+  buildStudioProject = async (req: SourceReaderRequest, res: Response) =>
+    ok(
+      res,
+      await this.management.studio.build.execute({
+        actor: requireActor(req),
+        projectId: req.params.projectId
+      })
+    );
+
+  testStudioProject = async (req: SourceReaderRequest, res: Response) =>
+    ok(
+      res,
+      await this.management.studio.test.execute({
+        actor: requireActor(req),
+        projectId: req.params.projectId
+      })
+    );
+
+  installStudioProject = async (req: SourceReaderRequest, res: Response) =>
+    accepted(
+      res,
+      await this.management.studio.install.execute({
+        actor: requireActor(req),
+        projectId: req.params.projectId
+      })
+    );
+
+  exportStudioProject = async (req: SourceReaderRequest, res: Response) => {
+    const artifact = await this.management.studio.export.execute({
+      actor: requireActor(req),
+      projectId: req.params.projectId
+    });
+    return res
+      .status(200)
+      .set({
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${artifact.fileName}"`,
+        'Content-Length': String(artifact.bytes.byteLength)
+      })
+      .send(Buffer.from(artifact.bytes));
+  };
 
   listPlugins = async (req: SourceReaderRequest, res: Response) =>
     ok(

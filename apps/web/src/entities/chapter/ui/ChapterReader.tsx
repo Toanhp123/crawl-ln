@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Chapter } from '../api/chapter-api';
 import { EmptyState } from '../../../shared/ui';
 import { useI18n } from '../../../shared/i18n';
@@ -23,7 +24,7 @@ export function estimateReadingMinutes(content: string) {
   return Math.max(1, Math.ceil(words / 220));
 }
 
-export function ChapterReader({
+function ChapterReaderContent({
   chapter
 }: {
   chapter: Chapter | null | undefined;
@@ -80,4 +81,13 @@ export function ChapterReader({
       )}
     </div>
   );
+}
+
+const MemoizedChapterReader = memo(ChapterReaderContent);
+
+export function ChapterReader(props: {
+  chapter: Chapter | null | undefined;
+  onClose?: () => void;
+}) {
+  return <MemoizedChapterReader {...props} />;
 }

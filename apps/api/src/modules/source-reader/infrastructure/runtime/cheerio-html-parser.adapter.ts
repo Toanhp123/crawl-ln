@@ -5,43 +5,6 @@ import type {
   HtmlParserPort
 } from '../../application/ports/runtime-support.ports.js';
 
-function decodeJavaScriptStringLiteral(literal: string): string {
-  if (literal.startsWith('"')) {
-    try {
-      return JSON.parse(literal) as string;
-    } catch {
-      return '';
-    }
-  }
-
-  const body = literal.slice(1, -1);
-  return body
-    .replace(/\\'/g, "'")
-    .replace(/\\"/g, '"')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\\\/g, '\\');
-}
-
-function materializeDocumentWrites(html: string): string {
-  return html.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (scriptTag, scriptBody: string) => {
-    const writes = [...scriptBody.matchAll(/document\.write\s*\(([\s\S]*?)\)\s*;?/g)];
-    if (writes.length === 0) return scriptTag;
-
-    const emitted = writes
-      .map((write) => {
-        const expression = write[1] ?? '';
-        const literals = expression.match(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g) ?? [];
-        return literals.map(decodeJavaScriptStringLiteral).join('');
-      })
-      .join('')
-      .replace(/"(?=(?:class|id|style|offset_left|data-[\w-]+)=)/g, '" ');
-
-    return emitted || scriptTag;
-  });
-}
-
 function cleanText(value: string) {
   return value
     .replace(/\r/g, '')
@@ -90,6 +53,6 @@ export class CheerioHtmlDocument implements HtmlDocumentPort {
 
 export class CheerioHtmlParserAdapter implements HtmlParserPort {
   load(html: string): HtmlDocumentPort {
-    return new CheerioHtmlDocument(cheerio.load(materializeDocumentWrites(html)));
+    return new CheerioHtmlDocument(cheerio.load(html));
   }
 }

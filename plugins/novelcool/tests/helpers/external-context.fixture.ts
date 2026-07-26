@@ -11,43 +11,6 @@ interface FixtureResponse {
   data: string;
 }
 
-function decodeJavaScriptStringLiteral(literal: string): string {
-  if (literal.startsWith('"')) {
-    try {
-      return JSON.parse(literal) as string;
-    } catch {
-      return '';
-    }
-  }
-
-  return literal
-    .slice(1, -1)
-    .replace(/\\'/g, "'")
-    .replace(/\\"/g, '"')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\\\/g, '\\');
-}
-
-function materializeDocumentWrites(html: string): string {
-  return html.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (scriptTag, scriptBody: string) => {
-    const writes = [...scriptBody.matchAll(/document\.write\s*\(([\s\S]*?)\)\s*;?/g)];
-    if (writes.length === 0) return scriptTag;
-
-    const emitted = writes
-      .map((write) => {
-        const expression = write[1] ?? '';
-        const literals = expression.match(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g) ?? [];
-        return literals.map(decodeJavaScriptStringLiteral).join('');
-      })
-      .join('')
-      .replace(/"(?=(?:class|id|style|offset_left|data-[\w-]+)=)/g, '" ');
-
-    return emitted || scriptTag;
-  });
-}
-
 function cleanText(value: string): string {
   return value
     .replace(/\r/g, '')
@@ -57,7 +20,7 @@ function cleanText(value: string): string {
 }
 
 export function createCheerioDocument(source: string): ExternalPluginHtmlDocument {
-  const $ = load(materializeDocumentWrites(source));
+  const $ = load(source);
 
   function htmlNode(element: Parameters<typeof $>[0]): ExternalPluginHtmlNode {
     const node = $(element);

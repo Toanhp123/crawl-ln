@@ -197,4 +197,34 @@ const sourceReaderSchemaMigration: ModuleMigration = {
   }
 };
 
-export const sourceReaderMigrations: ModuleMigration[] = [sourceReaderSchemaMigration];
+const sourceReaderPluginStudioMigration: ModuleMigration = {
+  module: 'source-reader',
+  version: 2,
+  up(database) {
+    database.exec(`
+      CREATE TABLE source_reader_plugin_studio_projects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        plugin_id TEXT NOT NULL,
+        version TEXT NOT NULL,
+        hosts_json TEXT NOT NULL,
+        capabilities_json TEXT NOT NULL,
+        selectors_json TEXT NOT NULL,
+        files_json TEXT NOT NULL,
+        revision INTEGER NOT NULL DEFAULT 1,
+        artifact_checksum TEXT,
+        built_revision INTEGER,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX idx_source_reader_plugin_studio_updated
+        ON source_reader_plugin_studio_projects(updated_at DESC);
+    `);
+  }
+};
+
+export const sourceReaderMigrations: ModuleMigration[] = [
+  sourceReaderSchemaMigration,
+  sourceReaderPluginStudioMigration
+];

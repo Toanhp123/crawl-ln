@@ -41,13 +41,14 @@ test('reader route changes do not own session teardown', async () => {
   assert.doesNotMatch(source, /session\.start[\s\S]*return \(\) => session\.cancel\(\)/);
 });
 
-test('reader page skips scroll reset during URL-only synchronization', async () => {
-  const source = await readFile(
-    'apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx',
+test('reader page updates the URL without router synchronization during scroll', async () => {
+  const page = await readFile('apps/web/src/pages/chapter-reader/ui/ChapterReaderPage.tsx', 'utf8');
+  const coordinator = await readFile(
+    'apps/web/src/pages/chapter-reader/model/use-reader-scroll-coordinator.ts',
     'utf8'
   );
 
-  assert.match(source, /isReaderUrlOnlySync/);
-  assert.match(source, /isReaderUrlUpdatePending/);
-  assert.match(source, /interactive\.current\s*&&\s*isReaderUrlUpdatePending\(/);
+  assert.match(coordinator, /history\.replaceState/);
+  assert.match(page, /useReaderScrollCoordinator/);
+  assert.doesNotMatch(page, /model\.openChapter\(index, true\)/);
 });

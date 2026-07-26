@@ -563,7 +563,7 @@ export interface SourceReaderPluginPermission {
   pluginId?: string;
   pluginVersion?: string;
   permission?: string;
-  scope?: string;
+  scope?: unknown;
   status?: string;
   approvedBy?: string;
   approvedAt?: string;

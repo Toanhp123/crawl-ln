@@ -61,12 +61,11 @@ function controllableLoader() {
   };
 }
 
-test('reader session cancels stale loads and keeps a bounded window', async () => {
+test('reader session cancels stale loads and keeps every chapter loaded in the session', async () => {
   const controlled = controllableLoader();
   const session = createReaderSession({
     loader: controlled.loader,
-    cache: new MemoryReaderChapterCache<Chapter>(8),
-    limit: 5
+    cache: new MemoryReaderChapterCache<Chapter>(8)
   });
 
   const first = session.start('novel-1', identities(1, 10), 3);
@@ -82,7 +81,7 @@ test('reader session cancels stale loads and keeps a bounded window', async () =
   assert.equal(session.snapshot().activeIndex, 22);
 });
 
-test('reader session loads adjacent chapters once and evicts around the active chapter', async () => {
+test('reader session loads adjacent chapters once without evicting earlier chapters', async () => {
   const calls: number[] = [];
   const session = createReaderSession<Chapter>({
     loader: {
@@ -91,8 +90,7 @@ test('reader session loads adjacent chapters once and evicts around the active c
         return chapter(index);
       }
     },
-    cache: new MemoryReaderChapterCache<Chapter>(10),
-    limit: 3
+    cache: new MemoryReaderChapterCache<Chapter>(10)
   });
 
   await session.start('novel-1', identities(1, 8), 4);
@@ -100,16 +98,20 @@ test('reader session loads adjacent chapters once and evicts around the active c
   session.setActiveIndex(5);
   await session.loadNext();
   await session.loadPrevious();
+  session.setActiveIndex(6);
+  await session.loadNext();
+  session.setActiveIndex(7);
+  await session.loadNext();
 
   const snapshot = session.snapshot();
   assert.deepEqual(
     snapshot.chapters.map((item) => item.index),
-    [4, 5, 6]
+    [3, 4, 5, 6, 7, 8]
   );
-  assert.equal(snapshot.activeIndex, 5);
+  assert.equal(snapshot.activeIndex, 7);
   assert.equal(calls.filter((index) => index === 5).length, 1);
   assert.equal(snapshot.hasPrevious, true);
-  assert.equal(snapshot.hasNext, true);
+  assert.equal(snapshot.hasNext, false);
 });
 
 test('reader session exposes loading snapshots, subscriptions, cancellation, and retry', async () => {

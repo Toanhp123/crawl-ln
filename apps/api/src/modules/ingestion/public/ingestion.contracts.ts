@@ -30,6 +30,10 @@ export interface RefreshNovelCommand {
   requestedAt: string;
 }
 
+export interface NovelIngestionCommand {
+  novelId: string;
+}
+
 export interface ListIngestionJobsQuery {
   limit: number;
   status?: IngestionJobStatus;
@@ -41,6 +45,8 @@ export interface IngestionCommands {
   pauseJob(command: JobIdentityCommand): Promise<void>;
   resumeJob(command: JobIdentityCommand): Promise<void>;
   cancelJob(command: JobIdentityCommand): Promise<void>;
+  cancelNovelJobs(command: NovelIngestionCommand): Promise<void>;
+  purgeNovelJobs(command: NovelIngestionCommand): Promise<void>;
   refreshNovel(command: RefreshNovelCommand): Promise<IngestionJob | null>;
 }
 

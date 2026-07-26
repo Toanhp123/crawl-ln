@@ -156,12 +156,19 @@ export class LibraryController {
 
   delete = async (request: Request, response: Response) => {
     const { id } = IdParamsSchema.parse(request.params);
-    await this.requireNovel(id);
-    await this.library.commands.deleteNovel({
-      commandId: `http:delete:${this.ids.randomId()}`,
-      novelId: id,
-      deletedAt: this.clock.now().toISOString()
-    });
+    const novel = await this.library.queries.getNovel(id);
+    const existingTask = await this.ingestion.queries.getNovelJob(id);
+    if (!novel && !existingTask) throw new ApplicationHttpError('not_found', 'Novel not found');
+
+    await this.ingestion.commands.cancelNovelJobs({ novelId: id });
+    if (novel) {
+      await this.library.commands.deleteNovel({
+        commandId: `http:delete:${this.ids.randomId()}`,
+        novelId: id,
+        deletedAt: this.clock.now().toISOString()
+      });
+    }
+    await this.ingestion.commands.purgeNovelJobs({ novelId: id });
     this.realtime?.publish({
       type: 'data.changed',
       resources: ['novels', 'tasks', 'scheduler', 'search'],

@@ -4,8 +4,6 @@ import { ChapterReader } from '@/entities/chapter';
 import {
   captureReadingAnchor,
   isBookmarked,
-  isReaderUrlOnlySync,
-  isReaderUrlUpdatePending,
   markChapterRead,
   readChapterIds,
   readReadingPosition,
@@ -14,7 +12,6 @@ import {
   saveReadingPosition,
   toggleBookmark,
   useReaderController,
-  useReaderProgress,
   useReadingContinuityVersion,
   useSwipeChapterNavigation,
   ReaderOfflineBanner,
@@ -36,6 +33,7 @@ import { ReaderBottomBar } from '@/widgets/reader-bottom-bar';
 import { ReaderProgress } from '@/widgets/reader-progress';
 import { ReaderToolbar } from '@/widgets/reader-toolbar';
 import { useChapterReaderPage } from '../model/use-chapter-reader-page';
+import { useReaderScrollCoordinator } from '../model/use-reader-scroll-coordinator';
 import { useReaderWakeLock } from '../model/use-reader-wake-lock';
 
 export function ChapterReaderPage() {
@@ -57,19 +55,12 @@ export function ChapterReaderPage() {
   const restored = useRef(false);
   const interactive = useRef(false);
   const currentAnchor = useRef({ paragraphId: '', paragraphOffset: 0, scrollRatio: 0 });
-  const lastScrollY = useRef(0);
-  const allowPreviousLoad = useRef(false);
-  const allowNextLoad = useRef(true);
   const chapters = model.detail.data?.chapters ?? [];
   const controller = useReaderController({
     novelId,
     initialIndex: initialIndex ?? 0,
     chapters,
     enabled: initialIndex !== null && Boolean(model.detail.data),
-    windowLimit: 5,
-    onActiveIndexChange: (index) => {
-      if (interactive.current && index !== initialIndex) model.openChapter(index, true);
-    },
     onNavigate: (index) => model.openChapter(index)
   });
   const activePosition = chapters.findIndex((chapter) => chapter.index === controller.activeIndex);
@@ -77,22 +68,10 @@ export function ChapterReaderPage() {
   const activeChapter = controller.chapters.find(
     (chapter) => chapter.index === controller.activeIndex
   );
-  const progress = useReaderProgress(
-    activeSummary?.index ?? null,
-    activePosition,
-    chapters.length,
-    viewportRef,
-    readerRoot
-  );
-  const progressRef = useRef(progress);
   const readIds = useMemo(() => readChapterIds(novelId), [novelId, controller.activeIndex]);
   const continuityVersion = useReadingContinuityVersion();
   void continuityVersion;
   useReaderWakeLock(initialIndex !== null && preferences.keepAwake);
-
-  useEffect(() => {
-    progressRef.current = progress;
-  }, [progress]);
 
   const scheduleChromeHide = useCallback(() => {
     window.clearTimeout(chromeTimer.current);
@@ -113,157 +92,68 @@ export function ChapterReaderPage() {
     onNext: controller.navigateNext
   });
 
+  const persistCurrentPosition = useCallback(
+    (persistIndex = controller.activeIndex, bookProgress = 0) => {
+      const viewport = viewportRef.current;
+      const summary = chapters.find((chapter) => chapter.index === persistIndex);
+      const chapterPosition = chapters.findIndex((chapter) => chapter.index === persistIndex);
+      if (!interactive.current || !viewport || !summary || chapterPosition < 0) return;
+      const chapterRoot =
+        readerRoot.current?.querySelector<HTMLElement>(`#reader-chapter-${summary.index}`) ??
+        readerRoot.current ??
+        viewport;
+      const anchor = captureReadingAnchor(viewport, chapterRoot);
+      currentAnchor.current = anchor;
+      const storedPosition: StoredReadingPosition = {
+        schemaVersion: 1,
+        novelId,
+        chapterId: summary.id,
+        chapterIndex: summary.index,
+        chapterPosition,
+        chapterCount: chapters.length,
+        bookProgress,
+        ...anchor,
+        updatedAt: new Date().toISOString()
+      };
+      saveReadingPosition(storedPosition);
+      recordReadingActivity(storedPosition);
+      markChapterRead(novelId, summary.id);
+    },
+    [chapters, novelId, viewportRef, controller.activeIndex]
+  );
+
+  const progress = useReaderScrollCoordinator({
+    novelId,
+    chapterCount: chapters.length,
+    chapterPosition: (index) => chapters.findIndex((chapter) => chapter.index === index),
+    activeIndex: controller.activeIndex,
+    loadedChapters: controller.chapters,
+    hasPrevious: controller.hasPrevious,
+    hasNext: controller.hasNext,
+    loadingPrevious: controller.loadingPrevious,
+    loadingNext: controller.loadingNext,
+    setActiveIndex: controller.setActiveIndex,
+    loadPrevious: controller.loadPrevious,
+    loadNext: controller.loadNext,
+    viewportRef,
+    readerRootRef: readerRoot,
+    topSentinelRef: topSentinel,
+    bottomSentinelRef: bottomSentinel,
+    interactiveRef: interactive,
+    onChromeChange: setChrome,
+    onPersist: persistCurrentPosition
+  });
+  const progressRef = useRef(progress);
   useEffect(() => {
-    const viewport = viewportRef.current;
-    const top = topSentinel.current;
-    const bottom = bottomSentinel.current;
-    if (!viewport || !top || !bottom) return;
-    const topObserver = new IntersectionObserver(
-      (entries) => {
-        if (
-          !interactive.current ||
-          !allowPreviousLoad.current ||
-          !controller.hasPrevious ||
-          controller.loadingPrevious ||
-          !entries.some((entry) => entry.isIntersecting)
-        )
-          return;
-        allowPreviousLoad.current = false;
-        const before = viewport.scrollHeight;
-        void controller.loadPrevious().then((loaded) => {
-          if (!loaded) return;
-          window.requestAnimationFrame(() => {
-            viewport.scrollBy({ top: viewport.scrollHeight - before, behavior: 'auto' });
-          });
-        });
-      },
-      { root: viewport, rootMargin: '500px 0px 0px' }
-    );
-    const bottomObserver = new IntersectionObserver(
-      (entries) => {
-        if (
-          interactive.current &&
-          allowNextLoad.current &&
-          controller.hasNext &&
-          !controller.loadingNext &&
-          entries.some((entry) => entry.isIntersecting)
-        ) {
-          allowNextLoad.current = false;
-          void controller.loadNext();
-        }
-      },
-      { root: viewport, rootMargin: '0px 0px 900px' }
-    );
-    topObserver.observe(top);
-    bottomObserver.observe(bottom);
-    return () => {
-      topObserver.disconnect();
-      bottomObserver.disconnect();
-    };
-  }, [
-    controller.hasNext,
-    controller.hasPrevious,
-    controller.loadNext,
-    controller.loadPrevious,
-    controller.loadingNext,
-    controller.loadingPrevious,
-    viewportRef
-  ]);
+    progressRef.current = progress;
+  }, [progress]);
 
   useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      if (!interactive.current) return;
-      const viewportRect = viewport.getBoundingClientRect();
-      const probe = viewportRect.top + viewport.clientHeight * 0.32;
-      const sections = Array.from(
-        readerRoot.current?.querySelectorAll<HTMLElement>('[data-reader-chapter]') ?? []
-      );
-      const active =
-        sections.find((section) => {
-          const rect = section.getBoundingClientRect();
-          return rect.top <= probe && rect.bottom > probe;
-        }) ?? sections.find((section) => section.getBoundingClientRect().bottom > probe);
-      const index = Number(active?.dataset.readerChapter);
-      if (Number.isInteger(index) && index !== controller.activeIndex) {
-        controller.setActiveIndex(index);
-      }
-    };
-    const onScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(update);
-    };
-    viewport.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      viewport.removeEventListener('scroll', onScroll);
-    };
-  }, [controller.activeIndex, controller.chapters, controller.setActiveIndex, viewportRef]);
-
-  const persistCurrentPosition = useCallback(() => {
-    const viewport = viewportRef.current;
-    if (!interactive.current || !viewport || !activeSummary || activePosition < 0) return;
-    const chapterRoot =
-      readerRoot.current?.querySelector<HTMLElement>(`#reader-chapter-${activeSummary.index}`) ??
-      readerRoot.current ??
-      viewport;
-    const anchor = captureReadingAnchor(viewport, chapterRoot);
-    currentAnchor.current = anchor;
-    const position: StoredReadingPosition = {
-      schemaVersion: 1,
-      novelId,
-      chapterId: activeSummary.id,
-      chapterIndex: activeSummary.index,
-      chapterPosition: activePosition,
-      chapterCount: chapters.length,
-      bookProgress: progressRef.current.overallRatio,
-      ...anchor,
-      updatedAt: new Date().toISOString()
-    };
-    saveReadingPosition(position);
-    recordReadingActivity(position);
-    markChapterRead(novelId, activeSummary.id);
-  }, [activePosition, activeSummary, chapters.length, novelId, viewportRef]);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport || initialIndex === null) return;
-    let timer = 0;
-    const onScroll = () => {
-      const currentY = viewport.scrollTop;
-      const delta = currentY - lastScrollY.current;
-      lastScrollY.current = currentY;
-      if (!interactive.current) return;
-      if (delta < -10) allowPreviousLoad.current = true;
-      if (delta > 10) allowNextLoad.current = true;
-      setChrome(currentY < 72);
-      window.clearTimeout(timer);
-      timer = window.setTimeout(persistCurrentPosition, 220);
-    };
-    lastScrollY.current = viewport.scrollTop;
-    viewport.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.clearTimeout(timer);
-      persistCurrentPosition();
-      viewport.removeEventListener('scroll', onScroll);
-    };
-  }, [initialIndex, persistCurrentPosition, viewportRef]);
-
-  useEffect(() => {
-    const requestedIndex = initialIndex ?? -1;
-    if (
-      isReaderUrlOnlySync(controller, requestedIndex) ||
-      (interactive.current && isReaderUrlUpdatePending(controller, requestedIndex))
-    )
-      return;
+    if (initialIndex === null) return;
     restored.current = false;
     interactive.current = false;
-    allowPreviousLoad.current = false;
-    allowNextLoad.current = true;
     viewportRef.current?.scrollTo({ top: 0, behavior: 'auto' });
-  }, [controller.activeIndex, controller.chapters, initialIndex, novelId, viewportRef]);
+  }, [initialIndex, novelId, viewportRef]);
 
   const initialLoaded =
     initialIndex !== null && controller.chapters.some((chapter) => chapter.index === initialIndex);
@@ -290,7 +180,6 @@ export function ChapterReaderPage() {
       });
     }
     restored.current = true;
-    lastScrollY.current = viewport.scrollTop;
     interactive.current = true;
   }, [chapters, initialIndex, initialLoaded, novelId, viewportRef]);
 
@@ -301,8 +190,8 @@ export function ChapterReaderPage() {
 
   useEffect(
     () => () => {
+      persistRef.current(undefined, progressRef.current.overallRatio);
       interactive.current = false;
-      persistRef.current();
       controller.cancel();
       window.clearTimeout(chromeTimer.current);
     },

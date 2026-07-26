@@ -161,7 +161,7 @@ const pluginConsole = harden({
 
 const compartment = new Compartment({
   name: `source-reader:${process.env.SOURCE_READER_PLUGIN_ID ?? 'unknown'}`,
-  globals: harden({ console: pluginConsole }),
+  globals: harden({ console: pluginConsole, URL, URLSearchParams }),
   resolveHook: (specifier, referrer) => new URL(specifier, referrer).href,
   importHook: async (specifier) => {
     const location = await locate(specifier);

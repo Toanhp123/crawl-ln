@@ -60,12 +60,13 @@ async function installReaderMocks(page: Page, chapterCount = 20) {
   await installE2eRuntime(page);
 }
 
-test('reader keeps a bounded five-chapter render window', async ({ page }) => {
+test('reader keeps loaded chapters mounted while the URL follows continuous scrolling', async ({
+  page
+}) => {
   await installReaderMocks(page);
-  await page.goto('/library/novel-1/read/10');
+  await page.goto('/library/novel-1/read/0');
   const renderedChapters = page.locator('#reader-content section[data-reader-chapter]');
   await expect.poll(() => renderedChapters.count()).toBeGreaterThan(0);
-  expect(await renderedChapters.count()).toBeLessThanOrEqual(5);
 
   const scrollRoot = page.locator('#reader-scroll-root');
   await scrollRoot.evaluate((element) => {
@@ -79,20 +80,19 @@ test('reader keeps a bounded five-chapter render window', async ({ page }) => {
       { passive: true }
     );
   });
-  const initialPath = new URL(page.url()).pathname;
-  await expect
-    .poll(
-      async () => {
-        if (new URL(page.url()).pathname === initialPath) {
+  for (let target = 1; target <= 6; target += 1) {
+    await expect
+      .poll(
+        async () => {
           await scrollRoot.evaluate((element) => {
             element.scrollTo({ top: element.scrollHeight, behavior: 'auto' });
           });
-        }
-        return new URL(page.url()).pathname;
-      },
-      { timeout: 10_000 }
-    )
-    .not.toBe(initialPath);
+          return Number(new URL(page.url()).pathname.split('/').at(-1));
+        },
+        { timeout: 10_000 }
+      )
+      .toBeGreaterThanOrEqual(target);
+  }
   await page.waitForTimeout(100);
   const samples = await page.evaluate(
     () =>
@@ -102,12 +102,29 @@ test('reader keeps a bounded five-chapter render window', async ({ page }) => {
         }
       ).__readerScrollSamples ?? []
   );
-  const syncedSamples = samples.filter((sample) => sample.path !== initialPath);
+  const syncedSamples = samples.filter((sample) => !sample.path.endsWith('/0'));
   expect(await scrollRoot.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
   expect(syncedSamples.every((sample) => sample.top > 0)).toBe(true);
 
-  await expect.poll(() => renderedChapters.count()).toBeGreaterThan(0);
-  expect(await renderedChapters.count()).toBeLessThanOrEqual(5);
+  await expect.poll(() => renderedChapters.count()).toBeGreaterThan(5);
+  await expect(renderedChapters.filter({ has: page.locator('#reader-chapter-0') })).toHaveCount(1);
+});
+
+test('reader prepends the previous chapter without moving the opened chapter', async ({ page }) => {
+  await installReaderMocks(page);
+  await page.goto('/library/novel-1/read/10');
+  const scrollRoot = page.locator('#reader-scroll-root');
+  const openedChapter = page.locator('#reader-chapter-10');
+  await expect(openedChapter).toBeVisible();
+  await expect.poll(() => page.locator('#reader-chapter-9').count()).toBe(1);
+
+  const offset = await openedChapter.evaluate((chapter, viewport) => {
+    const viewportElement = document.querySelector<HTMLElement>(String(viewport));
+    if (!viewportElement) return Number.POSITIVE_INFINITY;
+    return chapter.getBoundingClientRect().top - viewportElement.getBoundingClientRect().top;
+  }, '#reader-scroll-root');
+  expect(Math.abs(offset)).toBeLessThan(16);
+  expect(await scrollRoot.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 });
 
 test('novel detail exposes reading management and chapter navigation landmarks', async ({

@@ -73,6 +73,45 @@ export interface SourceReaderExecutor<Input, Output = unknown> {
 }
 
 export interface SourceReaderManagementApi {
+  studio: {
+    create: SourceReaderExecutor<
+      {
+        actor: SourceReaderActor;
+        name: string;
+        pluginId: string;
+        version: string;
+        hosts: string[];
+        capabilities: Array<'identify' | 'metadata' | 'chapter-list' | 'chapter-content'>;
+        selectors: Record<string, string | undefined>;
+      },
+      unknown
+    >;
+    list: SourceReaderExecutor<{ actor: SourceReaderActor }, unknown[]>;
+    get: SourceReaderExecutor<{ actor: SourceReaderActor; projectId: string }, unknown>;
+    update: SourceReaderExecutor<
+      {
+        actor: SourceReaderActor;
+        projectId: string;
+        expectedRevision: number;
+        name?: string;
+        pluginId?: string;
+        version?: string;
+        hosts?: string[];
+        capabilities?: Array<'identify' | 'metadata' | 'chapter-list' | 'chapter-content'>;
+        selectors?: Record<string, string | undefined>;
+        files?: Record<string, string>;
+      },
+      unknown
+    >;
+    remove: SourceReaderExecutor<{ actor: SourceReaderActor; projectId: string }, void>;
+    build: SourceReaderExecutor<{ actor: SourceReaderActor; projectId: string }, unknown>;
+    test: SourceReaderExecutor<{ actor: SourceReaderActor; projectId: string }, unknown>;
+    install: SourceReaderExecutor<{ actor: SourceReaderActor; projectId: string }, unknown>;
+    export: SourceReaderExecutor<
+      { actor: SourceReaderActor; projectId: string },
+      { bytes: Uint8Array; fileName: string }
+    >;
+  };
   plugins: {
     list: SourceReaderExecutor<{ actor: SourceReaderActor }, unknown[]>;
     install: SourceReaderExecutor<

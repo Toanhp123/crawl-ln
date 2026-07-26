@@ -118,8 +118,10 @@ test('recovery drains interrupted jobs into paused state and records audit event
   assert.deepEqual(Object.keys(module.api.commands).sort(), [
     'analyzeNovel',
     'cancelJob',
+    'cancelNovelJobs',
     'createJob',
     'pauseJob',
+    'purgeNovelJobs',
     'refreshNovel',
     'resumeJob'
   ]);

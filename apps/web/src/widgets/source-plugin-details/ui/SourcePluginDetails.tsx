@@ -79,7 +79,7 @@ export function SourcePluginDetails({ pluginId }: { pluginId: string }) {
         <SourcePluginEnableSwitch plugin={plugin} />
         <div className="flex flex-wrap gap-2">
           <ActivateLatestSourcePluginButton plugin={plugin} />
-          <TestSourcePluginButton pluginId={plugin.id} />
+          <TestSourcePluginButton pluginId={plugin.id} disabled={!plugin.enabled} />
           <RemoveSourcePluginButton pluginId={plugin.id} />
         </div>
       </Panel>

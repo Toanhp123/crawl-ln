@@ -144,10 +144,22 @@ test('generated NovelCool package installs, activates in isolation, invokes, and
     list: new ListPluginsUseCase(authorization, pluginStore)
   };
 
-  const [novelHtml, chapterHtml] = await Promise.all([
+  const [novelFixtureHtml, chapterHtml] = await Promise.all([
     readFile('plugins/novelcool/tests/fixtures/novel.html', 'utf8'),
     readFile('plugins/novelcool/tests/fixtures/chapter-valid.html', 'utf8')
   ]);
+  // Real NovelCool detail pages can approach 1 MiB before the plugin extracts metadata.
+  const chapterLinks = Array.from(
+    { length: 934 },
+    (_, index) =>
+      `<a href="/chapter/Chapter-${index + 1}/${index + 1}.html">Chapter ${index + 1}</a>`
+  ).join('');
+  const novelHtml = novelFixtureHtml
+    .replace(
+      /<div class="chapter-list">[\s\S]*?<\/div>/,
+      `<div class="chapter-list">${chapterLinks}</div>`
+    )
+    .replace('</body>', `<!--${'x'.repeat(900 * 1024)}--></body>`);
   const http = {
     async get(url: string) {
       return {
@@ -259,6 +271,9 @@ test('generated NovelCool package installs, activates in isolation, invokes, and
   const metadata = await facade.readMetadata({ url: novelUrl });
   assert.equal(metadata.data.title, 'Fixture Novel');
   assert.equal(metadata.source.pluginVersion, '2.0.0');
+  const chapterList = await facade.readChapterList({ url: novelUrl, limit: 200 });
+  assert.equal(chapterList.data.items.length, 200);
+  assert.equal(chapterList.data.hasMore, true);
   const chapter = await facade.readChapterContent({ url: chapterUrl });
   assert.match(chapter.data.cleanText, /fixture chapter body/i);
 

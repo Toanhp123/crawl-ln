@@ -83,12 +83,7 @@ test('installs, approves and enables the generated NovelCool external plugin', a
       return json(route, [
         {
           permission: 'network',
-          scope: 'novelcool.com',
-          status: approved ? 'approved' : 'pending'
-        },
-        {
-          permission: 'network',
-          scope: '*.novelcool.com',
+          scope: { hosts: ['novelcool.com', '*.novelcool.com'] },
           status: approved ? 'approved' : 'pending'
         }
       ]);
@@ -117,9 +112,12 @@ test('installs, approves and enables the generated NovelCool external plugin', a
   await expect(page.getByText('Local, unverified', { exact: true })).toBeVisible();
   await expect(page.getByText('2.0.0', { exact: true })).toBeVisible();
   const toggle = page.getByRole('switch', { name: /^Enable NovelCool/ });
+  const testPlugin = page.getByRole('button', { name: 'Test plugin', exact: true });
   await expect(toggle).toBeDisabled();
+  await expect(testPlugin).toBeDisabled();
   await page.getByRole('button', { name: 'Approve', exact: true }).click();
   await expect(toggle).toBeEnabled();
   await toggle.click();
   await expect(toggle).toBeChecked();
+  await expect(testPlugin).toBeEnabled();
 });

@@ -26,6 +26,8 @@ export interface IngestionRepository {
   findJobChapters(jobId: string): Promise<IngestionJobChapter[]>;
   findEvents(jobId: string, limit?: number): Promise<IngestionEvent[]>;
   findByNovelId(novelId: string): Promise<IngestionJob | null>;
+  findAllByNovelId(novelId: string): Promise<IngestionJob[]>;
+  deleteByNovelId(novelId: string): Promise<void>;
   findAll(limit?: number, status?: IngestionJobStatus): Promise<IngestionJob[]>;
   countActive(): Promise<number>;
   findRecoverable(limit?: number): Promise<IngestionJob[]>;

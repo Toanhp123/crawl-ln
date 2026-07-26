@@ -189,6 +189,7 @@ test('source reader migration creates the complete module-owned schema', (t) => 
     'source_reader_installations',
     'source_reader_network_profiles',
     'source_reader_plugin_permissions',
+    'source_reader_plugin_studio_projects',
     'source_reader_plugin_versions',
     'source_reader_plugins',
     'source_reader_sessions'

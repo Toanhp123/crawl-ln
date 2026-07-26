@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
 import type { Environment } from '../../platform/config/environment.js';
 import type { SqliteDatabase } from '../../platform/database/sqlite-database.js';
 import { SourceReaderAuthorizationPolicy } from './application/admin/policies/source-reader-authorization.policy.js';
@@ -13,6 +14,7 @@ import { PluginDiagnosticsService } from './application/admin/services/plugin-di
 import { PluginHealthCheckService } from './application/admin/services/plugin-health-check.service.js';
 import { PluginHealthService } from './application/admin/services/plugin-health.service.js';
 import { PluginInstallationService } from './application/admin/services/plugin-installation.service.js';
+import { PluginStudioService } from './application/admin/services/plugin-studio.service.js';
 import { SourceReaderInvalidationService } from './application/admin/services/source-reader-invalidation.service.js';
 import { SourceReaderMaintenanceService } from './application/admin/services/source-reader-maintenance.service.js';
 import { StandardAuthenticationService } from './application/admin/services/standard-authentication.service.js';
@@ -51,6 +53,17 @@ import {
   RemovePluginUseCase,
   TestPluginUseCase
 } from './application/admin/use-cases/plugins/manage-source-plugins.usecase.js';
+import {
+  BuildPluginStudioProjectUseCase,
+  CreatePluginStudioProjectUseCase,
+  ExportPluginStudioProjectUseCase,
+  GetPluginStudioProjectUseCase,
+  InstallPluginStudioProjectUseCase,
+  ListPluginStudioProjectsUseCase,
+  RemovePluginStudioProjectUseCase,
+  TestPluginStudioProjectUseCase,
+  UpdatePluginStudioProjectUseCase
+} from './application/admin/use-cases/studio/manage-plugin-studio.usecase.js';
 import { CandidateResolver } from './application/services/candidate-resolver.js';
 import { HealthFallbackPolicy } from './application/services/health-fallback.policy.js';
 import { InvocationCoordinator } from './application/services/invocation-coordinator.js';
@@ -78,6 +91,7 @@ import {
   inspectInstalledPluginPackage
 } from './infrastructure/plugins/package-loader/external-plugin.loader.js';
 import { SourcePluginPackageVerifier } from './infrastructure/plugins/package-loader/source-plugin-package.verifier.js';
+import { SourcePluginStudioBuilder } from './infrastructure/plugins/studio/source-plugin-studio.builder.js';
 import { StaticTrustStore } from './infrastructure/plugins/package-loader/static-trust.store.js';
 import { InMemoryPluginRegistry } from './infrastructure/plugins/registry/in-memory-plugin.registry.js';
 import { CheerioHtmlParserAdapter } from './infrastructure/runtime/cheerio-html-parser.adapter.js';
@@ -96,6 +110,7 @@ import { SqliteAuthChallengeRepository } from './infrastructure/sqlite/sqlite-au
 import { SqliteCredentialRepository } from './infrastructure/sqlite/sqlite-credential.repository.js';
 import { SqliteNetworkProfileRepository } from './infrastructure/sqlite/sqlite-network-profile.repository.js';
 import { SqlitePluginHealthRepository } from './infrastructure/sqlite/sqlite-plugin-health.repository.js';
+import { SqlitePluginStudioDraftRepository } from './infrastructure/sqlite/sqlite-plugin-studio-draft.repository.js';
 import { SqlitePluginStore } from './infrastructure/sqlite/sqlite-plugin.store.js';
 import { SqliteReaderCache } from './infrastructure/sqlite/sqlite-reader.cache.js';
 import { SqliteSessionRepository } from './infrastructure/sqlite/sqlite-session.repository.js';
@@ -154,12 +169,14 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   });
   const externalLoader = new ExternalPluginLoader(pluginStore, externalRegistrationFactory);
   const compatibility = new PluginCompatibilityService(SOURCE_READER_HOST_COMPATIBILITY);
+  const packageVerifier = new SourcePluginPackageVerifier(
+    new StaticTrustStore(environment.sourceReaderTrustedKeys ?? [])
+  );
+  const pluginRoot = environment.sourceReaderPluginDir ?? './apps/api/storage/source-plugins';
   const installer = new PluginInstallationService(
-    new SourcePluginPackageVerifier(
-      new StaticTrustStore(environment.sourceReaderTrustedKeys ?? [])
-    ),
+    packageVerifier,
     pluginStore,
-    environment.sourceReaderPluginDir ?? './apps/api/storage/source-plugins',
+    pluginRoot,
     ids,
     clock,
     compatibility
@@ -299,6 +316,23 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   }) satisfies SourceReaderApi;
 
   const authorization = new SourceReaderAuthorizationPolicy();
+  const studioSupervisor = new ExternalProcessSupervisor({
+    startupTimeoutMs: processStartTimeoutMs,
+    cancelGraceMs: 100,
+    structuredLogger
+  });
+  const studio = new PluginStudioService({
+    drafts: new SqlitePluginStudioDraftRepository(database),
+    builder: new SourcePluginStudioBuilder({
+      outputDirectory: join(pluginRoot, 'studio-staging'),
+      sdkVersion: '^3.0.0'
+    }),
+    verifier: packageVerifier,
+    installer,
+    testSupervisor: studioSupervisor,
+    ids,
+    clock
+  });
   const diagnostics = new PluginDiagnosticsService(
     pluginStore,
     registry,
@@ -321,6 +355,17 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
     networks
   };
   const management = {
+    studio: {
+      create: new CreatePluginStudioProjectUseCase(authorization, studio),
+      list: new ListPluginStudioProjectsUseCase(authorization, studio),
+      get: new GetPluginStudioProjectUseCase(authorization, studio),
+      update: new UpdatePluginStudioProjectUseCase(authorization, studio),
+      remove: new RemovePluginStudioProjectUseCase(authorization, studio),
+      build: new BuildPluginStudioProjectUseCase(authorization, studio),
+      test: new TestPluginStudioProjectUseCase(authorization, studio),
+      install: new InstallPluginStudioProjectUseCase(authorization, studio),
+      export: new ExportPluginStudioProjectUseCase(authorization, studio)
+    },
     plugins: {
       list: new ListPluginsUseCase(authorization, pluginStore),
       install: new InstallSourcePluginUseCase(authorization, installer),

@@ -1,6 +1,7 @@
 export const MAX_SANDBOX_PROTOCOL_DEPTH = 32;
 export const MAX_SANDBOX_PROTOCOL_NODES = 10_000;
-export const MAX_SANDBOX_PROTOCOL_BYTES = 512_000;
+// Keep enough headroom around the 20 MiB source-response budget for frame metadata.
+export const MAX_SANDBOX_PROTOCOL_BYTES = 24 * 1024 * 1024;
 
 function stringBytes(value) {
   return Buffer.byteLength(value, 'utf8');

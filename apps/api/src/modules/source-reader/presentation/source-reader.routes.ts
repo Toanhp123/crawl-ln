@@ -33,6 +33,16 @@ export function createSourceReaderRoutes(presentation: SourceReaderPresentation)
   router.post('/search', asyncHandler(reader.search));
   router.post('/latest-updates', asyncHandler(reader.latestUpdates));
 
+  router.get('/studio/projects', asyncHandler(admin.listStudioProjects));
+  router.post('/studio/projects', asyncHandler(admin.createStudioProject));
+  router.get('/studio/projects/:projectId', asyncHandler(admin.getStudioProject));
+  router.patch('/studio/projects/:projectId', asyncHandler(admin.updateStudioProject));
+  router.delete('/studio/projects/:projectId', asyncHandler(admin.removeStudioProject));
+  router.post('/studio/projects/:projectId/build', asyncHandler(admin.buildStudioProject));
+  router.post('/studio/projects/:projectId/test', asyncHandler(admin.testStudioProject));
+  router.post('/studio/projects/:projectId/install', asyncHandler(admin.installStudioProject));
+  router.get('/studio/projects/:projectId/export', asyncHandler(admin.exportStudioProject));
+
   router.get('/plugins', asyncHandler(admin.listPlugins));
   router.get('/plugins/:pluginId', asyncHandler(admin.pluginDiagnostics));
   router.post('/plugins/install', upload.single('plugin'), asyncHandler(admin.installPlugin));

@@ -4,6 +4,7 @@ const taskDetailPage = () => import('@/pages/task-detail');
 const novelDetailPage = () => import('@/pages/novel-detail');
 const chapterReaderPage = () => import('@/pages/chapter-reader');
 const sourcesPage = () => import('@/pages/sources');
+const sourcePluginStudioPage = () => import('@/pages/source-plugin-studio');
 const settingsPage = () => import('@/pages/settings');
 
 export const routeLoaders = {
@@ -13,6 +14,7 @@ export const routeLoaders = {
   taskDetail: taskDetailPage,
   activity: activityPage,
   sources: sourcesPage,
+  sourcePluginStudio: sourcePluginStudioPage,
   sourcePlugin: sourcesPage,
   settings: settingsPage
 } as const;

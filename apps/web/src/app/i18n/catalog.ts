@@ -20,6 +20,7 @@ import { installSourcePluginCatalogs } from '@/features/install-source-plugin';
 import { manageSourceCredentialCatalogs } from '@/features/manage-source-credential';
 import { manageSourceNetworkProfileCatalogs } from '@/features/manage-source-network-profile';
 import { manageSourcePluginsCatalogs } from '@/features/manage-source-plugins';
+import { manageSourcePluginProjectCatalogs } from '@/features/manage-source-plugin-project';
 import { pauseTaskCatalogs } from '@/features/pause-task';
 import { readChapterCatalogs } from '@/features/read-chapter';
 import { readerPreferencesCatalogs } from '@/features/reader-preferences';
@@ -60,6 +61,7 @@ const sliceCatalogs = [
   manageSourceCredentialCatalogs,
   manageSourceNetworkProfileCatalogs,
   manageSourcePluginsCatalogs,
+  manageSourcePluginProjectCatalogs,
   pauseTaskCatalogs,
   readChapterCatalogs,
   readerPreferencesCatalogs,

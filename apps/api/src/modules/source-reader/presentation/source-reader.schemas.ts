@@ -59,6 +59,74 @@ export const networkProfileUpdateSchema = z
 
 export const pluginVersionSchema = z.object({ version: z.string().min(1).max(100) });
 
+const pluginStudioCapabilitySchema = z.enum([
+  'identify',
+  'metadata',
+  'chapter-list',
+  'chapter-content'
+]);
+
+const pluginStudioSelectorsSchema = z
+  .object({
+    title: z.string().max(500).optional(),
+    author: z.string().max(500).optional(),
+    cover: z.string().max(500).optional(),
+    description: z.string().max(500).optional(),
+    chapterList: z.string().max(500).optional(),
+    chapterContent: z.string().max(500).optional()
+  })
+  .strict();
+
+export const pluginStudioCreateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100),
+    pluginId: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
+    version: z.string().regex(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/),
+    hosts: z.array(z.string().min(1).max(253)).min(1).max(20),
+    capabilities: z.array(pluginStudioCapabilitySchema).min(1),
+    selectors: pluginStudioSelectorsSchema.default({})
+  })
+  .strict();
+
+export const pluginStudioUpdateSchema = z
+  .object({
+    expectedRevision: z.number().int().positive(),
+    name: z.string().trim().min(1).max(100).optional(),
+    pluginId: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9-]*$/)
+      .optional(),
+    version: z
+      .string()
+      .regex(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/)
+      .optional(),
+    hosts: z.array(z.string().min(1).max(253)).min(1).max(20).optional(),
+    capabilities: z.array(pluginStudioCapabilitySchema).min(1).optional(),
+    selectors: pluginStudioSelectorsSchema.optional(),
+    files: z
+      .record(z.string().min(1).max(300), z.string())
+      .superRefine((files, context) => {
+        if (Object.keys(files).length > 50) {
+          context.addIssue({ code: z.ZodIssueCode.custom, message: 'Too many project files' });
+        }
+        const bytes = Object.values(files).reduce(
+          (total, value) => total + Buffer.byteLength(value),
+          0
+        );
+        if (bytes > 2 * 1024 * 1024) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Project source exceeds 2 MiB'
+          });
+        }
+      })
+      .optional()
+  })
+  .strict()
+  .refine((value) => Object.keys(value).some((key) => key !== 'expectedRevision'), {
+    message: 'At least one project field is required'
+  });
+
 export const authChallengeResponseSchema = z.object({
   response: z.discriminatedUnion('type', [
     z.object({ type: z.literal('otp'), code: z.string().min(1).max(32) }),

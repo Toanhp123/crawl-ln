@@ -2,7 +2,9 @@ import type { LibraryApi } from '../library/public/library.api.js';
 import { CreateIngestionJobCommandHandler } from './application/commands/create-ingestion-job.command.js';
 import {
   CancelJobCommandHandler,
+  CancelNovelJobsCommandHandler,
   PauseJobCommandHandler,
+  PurgeNovelJobsCommandHandler,
   ResumeJobCommandHandler
 } from './application/commands/job-control.commands.js';
 import type { IngestionIdGeneratorPort } from './application/ports/id-generator.port.js';
@@ -96,6 +98,8 @@ export function createIngestionModule(
   const pauseJob = new PauseJobCommandHandler(repository, queue);
   const resumeJob = new ResumeJobCommandHandler(repository, queue);
   const cancelJob = new CancelJobCommandHandler(repository, queue);
+  const cancelNovelJobs = new CancelNovelJobsCommandHandler(repository, queue);
+  const purgeNovelJobs = new PurgeNovelJobsCommandHandler(cancelNovelJobs, repository);
   const queries = new IngestionQueriesService(repository);
   const refreshNovelSummary = new RefreshNovelSummaryService(options.library.queries, refreshNovel);
   const resumePausedJobs = new ResumePausedJobsService(queries, resumeJob);
@@ -106,6 +110,8 @@ export function createIngestionModule(
       pauseJob: (command) => pauseJob.execute(command),
       resumeJob: (command) => resumeJob.execute(command),
       cancelJob: (command) => cancelJob.execute(command),
+      cancelNovelJobs: (command) => cancelNovelJobs.execute(command),
+      purgeNovelJobs: (command) => purgeNovelJobs.execute(command),
       refreshNovel: (command) => refreshNovel.execute(command)
     },
     queries: {

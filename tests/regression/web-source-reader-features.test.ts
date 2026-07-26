@@ -421,6 +421,20 @@ test('Task 8 public APIs expose administration actions, hooks, catalogs, and reu
   assert.equal(typeof modules[8].InspectSourceUrl, 'function');
 });
 
+test('structured plugin permission scopes are formatted as readable text', async () => {
+  const permissions =
+    await import('../../apps/web/src/features/review-source-permissions/index.ts');
+
+  assert.equal(
+    permissions.formatSourcePluginPermissionScope({
+      hosts: ['novelcool.com', '*.novelcool.com']
+    }),
+    'novelcool.com, *.novelcool.com'
+  );
+  assert.equal(permissions.formatSourcePluginPermissionScope('novelcool.com'), 'novelcool.com');
+  assert.equal(permissions.formatSourcePluginPermissionScope({}), '');
+});
+
 test('Source Reader writes stay feature-owned and use only public entity invalidation adapters', async () => {
   const upperLayers = [
     await readTree('apps/web/src/app', undefined, new Set([join('i18n', 'catalog.ts')])),

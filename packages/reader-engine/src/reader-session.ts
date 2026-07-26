@@ -9,7 +9,6 @@ import type {
 import {
   appendReaderChapter,
   createReaderWindow,
-  focusReaderWindow,
   prependReaderChapter,
   type ReaderWindow
 } from './reader-window.js';
@@ -31,11 +30,6 @@ function uniqueSortedIdentities(
 export function createReaderSession<TChapter extends ReaderChapterIdentity>(
   options: CreateReaderSessionOptions<TChapter>
 ): ReaderSession<TChapter> {
-  const limit = options.limit ?? 5;
-  if (!Number.isInteger(limit) || limit < 1) {
-    throw new RangeError('Reader window limit must be a positive integer');
-  }
-
   const source = new ReaderChapterSource(options.cache, options.loader, options.persistentCache);
   const listeners = new Set<(snapshot: ReaderSessionSnapshot<TChapter>) => void>();
 
@@ -150,7 +144,7 @@ export function createReaderSession<TChapter extends ReaderChapterIdentity>(
     try {
       const chapter = await loadIdentity(nextNovelId, identity, current.signal);
       if (current.id !== generation || current.signal.aborted) return;
-      chapterWindow = createReaderWindow(chapter, activeIndex, limit);
+      chapterWindow = createReaderWindow(chapter);
       loading = 'idle';
       error = null;
       emit();
@@ -198,8 +192,8 @@ export function createReaderSession<TChapter extends ReaderChapterIdentity>(
         if (currentGeneration !== generation || signal.aborted) return false;
         chapterWindow =
           direction === 'previous'
-            ? prependReaderChapter(chapterWindow, chapter, activeIndex, limit)
-            : appendReaderChapter(chapterWindow, chapter, activeIndex, limit);
+            ? prependReaderChapter(chapterWindow, chapter)
+            : appendReaderChapter(chapterWindow, chapter);
         loading = 'idle';
         error = null;
         emit();
@@ -229,7 +223,6 @@ export function createReaderSession<TChapter extends ReaderChapterIdentity>(
     setActiveIndex(nextActiveIndex) {
       if (!identityAt(nextActiveIndex)) return;
       activeIndex = nextActiveIndex;
-      chapterWindow = focusReaderWindow(chapterWindow, activeIndex, limit);
       error = null;
       emit();
       const active = chapterWindow.chapters.find((chapter) => chapter.index === activeIndex);

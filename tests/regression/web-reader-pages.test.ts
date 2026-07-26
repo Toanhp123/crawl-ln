@@ -40,10 +40,10 @@ test('novel detail preserves management chapter error and last-position behavior
   assert.match(source, /ConfirmDialog/);
 });
 
-test('reader page delegates persistence and bounded loading to reader features', async () => {
+test('reader page delegates persistence and continuous loading to the scroll coordinator', async () => {
   const source = await readTree('apps/web/src/pages/chapter-reader');
   assert.match(source, /useReaderController/);
-  assert.match(source, /useReaderProgress/);
+  assert.match(source, /useReaderScrollCoordinator/);
   assert.match(source, /readReadingPosition/);
   assert.match(source, /saveReadingPosition/);
   assert.match(source, /ReaderPreferencesSheet/);
@@ -51,13 +51,19 @@ test('reader page delegates persistence and bounded loading to reader features',
   assert.doesNotMatch(source, /indexedDB|localStorage|createReaderSession|trimAroundActive/);
 });
 
-test('reader page renders at most the controller window and wires route synchronization', async () => {
+test('reader page renders all loaded chapters and wires intentional navigation', async () => {
   const source = await readTree('apps/web/src/pages/chapter-reader');
-  assert.match(source, /windowLimit:\s*5/);
+  assert.doesNotMatch(source, /windowLimit/);
   assert.match(source, /controller\.chapters\.map/);
-  assert.match(source, /onActiveIndexChange/);
   assert.match(source, /replace:\s*true/);
   assert.match(source, /data-reader-chapter/);
+});
+
+test('reader scroll orchestration uses one frame loop and history replacement', async () => {
+  const source = await readTree('apps/web/src/pages/chapter-reader');
+  assert.match(source, /requestAnimationFrame/);
+  assert.match(source, /history\.replaceState/);
+  assert.doesNotMatch(source, /model\.openChapter\(index, true\)/);
 });
 
 test('reader preserves scroll anchoring navigation wake lock and auto-hiding chrome', async () => {

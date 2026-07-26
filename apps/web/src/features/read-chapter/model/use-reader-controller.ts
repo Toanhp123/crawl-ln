@@ -10,7 +10,6 @@ import { chapterLoaderAdapter } from '../lib/chapter-loader-adapter';
 import { IndexedDbReaderChapterCache } from '../lib/indexeddb-reader-cache';
 import { isReaderUrlOnlySync } from '../lib/reader-route-sync';
 
-const DEFAULT_WINDOW_LIMIT = 5;
 const memoryCache = new MemoryReaderChapterCache<Chapter>(8);
 const persistentCache = new IndexedDbReaderChapterCache();
 
@@ -21,7 +20,6 @@ export interface ReaderControllerOptions {
   initialIndex: number;
   chapters: readonly ReaderChapterSummary[];
   enabled?: boolean;
-  windowLimit?: number;
   onActiveIndexChange?: (index: number) => void;
   onNavigate?: (index: number) => void;
 }
@@ -42,7 +40,6 @@ export function useReaderController({
   initialIndex,
   chapters,
   enabled = true,
-  windowLimit = DEFAULT_WINDOW_LIMIT,
   onActiveIndexChange,
   onNavigate
 }: ReaderControllerOptions) {
@@ -64,10 +61,9 @@ export function useReaderController({
       createReaderSession<Chapter>({
         loader: chapterLoaderAdapter,
         cache: memoryCache,
-        persistentCache,
-        limit: windowLimit
+        persistentCache
       }),
-    [windowLimit]
+    []
   );
   const [snapshot, setSnapshot] = useState<ReaderSessionSnapshot<Chapter>>(() =>
     initialSnapshot(initialIndex)

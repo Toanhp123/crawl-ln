@@ -1,5 +1,11 @@
 import type { IngestionRepository } from '../../domain/repositories/ingestion.repository.js';
-import type { JobIdentityCommand } from '../../public/ingestion.contracts.js';
+import type { IngestionJobStatus } from '../../domain/ingestion.models.js';
+import type {
+  JobIdentityCommand,
+  NovelIngestionCommand
+} from '../../public/ingestion.contracts.js';
+
+const terminalStatuses = new Set<IngestionJobStatus>(['completed', 'failed', 'cancelled']);
 
 type ReceiptStore = Pick<IngestionRepository, 'hasCommandReceipt' | 'recordCommandReceipt'>;
 
@@ -56,5 +62,31 @@ export class CancelJobCommandHandler extends JobControlCommandHandler {
 
   execute(command: JobIdentityCommand): Promise<void> {
     return this.run(command, () => this.queue.cancel(command.jobId));
+  }
+}
+
+export class CancelNovelJobsCommandHandler {
+  constructor(
+    private readonly repository: Pick<IngestionRepository, 'findAllByNovelId'>,
+    private readonly queue: { cancel(jobId: string): Promise<void> }
+  ) {}
+
+  async execute(command: NovelIngestionCommand): Promise<void> {
+    const jobs = await this.repository.findAllByNovelId(command.novelId);
+    for (const job of jobs) {
+      if (!terminalStatuses.has(job.status)) await this.queue.cancel(job.id);
+    }
+  }
+}
+
+export class PurgeNovelJobsCommandHandler {
+  constructor(
+    private readonly cancel: Pick<CancelNovelJobsCommandHandler, 'execute'>,
+    private readonly repository: Pick<IngestionRepository, 'deleteByNovelId'>
+  ) {}
+
+  async execute(command: NovelIngestionCommand): Promise<void> {
+    await this.cancel.execute(command);
+    await this.repository.deleteByNovelId(command.novelId);
   }
 }

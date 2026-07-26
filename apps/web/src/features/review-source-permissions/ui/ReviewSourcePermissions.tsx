@@ -2,6 +2,7 @@ import { useSourcePluginPermissions } from '../../../entities/source-plugin';
 import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { Button, EmptyState, ErrorBanner, ListRow, LoadingState, Panel } from '../../../shared/ui';
+import { formatSourcePluginPermissionScope } from '../model/format-source-plugin-permission-scope';
 import { useReviewSourcePermissions } from '../model/use-review-source-permissions';
 
 export function ReviewSourcePermissions({
@@ -19,13 +20,16 @@ export function ReviewSourcePermissions({
   return (
     <Panel tone="default" className="space-y-3">
       {query.data?.length ? (
-        query.data.map((permission, index) => (
-          <ListRow
-            key={`${permission.permission ?? permission.scope ?? 'permission'}-${index}`}
-            title={permission.permission ?? permission.scope ?? `Permission ${index + 1}`}
-            description={permission.scope ?? permission.status ?? ''}
-          />
-        ))
+        query.data.map((permission, index) => {
+          const scope = formatSourcePluginPermissionScope(permission.scope);
+          return (
+            <ListRow
+              key={`${permission.pluginVersion ?? version}-${permission.permission ?? index}`}
+              title={(permission.permission ?? scope) || `Permission ${index + 1}`}
+              description={scope || permission.status || ''}
+            />
+          );
+        })
       ) : (
         <EmptyState title={t('reviewSourcePermissions.empty')} />
       )}

@@ -32,7 +32,6 @@ export interface CreateReaderSessionOptions<TChapter extends ReaderChapterIdenti
   loader: ReaderChapterLoader<TChapter>;
   cache: ReaderChapterCache<TChapter>;
   persistentCache?: ReaderChapterCache<TChapter>;
-  limit?: number;
 }
 
 export interface ReaderSession<TChapter extends ReaderChapterIdentity> {

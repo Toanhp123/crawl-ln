@@ -12,6 +12,7 @@ export type {
   IngestionQueries,
   JobIdentityCommand,
   ListIngestionJobsQuery,
+  NovelIngestionCommand,
   RefreshNovelCommand
 } from './ingestion.contracts.js';
 export type {

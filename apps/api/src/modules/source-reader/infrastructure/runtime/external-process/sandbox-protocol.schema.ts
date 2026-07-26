@@ -2,11 +2,14 @@ import { z } from 'zod';
 
 const protocolVersion = z.literal(1);
 const safeId = z.string().min(1).max(160);
-const safeString = z.string().max(200_000);
+// HTTP source responses are capped at 20 MiB and must fit through isolated-plugin IPC.
+const MAX_PROTOCOL_STRING_BYTES = 20 * 1024 * 1024;
+const safeString = z.string().max(MAX_PROTOCOL_STRING_BYTES);
 
 const MAX_PROTOCOL_DEPTH = 32;
 const MAX_PROTOCOL_NODES = 10_000;
-const MAX_PROTOCOL_BYTES = 512_000;
+const MAX_PROTOCOL_BYTES = 24 * 1024 * 1024;
+const MAX_PROTOCOL_ARRAY_ITEMS = 8_192;
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 const boundedJsonValue: z.ZodType<JsonValue> = z.lazy(() =>
@@ -15,7 +18,7 @@ const boundedJsonValue: z.ZodType<JsonValue> = z.lazy(() =>
     z.number().finite(),
     z.boolean(),
     z.null(),
-    z.array(boundedJsonValue).max(256),
+    z.array(boundedJsonValue).max(MAX_PROTOCOL_ARRAY_ITEMS),
     z
       .record(boundedJsonValue)
       .refine((value) => Object.keys(value).length <= 128, 'Too many object properties')

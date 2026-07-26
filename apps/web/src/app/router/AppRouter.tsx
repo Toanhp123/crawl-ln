@@ -26,6 +26,9 @@ const SourcesPage = lazy(() =>
 const SourcePluginPage = lazy(() =>
   routeLoaders.sourcePlugin().then((module) => ({ default: module.SourcePluginPage }))
 );
+const SourcePluginStudioPage = lazy(() =>
+  routeLoaders.sourcePluginStudio().then((module) => ({ default: module.SourcePluginStudioPage }))
+);
 const SettingsPage = lazy(() =>
   routeLoaders.settings().then((module) => ({ default: module.SettingsPage }))
 );
@@ -52,7 +55,7 @@ export function AppRouter() {
         <Route path="/activity" element={<ActivityPage />} />
         <Route path="/activity/:taskId" element={<TaskDetailPage />} />
         <Route path="/sources" element={<SourcesPage />} />
-        <Route path="/sources/new" element={<SourcePluginPage mode="create" />} />
+        <Route path="/sources/new" element={<SourcePluginStudioPage />} />
         <Route path="/sources/:pluginId" element={<SourcePluginPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/crawl" element={<Navigate to="/activity" replace />} />

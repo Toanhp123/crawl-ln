@@ -259,6 +259,40 @@ export class IngestionSqliteRepository implements IngestionRepository {
     return row ? mapIngestionJobRow(row) : null;
   }
 
+  async findAllByNovelId(novelId: string): Promise<IngestionJob[]> {
+    const rows = this.database.connection
+      .prepare(
+        `SELECT *
+           FROM ingestion_jobs
+          WHERE novel_id = ?
+          ORDER BY created_at ASC, id ASC`
+      )
+      .all(novelId) as Record<string, unknown>[];
+    return rows.map(mapIngestionJobRow);
+  }
+
+  async deleteByNovelId(novelId: string): Promise<void> {
+    this.database.transactionSync(() => {
+      const jobs = this.database.connection
+        .prepare('SELECT id FROM ingestion_jobs WHERE novel_id = ?')
+        .all(novelId) as Array<{ id: string }>;
+      for (const job of jobs) {
+        this.database.connection
+          .prepare(
+            `DELETE FROM ingestion_outbox
+              WHERE payload_json LIKE ? OR payload_json LIKE ?`
+          )
+          .run(`%"jobId":"${job.id}"%`, `%"id":"${job.id}"%`);
+        this.database.connection
+          .prepare('DELETE FROM ingestion_command_receipts WHERE result_json LIKE ?')
+          .run(`%"id":"${job.id}"%`);
+      }
+      this.database.connection
+        .prepare('DELETE FROM ingestion_jobs WHERE novel_id = ?')
+        .run(novelId);
+    });
+  }
+
   async findAll(limit = 50, status?: IngestionJobStatus): Promise<IngestionJob[]> {
     const rows = status
       ? (this.database.connection

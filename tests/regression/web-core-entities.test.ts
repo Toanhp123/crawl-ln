@@ -73,6 +73,11 @@ test('entity APIs contain GET reads but no product writes', async () => {
   );
 });
 
+test('chapter reader memoizes chapter content across progress updates', async () => {
+  const source = await readFile('apps/web/src/entities/chapter/ui/ChapterReader.tsx', 'utf8');
+  assert.match(source, /memo\(/);
+});
+
 test('entity read clients preserve current endpoint and query contracts', async () => {
   const requests: Array<{ url: string; init?: RequestInit }> = [];
   const previousFetch = globalThis.fetch;

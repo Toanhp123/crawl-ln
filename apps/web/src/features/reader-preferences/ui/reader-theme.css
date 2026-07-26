@@ -136,6 +136,10 @@
     color var(--motion-normal) var(--ease-standard);
 }
 
+#reader-scroll-root {
+  overflow-anchor: none;
+}
+
 .reader-surface input[type='range'] {
   touch-action: pan-x;
 }

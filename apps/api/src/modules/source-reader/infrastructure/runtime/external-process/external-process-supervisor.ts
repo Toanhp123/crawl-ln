@@ -46,6 +46,7 @@ interface OutputPolicyViolation {
 interface SupervisorOptions {
   startupTimeoutMs: number;
   cancelGraceMs: number;
+  now?(): number;
   structuredLogger?: SourceReaderStructuredLogger;
   onOutputPolicyViolation?(input: OutputPolicyViolation): Promise<void> | void;
 }
@@ -247,6 +248,7 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
     readonly pluginVersion: string,
     private readonly child: ChildProcess,
     private readonly cancelGraceMs: number,
+    private readonly now: () => number,
     private readonly onTerminated: () => void
   ) {
     child.on('message', (value: unknown) => this.onMessage(value));
@@ -284,7 +286,7 @@ class ExternalProcessHandle implements ExternalPluginProcessHandle {
         fallbackAllowed: false
       });
     }
-    const timeoutMs = Math.max(0, Date.parse(request.deadlineAt) - Date.now());
+    const timeoutMs = Math.max(0, Date.parse(request.deadlineAt) - this.now());
     return new Promise((resolveRequest, rejectRequest) => {
       const completeAfterTermination = async (error: SourceReaderError, reason: string) => {
         const pending = this.pending.get(request.requestId);
@@ -491,6 +493,7 @@ export class ExternalProcessSupervisor implements ExternalPluginSupervisorPort {
       input.pluginVersion,
       child,
       this.options.cancelGraceMs,
+      this.options.now ?? Date.now,
       () => this.handles.delete(key(input.pluginId, input.pluginVersion))
     );
     this.handles.set(key(input.pluginId, input.pluginVersion), handle);

@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { cp, mkdir, readFile, rm } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { runApiBuild } from '../../../apps/api/scripts/build.mjs';
 import { parseOptions } from '../lib/arguments.mjs';
@@ -10,6 +11,7 @@ import { readStartableBuild, writeBuildManifest } from '../lib/build-manifest.mj
 import { prepareInternalPackages } from '../lib/internal-packages.mjs';
 import { importFrom } from '../lib/module-loader.mjs';
 import { projectRoot } from '../lib/repository.mjs';
+import { packageFirstPartySourcePlugin } from '../lib/first-party-source-plugin.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -69,13 +71,38 @@ async function defaultBuildWeb({ root, outDir, buildId }) {
   }
 }
 
+async function defaultPackageFirstPartyPlugins({ root, stage, outputDirectory }) {
+  const verifierModule = await import(
+    `${
+      pathToFileURL(
+        join(
+          stage,
+          'server/modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.js'
+        )
+      ).href
+    }?stage=${encodeURIComponent(stage)}`
+  );
+  const verifier = new verifierModule.SourcePluginPackageVerifier({
+    async find() {
+      return undefined;
+    }
+  });
+  return packageFirstPartySourcePlugin({
+    root,
+    workspaceRoot: join(root, 'plugins', 'novelcool'),
+    outputDirectory,
+    verifier
+  });
+}
+
 export async function buildFullApplication({
   root = projectRoot,
   distRoot = join(root, 'dist'),
   buildId,
   prepare = prepareInternalPackages,
   buildApi = ({ apiRoot, outputRoot }) => runApiBuild({ apiRoot, outputRoot }),
-  buildWeb = defaultBuildWeb
+  buildWeb = defaultBuildWeb,
+  packageFirstPartyPlugins = defaultPackageFirstPartyPlugins
 } = {}) {
   const applicationVersion = (await readPackage(root)).version;
   const resolvedBuildId = buildId ?? (await deriveBuildId(root));
@@ -92,6 +119,11 @@ export async function buildFullApplication({
     const runtimeRoot = join(stage, 'server', 'node_modules', '@novel-tool');
     await copyRuntimePackage(root, 'shared', join(runtimeRoot, 'shared'));
     await copyRuntimePackage(root, 'source-plugin-sdk', join(runtimeRoot, 'source-plugin-sdk'));
+    await packageFirstPartyPlugins({
+      root,
+      stage,
+      outputDirectory: join(stage, 'plugins')
+    });
     await buildWeb({
       root,
       outDir: join(stage, 'public'),

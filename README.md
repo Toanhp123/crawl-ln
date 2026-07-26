@@ -65,6 +65,8 @@ npm run start
 
 Build hoàn chỉnh được dựng trong staging rồi mới thay thế root `dist/`. Production phục vụ `/health`, `/api/*`, static assets và SPA fallback từ cùng một host/port. `HOST`, `PORT`, storage và security tiếp tục được cấu hình qua environment.
 
+Build hoàn chỉnh cũng tạo plugin NovelCool tại `dist/plugins/novelcool-2.0.0.source-plugin`. Artifact này không được tự động cài đặt hoặc bật: mở `/sources`, tải package lên, duyệt quyền truy cập `novelcool.com` và `*.novelcool.com`, rồi chủ động bật phiên bản `2.0.0`. Xem [hướng dẫn Source Reader](docs/SOURCE_READER.md) để biết trust status và ranh giới runtime.
+
 ### Cleanup và reset dữ liệu
 
 ```bash

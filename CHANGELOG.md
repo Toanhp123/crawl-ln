@@ -12,7 +12,8 @@
 - Defaulted the API to loopback-only binding with strict CORS, required a strong bearer token for intentional LAN exposure, and removed implicit Source Reader administration roles.
 - Isolated every regression and integration file in its own temporary process, storage directory, and plugin directory; removed forced test exits and shared module-cache/environment state.
 - Split API emit, Web type-check, and Vite production build into short cross-platform child processes to reduce peak memory and removed stale root environment configuration.
-- Hardened the built-in NovelCool adapter with redirect/challenge classification, current and fallback chapter selectors, same-origin chapter filtering, URL deduplication, and typed upstream challenge errors.
+- Replaced the built-in NovelCool adapter with a first-party external plugin that preserves redirect/challenge classification, current and fallback chapter selectors, same-origin filtering, canonical URL deduplication, and typed upstream errors.
+- Packaged NovelCool `2.0.0` during full builds for explicit Sources-page installation as an unsigned, `local-unverified`, isolated plugin; builds never install or activate it, and there is no built-in fallback.
 - Simplified root/workspace command orchestration so shared contracts compile once per full check or build.
 - Added safe cross-platform generated-output cleanup and canonical documentation consistency checks.
 - Consolidated current documentation and removed completed plans, reviews, checkpoints, duplicate reports, and obsolete setup guidance from the active tree while preserving Git history.

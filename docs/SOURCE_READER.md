@@ -43,6 +43,14 @@ Every capability declares a contract version. The host rejects unsupported versi
 
 Trust levels are `built-in`, `signed`, `local-unverified`, and `blocked`. External packages request scoped permissions for network hosts, browser use, authentication, persistent cache, and external assets. Requested permissions must be approved for the exact plugin version before activation. Permission denial, package mutation, or integrity failure disables or quarantines the affected version.
 
+## First-party NovelCool installation
+
+A full `npm run build` produces `dist/plugins/novelcool-2.0.0.source-plugin`. Build, setup, and start never install, update, approve, or activate that package. To use NovelCool, manually install it from the `/sources` Plugins page: choose **Install plugin**, upload the generated package, open the installed NovelCool version, approve its requested network access to `novelcool.com` and `*.novelcool.com`, and then enable version `2.0.0`.
+
+The first-party artifact is unsigned, so the production verifier reports `local-unverified`: it was built locally and passed package integrity checks, but it is not trusted release-signed software. NovelCool execution is always `isolated` in the supervised child process; approval does not permit in-process execution.
+
+Before installation, after disabling the plugin, or when its version is unavailable, NovelCool URLs intentionally have no matching candidate. This hard cutover has no built-in fallback. Existing library records and downloaded chapter data remain intact because plugin installation and candidate resolution do not rewrite library-owned persistence.
+
 ## Master-key generation and degraded mode
 
 Generate a 32-byte base64 key:

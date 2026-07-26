@@ -124,6 +124,19 @@ test('active documentation and CI use only the eight-command interface', async (
   assert.match(termux, /npm run dev/);
 });
 
+test('NovelCool documentation publishes the external plugin installation boundary', async () => {
+  const [readme, sourceReaderDocs] = await Promise.all([
+    readFile('README.md', 'utf8'),
+    readFile('docs/SOURCE_READER.md', 'utf8')
+  ]);
+
+  assert.match(readme, /dist\/plugins\/novelcool-2\.0\.0\.source-plugin/);
+  assert.match(sourceReaderDocs, /manual(?:ly)? install/i);
+  assert.match(sourceReaderDocs, /local-unverified/i);
+  assert.match(sourceReaderDocs, /isolated/i);
+  assert.match(sourceReaderDocs, /no built-in fallback/i);
+});
+
 test('frontend docs publish the shared theme and Settings control contract', async () => {
   const [index, contract] = await Promise.all([
     readFile('docs/README.md', 'utf8'),

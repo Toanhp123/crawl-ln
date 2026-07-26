@@ -38,7 +38,6 @@ export function sanitizeIngestionChapterText(text: string, title?: string): stri
       if (/^\*{8,}$/.test(line)) return false;
       if (/^download$/i.test(line)) return false;
       if (/^https?:\/\//i.test(line)) return false;
-      if (/^novelcool\.com\//i.test(line)) return false;
       if (/^\/\s*chapter\b/i.test(line)) return false;
       if (/^chapter\s+\d+\s*$/.test(lower)) return false;
       if (normalizedTitle && (lower === normalizedTitle || lower === `1. ${normalizedTitle}`)) {

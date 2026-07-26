@@ -1,5 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
+import { builtinModules } from 'node:module';
 import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
+import { discoverSourcePluginWorkspaces } from './source-plugin-workspaces.mjs';
 
 export const PUBLIC_COMMANDS = [
   'setup',
@@ -57,7 +59,17 @@ const moduleExtensions = new Set(['.cjs', '.js', '.jsx', '.mjs', '.ts', '.tsx'])
 const skippedDirectories = new Set(['.artifacts', '.git', 'dist', 'node_modules']);
 const moduleSpecifierPattern =
   /\b(?:import|export)\s+(?:type\s+)?(?:[^'";()]*?\s+from\s+)?['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-const builtInNovelCoolPath = 'infrastructure/plugins/built-in/novelcool';
+const publicPluginSdk = '@novel-tool/source-plugin-sdk';
+const nodeBuiltins = new Set(builtinModules.map((specifier) => specifier.replace(/^node:/, '')));
+const nonProductionSegments = new Set([
+  '__fixtures__',
+  '__tests__',
+  'docs',
+  'fixture',
+  'fixtures',
+  'test',
+  'tests'
+]);
 
 async function exists(path) {
   try {
@@ -100,6 +112,39 @@ function moduleSpecifiers(content) {
   return [...content.matchAll(moduleSpecifierPattern)].map((match) => match[1] ?? match[2]);
 }
 
+function isProductionSource(display) {
+  return !display.split('/').some((segment) => nonProductionSegments.has(segment.toLowerCase()));
+}
+
+function isNodeBuiltin(specifier) {
+  return specifier.startsWith('node:') || nodeBuiltins.has(specifier);
+}
+
+function containsToken(content, token) {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^a-z0-9-])${escaped}([^a-z0-9-]|$)`, 'i').test(content);
+}
+
+function manifestDomains(manifest) {
+  const domains = [];
+  for (const matcher of manifest?.matchers ?? []) domains.push(...(matcher?.hosts ?? []));
+  domains.push(...(manifest?.permissions?.network?.hosts ?? []));
+  return [
+    ...new Set(
+      domains
+        .filter((domain) => typeof domain === 'string')
+        .map((domain) => domain.trim().toLowerCase().replace(/^\*\./, ''))
+        .filter(Boolean)
+    )
+  ].sort();
+}
+
+function withoutModuleSpecifiers(content, specifiers) {
+  let result = content;
+  for (const specifier of specifiers) result = result.replaceAll(specifier.toLowerCase(), '');
+  return result;
+}
+
 function pathIsWithin(parent, candidate) {
   const nested = relative(parent, candidate);
   return nested === '' || (!nested.startsWith('..') && !isAbsolute(nested));
@@ -120,6 +165,17 @@ function pluginImportTargetsApplication(importer, specifier, appsRoot) {
   );
 }
 
+function pluginImportTargetsPackages(importer, specifier, packagesRoot) {
+  const normalized = specifier.replaceAll('\\', '/').toLowerCase();
+  return (
+    (!specifier.startsWith('.') &&
+      (normalized === 'packages' ||
+        normalized.startsWith('packages/') ||
+        normalized.includes('/packages/'))) ||
+    relativeImportResolvesWithin(importer, specifier, packagesRoot)
+  );
+}
+
 function applicationImportTargetsPlugin(importer, specifier, pluginsRoot) {
   const normalized = specifier.replaceAll('\\', '/').toLowerCase();
   return (
@@ -131,39 +187,92 @@ function applicationImportTargetsPlugin(importer, specifier, pluginsRoot) {
   );
 }
 
-export async function checkFirstPartyPluginBoundaries(projectRoot) {
+export async function checkFirstPartyPluginBoundaries(
+  projectRoot,
+  { discover = discoverSourcePluginWorkspaces } = {}
+) {
   const root = resolve(projectRoot);
   const appsRoot = join(root, 'apps');
+  const packagesRoot = join(root, 'packages');
   const pluginsRoot = join(root, 'plugins');
+  const workspaces = await discover(root);
   const files = [];
   await collectFiles(root, appsRoot, files);
-  await collectFiles(root, pluginsRoot, files);
+  await collectFiles(root, packagesRoot, files);
+  for (const workspace of workspaces) {
+    await collectFiles(root, join(workspace.workspaceRoot, 'src'), files);
+  }
 
   const errors = [];
+  const hostDomains = [
+    ...new Set(workspaces.flatMap((workspace) => manifestDomains(workspace.manifest)))
+  ].sort();
   for (const absolute of [...new Set(files)].sort()) {
     if (!moduleExtensions.has(extname(absolute).toLowerCase())) continue;
     const display = relative(root, absolute).replaceAll('\\', '/');
+    if (!isProductionSource(display)) continue;
     const normalizedDisplay = display.toLowerCase();
     const content = await readFile(absolute, 'utf8');
     const normalizedContent = content.replaceAll('\\', '/').toLowerCase();
-    if (normalizedContent.includes(builtInNovelCoolPath)) {
-      errors.push(`Built-in NovelCool reference is forbidden: ${display}`);
+    const specifiers = moduleSpecifiers(content);
+
+    const hostFile = /^(?:apps|packages)\/[^/]+\/src\//.test(normalizedDisplay);
+    if (hostFile) {
+      const contentWithoutImports = withoutModuleSpecifiers(normalizedContent, specifiers);
+      for (const domain of hostDomains) {
+        if (contentWithoutImports.includes(domain)) {
+          errors.push(`Host source contains plugin domain "${domain}": ${display}`);
+        }
+      }
+      for (const workspace of workspaces) {
+        const builtInPath = `infrastructure/plugins/built-in/${workspace.id}`;
+        if (contentWithoutImports.includes(builtInPath)) {
+          errors.push(`Built-in plugin path "${builtInPath}" is forbidden: ${display}`);
+        }
+        const withoutBuiltInPath = contentWithoutImports.replaceAll(builtInPath, '');
+        const idToken = workspace.id.toLowerCase();
+        if (containsToken(withoutBuiltInPath, idToken)) {
+          errors.push(`Host source contains plugin id "${idToken}": ${display}`);
+        }
+      }
+      if (
+        specifiers.some((specifier) =>
+          applicationImportTargetsPlugin(absolute, specifier, pluginsRoot)
+        )
+      ) {
+        errors.push(`Application imports first-party plugin source: ${display}`);
+      }
+      continue;
     }
 
-    const specifiers = moduleSpecifiers(content);
-    if (
-      normalizedDisplay.startsWith('plugins/') &&
-      specifiers.some((specifier) => pluginImportTargetsApplication(absolute, specifier, appsRoot))
-    ) {
-      errors.push(`First-party plugin imports application code: ${display}`);
+    if (!normalizedDisplay.startsWith('plugins/')) continue;
+    const workspace = workspaces.find((candidate) =>
+      pathIsWithin(candidate.workspaceRoot, absolute)
+    );
+    if (!workspace) continue;
+    for (const specifier of specifiers) {
+      if (pluginImportTargetsApplication(absolute, specifier, appsRoot)) {
+        errors.push(`First-party plugin imports application code: ${display}`);
+        continue;
+      }
+      if (pluginImportTargetsPackages(absolute, specifier, packagesRoot)) {
+        errors.push(`First-party plugin imports package code: ${display}`);
+        continue;
+      }
+      if (specifier === publicPluginSdk) continue;
+      if (isNodeBuiltin(specifier)) {
+        errors.push(`Plugin imports Node built-in "${specifier}": ${display}`);
+        continue;
+      }
+      if (specifier.startsWith('.')) {
+        if (relativeImportResolvesWithin(absolute, specifier, workspace.workspaceRoot)) continue;
+        errors.push(`Plugin relative import escapes workspace "${specifier}": ${display}`);
+        continue;
+      }
+      errors.push(`Plugin uses unsupported bare import "${specifier}": ${display}`);
     }
-    if (
-      normalizedDisplay.startsWith('apps/') &&
-      specifiers.some((specifier) =>
-        applicationImportTargetsPlugin(absolute, specifier, pluginsRoot)
-      )
-    ) {
-      errors.push(`Application imports first-party plugin source: ${display}`);
+    if (/(?:^|[^\w$.])fetch\s*\(/m.test(content)) {
+      errors.push(`Plugin uses direct fetch: ${display}`);
     }
   }
   return [...new Set(errors)].sort();

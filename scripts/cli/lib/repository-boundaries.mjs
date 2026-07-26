@@ -1,5 +1,5 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
-import { extname, join, relative, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 
 export const PUBLIC_COMMANDS = [
   'setup',
@@ -53,7 +53,11 @@ const sourceExtensions = new Set([
   '.yml',
   '.yaml'
 ]);
+const moduleExtensions = new Set(['.cjs', '.js', '.jsx', '.mjs', '.ts', '.tsx']);
 const skippedDirectories = new Set(['.artifacts', '.git', 'dist', 'node_modules']);
+const moduleSpecifierPattern =
+  /\b(?:import|export)\s+(?:type\s+)?(?:[^'";()]*?\s+from\s+)?['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+const builtInNovelCoolPath = 'infrastructure/plugins/built-in/novelcool';
 
 async function exists(path) {
   try {
@@ -85,10 +89,84 @@ function runtimeRoots(root) {
   return [
     join(root, 'apps'),
     join(root, 'packages'),
+    join(root, 'plugins'),
     join(root, 'scripts', 'cli'),
     join(root, 'scripts', 'lib'),
     join(root, 'tests')
   ];
+}
+
+function moduleSpecifiers(content) {
+  return [...content.matchAll(moduleSpecifierPattern)].map((match) => match[1] ?? match[2]);
+}
+
+function pathIsWithin(parent, candidate) {
+  const nested = relative(parent, candidate);
+  return nested === '' || (!nested.startsWith('..') && !isAbsolute(nested));
+}
+
+function relativeImportResolvesWithin(importer, specifier, targetRoot) {
+  return (
+    specifier.startsWith('.') && pathIsWithin(targetRoot, resolve(dirname(importer), specifier))
+  );
+}
+
+function pluginImportTargetsApplication(importer, specifier, appsRoot) {
+  const normalized = specifier.replaceAll('\\', '/').toLowerCase();
+  return (
+    (!specifier.startsWith('.') &&
+      (normalized === 'apps' || normalized.startsWith('apps/') || normalized.includes('/apps/'))) ||
+    relativeImportResolvesWithin(importer, specifier, appsRoot)
+  );
+}
+
+function applicationImportTargetsPlugin(importer, specifier, pluginsRoot) {
+  const normalized = specifier.replaceAll('\\', '/').toLowerCase();
+  return (
+    (!specifier.startsWith('.') &&
+      (normalized === 'plugins' ||
+        normalized.startsWith('plugins/') ||
+        normalized.includes('/plugins/'))) ||
+    relativeImportResolvesWithin(importer, specifier, pluginsRoot)
+  );
+}
+
+export async function checkFirstPartyPluginBoundaries(projectRoot) {
+  const root = resolve(projectRoot);
+  const appsRoot = join(root, 'apps');
+  const pluginsRoot = join(root, 'plugins');
+  const files = [];
+  await collectFiles(root, appsRoot, files);
+  await collectFiles(root, pluginsRoot, files);
+
+  const errors = [];
+  for (const absolute of [...new Set(files)].sort()) {
+    if (!moduleExtensions.has(extname(absolute).toLowerCase())) continue;
+    const display = relative(root, absolute).replaceAll('\\', '/');
+    const normalizedDisplay = display.toLowerCase();
+    const content = await readFile(absolute, 'utf8');
+    const normalizedContent = content.replaceAll('\\', '/').toLowerCase();
+    if (normalizedContent.includes(builtInNovelCoolPath)) {
+      errors.push(`Built-in NovelCool reference is forbidden: ${display}`);
+    }
+
+    const specifiers = moduleSpecifiers(content);
+    if (
+      normalizedDisplay.startsWith('plugins/') &&
+      specifiers.some((specifier) => pluginImportTargetsApplication(absolute, specifier, appsRoot))
+    ) {
+      errors.push(`First-party plugin imports application code: ${display}`);
+    }
+    if (
+      normalizedDisplay.startsWith('apps/') &&
+      specifiers.some((specifier) =>
+        applicationImportTargetsPlugin(absolute, specifier, pluginsRoot)
+      )
+    ) {
+      errors.push(`Application imports first-party plugin source: ${display}`);
+    }
+  }
+  return [...new Set(errors)].sort();
 }
 
 function allRoots(root) {
@@ -157,6 +235,7 @@ export async function checkRepositoryBoundaries(projectRoot, { scope = 'all' } =
   if (!['runtime', 'all'].includes(scope)) throw new Error(`Unknown boundary scope: ${scope}`);
   const errors = [];
   if (scope === 'all') errors.push(...(await rootCommandErrors(root)));
+  errors.push(...(await checkFirstPartyPluginBoundaries(root)));
 
   const files = [];
   for (const candidate of scope === 'runtime' ? runtimeRoots(root) : allRoots(root)) {

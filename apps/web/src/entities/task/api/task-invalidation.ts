@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { QueryInvalidationOptions } from '../../../shared/api';
+import { invalidateQuery, type QueryInvalidationOptions } from '../../../shared/api';
 import { taskKeys } from './task-keys';
 
 export interface TaskInvalidationApi {
@@ -24,15 +24,15 @@ export interface TaskInvalidationApi {
 }
 
 export const taskInvalidation: TaskInvalidationApi = {
-  invalidateAll: (client, options) => client.invalidateQueries({ queryKey: taskKeys.all }, options),
+  invalidateAll: (client, options) => invalidateQuery(client, { queryKey: taskKeys.all }, options),
   invalidateList: (client, options) =>
-    client.invalidateQueries({ queryKey: taskKeys.lists() }, options),
+    invalidateQuery(client, { queryKey: taskKeys.lists() }, options),
   invalidateSummary: (client, options) =>
-    client.invalidateQueries({ queryKey: taskKeys.summary() }, options),
+    invalidateQuery(client, { queryKey: taskKeys.summary() }, options),
   invalidateDetail: (client, id, options) =>
-    client.invalidateQueries({ queryKey: taskKeys.detail(id) }, options),
+    invalidateQuery(client, { queryKey: taskKeys.detail(id) }, options),
   invalidateEvents: (client, id, options) =>
-    client.invalidateQueries({ queryKey: taskKeys.events(id) }, options),
+    invalidateQuery(client, { queryKey: taskKeys.events(id) }, options),
   invalidateForNovel: (client, id, options) =>
-    client.invalidateQueries({ queryKey: taskKeys.novel(id) }, options)
+    invalidateQuery(client, { queryKey: taskKeys.novel(id) }, options)
 };

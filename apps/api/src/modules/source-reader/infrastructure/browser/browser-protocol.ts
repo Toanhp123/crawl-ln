@@ -13,10 +13,13 @@ export type BrowserCommandPayload =
 export type BrowserCommand =
   | ({ type: 'command'; id: string } & BrowserCommandPayload)
   | { type: 'secret-result'; requestId: string; ok: true; value: string }
-  | { type: 'secret-result'; requestId: string; ok: false; error: string };
+  | { type: 'secret-result'; requestId: string; ok: false; error: string }
+  | { type: 'request-authorization-result'; requestId: string; ok: true }
+  | { type: 'request-authorization-result'; requestId: string; ok: false; error: string };
 
 export type BrowserEvent =
   | { type: 'ready' }
   | { type: 'result'; id: string; ok: true; value?: unknown }
   | { type: 'result'; id: string; ok: false; error: string }
-  | { type: 'resolve-secret'; requestId: string; handle: BrowserSecretHandle };
+  | { type: 'resolve-secret'; requestId: string; handle: BrowserSecretHandle }
+  | { type: 'authorize-request'; requestId: string; url: string };

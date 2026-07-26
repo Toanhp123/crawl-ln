@@ -20,6 +20,10 @@ const pendingSecrets = new Map<
   string,
   { resolve(value: string): void; reject(error: Error): void }
 >();
+const pendingRequestAuthorizations = new Map<
+  string,
+  { resolve(): void; reject(error: Error): void }
+>();
 
 function hostAllowed(url: string): boolean {
   const hostname = new URL(url).hostname.toLowerCase();
@@ -34,6 +38,14 @@ function requestParentSecret(handle: { credentialId: string; field: string }): P
   });
 }
 
+function requestParentAuthorization(url: string): Promise<void> {
+  const requestId = randomUUID();
+  return new Promise((resolve, reject) => {
+    pendingRequestAuthorizations.set(requestId, { resolve, reject });
+    parentPort!.postMessage({ type: 'authorize-request', requestId, url } satisfies BrowserEvent);
+  });
+}
+
 async function initialize(): Promise<void> {
   browser = await chromium.launch(
     buildChromiumLaunchOptions({
@@ -45,11 +57,17 @@ async function initialize(): Promise<void> {
   page = await context.newPage();
   page.on('download', (download) => void download.cancel());
   await page.route('**/*', async (route) => {
-    if (!hostAllowed(route.request().url())) {
+    const requestUrl = route.request().url();
+    if (!hostAllowed(requestUrl)) {
       await route.abort('blockedbyclient');
       return;
     }
-    await route.continue();
+    try {
+      await requestParentAuthorization(requestUrl);
+      await route.continue();
+    } catch {
+      await route.abort('blockedbyclient');
+    }
   });
   parentPort!.postMessage({ type: 'ready' } satisfies BrowserEvent);
 }
@@ -90,6 +108,14 @@ async function execute(command: Extract<BrowserCommand, { type: 'command' }>): P
 }
 
 parentPort.on('message', (message: BrowserCommand) => {
+  if (message.type === 'request-authorization-result') {
+    const pending = pendingRequestAuthorizations.get(message.requestId);
+    if (!pending) return;
+    pendingRequestAuthorizations.delete(message.requestId);
+    if (message.ok) pending.resolve();
+    else pending.reject(new Error(message.error));
+    return;
+  }
   if (message.type === 'secret-result') {
     const pending = pendingSecrets.get(message.requestId);
     if (!pending) return;

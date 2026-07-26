@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { RealtimeEvent } from '@novel-tool/shared';
 import { useEffect, useRef, type PropsWithChildren } from 'react';
 import { API_BASE_URL } from '../../shared/config';
+import { invalidateQuery } from '../../shared/api';
 import {
   createBatchQueue,
   createEventStream,
@@ -36,7 +37,7 @@ export function RealtimeProvider({ children }: PropsWithChildren) {
         setConnectionStatus(nextStatus);
         if (nextStatus !== 'connected') return;
         if (connectedOnce.current) {
-          void queryClient.invalidateQueries({ type: 'active' }, realtimeInvalidationOptions);
+          void invalidateQuery(queryClient, { type: 'active' }, realtimeInvalidationOptions);
         }
         connectedOnce.current = true;
       },
@@ -47,7 +48,7 @@ export function RealtimeProvider({ children }: PropsWithChildren) {
 
     const reconcileVisibleQueries = () => {
       if (document.visibilityState === 'visible') {
-        void queryClient.invalidateQueries({ type: 'active' }, realtimeInvalidationOptions);
+        void invalidateQuery(queryClient, { type: 'active' }, realtimeInvalidationOptions);
       }
     };
     document.addEventListener('visibilitychange', reconcileVisibleQueries);

@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { QueryInvalidationOptions } from '../../../shared/api';
+import { invalidateQuery, type QueryInvalidationOptions } from '../../../shared/api';
 import { schedulerKeys } from './scheduler-keys';
 
 export interface SchedulerInvalidationApi {
@@ -15,11 +15,11 @@ export interface SchedulerInvalidationApi {
 
 export const schedulerInvalidation: SchedulerInvalidationApi = {
   invalidateAll: (client, options) =>
-    client.invalidateQueries({ queryKey: schedulerKeys.all }, options),
+    invalidateQuery(client, { queryKey: schedulerKeys.all }, options),
   invalidateStatus: (client, options) =>
-    client.invalidateQueries({ queryKey: schedulerKeys.status() }, options),
+    invalidateQuery(client, { queryKey: schedulerKeys.status() }, options),
   invalidateDiagnostics: (client, options) =>
-    client.invalidateQueries({ queryKey: schedulerKeys.diagnosticsRoot() }, options),
+    invalidateQuery(client, { queryKey: schedulerKeys.diagnosticsRoot() }, options),
   invalidateNovelDiagnostics: (client, id, options) =>
-    client.invalidateQueries({ queryKey: schedulerKeys.diagnostics(id) }, options)
+    invalidateQuery(client, { queryKey: schedulerKeys.diagnostics(id) }, options)
 };

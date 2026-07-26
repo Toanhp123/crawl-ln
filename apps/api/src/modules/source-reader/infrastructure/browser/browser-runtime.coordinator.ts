@@ -44,6 +44,24 @@ function workerEntry(): URL {
   return new URL(`data:text/javascript,${encodeURIComponent(bootstrap)}`);
 }
 
+export async function authorizeBrowserRequest(
+  event: Extract<BrowserEvent, { type: 'authorize-request' }>,
+  requestGate: Pick<SourceRequestGatePort, 'enter'> | undefined,
+  signal: AbortSignal
+): Promise<Extract<BrowserCommand, { type: 'request-authorization-result' }>> {
+  try {
+    await requestGate?.enter(event.url, signal);
+    return { type: 'request-authorization-result', requestId: event.requestId, ok: true };
+  } catch (error) {
+    return {
+      type: 'request-authorization-result',
+      requestId: event.requestId,
+      ok: false,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
 class WorkerBackedBrowserSession implements BrowserSessionHandle {
   readonly id = randomUUID();
   private readonly worker: Worker;
@@ -63,6 +81,7 @@ class WorkerBackedBrowserSession implements BrowserSessionHandle {
       browserExecutablePath?: string;
       route: Parameters<BrowserRuntimePort['open']>[0]['route'];
       credentialResolver?: (handle: BrowserSecretHandle) => Promise<string>;
+      requestGate?: Pick<SourceRequestGatePort, 'enter'>;
       maxLifetimeMs: number;
       maxNavigations: number;
       commandTimeoutMs: number;
@@ -168,6 +187,15 @@ class WorkerBackedBrowserSession implements BrowserSessionHandle {
   }
 
   private async onMessage(message: BrowserEvent): Promise<void> {
+    if (message.type === 'authorize-request') {
+      const response = await authorizeBrowserRequest(
+        message,
+        this.input.requestGate,
+        this.input.signal
+      );
+      if (!this.closed) this.worker.postMessage(response);
+      return;
+    }
     if (message.type === 'resolve-secret') {
       try {
         if (!this.input.credentialResolver) throw new Error('Credential resolver is unavailable');
@@ -206,51 +234,6 @@ class WorkerBackedBrowserSession implements BrowserSessionHandle {
   }
 }
 
-export class RequestGatedBrowserSession implements BrowserSessionHandle {
-  constructor(
-    private readonly delegate: BrowserSessionHandle,
-    private readonly requestGate: Pick<SourceRequestGatePort, 'enter'>,
-    private readonly signal: AbortSignal
-  ) {}
-
-  get id(): string {
-    return this.delegate.id;
-  }
-
-  async open(url: string): Promise<void> {
-    await this.requestGate.enter(url, this.signal);
-    await this.delegate.open(url);
-  }
-
-  waitFor(selector: string): Promise<void> {
-    return this.delegate.waitFor(selector);
-  }
-
-  text(selector: string): Promise<string | null> {
-    return this.delegate.text(selector);
-  }
-
-  html(selector: string): Promise<string | null> {
-    return this.delegate.html(selector);
-  }
-
-  click(selector: string): Promise<void> {
-    return this.delegate.click(selector);
-  }
-
-  fillSecret(selector: string, secretHandle: BrowserSecretHandle): Promise<void> {
-    return this.delegate.fillSecret(selector, secretHandle);
-  }
-
-  cookies(): Promise<Array<Record<string, unknown>>> {
-    return this.delegate.cookies();
-  }
-
-  close(): Promise<void> {
-    return this.delegate.close();
-  }
-}
-
 export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
   private readonly sessions = new Map<
     string,
@@ -277,16 +260,14 @@ export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
               return this.options.credentialResolver!(handle);
             }
           : undefined,
+      requestGate: this.options.requestGate,
       maxLifetimeMs: this.options.maxLifetimeMs ?? 10 * 60_000,
       maxNavigations: this.options.maxNavigations ?? 50,
       commandTimeoutMs: this.options.commandTimeoutMs ?? 30_000,
       onClosed: () => this.sessions.delete(key)
     });
-    const session = this.options.requestGate
-      ? new RequestGatedBrowserSession(workerSession, this.options.requestGate, input.signal)
-      : workerSession;
-    this.sessions.set(key, { identity: input.identity, session });
-    return session;
+    this.sessions.set(key, { identity: input.identity, session: workerSession });
+    return workerSession;
   }
 
   async closeByIdentity(identity: BrowserSessionIdentity): Promise<void> {

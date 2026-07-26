@@ -80,7 +80,7 @@ test('realtime resources call only public entity invalidation adapters', async (
   ]);
 });
 
-test('realtime task updates replace an active detail request with fresh data', async () => {
+test('realtime task updates replace an active first-load detail request with fresh data', async () => {
   const { QueryClient, QueryObserver } = await import('@tanstack/react-query');
   const { createRealtimeInvalidationRegistry, routeRealtimeEvent } =
     await import('../../apps/web/src/app/realtime/event-router.ts');
@@ -88,7 +88,6 @@ test('realtime task updates replace an active detail request with fresh data', a
     defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } }
   });
   const queryKey = ['tasks', 'detail', 'task-1'] as const;
-  client.setQueryData(queryKey, { status: 'running' });
 
   let started = 0;
   let aborted = 0;
@@ -139,10 +138,14 @@ test('scheduler, search, plugins, and all use their app-owned public adapters', 
   const { routeRealtimeEvent } = await import('../../apps/web/src/app/realtime/event-router.ts');
   const calls: string[] = [];
   const registry = registrySpy(calls);
-  const queryCalls: unknown[] = [];
+  const queryCalls: Array<{ operation: string; filters: unknown }> = [];
   const client = {
+    cancelQueries(filters?: unknown) {
+      queryCalls.push({ operation: 'cancel', filters: filters ?? 'all' });
+      return Promise.resolve();
+    },
     invalidateQueries(filters?: unknown) {
-      queryCalls.push(filters ?? 'all');
+      queryCalls.push({ operation: 'invalidate', filters: filters ?? 'all' });
       return Promise.resolve();
     }
   } as unknown as QueryClient;
@@ -167,7 +170,10 @@ test('scheduler, search, plugins, and all use their app-owned public adapters', 
     client
   );
   assert.deepEqual(calls, []);
-  assert.deepEqual(queryCalls, ['all']);
+  assert.deepEqual(queryCalls, [
+    { operation: 'cancel', filters: 'all' },
+    { operation: 'invalidate', filters: 'all' }
+  ]);
 });
 
 test('backup realtime events invalidate only the backup operation namespace', async () => {
@@ -240,7 +246,7 @@ test('shared realtime remains generic and app owns batching plus browser lifecyc
   assert.match(provider, /\/api\/events/);
   assert.match(
     provider,
-    /invalidateQueries\(\{\s*type:\s*['"]active['"]\s*\},\s*realtimeInvalidationOptions\)/s
+    /invalidateQuery\(\s*queryClient,\s*\{\s*type:\s*['"]active['"]\s*\},\s*realtimeInvalidationOptions\s*\)/s
   );
   assert.match(provider, /visibilitychange/);
   assert.doesNotMatch(

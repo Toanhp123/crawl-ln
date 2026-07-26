@@ -36,6 +36,7 @@ function createPipeline(
     firstFailure?: SourceReaderError['code'];
     cacheHit?: boolean;
     accessDenied?: boolean;
+    accessSignals?: Array<AbortSignal | undefined>;
   } = {}
 ) {
   const trace = options.trace ?? [];
@@ -135,8 +136,9 @@ function createPipeline(
   );
   const facade = new SourceReaderFacade({
     requestGate: {
-      async assertAllowed(url) {
+      async assertAllowed(url, signal) {
         trace.push(`access.assert:${url}`);
+        options.accessSignals?.push(signal);
         if (options.accessDenied) {
           throw new SourceReaderError('NETWORK_ACCESS_BLOCKED', 'Source access denied', {
             retryable: false,
@@ -171,6 +173,16 @@ test('facade executes candidate, context, cache, invocation, validation and heal
     'health.success',
     'cache.store'
   ]);
+});
+
+test('facade forwards request cancellation to the source access gate', async () => {
+  const accessSignals: Array<AbortSignal | undefined> = [];
+  const signal = new AbortController().signal;
+  const { facade } = createPipeline({ accessSignals });
+
+  await facade.readMetadata({ url: sourceUrl, signal });
+
+  assert.deepEqual(accessSignals, [signal]);
 });
 
 test('typed fallback advances only when policy allows it', async () => {

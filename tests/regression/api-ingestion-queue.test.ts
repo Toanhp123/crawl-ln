@@ -73,6 +73,9 @@ function createRunnerHarness(input: {
     cleanText: string;
   }>;
   sourceFailureThreshold?: number;
+  yieldControl?: () => Promise<void>;
+  isCancelled?: () => boolean;
+  isPauseRequested?: () => boolean;
 }) {
   const detail = manyChapterDetail(input.chapterCount);
   let job = IngestionJobEntity.createQueued({
@@ -153,13 +156,14 @@ function createRunnerHarness(input: {
       })()
     },
     retry: 0,
+    ...(input.yieldControl === undefined ? {} : { yieldControl: input.yieldControl }),
     ...(input.sourceFailureThreshold === undefined
       ? {}
       : { sourceFailureThreshold: input.sourceFailureThreshold })
   });
   const control = {
-    isCancelled: () => false,
-    isPauseRequested: () => false,
+    isCancelled: input.isCancelled ?? (() => false),
+    isPauseRequested: input.isPauseRequested ?? (() => false),
     signal: () => undefined
   };
   return {
@@ -527,4 +531,50 @@ test('runner opens the source circuit when the upstream blocks every chapter req
   assert.equal(fetchCalls, 3);
   assert.equal(harness.job().status, 'failed');
   assert.match(harness.job().errorMessage ?? '', /NETWORK_ACCESS_BLOCKED/);
+});
+
+test('runner gives a pause requested during yield priority over the source circuit', async () => {
+  let paused = false;
+  const harness = createRunnerHarness({
+    chapterCount: 3,
+    sourceFailureThreshold: 1,
+    fetchChapter: async () => {
+      throw Object.assign(new Error('upstream unavailable'), {
+        code: 'SOURCE_TEMPORARILY_UNAVAILABLE',
+        retryable: true
+      });
+    },
+    yieldControl: async () => {
+      paused = true;
+    },
+    isPauseRequested: () => paused
+  });
+
+  await harness.runner.run('job-1', harness.control);
+
+  assert.equal(harness.job().status, 'paused');
+  assert.equal(harness.events.at(-1)?.type, 'paused');
+});
+
+test('runner gives cancellation requested during yield priority over the source circuit', async () => {
+  let cancelled = false;
+  const harness = createRunnerHarness({
+    chapterCount: 3,
+    sourceFailureThreshold: 1,
+    fetchChapter: async () => {
+      throw Object.assign(new Error('upstream unavailable'), {
+        code: 'SOURCE_TEMPORARILY_UNAVAILABLE',
+        retryable: true
+      });
+    },
+    yieldControl: async () => {
+      cancelled = true;
+    },
+    isCancelled: () => cancelled
+  });
+
+  await harness.runner.run('job-1', harness.control);
+
+  assert.equal(harness.job().status, 'cancelled');
+  assert.equal(harness.events.at(-1)?.type, 'cancelled');
 });

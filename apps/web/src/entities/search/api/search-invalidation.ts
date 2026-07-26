@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { QueryInvalidationOptions } from '../../../shared/api';
+import { invalidateQuery, type QueryInvalidationOptions } from '../../../shared/api';
 import { searchKeys } from './search-keys';
 
 export interface SearchInvalidationApi {
@@ -9,7 +9,7 @@ export interface SearchInvalidationApi {
 
 export const searchInvalidation: SearchInvalidationApi = {
   invalidateAll: (client, options) =>
-    client.invalidateQueries({ queryKey: searchKeys.all }, options),
+    invalidateQuery(client, { queryKey: searchKeys.all }, options),
   invalidateResults: (client, options) =>
-    client.invalidateQueries({ queryKey: searchKeys.resultsRoot() }, options)
+    invalidateQuery(client, { queryKey: searchKeys.resultsRoot() }, options)
 };

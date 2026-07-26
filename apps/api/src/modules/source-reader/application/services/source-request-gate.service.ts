@@ -35,14 +35,23 @@ export class SourceRequestGateService implements SourceRequestGatePort {
     private readonly rateLimiter: SourceRateLimiterPort
   ) {}
 
-  async assertAllowed(url: string): Promise<void> {
-    await this.requireAllowed(url);
+  async assertAllowed(url: string, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) throw cancelled(signal.reason);
+    try {
+      await this.requireAllowed(url, signal);
+    } catch (error) {
+      if (signal?.aborted || (error instanceof Error && error.name === 'AbortError')) {
+        throw cancelled(error);
+      }
+      throw error;
+    }
+    if (signal?.aborted) throw cancelled(signal.reason);
   }
 
   async enter(url: string, signal?: AbortSignal): Promise<void> {
     if (signal?.aborted) throw cancelled(signal.reason);
-    const request = await this.requireAllowed(url);
     try {
+      const request = await this.requireAllowed(url, signal);
       await this.rateLimiter.wait(request.hostKey, request.crawlDelayMs, signal);
     } catch (error) {
       if (signal?.aborted || (error instanceof Error && error.name === 'AbortError')) {
@@ -53,16 +62,21 @@ export class SourceRequestGateService implements SourceRequestGatePort {
     if (signal?.aborted) throw cancelled(signal.reason);
   }
 
-  private async requireAllowed(url: string): Promise<AllowedSourceRequest> {
+  private async requireAllowed(url: string, signal?: AbortSignal): Promise<AllowedSourceRequest> {
     const normalizedHost = hostKey(url);
-    const decision = await this.accessPolicy.check(url);
+    const decision = await this.accessPolicy.check(url, signal);
     if (!decision.allowed) {
       const reason = decision.reason ?? 'Source access is denied by policy';
-      throw new SourceReaderError('NETWORK_ACCESS_BLOCKED', reason, {
-        retryable: false,
-        fallbackAllowed: false,
-        details: { host: normalizedHost, reason }
-      });
+      const retryable = decision.retryable === true;
+      throw new SourceReaderError(
+        retryable ? 'SOURCE_TEMPORARILY_UNAVAILABLE' : 'NETWORK_ACCESS_BLOCKED',
+        reason,
+        {
+          retryable,
+          fallbackAllowed: false,
+          details: { host: normalizedHost, reason }
+        }
+      );
     }
     return {
       hostKey: normalizedHost,

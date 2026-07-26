@@ -1,5 +1,5 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
-import type { QueryInvalidationOptions } from '../../../shared/api';
+import { invalidateQuery, type QueryInvalidationOptions } from '../../../shared/api';
 import type { BackupCurrentOperationResult, BackupOperationSummary } from '@novel-tool/shared';
 import type { ConnectionState } from '../../../shared/realtime';
 import { getBackupOperation, getCurrentBackupOperation } from './backup-operation-api';
@@ -67,6 +67,6 @@ export function useBackupOperationDetailQuery<TData = BackupOperationSummary>(
 
 export const backupOperationInvalidation = {
   invalidateAll(client: QueryClient, options?: QueryInvalidationOptions) {
-    return client.invalidateQueries({ queryKey: backupOperationKeys.all }, options);
+    return invalidateQuery(client, { queryKey: backupOperationKeys.all }, options);
   }
 };

@@ -1,4 +1,4 @@
-import type { InvalidateOptions, QueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import type { RealtimeEvent, RealtimeResource } from '@novel-tool/shared';
 import { backupOperationInvalidation } from '../../entities/backup-operation';
 import { novelInvalidation, type NovelInvalidationApi } from '../../entities/novel';
@@ -9,7 +9,11 @@ import { sourceCredentialInvalidation } from '../../entities/source-credential';
 import { sourceNetworkProfileInvalidation } from '../../entities/source-network-profile';
 import { sourcePluginInvalidation } from '../../entities/source-plugin';
 import { taskInvalidation, type TaskInvalidationApi } from '../../entities/task';
-import type { CollectionInvalidationApi, QueryInvalidationOptions } from '../../shared/api';
+import {
+  invalidateQuery,
+  type CollectionInvalidationApi,
+  type QueryInvalidationOptions
+} from '../../shared/api';
 
 const realtimeResources = new Set<RealtimeResource>([
   'novels',
@@ -130,7 +134,8 @@ export function createRealtimeInvalidationRegistry(): RealtimeInvalidationRegist
   };
 }
 
-export const realtimeInvalidationOptions: InvalidateOptions = {
+export const realtimeInvalidationOptions: QueryInvalidationOptions = {
+  cancelInFlight: true,
   cancelRefetch: true
 };
 
@@ -150,7 +155,7 @@ export async function routeRealtimeEvents(
   }
 
   if (resources.has('all')) {
-    await client.invalidateQueries(undefined, realtimeInvalidationOptions);
+    await invalidateQuery(client, undefined, realtimeInvalidationOptions);
     return;
   }
 

@@ -114,7 +114,7 @@ export class SourceReaderFacade implements SourceReaderApi {
     capability: ExecutableSourceCapability,
     request: SourceReaderExecutableRequest
   ): Promise<SourceReaderResult<T>> {
-    await this.options.requestGate.assertAllowed(request.url);
+    await this.options.requestGate.assertAllowed(request.url, request.signal);
     const resolved = await this.options.candidates.resolve({ url: request.url, capability });
     const prepared = this.options.pagination.prepare({ capability, request, candidates: resolved });
     let lastError: unknown;

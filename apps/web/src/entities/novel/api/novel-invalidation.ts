@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { QueryInvalidationOptions } from '../../../shared/api';
+import { invalidateQuery, type QueryInvalidationOptions } from '../../../shared/api';
 import { novelKeys } from './novel-keys';
 
 export interface NovelInvalidationApi {
@@ -14,12 +14,11 @@ export interface NovelInvalidationApi {
 }
 
 export const novelInvalidation: NovelInvalidationApi = {
-  invalidateAll: (client, options) =>
-    client.invalidateQueries({ queryKey: novelKeys.all }, options),
+  invalidateAll: (client, options) => invalidateQuery(client, { queryKey: novelKeys.all }, options),
   invalidateList: (client, options) =>
-    client.invalidateQueries({ queryKey: novelKeys.lists() }, options),
+    invalidateQuery(client, { queryKey: novelKeys.lists() }, options),
   invalidateDetail: (client, id, options) =>
-    client.invalidateQueries({ queryKey: novelKeys.detail(id) }, options),
+    invalidateQuery(client, { queryKey: novelKeys.detail(id) }, options),
   invalidateStats: (client, options) =>
-    client.invalidateQueries({ queryKey: novelKeys.stats() }, options)
+    invalidateQuery(client, { queryKey: novelKeys.stats() }, options)
 };

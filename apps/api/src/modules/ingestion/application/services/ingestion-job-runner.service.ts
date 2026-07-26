@@ -187,6 +187,7 @@ export class IngestionJobRunnerService {
       }
 
       await this.yieldControl();
+      if (control.isCancelled(jobId) || control.isPauseRequested(jobId)) break;
 
       if (
         outcome.succeeded === false &&

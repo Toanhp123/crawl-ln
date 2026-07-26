@@ -1,7 +1,7 @@
-import type { CollectionInvalidationApi } from '../../../shared/api';
+import { invalidateQuery, type CollectionInvalidationApi } from '../../../shared/api';
 import { sourceCredentialKeys } from './source-credential-keys';
 
 export const sourceCredentialInvalidation: CollectionInvalidationApi = {
   invalidateAll: (client, options) =>
-    client.invalidateQueries({ queryKey: sourceCredentialKeys.all }, options)
+    invalidateQuery(client, { queryKey: sourceCredentialKeys.all }, options)
 };

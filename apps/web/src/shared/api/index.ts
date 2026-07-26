@@ -6,7 +6,11 @@ export {
   type DownloadArtifact,
   type FetchLike
 } from './download';
-export type { CollectionInvalidationApi, QueryInvalidationOptions } from './invalidation';
+export {
+  invalidateQuery,
+  type CollectionInvalidationApi,
+  type QueryInvalidationOptions
+} from './invalidation';
 export {
   ApiError,
   getErrorMessage,

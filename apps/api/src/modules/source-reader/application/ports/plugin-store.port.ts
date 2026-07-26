@@ -85,6 +85,7 @@ export interface PluginStorePort {
     Array<{
       pluginId: string;
       name: string;
+      latestVersion: string;
       trustLevel: PluginTrustLevel;
       status: PluginStatus;
       activeVersion?: string;

@@ -418,40 +418,37 @@ export class SqlitePluginStore implements PluginStorePort {
     const rows = this.database.connection
       .prepare(
         `WITH descriptors AS (
-           SELECT p.*,
-             COALESCE(
-               p.active_version,
-               (SELECT version
-                FROM source_reader_plugin_versions candidate
-                WHERE candidate.plugin_id=p.id
-                ORDER BY candidate.installed_at DESC, candidate.version DESC
-                LIMIT 1)
-             ) AS descriptor_version
-           FROM source_reader_plugins p
-         )
-         SELECT d.id, d.name, d.trust_level, d.status, d.active_version,
-                d.enabled, d.installed_at, d.updated_at, d.descriptor_version,
-                v.manifest_json,
-                EXISTS(
-                  SELECT 1 FROM source_reader_plugin_permissions permission
-                  WHERE permission.plugin_id=d.id
-                    AND permission.plugin_version=d.descriptor_version
-                    AND permission.status!='approved'
-                ) AS permissions_pending,
-                (SELECT health.status
-                 FROM source_reader_health_checks health
-                 WHERE health.plugin_id=d.id
-                   AND health.plugin_version=d.descriptor_version
-                 ORDER BY health.checked_at DESC LIMIT 1) AS health_status,
-                (SELECT health.checked_at
-                 FROM source_reader_health_checks health
-                 WHERE health.plugin_id=d.id
-                   AND health.plugin_version=d.descriptor_version
-                 ORDER BY health.checked_at DESC LIMIT 1) AS health_checked_at
-         FROM descriptors d
-         LEFT JOIN source_reader_plugin_versions v
-           ON v.plugin_id=d.id AND v.version=d.descriptor_version
-         ORDER BY d.id`
+            SELECT p.*,
+              (SELECT version
+               FROM source_reader_plugin_versions candidate
+               WHERE candidate.plugin_id=p.id
+               ORDER BY candidate.installed_at DESC, candidate.version DESC
+               LIMIT 1) AS latest_version
+            FROM source_reader_plugins p
+          )
+          SELECT d.id, d.name, v.trust_level, d.status, d.active_version,
+                 d.enabled, d.installed_at, d.updated_at, d.latest_version,
+                 v.manifest_json,
+                 EXISTS(
+                   SELECT 1 FROM source_reader_plugin_permissions permission
+                   WHERE permission.plugin_id=d.id
+                     AND permission.plugin_version=d.latest_version
+                     AND permission.status!='approved'
+                 ) AS permissions_pending,
+                 (SELECT health.status
+                  FROM source_reader_health_checks health
+                  WHERE health.plugin_id=d.id
+                    AND health.plugin_version=COALESCE(d.active_version, d.latest_version)
+                  ORDER BY health.checked_at DESC LIMIT 1) AS health_status,
+                 (SELECT health.checked_at
+                  FROM source_reader_health_checks health
+                  WHERE health.plugin_id=d.id
+                    AND health.plugin_version=COALESCE(d.active_version, d.latest_version)
+                  ORDER BY health.checked_at DESC LIMIT 1) AS health_checked_at
+          FROM descriptors d
+          JOIN source_reader_plugin_versions v
+            ON v.plugin_id=d.id AND v.version=d.latest_version
+          ORDER BY d.id`
       )
       .all() as unknown as Array<{
       id: string;
@@ -462,7 +459,7 @@ export class SqlitePluginStore implements PluginStorePort {
       enabled: number;
       installed_at: string;
       updated_at: string;
-      descriptor_version: string | null;
+      latest_version: string;
       manifest_json: string | null;
       permissions_pending: number;
       health_status: 'healthy' | 'degraded' | 'failed' | null;
@@ -478,6 +475,7 @@ export class SqlitePluginStore implements PluginStorePort {
       return {
         pluginId: row.id,
         name: row.name,
+        latestVersion: row.latest_version,
         trustLevel: row.trust_level,
         status: row.status,
         ...(row.active_version ? { activeVersion: row.active_version } : {}),

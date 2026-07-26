@@ -228,7 +228,32 @@ test('generated NovelCool package installs, activates in isolation, invokes, and
   assert.equal(installed.version, '2.0.0');
   assert.equal(installed.status, 'pending-approval');
 
+  const [pending] = (await management.list.execute({ actor })) as Array<{
+    pluginId: string;
+    latestVersion?: string;
+    activeVersion?: string;
+    permissionsPending: boolean;
+    enabled: boolean;
+  }>;
+  assert.equal(pending?.latestVersion, '2.0.0');
+  assert.equal(pending && 'activeVersion' in pending, false);
+  assert.equal(pending?.permissionsPending, true);
+  assert.equal(pending?.enabled, false);
+  await assert.rejects(
+    () => management.enable.execute({ actor, pluginId: 'novelcool', version: '2.0.0' }),
+    (error: unknown) =>
+      error instanceof SourceReaderError && error.code === 'PLUGIN_PERMISSION_DENIED'
+  );
+
   await management.approve.execute({ actor, pluginId: 'novelcool', version: '2.0.0' });
+  const [approved] = (await management.list.execute({ actor })) as Array<{
+    latestVersion?: string;
+    activeVersion?: string;
+    permissionsPending: boolean;
+  }>;
+  assert.equal(approved?.latestVersion, '2.0.0');
+  assert.equal(approved && 'activeVersion' in approved, false);
+  assert.equal(approved?.permissionsPending, false);
   await management.enable.execute({ actor, pluginId: 'novelcool', version: '2.0.0' });
 
   const metadata = await facade.readMetadata({ url: novelUrl });
@@ -239,12 +264,14 @@ test('generated NovelCool package installs, activates in isolation, invokes, and
 
   const plugins = (await management.list.execute({ actor })) as Array<{
     pluginId: string;
+    latestVersion?: string;
     activeVersion?: string;
     trustLevel: string;
     status: string;
     enabled: boolean;
   }>;
   const novelcool = plugins.find((item) => item.pluginId === 'novelcool');
+  assert.equal(novelcool?.latestVersion, '2.0.0');
   assert.equal(novelcool?.activeVersion, '2.0.0');
   assert.equal(novelcool?.trustLevel, 'local-unverified');
   assert.equal(novelcool?.status, 'active');

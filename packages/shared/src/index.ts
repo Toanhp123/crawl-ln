@@ -704,6 +704,7 @@ export interface SourceReaderResult<T> {
 export interface SourceReaderPluginDescriptor {
   id: string;
   name: string;
+  latestVersion: string;
   activeVersion?: string;
   trustLevel: 'built-in' | 'signed' | 'local-unverified' | 'blocked';
   status:

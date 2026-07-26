@@ -39,7 +39,8 @@ export async function runStaticGroup(group, context = {}) {
       'packages/source-plugin-sdk/tsconfig.json',
       'packages/reader-engine/tsconfig.json',
       'apps/api/tsconfig.check.json',
-      'apps/web/tsconfig.json'
+      'apps/web/tsconfig.json',
+      'plugins/novelcool/tsconfig.json'
     ]) {
       checkTypeScriptProject(join(projectRoot, config), { noEmit: true });
     }

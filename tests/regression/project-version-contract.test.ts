@@ -47,3 +47,23 @@ test('Source Plugin SDK capability and sandbox protocol contracts remain version
   assert.match(sandbox, /SANDBOX_PROTOCOL_VERSION\s*=\s*1/);
   assert.match(manifest, /sourceReader:\s*['"]>=1\.0\.0 <2\.0\.0['"]/);
 });
+
+test('first-party NovelCool plugin has the external runtime boundary version', async () => {
+  const packageJson = JSON.parse(await readFile('plugins/novelcool/package.json', 'utf8')) as {
+    version?: string;
+  };
+  const manifest = JSON.parse(await readFile('plugins/novelcool/manifest.json', 'utf8')) as {
+    id?: string;
+    version?: string;
+    engines?: { sourceReader?: string };
+    runtime?: { preferredMode?: string };
+    permissions?: { network?: { hosts?: string[] } };
+  };
+
+  assert.equal(packageJson.version, '2.0.0');
+  assert.equal(manifest.id, 'novelcool');
+  assert.equal(manifest.version, '2.0.0');
+  assert.equal(manifest.engines?.sourceReader, '^3.0.0');
+  assert.equal(manifest.runtime?.preferredMode, 'isolated');
+  assert.deepEqual(manifest.permissions?.network?.hosts, ['novelcool.com', '*.novelcool.com']);
+});

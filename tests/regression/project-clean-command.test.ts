@@ -19,13 +19,17 @@ test('clean removes generated artifacts but preserves data and environment files
     const generated = [
       'dist/manifest.json',
       'packages/shared/dist/index.js',
+      'packages/source-plugin-sdk/dist/index.js',
+      'packages/reader-engine/dist/index.js',
       'apps/api/dist/main.js',
       'apps/web/dist/index.html',
+      'plugins/novelcool/dist/index.js',
       'coverage/lcov.info',
       'playwright-report/index.html',
       'test-results/result.json',
       '.nyc_output/out.json',
-      'apps/api/tsconfig.tsbuildinfo'
+      'apps/api/tsconfig.tsbuildinfo',
+      'plugins/novelcool/tsconfig.tsbuildinfo'
     ];
     const protectedPaths = [
       '.env',

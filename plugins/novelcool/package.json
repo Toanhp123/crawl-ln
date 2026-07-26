@@ -1,0 +1,18 @@
+{
+  "name": "@novel-tool/source-plugin-novelcool",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@novel-tool/source-plugin-sdk": "file:../../packages/source-plugin-sdk",
+    "cheerio": "^1.0.0",
+    "esbuild": "0.28.1",
+    "tsx": "^4.19.1",
+    "typescript": "^5.5.4"
+  }
+}

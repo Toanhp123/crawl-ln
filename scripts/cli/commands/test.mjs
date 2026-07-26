@@ -4,11 +4,12 @@ import { resolveFrom } from '../lib/module-loader.mjs';
 import { runChild } from '../lib/process-runner.mjs';
 import { projectRoot } from '../lib/repository.mjs';
 
-const SUITES = ['core', 'reader-engine', 'contract', 'regression', 'integration', 'e2e'];
-const CORE_SUITES = ['reader-engine', 'contract', 'regression', 'integration'];
+const SUITES = ['core', 'reader-engine', 'plugins', 'contract', 'regression', 'integration', 'e2e'];
+const CORE_SUITES = ['reader-engine', 'plugins', 'contract', 'regression', 'integration'];
 const PACKAGE_ORDER = ['shared', 'sdk', 'reader-engine'];
 const REQUIRED_PACKAGES = {
   'reader-engine': ['reader-engine'],
+  plugins: ['sdk'],
   contract: ['shared', 'sdk', 'reader-engine'],
   regression: ['shared', 'sdk', 'reader-engine'],
   integration: ['shared', 'sdk', 'reader-engine'],
@@ -22,7 +23,7 @@ function helpText() {
     'Test suites:',
     ...SUITES.map((suite) => `  ${suite}`),
     '',
-    'The default core suite runs reader-engine, contract, regression, and integration.',
+    'The default core suite runs reader-engine, plugins, contract, regression, and integration.',
     'Browser E2E is explicit and requires a validated Chromium capability.',
     '',
     'Options:',
@@ -58,6 +59,16 @@ async function defaultRunReaderEngine({ signal } = {}) {
   });
 }
 
+async function defaultRunPlugins({ signal } = {}) {
+  await runChild({
+    ...npmInvocation(['run', 'test', '--workspace', '@novel-tool/source-plugin-novelcool']),
+    cwd: projectRoot,
+    stdio: 'inherit',
+    signal,
+    stage: 'first-party source plugin tests'
+  });
+}
+
 async function defaultRunFileSuite(suite) {
   const { runTestSuite } = await import('../lib/test-runner.mjs');
   return runTestSuite(suite);
@@ -88,6 +99,7 @@ async function defaultRunPlaywright({ signal } = {}) {
 export async function runTestPlan(plan, dependencies = {}) {
   const prepare = dependencies.prepare ?? defaultPrepare;
   const runReaderEngine = dependencies.runReaderEngine ?? defaultRunReaderEngine;
+  const runPlugins = dependencies.runPlugins ?? defaultRunPlugins;
   const runFileSuite = dependencies.runFileSuite ?? defaultRunFileSuite;
   const probeBrowser = dependencies.probeBrowser ?? defaultProbeBrowser;
   const runPlaywright = dependencies.runPlaywright ?? defaultRunPlaywright;
@@ -102,6 +114,10 @@ export async function runTestPlan(plan, dependencies = {}) {
     stdout(`[test] ${suite}`);
     if (suite === 'reader-engine') {
       await runReaderEngine({ signal });
+      continue;
+    }
+    if (suite === 'plugins') {
+      await runPlugins({ signal });
       continue;
     }
     if (suite === 'e2e') {

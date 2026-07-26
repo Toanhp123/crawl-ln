@@ -4,8 +4,10 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 type PackageJson = {
+  private?: boolean;
   scripts?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  workspaces?: string[];
 };
 
 const publicCommands = ['setup', 'dev', 'build', 'start', 'check', 'test', 'format', 'clean'];
@@ -29,6 +31,7 @@ function runCli(command: string, option: string) {
 test('root exposes exactly the eight canonical commands', async () => {
   const root = await readPackage('package.json');
   assert.deepEqual(root.scripts, expected);
+  assert.deepEqual(root.workspaces, ['apps/*', 'packages/*', 'plugins/*']);
   assert.equal(root.devDependencies?.concurrently, undefined);
 });
 
@@ -43,18 +46,21 @@ test('all public commands support help and reject unknown options before work st
 });
 
 test('workspace scripts are private and capability-oriented', async () => {
-  const [api, web, shared, sdk, reader] = await Promise.all([
+  const [api, web, shared, sdk, reader, novelcool] = await Promise.all([
     readPackage('apps/api/package.json'),
     readPackage('apps/web/package.json'),
     readPackage('packages/shared/package.json'),
     readPackage('packages/source-plugin-sdk/package.json'),
-    readPackage('packages/reader-engine/package.json')
+    readPackage('packages/reader-engine/package.json'),
+    readPackage('plugins/novelcool/package.json')
   ]);
   assert.deepEqual(Object.keys(api.scripts ?? {}), ['dev', 'build', 'start', 'check']);
   assert.deepEqual(Object.keys(web.scripts ?? {}), ['dev', 'build', 'check']);
   assert.deepEqual(Object.keys(shared.scripts ?? {}), ['build', 'check']);
   assert.deepEqual(Object.keys(sdk.scripts ?? {}), ['build', 'check']);
   assert.deepEqual(Object.keys(reader.scripts ?? {}), ['build', 'check', 'test']);
+  assert.equal(novelcool.private, true);
+  assert.deepEqual(Object.keys(novelcool.scripts ?? {}), ['build', 'check', 'test']);
 });
 
 test('no package script uses retired aliases, shells, orchestration, or physical dependency paths', async () => {
@@ -65,7 +71,8 @@ test('no package script uses retired aliases, shells, orchestration, or physical
       'apps/web/package.json',
       'packages/shared/package.json',
       'packages/source-plugin-sdk/package.json',
-      'packages/reader-engine/package.json'
+      'packages/reader-engine/package.json',
+      'plugins/novelcool/package.json'
     ].map(readPackage)
   );
   const forbidden = [

@@ -24,6 +24,7 @@ const TARGETS = {
     }
   ],
   packages: [{ path: 'packages', extensions: ['.ts', '.json'] }],
+  plugins: [{ path: 'plugins', extensions: ['.ts', '.json'] }],
   scripts: [
     { path: 'scripts', extensions: ['.mjs'] },
     { path: 'package.json', file: true },

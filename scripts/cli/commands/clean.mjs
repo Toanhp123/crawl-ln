@@ -19,6 +19,7 @@ const GENERATED_DIRECTORIES = [
   'packages/reader-engine/dist',
   'apps/api/dist',
   'apps/web/dist',
+  'plugins/novelcool/dist',
   'apps/web/node_modules/.vite',
   'coverage',
   'playwright-report',
@@ -57,7 +58,7 @@ export function isSafeDeletionTarget(
 
 async function collectTsBuildInfo(root) {
   const matches = [];
-  for (const scope of ['apps', 'packages']) {
+  for (const scope of ['apps', 'packages', 'plugins']) {
     const start = join(root, scope);
     if (!existsSync(start)) continue;
     const stack = [start];

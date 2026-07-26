@@ -23,6 +23,7 @@ test('installs, approves and enables the generated NovelCool external plugin', a
   const descriptor = () => ({
     id: 'novelcool',
     name: 'NovelCool',
+    latestVersion: '2.0.0',
     activeVersion: '2.0.0',
     trustLevel: 'local-unverified',
     status: enabled ? 'active' : 'installed',

@@ -14,9 +14,7 @@ export function SourcePluginRow({
   onOpen?: () => void;
 }) {
   const { number, status, t } = useI18n();
-  const version = plugin.activeVersion
-    ? t('sources.plugins.version', { value: plugin.activeVersion })
-    : '—';
+  const version = t('sources.plugins.version', { value: plugin.latestVersion });
 
   return (
     <ListRow

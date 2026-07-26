@@ -9,5 +9,9 @@ export {
   type PluginToggleDependencies,
   type PluginToggleInput
 } from './model/create-plugin-toggle-action';
+export {
+  getSourcePluginActivationState,
+  type SourcePluginActivationState
+} from './model/source-plugin-activation-state';
 export { useRemoveSourcePlugin, useToggleSourcePlugin } from './model/use-source-plugin-actions';
 export { RemoveSourcePluginButton, SourcePluginEnableSwitch } from './ui/SourcePluginActions';

@@ -55,6 +55,11 @@ test('Source Reader entity public APIs expose reads, keys, invalidation, UI, and
   assert.equal(typeof plugin.sourcePluginInvalidation.invalidateAll, 'function');
   assert.equal(typeof plugin.SourcePluginRow, 'function');
   assert.equal(plugin.sourcePluginCatalogs.en['sources.plugins.version'], 'Version {value}');
+  assert.equal(
+    plugin.sourcePluginCatalogs.en['sources.plugins.latestVersion'],
+    'Latest installed version'
+  );
+  assert.equal(plugin.sourcePluginCatalogs.en['sources.plugins.runningVersion'], 'Running version');
 
   assert.equal(typeof credential.useSourceCredentials, 'function');
   assert.deepEqual(credential.sourceCredentialKeys.list(), ['source-reader', 'credentials']);
@@ -92,6 +97,8 @@ test('Source Reader entity clients preserve GET contracts and normalize plugin i
       {
         pluginId: 'plugin-fallback',
         name: 'Fallback Plugin',
+        latestVersion: '1.0.0',
+        activeVersion: '1.0.0',
         trustLevel: 'built-in',
         status: 'active',
         enabled: true,
@@ -133,6 +140,7 @@ test('Source Reader entity clients preserve GET contracts and normalize plugin i
     await challenge.getSourceAuthChallenge('challenge/a');
 
     assert.equal(plugins[0]?.id, 'plugin-fallback');
+    assert.equal(plugins[0]?.latestVersion, '1.0.0');
   } finally {
     globalThis.fetch = previousFetch;
   }

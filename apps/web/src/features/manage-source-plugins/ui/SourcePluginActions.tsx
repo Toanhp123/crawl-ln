@@ -3,18 +3,22 @@ import { useState } from 'react';
 import type { SourcePlugin } from '../../../entities/source-plugin';
 import { useI18n } from '../../../shared/i18n';
 import { Button, ConfirmDialog, Switch } from '../../../shared/ui';
+import { getSourcePluginActivationState } from '../model/source-plugin-activation-state';
 import { useRemoveSourcePlugin, useToggleSourcePlugin } from '../model/use-source-plugin-actions';
 
 export function SourcePluginEnableSwitch({ plugin }: { plugin: SourcePlugin }) {
   const { t } = useI18n();
   const toggle = useToggleSourcePlugin();
+  const activation = getSourcePluginActivationState(plugin);
   const owns = toggle.variables?.plugin.id === plugin.id;
+  const approvalRequired = !plugin.enabled && activation.blockedByPermissions;
   return (
     <Switch
       checked={plugin.enabled}
       label={t('manageSourcePlugins.toggle', { name: plugin.name })}
+      description={approvalRequired ? t('manageSourcePlugins.approvalRequired') : undefined}
       actionState={owns ? toggle.status : 'idle'}
-      disabled={toggle.isPending && !owns}
+      disabled={(toggle.isPending && !owns) || (!plugin.enabled && !activation.canEnable)}
       onCheckedChange={(enabled) => toggle.mutate({ plugin, enabled })}
     />
   );

@@ -14,13 +14,14 @@ type PluginResponse = Partial<SourceReaderPluginDescriptor> & { pluginId?: strin
 
 function normalizePlugin(plugin: PluginResponse): SourcePlugin {
   const id = plugin.id ?? plugin.pluginId;
-  if (!id || !plugin.name || !plugin.trustLevel || !plugin.status) {
+  if (!id || !plugin.name || !plugin.latestVersion || !plugin.trustLevel || !plugin.status) {
     throw new Error('Source Reader returned an invalid plugin descriptor');
   }
 
   return {
     id,
     name: plugin.name,
+    latestVersion: plugin.latestVersion,
     ...(plugin.activeVersion ? { activeVersion: plugin.activeVersion } : {}),
     trustLevel: plugin.trustLevel,
     status: plugin.status,

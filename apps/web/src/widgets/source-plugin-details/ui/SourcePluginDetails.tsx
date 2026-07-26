@@ -50,12 +50,22 @@ export function SourcePluginDetails({ pluginId }: { pluginId: string }) {
         <div className="grid gap-3 sm:grid-cols-2">
           <Panel tone="inset">
             <Text as="p" variant="label">
-              {t('sources.profile.version')}
+              {t('sources.plugins.latestVersion')}
             </Text>
             <Text as="p" variant="supporting">
-              {plugin.activeVersion ?? '—'}
+              {plugin.latestVersion}
             </Text>
           </Panel>
+          {plugin.activeVersion && plugin.activeVersion !== plugin.latestVersion ? (
+            <Panel tone="inset">
+              <Text as="p" variant="label">
+                {t('sources.plugins.runningVersion')}
+              </Text>
+              <Text as="p" variant="supporting">
+                {plugin.activeVersion}
+              </Text>
+            </Panel>
+          ) : null}
           <Panel tone="inset">
             <Text as="p" variant="label">
               {t('sources.trust')}
@@ -138,7 +148,7 @@ export function SourcePluginDetails({ pluginId }: { pluginId: string }) {
         title={t('sources.permissions')}
         description={t('sources.plugins.permissionsDescription')}
       >
-        <ReviewSourcePermissions pluginId={plugin.id} version={plugin.activeVersion} />
+        <ReviewSourcePermissions pluginId={plugin.id} version={plugin.latestVersion} />
       </Section>
     </div>
   );

@@ -15,6 +15,7 @@ test('remediated Sources UI shows safe quarantine and diagnostics without secret
         {
           id: 'unsafe-demo',
           name: 'Unsafe Demo',
+          latestVersion: '1.0.0',
           activeVersion: '1.0.0',
           trustLevel: 'local-unverified',
           status: 'quarantined',

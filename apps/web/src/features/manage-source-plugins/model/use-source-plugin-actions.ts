@@ -14,7 +14,7 @@ export function useToggleSourcePlugin() {
     mutationFn: ({ plugin, enabled }: { plugin: SourcePlugin; enabled: boolean }) =>
       action.execute(client, {
         pluginId: plugin.id,
-        version: plugin.activeVersion,
+        version: plugin.latestVersion,
         enabled
       }),
     onSuccess: (_data, input) =>

@@ -9,7 +9,7 @@ export function ReviewSourcePermissions({
   version
 }: {
   pluginId: string;
-  version?: string;
+  version: string;
 }) {
   const { t } = useI18n();
   const query = useSourcePluginPermissions(pluginId);
@@ -31,7 +31,6 @@ export function ReviewSourcePermissions({
       )}
       <div className="flex flex-wrap gap-2">
         <Button
-          disabled={!version}
           actionState={action.variables === true ? action.status : 'idle'}
           onClick={() => action.mutate(true)}
         >
@@ -39,7 +38,6 @@ export function ReviewSourcePermissions({
         </Button>
         <Button
           variant="danger"
-          disabled={!version}
           actionState={action.variables === false ? action.status : 'idle'}
           onClick={() => action.mutate(false)}
         >

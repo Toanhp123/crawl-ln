@@ -3,6 +3,8 @@ import type { Catalog } from '../../../shared/i18n';
 export const sourcePluginCatalogs = {
   en: {
     'sources.plugins.version': 'Version {value}',
+    'sources.plugins.latestVersion': 'Latest installed version',
+    'sources.plugins.runningVersion': 'Running version',
     'common.status.api_mismatch': 'API mismatch',
     'common.status.blocked': 'Blocked',
     'common.status.built-in': 'Built in',
@@ -19,6 +21,8 @@ export const sourcePluginCatalogs = {
   },
   vi: {
     'sources.plugins.version': 'Phiên bản {value}',
+    'sources.plugins.latestVersion': 'Phiên bản mới nhất đã cài',
+    'sources.plugins.runningVersion': 'Phiên bản đang chạy',
     'common.status.api_mismatch': 'Không tương thích API',
     'common.status.blocked': 'Đã chặn',
     'common.status.built-in': 'Tích hợp sẵn',

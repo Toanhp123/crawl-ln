@@ -8,7 +8,7 @@ import { disableSourcePlugin, enableSourcePlugin } from '../api/manage-source-pl
 
 export interface PluginToggleInput {
   pluginId: string;
-  version?: string;
+  version: string;
   enabled: boolean;
 }
 export interface PluginToggleDependencies {
@@ -40,7 +40,6 @@ export function createPluginToggleAction(
       );
       try {
         if (input.enabled) {
-          if (!input.version) throw new Error('Active plugin version is required');
           await dependencies.enable(input.pluginId, input.version);
         } else {
           await dependencies.disable(input.pluginId);

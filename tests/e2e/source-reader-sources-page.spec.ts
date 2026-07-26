@@ -6,6 +6,7 @@ const ok = (data: unknown) => ({ data, error: null });
 const plugin = {
   id: 'novelcool',
   name: 'NovelCool',
+  latestVersion: '1.0.1',
   activeVersion: '1.0.1',
   trustLevel: 'built-in',
   status: 'active',

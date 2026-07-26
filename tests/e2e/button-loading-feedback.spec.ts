@@ -4,6 +4,7 @@ import { installE2eRuntime } from './runtime.fixture';
 const plugin = {
   id: 'novelcool',
   name: 'NovelCool',
+  latestVersion: '1.0.0',
   activeVersion: '1.0.0',
   trustLevel: 'built-in',
   status: 'active',

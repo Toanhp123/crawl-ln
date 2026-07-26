@@ -49,6 +49,8 @@ test('plugin toggle rolls back cached state when the server rejects the write', 
     {
       id: 'plugin-1',
       name: 'Plugin',
+      latestVersion: '1.0.0',
+      activeVersion: '1.0.0',
       trustLevel: 'signed',
       status: 'active',
       enabled: true,

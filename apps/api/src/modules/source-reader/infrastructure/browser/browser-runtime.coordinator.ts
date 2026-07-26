@@ -7,6 +7,7 @@ import type {
   BrowserSessionIdentity
 } from '../../application/ports/browser-runtime.port.js';
 import type { SourceReaderInvalidationEvent } from '../../application/ports/source-reader-invalidation.port.js';
+import type { SourceRequestGatePort } from '../../application/ports/source-request-gate.port.js';
 import type { BrowserCommand, BrowserCommandPayload, BrowserEvent } from './browser-protocol.js';
 
 interface BrowserCoordinatorOptions {
@@ -15,6 +16,7 @@ interface BrowserCoordinatorOptions {
   maxLifetimeMs?: number;
   maxNavigations?: number;
   commandTimeoutMs?: number;
+  requestGate?: Pick<SourceRequestGatePort, 'enter'>;
 }
 
 export function browserSessionIdentityKey(identity: BrowserSessionIdentity): string {
@@ -204,10 +206,55 @@ class WorkerBackedBrowserSession implements BrowserSessionHandle {
   }
 }
 
+export class RequestGatedBrowserSession implements BrowserSessionHandle {
+  constructor(
+    private readonly delegate: BrowserSessionHandle,
+    private readonly requestGate: Pick<SourceRequestGatePort, 'enter'>,
+    private readonly signal: AbortSignal
+  ) {}
+
+  get id(): string {
+    return this.delegate.id;
+  }
+
+  async open(url: string): Promise<void> {
+    await this.requestGate.enter(url, this.signal);
+    await this.delegate.open(url);
+  }
+
+  waitFor(selector: string): Promise<void> {
+    return this.delegate.waitFor(selector);
+  }
+
+  text(selector: string): Promise<string | null> {
+    return this.delegate.text(selector);
+  }
+
+  html(selector: string): Promise<string | null> {
+    return this.delegate.html(selector);
+  }
+
+  click(selector: string): Promise<void> {
+    return this.delegate.click(selector);
+  }
+
+  fillSecret(selector: string, secretHandle: BrowserSecretHandle): Promise<void> {
+    return this.delegate.fillSecret(selector, secretHandle);
+  }
+
+  cookies(): Promise<Array<Record<string, unknown>>> {
+    return this.delegate.cookies();
+  }
+
+  close(): Promise<void> {
+    return this.delegate.close();
+  }
+}
+
 export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
   private readonly sessions = new Map<
     string,
-    { identity: BrowserSessionIdentity; session: WorkerBackedBrowserSession }
+    { identity: BrowserSessionIdentity; session: BrowserSessionHandle }
   >();
 
   constructor(private readonly options: BrowserCoordinatorOptions = {}) {}
@@ -216,7 +263,7 @@ export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
     const key = browserSessionIdentityKey(input.identity);
     const existing = this.sessions.get(key);
     if (existing) return existing.session;
-    const session = new WorkerBackedBrowserSession({
+    const workerSession = new WorkerBackedBrowserSession({
       allowedHosts: input.allowedHosts,
       signal: input.signal,
       browserExecutablePath: this.options.browserExecutablePath,
@@ -235,6 +282,9 @@ export class BrowserRuntimeCoordinator implements BrowserRuntimePort {
       commandTimeoutMs: this.options.commandTimeoutMs ?? 30_000,
       onClosed: () => this.sessions.delete(key)
     });
+    const session = this.options.requestGate
+      ? new RequestGatedBrowserSession(workerSession, this.options.requestGate, input.signal)
+      : workerSession;
     this.sessions.set(key, { identity: input.identity, session });
     return session;
   }

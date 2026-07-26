@@ -57,6 +57,7 @@ import { InvocationCoordinator } from './application/services/invocation-coordin
 import { PaginationCoordinator } from './application/services/pagination-coordinator.js';
 import { ReaderCachePolicy } from './application/services/reader-cache-policy.js';
 import { RuntimeContextResolverService } from './application/services/runtime-context-resolver.service.js';
+import { SourceRequestGateService } from './application/services/source-request-gate.service.js';
 import { BoundedSourceReaderStructuredLogger } from './application/services/source-reader-structured-logger.js';
 import { SourceResultValidator } from './application/services/source-result-validator.js';
 import { SourceReaderFacade } from './application/source-reader.facade.js';
@@ -65,7 +66,12 @@ import { BrowserRuntimeCoordinator } from './infrastructure/browser/browser-runt
 import { SourceReaderBackupContributor } from './infrastructure/backup/source-reader-backup.contributor.js';
 import { sourceReaderMigrations } from './infrastructure/migrations/001-source-reader-schema.js';
 import { NetworkRouteResolver } from './infrastructure/network/network-route.resolver.js';
+import { InMemorySourceRateLimiterService } from './infrastructure/network/in-memory-source-rate-limiter.service.js';
 import { ProxyAgentFactory } from './infrastructure/network/proxy-agent.factory.js';
+import {
+  AxiosRobotsTextClient,
+  RobotsTxtAccessPolicyAdapter
+} from './infrastructure/network/robots-txt-access-policy.adapter.js';
 import { RouteAwareHttpClientAdapter } from './infrastructure/network/route-aware-http-client.adapter.js';
 import { novelCoolPlugin } from './infrastructure/plugins/built-in/novelcool/novelcool.plugin.js';
 import {
@@ -182,7 +188,21 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
 
   const cache = new SqliteReaderCache(database);
   const routes = new NetworkRouteResolver(networks);
+  const requestGate = new SourceRequestGateService(
+    new RobotsTxtAccessPolicyAdapter({
+      http: new AxiosRobotsTextClient(),
+      sourceAllowlist: environment.sourceAllowlist,
+      defaultCrawlDelayMs: environment.crawlerDelayMs,
+      requestTimeoutMs,
+      now: () => clock.now().getTime()
+    }),
+    new InMemorySourceRateLimiterService()
+  );
   const http = new RouteAwareHttpClientAdapter(new ProxyAgentFactory(20), {
+    requestTimeoutMs,
+    requestGate
+  });
+  const diagnosticHttp = new RouteAwareHttpClientAdapter(new ProxyAgentFactory(4), {
     requestTimeoutMs
   });
   const runtimeContexts = new RuntimeContextResolverService(
@@ -200,6 +220,7 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   );
   const browser = new BrowserRuntimeCoordinator({
     browserExecutablePath: environment.sourceReaderBrowserExecutable,
+    requestGate,
     credentialResolver: async ({ credentialId, field }) => {
       const handle = await credentials.findHandleById(credentialId);
       if (!handle) throw new Error(`Credential ${credentialId} is unavailable`);
@@ -253,6 +274,7 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
     requestTimeoutMs
   );
   const api = new SourceReaderFacade({
+    requestGate,
     candidates: new CandidateResolver(new PipelinePluginRegistryAdapter(registry)),
     contexts: new PipelineRuntimeContextAdapter(runtimeContexts),
     cache: new ReaderCachePolicy(cache, clock),
@@ -293,7 +315,7 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   const networkTester = new NetworkRouteTester(
     networks,
     routes,
-    http,
+    diagnosticHttp,
     clock,
     environment.sourceReaderNetworkDiagnosticUrl ?? 'https://example.com/',
     requestTimeoutMs
@@ -376,6 +398,7 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
       await pluginActivation.stopAll();
       await maintenance.stop();
       http.destroy();
+      diagnosticHttp.destroy();
     }
   };
 }

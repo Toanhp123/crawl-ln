@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { SourceAccessPolicyPort } from '../application/services/source-policy.service.js';
+import type { SourceAccessPolicyPort } from '../../application/ports/source-access-policy.port.js';
 
 const browserUserAgent =
   'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126 Mobile Safari/537.36';
@@ -86,9 +86,7 @@ function parseRobotsTxt(text: string): RobotsRules {
       current.rules.push({ directive: key, path: value });
     } else if (key === 'crawl-delay') {
       const seconds = Number(value);
-      if (Number.isFinite(seconds) && seconds > 0) {
-        current.crawlDelayMs = Math.ceil(seconds * 1000);
-      }
+      if (Number.isFinite(seconds) && seconds > 0) current.crawlDelayMs = Math.ceil(seconds * 1000);
     }
   }
 

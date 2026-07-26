@@ -3,7 +3,7 @@ import type { SourcePluginManifest } from '../../../../domain/plugin/source-plug
 export const novelCoolManifest: SourcePluginManifest = {
   id: 'novelcool',
   name: 'NovelCool',
-  version: '1.0.0',
+  version: '1.0.1',
   engines: { sourceReader: '>=1.0.0 <2.0.0' },
   capabilities: ['identify', 'metadata', 'chapter-list', 'chapter-content'],
   contracts: {

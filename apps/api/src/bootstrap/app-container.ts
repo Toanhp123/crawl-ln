@@ -7,10 +7,6 @@ import { RestoreSessionController } from '../modules/backup/presentation/restore
 import { createExportModule } from '../modules/export/export.module.js';
 import { createIngestionModule } from '../modules/ingestion/ingestion.module.js';
 import { IngestionController } from '../modules/ingestion/presentation/ingestion.controller.js';
-import {
-  AxiosRobotsTextClient,
-  RobotsTxtAccessPolicyAdapter
-} from '../modules/ingestion/infrastructure/robots-txt-access-policy.adapter.js';
 import { createLibraryModule } from '../modules/library/library.module.js';
 import { LibraryController } from '../modules/library/presentation/library.controller.js';
 import { createSchedulerModule } from '../modules/scheduler/scheduler.module.js';
@@ -59,13 +55,6 @@ export function createAppContainer(environment: Environment) {
     database,
     library: library.api,
     sourceReader: sourceReader.api,
-    sourceAccessPolicy: new RobotsTxtAccessPolicyAdapter({
-      http: new AxiosRobotsTextClient(),
-      sourceAllowlist: environment.sourceAllowlist,
-      defaultCrawlDelayMs: environment.crawlerDelayMs,
-      requestTimeoutMs: environment.requestTimeoutMs ?? 15_000,
-      now: () => clock.now().getTime()
-    }),
     ids,
     clock,
     logger

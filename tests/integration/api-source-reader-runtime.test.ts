@@ -35,6 +35,7 @@ import {
   createNovelCoolPlugin,
   novelCoolPlugin
 } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts';
+import { novelCoolChapterUrlKey } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool-chapter-url-key.ts';
 import { SourcePluginPackageVerifier } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.ts';
 import { StaticTrustStore } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.ts';
 import { InMemoryPluginRegistry } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/registry/in-memory-plugin.registry.ts';
@@ -450,6 +451,76 @@ test('NovelCool accepts the configured minimum chapter length without reading gl
   );
 });
 
+test('NovelCool deduplicates alias chapter URLs by canonical numeric id', async () => {
+  const genericUrl = 'https://novelcool.com/chapter/read-online/14145402.html';
+  const detailedUrl = 'https://www.novelcool.com/chapter/Chapter-655-Misha-s-Move/14145402/';
+  const html = `
+    <html>
+      <head><title>Original</title></head>
+      <body>
+        <h1 class="novel-title">Original</h1>
+        <div class="chapter-list">
+          <a href="${genericUrl}"><span>Chapter 1</span></a>
+          <a href="${detailedUrl}"><span>Chapter 655: Misha's Move</span></a>
+        </div>
+      </body>
+    </html>
+  `;
+  const plugin = createNovelCoolPlugin();
+  const context = new PluginContextFactory(
+    {
+      async get(url: string) {
+        return { url, status: 200, headers: {}, data: html };
+      },
+      async post(url: string) {
+        return this.get(url);
+      },
+      async head(url: string) {
+        return { url, status: 200, headers: {}, data: '' };
+      }
+    },
+    new CheerioHtmlParserAdapter(),
+    clock,
+    { info() {}, warn() {}, error() {} }
+  ).create({
+    pluginId: plugin.manifest.id,
+    pluginVersion: plugin.manifest.version,
+    capability: 'chapter-list',
+    allowedHosts: ['novelcool.com'],
+    signal: new AbortController().signal,
+    runtimeContext: {
+      resolvedNetworkRoute: { kind: 'direct', identity: 'direct' },
+      executionMode: 'in-process',
+      browserRequired: false,
+      cacheIdentity: { public: 'public', network: 'direct' }
+    }
+  });
+
+  const result = await plugin.readChapterList!(
+    { url: 'https://www.novelcool.com/novel/original/id-269162.html' },
+    context
+  );
+
+  assert.deepEqual(result.data.items, [
+    {
+      index: 1,
+      title: "Chapter 655: Misha's Move",
+      url: detailedUrl
+    }
+  ]);
+});
+
+test('NovelCool chapter identity owns its numeric-id alias rule', () => {
+  assert.equal(
+    novelCoolChapterUrlKey('https://novelcool.com/chapter/read-online/14145402.html'),
+    novelCoolChapterUrlKey('https://www.novelcool.com/chapter/Chapter-655-Misha-s-Move/14145402/')
+  );
+  assert.notEqual(
+    novelCoolChapterUrlKey('https://novelcool.com/chapter/read-online/14145402.html'),
+    novelCoolChapterUrlKey('https://novelcool.com/chapter/read-online/14145403.html')
+  );
+});
+
 test('credentials stay encrypted and sessions require exact plugin and route bindings', async (t) => {
   const database = migratedDatabase(t);
   const vault = new LocalEncryptedVault(Buffer.alloc(32, 7));
@@ -661,6 +732,43 @@ test('health persistence keeps current thresholds and unregisters quarantined pl
   assert.deepEqual(unregistered, ['external-demo', 'external-demo']);
 });
 
+test('route-aware HTTP gates every outbound source request before network I/O', async () => {
+  const calls: string[] = [];
+  const server = createServer((request, response) => {
+    calls.push(`request:${request.method}`);
+    response.end('ok');
+  });
+  await new Promise<void>((ready) => server.listen(0, '127.0.0.1', ready));
+  const address = server.address();
+  if (!address || typeof address === 'string') throw new Error('gate test server did not bind');
+  const signal = new AbortController().signal;
+  const adapter = new RouteAwareHttpClientAdapter(new ProxyAgentFactory(), {
+    requestGate: {
+      async enter(url, observedSignal) {
+        assert.equal(observedSignal, signal);
+        calls.push(`gate:${url}`);
+      }
+    }
+  });
+  const url = `http://127.0.0.1:${address.port}/source`;
+  try {
+    await adapter.get(url, { signal });
+    await adapter.post(url, { signal, body: 'payload' });
+    await adapter.head(url, { signal });
+    assert.deepEqual(calls, [
+      `gate:${url}`,
+      'request:GET',
+      `gate:${url}`,
+      'request:POST',
+      `gate:${url}`,
+      'request:HEAD'
+    ]);
+  } finally {
+    adapter.destroy();
+    await new Promise<void>((done) => server.close(() => done()));
+  }
+});
+
 test('resolved proxy routes carry real traffic without direct fallback', async () => {
   const target = await startDestination();
   const proxy = await startHttpProxyServer();
@@ -729,7 +837,8 @@ test('route-aware HTTP honors an injected response budget', async () => {
   try {
     await assert.rejects(
       () => adapter.get(`http://127.0.0.1:${address.port}/large`),
-      /1\s?KB|1024/i
+      (error: unknown) =>
+        error instanceof SourceReaderError && error.code === 'SOURCE_RESPONSE_TOO_LARGE'
     );
   } finally {
     adapter.destroy();
@@ -748,7 +857,61 @@ test('route-aware HTTP honors an injected request timeout', async () => {
     requestTimeoutMs: 20
   });
   try {
-    await assert.rejects(() => adapter.get(`http://127.0.0.1:${address.port}/slow`), /timeout/i);
+    await assert.rejects(
+      () => adapter.get(`http://127.0.0.1:${address.port}/slow`),
+      (error: unknown) =>
+        error instanceof SourceReaderError && error.code === 'SOURCE_REQUEST_TIMEOUT'
+    );
+  } finally {
+    adapter.destroy();
+    await new Promise<void>((done) => server.close(() => done()));
+  }
+});
+
+test('route-aware HTTP maps direct upstream rate limits to a typed source error', async () => {
+  const server = createServer((_request, response) => {
+    response.statusCode = 429;
+    response.setHeader('retry-after', '30');
+    response.end('rate limited');
+  });
+  await new Promise<void>((ready) => server.listen(0, '127.0.0.1', ready));
+  const address = server.address();
+  if (!address || typeof address === 'string') throw new Error('rate-limit server did not bind');
+  const adapter = new RouteAwareHttpClientAdapter();
+  try {
+    await assert.rejects(
+      () => adapter.get(`http://127.0.0.1:${address.port}/limited`),
+      (error: unknown) =>
+        error instanceof SourceReaderError &&
+        error.code === 'SOURCE_RATE_LIMITED' &&
+        error.retryable === true &&
+        error.details?.status === 429
+    );
+  } finally {
+    adapter.destroy();
+    await new Promise<void>((done) => server.close(() => done()));
+  }
+});
+
+test('route-aware HTTP never leaks an untyped direct HTTP status error', async () => {
+  const server = createServer((_request, response) => {
+    response.statusCode = 404;
+    response.end('missing');
+  });
+  await new Promise<void>((ready) => server.listen(0, '127.0.0.1', ready));
+  const address = server.address();
+  if (!address || typeof address === 'string')
+    throw new Error('missing-source server did not bind');
+  const adapter = new RouteAwareHttpClientAdapter();
+  try {
+    await assert.rejects(
+      () => adapter.get(`http://127.0.0.1:${address.port}/missing`),
+      (error: unknown) =>
+        error instanceof SourceReaderError &&
+        error.code === 'SOURCE_TEMPORARILY_UNAVAILABLE' &&
+        error.retryable === false &&
+        error.details?.status === 404
+    );
   } finally {
     adapter.destroy();
     await new Promise<void>((done) => server.close(() => done()));
@@ -818,6 +981,7 @@ test('NovelCool runs through the new pipeline with account-scoped persistent cac
     () => randomUUID()
   );
   const facade = new SourceReaderFacade({
+    requestGate: { assertAllowed: async () => undefined },
     candidates: new CandidateResolver(new PipelinePluginRegistryAdapter(registry)),
     contexts: new PipelineRuntimeContextAdapter(contextResolver),
     cache: new ReaderCachePolicy(cache, clock),

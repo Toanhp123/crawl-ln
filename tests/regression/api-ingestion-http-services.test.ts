@@ -76,9 +76,6 @@ test('source preview returns current analyze diagnostics without persisting Libr
       }
     },
     {
-      async assertAllowed() {
-        trace.push('policy.allowed');
-      },
       assertChapterHosts() {
         trace.push('policy.chapters');
       }
@@ -92,7 +89,7 @@ test('source preview returns current analyze diagnostics without persisting Libr
     chapterCount: 2,
     firstChapterUrls: ['https://fixture.test/novel/1', 'https://fixture.test/novel/2']
   });
-  assert.deepEqual(trace, ['policy.allowed', 'policy.chapters']);
+  assert.deepEqual(trace, ['policy.chapters']);
 });
 
 test('refresh summary computes chapter delta outside HTTP presentation', async () => {

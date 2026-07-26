@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { LibraryChapterEntity } from '../../apps/api/src/modules/library/domain/entities/library-chapter.entity.ts';
 import { LibraryNovelEntity } from '../../apps/api/src/modules/library/domain/entities/library-novel.entity.ts';
 import { LibraryError } from '../../apps/api/src/modules/library/domain/errors/library.error.ts';
+import { chapterSourceUrlKey } from '../../apps/api/src/modules/library/domain/url/chapter-source-url-key.ts';
 import type {
   LibraryChapter,
   LibraryNovel
@@ -91,6 +93,36 @@ test('library entities reject invalid source data', () => {
   assert.throws(
     () => LibraryChapterEntity.create(fixtureChapter({ index: -1 })),
     (error: unknown) => error instanceof LibraryError && error.code === 'LIBRARY_VALIDATION_ERROR'
+  );
+});
+
+test('library chapter source identity preserves meaningful query parameters', () => {
+  const first = chapterSourceUrlKey(
+    'https://www.example.test/read/chapter.html?chapter=1&utm_source=listing#content'
+  );
+  const same = chapterSourceUrlKey(
+    'https://example.test/read/chapter?utm_medium=referral&chapter=1'
+  );
+  const second = chapterSourceUrlKey('https://example.test/read/chapter?chapter=2');
+
+  assert.equal(first, same);
+  assert.notEqual(first, second);
+});
+
+test('chapter URL identity remains inside its owning domain and plugin slices', async () => {
+  const [libraryKey, novelCoolPlugin] = await Promise.all([
+    readFile('apps/api/src/modules/library/domain/url/chapter-source-url-key.ts', 'utf8'),
+    readFile(
+      'apps/api/src/modules/source-reader/infrastructure/plugins/built-in/novelcool/novelcool.plugin.ts',
+      'utf8'
+    )
+  ]);
+
+  assert.doesNotMatch(libraryKey, /platform\/url/);
+  assert.match(novelCoolPlugin, /\.\/novelcool-chapter-url-key\.js/);
+  await assert.rejects(
+    readFile('apps/api/src/platform/url/chapter-source-url-key.ts', 'utf8'),
+    (error: unknown) => error instanceof Error && 'code' in error && error.code === 'ENOENT'
   );
 });
 

@@ -177,3 +177,30 @@ test('Phase 2C architecture and E2E acceptance documentation remain complete', a
   assert.match(changelog, /Phase 2C Backup and Restore/);
   assert.equal((changelog.match(/Phase 2C Backup and Restore/g) ?? []).length, 1);
 });
+
+test('README and changelog publish the current route and release boundaries', async () => {
+  const [readme, router, changelog] = await Promise.all([
+    readFile('README.md', 'utf8'),
+    readFile('apps/web/src/app/router/AppRouter.tsx', 'utf8'),
+    readFile('CHANGELOG.md', 'utf8')
+  ]);
+
+  for (const route of [
+    '/library',
+    '/library/:novelId',
+    '/activity',
+    '/activity/:taskId',
+    '/sources',
+    '/settings'
+  ]) {
+    assert.match(router, new RegExp(route.replaceAll('/', '\\/')));
+    assert.match(readme, new RegExp(route.replaceAll('/', '\\/')));
+  }
+  assert.match(router, /path="read\/:chapterIndex"/);
+  assert.match(readme, /\/library\/:novelId\/read\/:chapterIndex/);
+  assert.match(readme, /legacy.*(?:crawl|tasks).*redirect/i);
+  assert.equal((changelog.match(/^# Changelog$/gm) ?? []).length, 1);
+  assert.equal((changelog.match(/^## 2\.9\.4 - Final Logic Cleanup$/gm) ?? []).length, 1);
+  assert.ok(changelog.indexOf('## Unreleased') < changelog.indexOf('## 3.0.0'));
+  assert.ok(changelog.indexOf('## 3.0.0') < changelog.indexOf('## 2.9.6'));
+});

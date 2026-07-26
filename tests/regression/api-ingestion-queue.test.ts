@@ -4,7 +4,7 @@ import { PauseJobCommandHandler } from '../../apps/api/src/modules/ingestion/app
 import { ChapterFetchService } from '../../apps/api/src/modules/ingestion/application/services/chapter-fetch.service.ts';
 import { IngestionJobRunnerService } from '../../apps/api/src/modules/ingestion/application/services/ingestion-job-runner.service.ts';
 import { IngestionQueueService } from '../../apps/api/src/modules/ingestion/application/services/ingestion-queue.service.ts';
-import { SourcePolicyService } from '../../apps/api/src/modules/ingestion/application/services/source-policy.service.ts';
+import { SourceResultPolicyService } from '../../apps/api/src/modules/ingestion/application/services/source-result-policy.service.ts';
 import { IngestionJobEntity } from '../../apps/api/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
 import type {
   IngestionEvent,
@@ -12,6 +12,7 @@ import type {
   IngestionJobChapter
 } from '../../apps/api/src/modules/ingestion/domain/ingestion.models.ts';
 import type {
+  LibraryApi,
   LibraryChapter,
   LibraryNovelDetail
 } from '../../apps/api/src/modules/library/public/library.api.ts';
@@ -28,6 +29,148 @@ function sequenceClock() {
   };
 }
 
+function manyChapterDetail(count: number): LibraryNovelDetail {
+  const chapters = Array.from({ length: count }, (_, offset): LibraryChapter => {
+    const index = offset + 1;
+    return {
+      id: `chapter-${index}`,
+      novelId: 'novel-1',
+      index,
+      title: `Chapter ${index}`,
+      sourceUrl: `https://example.test/novel/${index}`,
+      status: 'pending',
+      sourceAvailable: true,
+      contentVersion: 1,
+      createdAt: now,
+      updatedAt: now
+    };
+  });
+  return {
+    novel: {
+      id: 'novel-1',
+      title: 'Novel',
+      sourceUrl: 'https://example.test/novel',
+      sourceName: 'Example',
+      status: 'analyzed',
+      createdAt: now,
+      updatedAt: now
+    },
+    chapters
+  };
+}
+
+function monotonicClock() {
+  let tick = 0;
+  const base = Date.parse(now);
+  return { now: () => new Date(base + ++tick) };
+}
+
+function createRunnerHarness(input: {
+  chapterCount: number;
+  fetchChapter: (chapter: { title: string; sourceUrl: string }) => Promise<{
+    title: string;
+    rawText: string;
+    cleanText: string;
+  }>;
+  sourceFailureThreshold?: number;
+}) {
+  const detail = manyChapterDetail(input.chapterCount);
+  let job = IngestionJobEntity.createQueued({
+    id: 'job-1',
+    novelId: 'novel-1',
+    totalChapters: input.chapterCount,
+    now
+  }).toPrimitives();
+  const work = detail.chapters.map((chapter, position): IngestionJobChapter => ({
+    jobId: job.id,
+    chapterId: chapter.id,
+    position,
+    status: 'pending',
+    attemptCount: 0,
+    updatedAt: now
+  }));
+  const events: IngestionEvent[] = [];
+  const ingestionStates: Array<{ status: string; errorMessage?: string }> = [];
+  const repository = {
+    findById: async () => job,
+    findJobChapters: async () => work,
+    async saveJobWithEvent(next: IngestionJob, event: IngestionEvent) {
+      job = next;
+      events.push(event);
+    },
+    async recordChapterResult(
+      next: IngestionJob,
+      nextWork: IngestionJobChapter,
+      event: IngestionEvent
+    ) {
+      job = next;
+      Object.assign(work[nextWork.position]!, nextWork);
+      events.push(event);
+    }
+  };
+  const library: LibraryApi = {
+    queries: {
+      getNovel: async () => detail,
+      listNovels: async () => {
+        throw new Error('not used');
+      },
+      getChapter: async () => null,
+      getStats: async () => {
+        throw new Error('not used');
+      }
+    },
+    commands: {
+      reconcileAnalysis: async () => {
+        throw new Error('not used');
+      },
+      saveChapterContent: async (command) => ({
+        ...detail.chapters.find((chapter) => chapter.id === command.chapterId)!,
+        title: command.title,
+        rawText: command.rawText,
+        cleanText: command.cleanText,
+        status: 'fetched',
+        contentVersion: 2,
+        updatedAt: command.savedAt
+      }),
+      async setIngestionState(command) {
+        ingestionStates.push({
+          status: command.status,
+          ...(command.errorMessage === undefined ? {} : { errorMessage: command.errorMessage })
+        });
+      },
+      deleteNovel: async () => undefined
+    }
+  };
+  const runner = new IngestionJobRunnerService({
+    repository,
+    library,
+    fetchChapter: { execute: input.fetchChapter },
+    clock: monotonicClock(),
+    ids: {
+      randomId: (() => {
+        let id = 0;
+        return () => `event-${++id}`;
+      })()
+    },
+    retry: 0,
+    ...(input.sourceFailureThreshold === undefined
+      ? {}
+      : { sourceFailureThreshold: input.sourceFailureThreshold })
+  });
+  const control = {
+    isCancelled: () => false,
+    isPauseRequested: () => false,
+    signal: () => undefined
+  };
+  return {
+    runner,
+    control,
+    events,
+    work,
+    ingestionStates,
+    job: () => job
+  };
+}
 function libraryDetail(chapter: LibraryChapter): LibraryNovelDetail {
   return {
     novel: {
@@ -239,7 +382,7 @@ test('chapter fetch keeps descriptive titles and removes promotional footer text
         source: { pluginId: 'fixture', pluginVersion: '1.0.0', domain: 'example.test' }
       })
     },
-    new SourcePolicyService({ check: async () => ({ allowed: true }) })
+    new SourceResultPolicyService()
   );
 
   const result = await fetch.execute({
@@ -277,4 +420,111 @@ test('job control commands use durable receipts to avoid repeating queue mutatio
   await handler.execute(command);
 
   assert.equal(pauseCalls, 1);
+});
+
+test('chapter fetch forwards cancellation and validates the returned source host', async () => {
+  const calls: string[] = [];
+  const signal = new AbortController().signal;
+  const fetch = new ChapterFetchService(
+    {
+      readMetadata: async () => {
+        throw new Error('not used');
+      },
+      async *streamChapterList() {
+        throw new Error('not used');
+      },
+      readChapterContent: async ({ signal: observedSignal }) => {
+        calls.push(`read:${observedSignal === signal}`);
+        return {
+          data: {
+            title: 'Chapter 1',
+            url: 'https://www.example.test/novel/1',
+            rawText: 'Body',
+            cleanText: 'Body'
+          },
+          source: { pluginId: 'fixture', pluginVersion: '1.0.0', domain: 'example.test' }
+        };
+      }
+    },
+    new SourceResultPolicyService()
+  );
+
+  await fetch.execute(
+    { title: 'Chapter 1', sourceUrl: 'https://www.example.test/novel/1' },
+    signal
+  );
+
+  assert.deepEqual(calls, ['read:true']);
+});
+
+test('runner yields to the event loop while processing immediate chapter failures', async () => {
+  const harness = createRunnerHarness({
+    chapterCount: 40,
+    sourceFailureThreshold: 100,
+    fetchChapter: async () => {
+      throw new Error('chapter-specific parse failure');
+    }
+  });
+  let timerFired = false;
+  const timer = setTimeout(() => {
+    timerFired = true;
+  }, 0);
+
+  await harness.runner.run('job-1', harness.control);
+  clearTimeout(timer);
+
+  assert.equal(timerFired, true);
+  assert.equal(harness.job().failedChapters, 40);
+});
+
+test('runner opens the source circuit after repeated retryable upstream failures', async () => {
+  let fetchCalls = 0;
+  const harness = createRunnerHarness({
+    chapterCount: 20,
+    sourceFailureThreshold: 3,
+    fetchChapter: async () => {
+      fetchCalls += 1;
+      throw Object.assign(new Error('NovelCool timed out'), {
+        code: 'SOURCE_REQUEST_TIMEOUT',
+        retryable: true
+      });
+    }
+  });
+
+  await harness.runner.run('job-1', harness.control);
+
+  assert.equal(fetchCalls, 3);
+  assert.equal(harness.job().status, 'failed');
+  assert.equal(harness.job().failedChapters, 3);
+  assert.match(harness.job().errorMessage ?? '', /3 consecutive source failures/i);
+  assert.deepEqual(
+    harness.work.map((item) => item.status),
+    ['failed', 'failed', 'failed', ...Array.from({ length: 17 }, () => 'pending')]
+  );
+  assert.deepEqual(harness.ingestionStates.at(-1), {
+    status: 'failed',
+    errorMessage: harness.job().errorMessage
+  });
+  assert.equal(harness.events.at(-1)?.type, 'failed');
+});
+
+test('runner opens the source circuit when the upstream blocks every chapter request', async () => {
+  let fetchCalls = 0;
+  const harness = createRunnerHarness({
+    chapterCount: 20,
+    sourceFailureThreshold: 3,
+    fetchChapter: async () => {
+      fetchCalls += 1;
+      throw Object.assign(new Error('NovelCool blocked access'), {
+        code: 'NETWORK_ACCESS_BLOCKED',
+        retryable: false
+      });
+    }
+  });
+
+  await harness.runner.run('job-1', harness.control);
+
+  assert.equal(fetchCalls, 3);
+  assert.equal(harness.job().status, 'failed');
+  assert.match(harness.job().errorMessage ?? '', /NETWORK_ACCESS_BLOCKED/);
 });

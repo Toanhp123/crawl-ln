@@ -1,6 +1,6 @@
 import { IngestionError } from '../../domain/errors/ingestion.error.js';
 import type { IngestionSourceReaderPort } from '../ports/source-reader.port.js';
-import type { SourcePolicyService } from './source-policy.service.js';
+import type { SourceResultPolicyService } from './source-result-policy.service.js';
 
 const chapterBatchSize = 200;
 const previewChapterCount = 3;
@@ -24,11 +24,10 @@ export interface AnalyzeSourceResult {
 export class AnalyzeSourcePreviewService {
   constructor(
     private readonly sourceReader: IngestionSourceReaderPort,
-    private readonly sourcePolicy: SourcePolicyService
+    private readonly sourcePolicy: SourceResultPolicyService
   ) {}
 
   async execute(command: AnalyzeSourceCommand): Promise<AnalyzeSourceResult> {
-    await this.sourcePolicy.assertAllowed(command.url);
     const metadata = await this.sourceReader.readMetadata({ url: command.url });
     const chapters: AnalyzeSourceResult['chapters'] = [];
     for await (const batch of this.sourceReader.streamChapterList({

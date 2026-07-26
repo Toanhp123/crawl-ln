@@ -11,16 +11,18 @@ function normalizedQuery(url: URL): string {
   return query ? `?${query}` : '';
 }
 
-export function chapterSourceUrlKey(value: string): string {
+/** NovelCool aliases chapter pages by the numeric id at the end of the path. */
+export function novelCoolChapterUrlKey(value: string): string {
   try {
     const url = new URL(value);
     const host = url.hostname.toLowerCase().replace(/^www\./, '');
     const pathname = decodeURIComponent(url.pathname)
       .replace(/\/+$/, '')
       .replace(/\.html$/i, '');
+    const numericId = pathname.match(/\/(\d+)$/)?.[1];
+    if (/\/chapter\//i.test(pathname) && numericId) return `${host}/chapter/${numericId}`;
     return `${host}${pathname || '/'}${normalizedQuery(url)}`;
   } catch {
-    const withoutHash = value.split('#', 1)[0] ?? value;
-    return withoutHash.replace(/\/+$/, '').replace(/\.html$/i, '');
+    return value.split('#', 1)[0] ?? value;
   }
 }

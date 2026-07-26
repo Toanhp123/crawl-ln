@@ -14,14 +14,29 @@ export function createBatchQueue<T>(
 ): BatchQueue<T> {
   const pending: T[] = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let active: Promise<void> | undefined;
   let disposed = false;
 
-  const flush = async () => {
+  const flush = (): Promise<void> => {
     if (timer) clearTimeout(timer);
     timer = undefined;
-    if (disposed || pending.length === 0) return;
+    if (disposed || pending.length === 0) return active ?? Promise.resolve();
     const values = pending.splice(0, pending.length);
-    await consume(values);
+    const previous = active?.catch(() => undefined) ?? Promise.resolve();
+    const current = previous.then(async () => {
+      if (disposed) return;
+      await consume(values);
+    });
+    active = current;
+    current.then(
+      () => {
+        if (active === current) active = undefined;
+      },
+      () => {
+        if (active === current) active = undefined;
+      }
+    );
+    return current;
   };
 
   const enqueue = (value: T) => {

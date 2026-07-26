@@ -134,6 +134,32 @@ test('batch queue groups caller values and disposes pending work', async () => {
   assert.deepEqual(batches, [[1, 2]]);
 });
 
+test('batch queue serializes async consumers instead of overlapping realtime work', async () => {
+  const { createBatchQueue } = await import('../../apps/web/src/shared/realtime/batch-queue.ts');
+  const batches: number[][] = [];
+  let active = 0;
+  let maxActive = 0;
+  const queue = createBatchQueue<number>(
+    async (values) => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      batches.push([...values]);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      active -= 1;
+    },
+    { windowMs: 1 }
+  );
+
+  queue.enqueue(1);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  queue.enqueue(2);
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  queue.dispose();
+
+  assert.deepEqual(batches, [[1], [2]]);
+  assert.equal(maxActive, 1);
+});
+
 test('visual foundation carries the current primitive surface', async () => {
   const files = await listFiles(`${root}/ui`);
   const required = [

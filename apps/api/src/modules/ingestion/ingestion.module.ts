@@ -16,10 +16,7 @@ import { IngestionQueueService } from './application/services/ingestion-queue.se
 import { RefreshNovelWorkflow } from './application/services/refresh-novel.workflow.js';
 import { RefreshNovelSummaryService } from './application/services/refresh-novel-summary.service.js';
 import { ResumePausedJobsService } from './application/services/resume-paused-jobs.service.js';
-import {
-  SourcePolicyService,
-  type SourceAccessPolicyPort
-} from './application/services/source-policy.service.js';
+import { SourceResultPolicyService } from './application/services/source-result-policy.service.js';
 import { IngestionSqliteOutboxSource } from './infrastructure/sqlite/ingestion-sqlite.outbox-source.js';
 import { IngestionBackupContributor } from './infrastructure/backup/ingestion-backup.contributor.js';
 import { IngestionSqliteRepository } from './infrastructure/sqlite/ingestion-sqlite.repository.js';
@@ -31,7 +28,6 @@ interface IngestionModuleOptions {
   database: SqliteDatabase;
   library: LibraryApi;
   sourceReader: IngestionSourceReaderPort;
-  sourceAccessPolicy: SourceAccessPolicyPort;
   ids: IngestionIdGeneratorPort;
   clock: { now(): Date };
   logger: { error(message: string): void };
@@ -66,7 +62,7 @@ export function createIngestionModule(
   if (!options) return { name: 'ingestion', migrations: ingestionMigrations };
 
   const repository = new IngestionSqliteRepository(options.database);
-  const sourcePolicy = new SourcePolicyService(options.sourceAccessPolicy);
+  const sourcePolicy = new SourceResultPolicyService();
   const analyzeNovel = new AnalyzeNovelWorkflow(
     options.sourceReader,
     sourcePolicy,

@@ -1,6 +1,6 @@
 import { IngestionError } from '../../domain/errors/ingestion.error.js';
 import type { IngestionSourceReaderPort } from '../ports/source-reader.port.js';
-import type { SourcePolicyService } from './source-policy.service.js';
+import type { SourceResultPolicyService } from './source-result-policy.service.js';
 
 function cleanText(text: string | undefined): string {
   return (text ?? '')
@@ -61,14 +61,13 @@ export function chooseIngestionChapterTitle(existingTitle: string, fetchedTitle:
 export class ChapterFetchService {
   constructor(
     private readonly sourceReader: IngestionSourceReaderPort,
-    private readonly sourcePolicy: SourcePolicyService
+    private readonly sourcePolicy: SourceResultPolicyService
   ) {}
 
   async execute(
     chapter: { title: string; sourceUrl: string },
     signal?: AbortSignal
   ): Promise<{ title: string; rawText: string; cleanText: string }> {
-    await this.sourcePolicy.assertAllowed(chapter.sourceUrl);
     const result = await this.sourceReader.readChapterContent({ url: chapter.sourceUrl, signal });
     this.sourcePolicy.assertChapterHosts(chapter.sourceUrl, [
       { index: 0, title: result.data.title, url: result.data.url }

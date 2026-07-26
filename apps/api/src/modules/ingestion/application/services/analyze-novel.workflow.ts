@@ -6,20 +6,19 @@ import type {
   IngestionSourceChapter,
   IngestionSourceReaderPort
 } from '../ports/source-reader.port.js';
-import type { SourcePolicyService } from './source-policy.service.js';
+import type { SourceResultPolicyService } from './source-result-policy.service.js';
 
 const chapterBatchSize = 200;
 
 export class AnalyzeNovelWorkflow {
   constructor(
     private readonly sourceReader: IngestionSourceReaderPort,
-    private readonly sourcePolicy: SourcePolicyService,
+    private readonly sourcePolicy: SourceResultPolicyService,
     private readonly library: LibraryCommands,
     private readonly ids: IngestionIdGeneratorPort
   ) {}
 
   async execute(command: AnalyzeNovelCommand) {
-    await this.sourcePolicy.assertAllowed(command.url);
     const metadata = await this.sourceReader.readMetadata({ url: command.url });
     const chapters: IngestionSourceChapter[] = [];
     for await (const batch of this.sourceReader.streamChapterList({

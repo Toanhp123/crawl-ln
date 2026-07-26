@@ -6,7 +6,7 @@ const ok = (data: unknown) => ({ data, error: null });
 const plugin = {
   id: 'novelcool',
   name: 'NovelCool',
-  activeVersion: '1.0.0',
+  activeVersion: '1.0.1',
   trustLevel: 'built-in',
   status: 'active',
   enabled: true,
@@ -60,7 +60,7 @@ async function mockSourceReader(page: Page, options?: { failDisable?: boolean })
         },
         source: {
           pluginId: 'novelcool',
-          pluginVersion: '1.0.0',
+          pluginVersion: '1.0.1',
           domain: 'novelcool.com',
           capability: 'identify'
         }
@@ -108,5 +108,5 @@ test('Sources console navigates all sections and runs the Source Inspector', asy
   await page.getByLabel('Source URL', { exact: true }).fill('https://novelcool.com/novel/example');
   await page.getByRole('button', { name: 'Run operation', exact: true }).click();
   await expect(page.getByText('novelcool.com', { exact: true })).toBeVisible();
-  await expect(page.getByText(/novelcool@1\.0\.0/).first()).toBeVisible();
+  await expect(page.getByText(/novelcool@1\.0\.1/).first()).toBeVisible();
 });

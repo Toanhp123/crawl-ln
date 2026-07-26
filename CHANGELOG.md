@@ -1,18 +1,12 @@
 # Changelog
 
-## Unreleased - Phase 2C Backup and Restore
+## Unreleased
+
+### Phase 2C Backup and Restore
 
 - Replaced synchronous Restore with durable Backup/Restore operations, resumable inspected uploads, atomic Merge, crash-safe Replace with safety artifacts, an eight-step reconnectable wizard, and cross-platform failure coverage.
 
-## 3.0.0 - 2026-07-21
-
-- Promoted the TypeScript modular-monolith API and Feature-Sliced React web app to the canonical `apps/api` and `apps/web` workspaces.
-- Consolidated backend ownership around `ingestion`, `library`, `source-reader`, `search`, `export`, `backup`, and `scheduler` modules wired by the bootstrap composition root.
-- Moved reader orchestration into the `features/read-chapter` slice and the shared `@novel-tool/reader-engine` package with bounded offline caching and navigation.
-- Added copy-only schema migration, integrity manifests, journaled storage cutover, rollback rehearsal, and acceptance-gated legacy cleanup.
-- Kept Source Plugin SDK capability contract version `1`, sandbox protocol version `1`, and public HTTP response/route contracts unchanged.
-
-## Unreleased - Source Reader Platform
+### Source Reader Platform
 
 - Added the official zero-runtime-dependency `@novel-tool/source-plugin-sdk` workspace package as the canonical external plugin contract, including asynchronous sandbox context types, manifest/models, lifecycle and authentication operations, capability mapping, and allowlisted typed errors preserved across process isolation.
 - Defaulted the API to loopback-only binding with strict CORS, required a strong bearer token for intentional LAN exposure, and removed implicit Source Reader administration roles.
@@ -33,6 +27,22 @@
 - Restricted capability requests to operation-specific DTO allowlists and rejected non-progressing or cyclic pagination.
 - Enabled approved browser-required execution for public JavaScript-heavy sources as well as authenticated sources.
 - Corrected package, network-route, runtime, milestone, plan, and checkpoint documentation after independent review.
+
+### Architecture and Runtime Hardening
+
+- Moved global source allowlisting, robots.txt enforcement, and per-host request limiting into Source Reader so metadata, chapter-list, content, authentication, plugin HTTP, and browser navigation share one outbound policy boundary.
+- Enforced source policy before cache lookup and kept network diagnostics on an independent ungated HTTP adapter.
+- Fixed realtime invalidation so an SSE update supersedes an active stale request instead of allowing its old response to overwrite fresh state.
+- Restored generic chapter URL identity to the Library domain, preserved meaningful query parameters, and isolated NovelCool numeric chapter aliases inside the built-in plugin slice.
+- Aligned the documented web routes and changelog ordering with the current runtime.
+
+## 3.0.0 - 2026-07-21
+
+- Promoted the TypeScript modular-monolith API and Feature-Sliced React web app to the canonical `apps/api` and `apps/web` workspaces.
+- Consolidated backend ownership around `ingestion`, `library`, `source-reader`, `search`, `export`, `backup`, and `scheduler` modules wired by the bootstrap composition root.
+- Moved reader orchestration into the `features/read-chapter` slice and the shared `@novel-tool/reader-engine` package with bounded offline caching and navigation.
+- Added copy-only schema migration, integrity manifests, journaled storage cutover, rollback rehearsal, and acceptance-gated legacy cleanup.
+- Kept Source Plugin SDK capability contract version `1`, sandbox protocol version `1`, and public HTTP response/route contracts unchanged.
 
 ## 2.9.6 - Web Performance Stability
 
@@ -138,17 +148,6 @@
 - Added POST `/api/exports/novels/:id` binary download endpoint.
 - Upgraded mobile export sheet with format, range and downloaded-only controls.
 - Added export pipeline and EPUB package integration tests.
-
-# Changelog
-
-## 2.9.4 - Final Logic Cleanup
-
-- Removed the legacy `POST /api/novels/crawl` endpoint and its novels-side wrapper.
-- Removed duplicate crawl task query routes; `/api/tasks` is now the only task query surface.
-- Removed obsolete frontend route redirects, dead feature/entity/widget files, unused backend artifacts, and deprecated `ListItem`.
-- Removed unused compile-time source adapter examples from production code.
-- Added a cleanup regression gate and Prettier formatting gate.
-- Updated current architecture, API, source configuration, and E2E documentation to the canonical contracts.
 
 ## 2.4.1 - Backend boundary hardening
 

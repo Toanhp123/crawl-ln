@@ -1,18 +1,25 @@
 import type { QueryClient } from '@tanstack/react-query';
+import type { QueryInvalidationOptions } from '../../../shared/api';
 import { schedulerKeys } from './scheduler-keys';
 
 export interface SchedulerInvalidationApi {
-  invalidateAll(client: QueryClient): Promise<unknown>;
-  invalidateStatus(client: QueryClient): Promise<unknown>;
-  invalidateDiagnostics(client: QueryClient): Promise<unknown>;
-  invalidateNovelDiagnostics(client: QueryClient, novelId: string): Promise<unknown>;
+  invalidateAll(client: QueryClient, options?: QueryInvalidationOptions): Promise<unknown>;
+  invalidateStatus(client: QueryClient, options?: QueryInvalidationOptions): Promise<unknown>;
+  invalidateDiagnostics(client: QueryClient, options?: QueryInvalidationOptions): Promise<unknown>;
+  invalidateNovelDiagnostics(
+    client: QueryClient,
+    novelId: string,
+    options?: QueryInvalidationOptions
+  ): Promise<unknown>;
 }
 
 export const schedulerInvalidation: SchedulerInvalidationApi = {
-  invalidateAll: (client) => client.invalidateQueries({ queryKey: schedulerKeys.all }),
-  invalidateStatus: (client) => client.invalidateQueries({ queryKey: schedulerKeys.status() }),
-  invalidateDiagnostics: (client) =>
-    client.invalidateQueries({ queryKey: schedulerKeys.diagnosticsRoot() }),
-  invalidateNovelDiagnostics: (client, id) =>
-    client.invalidateQueries({ queryKey: schedulerKeys.diagnostics(id) })
+  invalidateAll: (client, options) =>
+    client.invalidateQueries({ queryKey: schedulerKeys.all }, options),
+  invalidateStatus: (client, options) =>
+    client.invalidateQueries({ queryKey: schedulerKeys.status() }, options),
+  invalidateDiagnostics: (client, options) =>
+    client.invalidateQueries({ queryKey: schedulerKeys.diagnosticsRoot() }, options),
+  invalidateNovelDiagnostics: (client, id, options) =>
+    client.invalidateQueries({ queryKey: schedulerKeys.diagnostics(id) }, options)
 };

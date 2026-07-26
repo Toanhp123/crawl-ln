@@ -30,6 +30,8 @@ interface RunnerOptions {
   clock: { now(): Date };
   ids: IngestionIdGeneratorPort;
   retry?: number;
+  sourceFailureThreshold?: number;
+  yieldControl?: () => Promise<void>;
 }
 
 function isAbortError(error: unknown): boolean {
@@ -42,11 +44,58 @@ function isAbortError(error: unknown): boolean {
   );
 }
 
+const sourceWideFailureCodes = new Set([
+  'SOURCE_REQUEST_TIMEOUT',
+  'SOURCE_RATE_LIMITED',
+  'SOURCE_TEMPORARILY_UNAVAILABLE',
+  'UPSTREAM_CHALLENGE_DETECTED',
+  'NETWORK_ACCESS_BLOCKED',
+  'NETWORK_ROUTE_UNAVAILABLE',
+  'NETWORK_ROUTE_OFFLINE',
+  'NETWORK_REGION_UNAVAILABLE',
+  'PLUGIN_UNAVAILABLE'
+]);
+
+interface SourceFailureDescriptor {
+  key: string;
+  code: string;
+  source: string;
+}
+
+function sourceFailureDescriptor(
+  error: unknown,
+  sourceUrl: string
+): SourceFailureDescriptor | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const candidate = error as { code?: unknown; retryable?: unknown };
+  if (typeof candidate.code !== 'string' || !sourceWideFailureCodes.has(candidate.code)) {
+    return undefined;
+  }
+  if (candidate.retryable !== true && candidate.code !== 'NETWORK_ACCESS_BLOCKED') {
+    return undefined;
+  }
+  let source = 'unknown source';
+  try {
+    source = new URL(sourceUrl).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    // Chapter URLs were validated during analysis; keep a safe fallback for corrupted records.
+  }
+  return { key: source, code: candidate.code, source };
+}
+
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
 export class IngestionJobRunnerService {
   private readonly retry: number;
+  private readonly sourceFailureThreshold: number;
+  private readonly yieldControl: () => Promise<void>;
 
   constructor(private readonly options: RunnerOptions) {
     this.retry = options.retry ?? 0;
+    this.sourceFailureThreshold = Math.max(1, Math.floor(options.sourceFailureThreshold ?? 5));
+    this.yieldControl = options.yieldControl ?? yieldToEventLoop;
   }
 
   async run(jobId: string, control: IngestionRunControl): Promise<string | undefined> {
@@ -82,6 +131,8 @@ export class IngestionJobRunnerService {
 
     const chaptersById = new Map(detail.chapters.map((chapter) => [chapter.id, chapter]));
     const work = await this.options.repository.findJobChapters(jobId);
+    let consecutiveSourceFailureKey: string | undefined;
+    let consecutiveSourceFailureCount = 0;
     for (const item of work) {
       if (item.status === 'fetched') continue;
       if (control.isCancelled(jobId) || control.isPauseRequested(jobId)) break;
@@ -124,6 +175,28 @@ export class IngestionJobRunnerService {
         )
       );
       mutable = nextJob;
+
+      if (outcome.succeeded || outcome.sourceFailure === undefined) {
+        consecutiveSourceFailureKey = undefined;
+        consecutiveSourceFailureCount = 0;
+      } else if (outcome.sourceFailure.key === consecutiveSourceFailureKey) {
+        consecutiveSourceFailureCount += 1;
+      } else {
+        consecutiveSourceFailureKey = outcome.sourceFailure.key;
+        consecutiveSourceFailureCount = 1;
+      }
+
+      await this.yieldControl();
+
+      if (
+        outcome.succeeded === false &&
+        outcome.sourceFailure !== undefined &&
+        consecutiveSourceFailureCount >= this.sourceFailureThreshold
+      ) {
+        const message = `${outcome.sourceFailure.source} stopped after ${consecutiveSourceFailureCount} consecutive source failures (${outcome.sourceFailure.code}): ${outcome.errorMessage}`;
+        const failed = await this.persistSourceFailure(mutable, message);
+        return failed.novelId;
+      }
     }
 
     if (control.isCancelled(jobId)) {
@@ -185,7 +258,12 @@ export class IngestionJobRunnerService {
     jobId: string
   ): Promise<
     | { succeeded: true; attempts: number }
-    | { succeeded: false; attempts: number; errorMessage: string }
+    | {
+        succeeded: false;
+        attempts: number;
+        errorMessage: string;
+        sourceFailure?: SourceFailureDescriptor;
+      }
     | null
   > {
     let lastError: unknown;
@@ -212,11 +290,29 @@ export class IngestionJobRunnerService {
         lastError = error;
       }
     }
+    const sourceFailure = sourceFailureDescriptor(lastError, chapter.sourceUrl);
     return {
       succeeded: false,
       attempts: this.retry + 1,
-      errorMessage: lastError instanceof Error ? lastError.message : 'Unknown chapter fetch error'
+      errorMessage: lastError instanceof Error ? lastError.message : 'Unknown chapter fetch error',
+      ...(sourceFailure === undefined ? {} : { sourceFailure })
     };
+  }
+
+  private async persistSourceFailure(job: IngestionJob, message: string): Promise<IngestionJob> {
+    const failed = IngestionJobEntity.fromPrimitives(job).fail(message, this.now()).toPrimitives();
+    await this.options.library.commands.setIngestionState({
+      commandId: `state:${job.id}:failed`,
+      novelId: failed.novelId,
+      status: 'failed',
+      updatedAt: failed.updatedAt,
+      errorMessage: message
+    });
+    await this.options.repository.saveJobWithEvent(
+      failed,
+      this.event(job.id, 'failed', 'error', message)
+    );
+    return failed;
   }
 
   private async persistTerminalControl(

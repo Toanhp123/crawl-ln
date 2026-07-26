@@ -3,7 +3,7 @@ import test from 'node:test';
 import { CreateIngestionJobCommandHandler } from '../../apps/api/src/modules/ingestion/application/commands/create-ingestion-job.command.ts';
 import type { IngestionSourceReaderPort } from '../../apps/api/src/modules/ingestion/application/ports/source-reader.port.ts';
 import { AnalyzeNovelWorkflow } from '../../apps/api/src/modules/ingestion/application/services/analyze-novel.workflow.ts';
-import { SourcePolicyService } from '../../apps/api/src/modules/ingestion/application/services/source-policy.service.ts';
+import { SourceResultPolicyService } from '../../apps/api/src/modules/ingestion/application/services/source-result-policy.service.ts';
 import { RefreshNovelWorkflow } from '../../apps/api/src/modules/ingestion/application/services/refresh-novel.workflow.ts';
 import { IngestionJobEntity } from '../../apps/api/src/modules/ingestion/domain/entities/ingestion-job.entity.ts';
 import { IngestionError } from '../../apps/api/src/modules/ingestion/domain/errors/ingestion.error.ts';
@@ -17,7 +17,6 @@ function createAnalysisScenario(
   options: {
     offHostChapter?: boolean;
     noChapters?: boolean;
-    robotsAllowed?: boolean;
   } = {}
 ) {
   const calls: string[] = [];
@@ -55,15 +54,7 @@ function createAnalysisScenario(
       throw new Error('not used');
     }
   };
-  const policy = new SourcePolicyService({
-    async check() {
-      calls.push('robots.check');
-      return {
-        allowed: options.robotsAllowed ?? true,
-        ...(options.robotsAllowed === false ? { reason: 'blocked by robots' } : {})
-      };
-    }
-  });
+  const policy = new SourceResultPolicyService();
   const workflow = new AnalyzeNovelWorkflow(
     sourceReader,
     policy,
@@ -112,12 +103,7 @@ test('analysis reads source data then reconciles it through Library public comma
     requestedAt: now
   });
 
-  assert.deepEqual(scenario.calls, [
-    'robots.check',
-    'source.metadata',
-    'source.chapters',
-    'library.reconcile'
-  ]);
+  assert.deepEqual(scenario.calls, ['source.metadata', 'source.chapters', 'library.reconcile']);
   assert.equal(result.novel.sourceUrl, normalizedUrl);
   assert.deepEqual(
     scenario.reconciled[0] as { novel: { id: string }; chapters: Array<{ id: string }> },
@@ -150,9 +136,8 @@ test('analysis reads source data then reconciles it through Library public comma
   );
 });
 
-test('analysis rejects denied, empty and off-host source results before Library writes', async () => {
+test('analysis rejects empty and off-host source results before Library writes', async () => {
   for (const scenario of [
-    createAnalysisScenario({ robotsAllowed: false }),
     createAnalysisScenario({ noChapters: true }),
     createAnalysisScenario({ offHostChapter: true })
   ]) {

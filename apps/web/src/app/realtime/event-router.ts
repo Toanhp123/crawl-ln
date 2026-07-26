@@ -1,4 +1,4 @@
-import type { QueryClient } from '@tanstack/react-query';
+import type { InvalidateOptions, QueryClient } from '@tanstack/react-query';
 import type { RealtimeEvent, RealtimeResource } from '@novel-tool/shared';
 import { backupOperationInvalidation } from '../../entities/backup-operation';
 import { novelInvalidation, type NovelInvalidationApi } from '../../entities/novel';
@@ -9,7 +9,7 @@ import { sourceCredentialInvalidation } from '../../entities/source-credential';
 import { sourceNetworkProfileInvalidation } from '../../entities/source-network-profile';
 import { sourcePluginInvalidation } from '../../entities/source-plugin';
 import { taskInvalidation, type TaskInvalidationApi } from '../../entities/task';
-import type { CollectionInvalidationApi } from '../../shared/api';
+import type { CollectionInvalidationApi, QueryInvalidationOptions } from '../../shared/api';
 
 const realtimeResources = new Set<RealtimeResource>([
   'novels',
@@ -22,14 +22,22 @@ const realtimeResources = new Set<RealtimeResource>([
 ]);
 
 export interface RealtimeInvalidationRegistry {
-  tasks: Pick<TaskInvalidationApi, 'invalidateAll' | 'invalidateDetail' | 'invalidateForNovel'>;
+  tasks: Pick<
+    TaskInvalidationApi,
+    | 'invalidateAll'
+    | 'invalidateList'
+    | 'invalidateSummary'
+    | 'invalidateDetail'
+    | 'invalidateEvents'
+    | 'invalidateForNovel'
+  >;
   novels: Pick<NovelInvalidationApi, 'invalidateList' | 'invalidateStats' | 'invalidateDetail'>;
   scheduler: Pick<
     SchedulerInvalidationApi,
     'invalidateStatus' | 'invalidateDiagnostics' | 'invalidateNovelDiagnostics'
   >;
   search: Pick<SearchInvalidationApi, 'invalidateAll'>;
-  backup: { invalidateAll(client: QueryClient): Promise<unknown> };
+  backup: CollectionInvalidationApi;
   sourceReader: CollectionInvalidationApi;
 }
 
@@ -110,17 +118,21 @@ export function createRealtimeInvalidationRegistry(): RealtimeInvalidationRegist
     search: searchInvalidation,
     backup: backupOperationInvalidation,
     sourceReader: {
-      async invalidateAll(client) {
+      async invalidateAll(client, options) {
         await Promise.all([
-          sourcePluginInvalidation.invalidateAll(client),
-          sourceCredentialInvalidation.invalidateAll(client),
-          sourceNetworkProfileInvalidation.invalidateAll(client),
-          sourceAuthChallengeInvalidation.invalidateAll(client)
+          sourcePluginInvalidation.invalidateAll(client, options),
+          sourceCredentialInvalidation.invalidateAll(client, options),
+          sourceNetworkProfileInvalidation.invalidateAll(client, options),
+          sourceAuthChallengeInvalidation.invalidateAll(client, options)
         ]);
       }
     }
   };
 }
+
+export const realtimeInvalidationOptions: InvalidateOptions = {
+  cancelRefetch: true
+};
 
 export async function routeRealtimeEvents(
   events: readonly RealtimeEvent[],
@@ -138,41 +150,49 @@ export async function routeRealtimeEvents(
   }
 
   if (resources.has('all')) {
-    await client.invalidateQueries();
+    await client.invalidateQueries(undefined, realtimeInvalidationOptions);
     return;
   }
 
   const invalidations: Promise<unknown>[] = [];
+  const options: QueryInvalidationOptions = realtimeInvalidationOptions;
 
   if (resources.has('tasks')) {
-    invalidations.push(registry.tasks.invalidateAll(client));
-    for (const taskId of taskIds) {
-      invalidations.push(registry.tasks.invalidateDetail(client, taskId));
+    if (taskIds.size === 0) {
+      invalidations.push(registry.tasks.invalidateAll(client, options));
+    } else {
+      invalidations.push(registry.tasks.invalidateList(client, options));
+      invalidations.push(registry.tasks.invalidateSummary(client, options));
+      for (const taskId of taskIds) {
+        invalidations.push(registry.tasks.invalidateDetail(client, taskId, options));
+        invalidations.push(registry.tasks.invalidateEvents(client, taskId, options));
+      }
     }
     for (const novelId of novelIds) {
-      invalidations.push(registry.tasks.invalidateForNovel(client, novelId));
+      invalidations.push(registry.tasks.invalidateForNovel(client, novelId, options));
     }
   }
 
   if (resources.has('novels')) {
-    invalidations.push(registry.novels.invalidateList(client));
-    invalidations.push(registry.novels.invalidateStats(client));
+    invalidations.push(registry.novels.invalidateList(client, options));
+    invalidations.push(registry.novels.invalidateStats(client, options));
     for (const novelId of novelIds) {
-      invalidations.push(registry.novels.invalidateDetail(client, novelId));
+      invalidations.push(registry.novels.invalidateDetail(client, novelId, options));
     }
   }
 
   if (resources.has('scheduler')) {
-    invalidations.push(registry.scheduler.invalidateStatus(client));
-    invalidations.push(registry.scheduler.invalidateDiagnostics(client));
+    invalidations.push(registry.scheduler.invalidateStatus(client, options));
+    invalidations.push(registry.scheduler.invalidateDiagnostics(client, options));
     for (const novelId of novelIds) {
-      invalidations.push(registry.scheduler.invalidateNovelDiagnostics(client, novelId));
+      invalidations.push(registry.scheduler.invalidateNovelDiagnostics(client, novelId, options));
     }
   }
 
-  if (resources.has('search')) invalidations.push(registry.search.invalidateAll(client));
-  if (resources.has('backup')) invalidations.push(registry.backup.invalidateAll(client));
-  if (resources.has('plugins')) invalidations.push(registry.sourceReader.invalidateAll(client));
+  if (resources.has('search')) invalidations.push(registry.search.invalidateAll(client, options));
+  if (resources.has('backup')) invalidations.push(registry.backup.invalidateAll(client, options));
+  if (resources.has('plugins'))
+    invalidations.push(registry.sourceReader.invalidateAll(client, options));
 
   await Promise.all(invalidations);
 }

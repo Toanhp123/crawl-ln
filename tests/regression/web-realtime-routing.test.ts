@@ -34,7 +34,10 @@ function registrySpy(calls: string[]) {
   return {
     tasks: {
       invalidateAll: call('tasks:all'),
+      invalidateList: call('tasks:list'),
+      invalidateSummary: call('tasks:summary'),
       invalidateDetail: (_client: QueryClient, id: string) => call(`tasks:detail:${id}`)(),
+      invalidateEvents: (_client: QueryClient, id: string) => call(`tasks:events:${id}`)(),
       invalidateForNovel: (_client: QueryClient, id: string) => call(`tasks:novel:${id}`)()
     },
     novels: {
@@ -66,13 +69,70 @@ test('realtime resources call only public entity invalidation adapters', async (
   );
 
   assert.deepEqual(calls, [
-    'tasks:all',
+    'tasks:list',
+    'tasks:summary',
     'tasks:detail:task-1',
+    'tasks:events:task-1',
     'tasks:novel:novel-1',
     'novels:list',
     'novels:stats',
     'novels:detail:novel-1'
   ]);
+});
+
+test('realtime task updates replace an active detail request with fresh data', async () => {
+  const { QueryClient, QueryObserver } = await import('@tanstack/react-query');
+  const { createRealtimeInvalidationRegistry, routeRealtimeEvent } =
+    await import('../../apps/web/src/app/realtime/event-router.ts');
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } }
+  });
+  const queryKey = ['tasks', 'detail', 'task-1'] as const;
+  client.setQueryData(queryKey, { status: 'running' });
+
+  let started = 0;
+  let aborted = 0;
+  const observer = new QueryObserver(client, {
+    queryKey,
+    queryFn: ({ signal }) =>
+      new Promise<{ status: string }>((resolve, reject) => {
+        started += 1;
+        const requestNumber = started;
+        if (requestNumber > 1) {
+          resolve({ status: 'succeeded' });
+          return;
+        }
+
+        const timer = setTimeout(() => resolve({ status: 'failed' }), 30);
+        signal.addEventListener(
+          'abort',
+          () => {
+            aborted += 1;
+            clearTimeout(timer);
+            reject(signal.reason ?? new Error('aborted'));
+          },
+          { once: true }
+        );
+      }),
+    staleTime: Number.POSITIVE_INFINITY
+  });
+  const unsubscribe = observer.subscribe(() => undefined);
+
+  const activeRequest = observer.refetch();
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  await routeRealtimeEvent(
+    event({ resources: ['tasks'], taskId: 'task-1' }),
+    createRealtimeInvalidationRegistry(),
+    client
+  );
+  await activeRequest;
+
+  const cached = client.getQueryData<{ status: string }>(queryKey);
+  unsubscribe();
+  client.clear();
+  assert.equal(aborted, 1);
+  assert.equal(started, 2);
+  assert.deepEqual(cached, { status: 'succeeded' });
 });
 
 test('scheduler, search, plugins, and all use their app-owned public adapters', async () => {
@@ -178,7 +238,10 @@ test('shared realtime remains generic and app owns batching plus browser lifecyc
   assert.match(provider, /windowMs:\s*150/);
   assert.match(provider, /createEventStream/);
   assert.match(provider, /\/api\/events/);
-  assert.match(provider, /invalidateQueries\(\{\s*type:\s*['"]active['"]\s*\}\)/s);
+  assert.match(
+    provider,
+    /invalidateQueries\(\{\s*type:\s*['"]active['"]\s*\},\s*realtimeInvalidationOptions\)/s
+  );
   assert.match(provider, /visibilitychange/);
   assert.doesNotMatch(
     provider,

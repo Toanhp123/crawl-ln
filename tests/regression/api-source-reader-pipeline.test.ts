@@ -35,6 +35,7 @@ function createPipeline(
     trace?: string[];
     firstFailure?: SourceReaderError['code'];
     cacheHit?: boolean;
+    accessDenied?: boolean;
   } = {}
 ) {
   const trace = options.trace ?? [];
@@ -133,6 +134,17 @@ function createPipeline(
     { now: () => now }
   );
   const facade = new SourceReaderFacade({
+    requestGate: {
+      async assertAllowed(url) {
+        trace.push(`access.assert:${url}`);
+        if (options.accessDenied) {
+          throw new SourceReaderError('NETWORK_ACCESS_BLOCKED', 'Source access denied', {
+            retryable: false,
+            fallbackAllowed: false
+          });
+        }
+      }
+    },
     candidates,
     cache,
     invocation,
@@ -150,6 +162,7 @@ test('facade executes candidate, context, cache, invocation, validation and heal
   await facade.readMetadata({ url: sourceUrl });
 
   assert.deepEqual(trace, [
+    `access.assert:${sourceUrl}`,
     'candidate.resolve',
     'context.resolve',
     'cache.lookup',
@@ -182,7 +195,25 @@ test('fresh cache hit returns before health and invocation stages', async () => 
 
   assert.equal(result.data.title, 'Cached');
   assert.deepEqual(scenario.invocationIds, []);
-  assert.deepEqual(scenario.trace, ['candidate.resolve', 'context.resolve', 'cache.lookup']);
+  assert.deepEqual(scenario.trace, [
+    `access.assert:${sourceUrl}`,
+    'candidate.resolve',
+    'context.resolve',
+    'cache.lookup'
+  ]);
+});
+
+test('source access policy is enforced before candidate resolution and cache lookup', async () => {
+  const scenario = createPipeline({ cacheHit: true, accessDenied: true });
+
+  await assert.rejects(
+    () => scenario.facade.readMetadata({ url: sourceUrl }),
+    (error: unknown) =>
+      error instanceof SourceReaderError && error.code === 'NETWORK_ACCESS_BLOCKED'
+  );
+
+  assert.deepEqual(scenario.trace, [`access.assert:${sourceUrl}`]);
+  assert.deepEqual(scenario.invocationIds, []);
 });
 
 test('pagination rejects plugin pages that cannot make progress', () => {

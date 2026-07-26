@@ -138,13 +138,16 @@ Startup từ chối cấu hình LAN thiếu token mạnh. Request từ máy khá
 
 ## Web routes
 
-- `/crawl` — phân tích URL và tạo crawl job.
 - `/library` — tìm kiếm, lọc và sắp xếp thư viện.
 - `/library/:novelId` — metadata, chương và export.
-- `/reader/:novelId/:chapterIndex` — reader toàn màn hình.
-- `/tasks` — theo dõi crawl jobs.
+- `/library/:novelId/read/:chapterIndex` — reader toàn màn hình.
+- `/activity` — theo dõi crawl jobs.
+- `/activity/:taskId` — chi tiết và sự kiện của crawl job.
 - `/sources` — Source Reader plugins, credentials, network, challenges và inspector.
+- `/sources/new` và `/sources/:pluginId` — cài đặt hoặc quản trị một source plugin.
 - `/settings` — theme, density, ngôn ngữ, reader và scheduler.
+
+Các route legacy `/crawl`, `/tasks` và `/tasks/:taskId` chỉ redirect sang `/activity`.
 
 ## API boundaries
 

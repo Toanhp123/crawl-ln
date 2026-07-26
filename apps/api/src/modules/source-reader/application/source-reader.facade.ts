@@ -22,6 +22,7 @@ import type {
   SourceReaderExecutableRequest,
   SourceReaderPipelinePorts
 } from './source-reader.ports.js';
+import type { SourceRequestGatePort } from './ports/source-request-gate.port.js';
 import type { CandidateResolver } from './services/candidate-resolver.js';
 import type { HealthFallbackPolicy } from './services/health-fallback.policy.js';
 import type { InvocationCoordinator } from './services/invocation-coordinator.js';
@@ -37,6 +38,7 @@ function isPaged(
 }
 
 interface SourceReaderFacadeOptions extends SourceReaderPipelinePorts {
+  requestGate: Pick<SourceRequestGatePort, 'assertAllowed'>;
   candidates: CandidateResolver;
   cache: ReaderCachePolicy;
   invocation: InvocationCoordinator;
@@ -112,6 +114,7 @@ export class SourceReaderFacade implements SourceReaderApi {
     capability: ExecutableSourceCapability,
     request: SourceReaderExecutableRequest
   ): Promise<SourceReaderResult<T>> {
+    await this.options.requestGate.assertAllowed(request.url);
     const resolved = await this.options.candidates.resolve({ url: request.url, capability });
     const prepared = this.options.pagination.prepare({ capability, request, candidates: resolved });
     let lastError: unknown;

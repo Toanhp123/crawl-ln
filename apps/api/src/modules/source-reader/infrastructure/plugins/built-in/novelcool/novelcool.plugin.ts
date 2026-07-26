@@ -1,4 +1,5 @@
 import { novelCoolMinimumChapterContentChars } from './novelcool.config.js';
+import { novelCoolChapterUrlKey } from './novelcool-chapter-url-key.js';
 import { sanitizeChapterText } from './novelcool-content-sanitizer.js';
 import { SourceReaderError } from '../../../../domain/errors/source-reader.error.js';
 import type {
@@ -71,7 +72,7 @@ function extractChapters(
   }
   if (nodes.length === 0) nodes = document.all('a');
 
-  const seen = new Set<string>();
+  const positions = new Map<string, number>();
   const candidates: Array<{ title: string; url: string }> = [];
   for (const node of nodes) {
     const href = node.attr('href')?.trim();
@@ -81,15 +82,29 @@ function extractChapters(
     const normalized = new URL(resolved);
     normalized.hash = '';
     const normalizedUrl = normalized.toString();
-    if (seen.has(normalizedUrl)) continue;
-    seen.add(normalizedUrl);
-    candidates.push({
+    const candidate = {
       title:
         cleanSourceText(node.text('span')) ||
         cleanSourceText(node.text()) ||
         `Chapter ${candidates.length + 1}`,
       url: normalizedUrl
-    });
+    };
+    const key = novelCoolChapterUrlKey(normalizedUrl);
+    const position = positions.get(key);
+    if (position === undefined) {
+      positions.set(key, candidates.length);
+      candidates.push(candidate);
+      continue;
+    }
+    const current = candidates[position]!;
+    const currentGeneric = /^(chapter|chap|chương)(?:\s+\d+)?$/i.test(current.title.trim());
+    const candidateGeneric = /^(chapter|chap|chương)(?:\s+\d+)?$/i.test(candidate.title.trim());
+    if (
+      (currentGeneric && !candidateGeneric) ||
+      candidate.title.trim().length > current.title.trim().length
+    ) {
+      candidates[position] = candidate;
+    }
   }
 
   const first = candidates[0]

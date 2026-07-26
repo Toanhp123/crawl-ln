@@ -13,6 +13,7 @@ import {
   createRealtimeInvalidationRegistry,
   decodeRealtimeEvent,
   getRealtimeErrorMetadata,
+  realtimeInvalidationOptions,
   routeRealtimeEvents
 } from './event-router';
 
@@ -35,7 +36,7 @@ export function RealtimeProvider({ children }: PropsWithChildren) {
         setConnectionStatus(nextStatus);
         if (nextStatus !== 'connected') return;
         if (connectedOnce.current) {
-          void queryClient.invalidateQueries({ type: 'active' });
+          void queryClient.invalidateQueries({ type: 'active' }, realtimeInvalidationOptions);
         }
         connectedOnce.current = true;
       },
@@ -46,7 +47,7 @@ export function RealtimeProvider({ children }: PropsWithChildren) {
 
     const reconcileVisibleQueries = () => {
       if (document.visibilityState === 'visible') {
-        void queryClient.invalidateQueries({ type: 'active' });
+        void queryClient.invalidateQueries({ type: 'active' }, realtimeInvalidationOptions);
       }
     };
     document.addEventListener('visibilitychange', reconcileVisibleQueries);

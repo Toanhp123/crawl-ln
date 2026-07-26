@@ -14,6 +14,8 @@ Built-in plugins are registered in-process by the composition root. External plu
 
 External plugins never receive the host `PluginContext` object. Each operation receives a purpose-specific DTO and can request only approved HTTP, HTML, browser, cache, clock, URL, and logging operations through host-mediated RPC.
 
+Build, check, test, and clean orchestration discovers plugin workspaces without provider-specific code. Plugin identity, version, package location, and declared domains come from each workspace manifest; the host application does not name a concrete source provider.
+
 ## Capability and matcher contract
 
 A plugin manifest declares capabilities such as `identify`, `metadata`, `chapter-list`, `chapter-content`, `search`, `latest-updates`, and optional `authentication`. Matchers declare hosts, include/exclude paths, capability filters, and priority. Candidate order is deterministic and fallback occurs only for typed failures that explicitly allow it.
@@ -42,6 +44,10 @@ Every capability declares a contract version. The host rejects unsupported versi
 ## Trust levels and permission approval
 
 Trust levels are `built-in`, `signed`, `local-unverified`, and `blocked`. External packages request scoped permissions for network hosts, browser use, authentication, persistent cache, and external assets. Requested permissions must be approved for the exact plugin version before activation. Permission denial, package mutation, or integrity failure disables or quarantines the affected version.
+
+The management descriptor keeps two version meanings separate: `latestVersion` is the newest installed candidate available for review and activation, while optional `activeVersion` is present only when a version is actually active. The host never fills `activeVersion` for an installed but inactive plugin.
+
+Activation is an explicit manual `Install -> Approve -> Enable` sequence. Approval and enable requests both carry the exact `latestVersion`; installation, setup, build, start, and tests never approve or activate a plugin implicitly. When a newer version is installed beside an active version, the operator reviews that version first and then uses the explicit Activate latest action.
 
 ## First-party NovelCool installation
 

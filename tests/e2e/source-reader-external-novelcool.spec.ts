@@ -24,7 +24,7 @@ test('installs, approves and enables the generated NovelCool external plugin', a
     id: 'novelcool',
     name: 'NovelCool',
     latestVersion: '2.0.0',
-    activeVersion: '2.0.0',
+    ...(enabled ? { activeVersion: '2.0.0' } : {}),
     trustLevel: 'local-unverified',
     status: enabled ? 'active' : 'installed',
     enabled,
@@ -48,12 +48,14 @@ test('installs, approves and enables the generated NovelCool external plugin', a
       return json(route, { ...descriptor(), status: 'pending-approval' }, 202);
     }
     if (path === '/api/source-reader/plugins' && method === 'GET') {
-      return json(route, installed ? [descriptor()] : []);
+      const installedDescriptor = descriptor();
+      if (!enabled) expect(installedDescriptor).not.toHaveProperty('activeVersion');
+      return json(route, installed ? [installedDescriptor] : []);
     }
     if (path === '/api/source-reader/plugins/novelcool' && method === 'GET') {
       return json(route, {
         pluginId: 'novelcool',
-        activeVersion: '2.0.0',
+        ...(enabled ? { activeVersion: '2.0.0' } : {}),
         status: enabled ? 'active' : 'installed',
         lifecycleState: enabled ? 'running' : 'installed',
         runtimeVersion: '3.0.0',
@@ -92,11 +94,13 @@ test('installs, approves and enables the generated NovelCool external plugin', a
       ]);
     }
     if (path === '/api/source-reader/plugins/novelcool/permissions/approve' && method === 'POST') {
+      expect(request.postDataJSON()).toEqual({ version: '2.0.0' });
       approved = true;
       return route.fulfill({ status: 204, body: '' });
     }
     if (path === '/api/source-reader/plugins/novelcool/enable' && method === 'POST') {
       expect(approved).toBe(true);
+      expect(request.postDataJSON()).toEqual({ version: '2.0.0' });
       enabled = true;
       return json(route, { pluginId: 'novelcool', version: '2.0.0', status: 'active' });
     }
@@ -107,13 +111,15 @@ test('installs, approves and enables the generated NovelCool external plugin', a
   await page.getByLabel('Plugin package', { exact: true }).setInputFiles(artifact);
   await page.getByRole('button', { name: 'Install plugin', exact: true }).click();
   await expect(page).toHaveURL(/\/sources\?section=plugins/);
-  await expect(page.getByText('NovelCool', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Details', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Details', exact: true }).click();
   await expect(page.getByText('Local, unverified', { exact: true })).toBeVisible();
   await expect(page.getByText('2.0.0', { exact: true })).toBeVisible();
+  const toggle = page.getByRole('switch', { name: /^Enable NovelCool/ });
+  await expect(toggle).toBeDisabled();
   await page.getByRole('button', { name: 'Approve', exact: true }).click();
-  const toggle = page.getByRole('switch', { name: 'Enable NovelCool', exact: true });
+  await expect(toggle).toBeEnabled();
   await toggle.click();
   await expect(toggle).toBeChecked();
 });

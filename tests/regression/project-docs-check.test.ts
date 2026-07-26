@@ -135,6 +135,10 @@ test('NovelCool documentation publishes the external plugin installation boundar
   assert.match(sourceReaderDocs, /local-unverified/i);
   assert.match(sourceReaderDocs, /isolated/i);
   assert.match(sourceReaderDocs, /no built-in fallback/i);
+  assert.match(sourceReaderDocs, /latestVersion/);
+  assert.match(sourceReaderDocs, /activeVersion/);
+  assert.match(sourceReaderDocs, /Install\s*->\s*Approve\s*->\s*Enable/i);
+  assert.match(sourceReaderDocs, /discovers? plugin workspaces without provider-specific code/i);
 });
 
 test('frontend docs publish the shared theme and Settings control contract', async () => {

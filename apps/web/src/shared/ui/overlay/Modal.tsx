@@ -23,11 +23,13 @@ export function Modal({
   className?: string;
 }) {
   const { t } = useI18n();
+  const contentDescriptionProps = description ? {} : { 'aria-describedby': undefined };
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[hsl(var(--color-overlay)/0.65)] backdrop-blur-sm" />
         <Dialog.Content
+          {...contentDescriptionProps}
           className={cn(
             'fixed inset-x-0 bottom-0 z-50 max-h-[88svh] overflow-hidden rounded-t-[var(--sheet-radius)] border border-b-0 border-border bg-surface shadow-[var(--elevation-3)] outline-none md:bottom-auto md:left-1/2 md:right-auto md:top-1/2 md:w-[min(calc(100vw-2rem),var(--modal-width))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[var(--sheet-radius)] md:border',
             className

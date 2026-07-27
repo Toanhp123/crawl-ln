@@ -5,6 +5,7 @@ import type { SourcePlugin } from '../../../entities/source-plugin';
 import { useI18n } from '../../../shared/i18n';
 import { Button, ConfirmDialog, Modal, Switch } from '../../../shared/ui';
 import { resolveSourcePluginToggleRequest } from '../model/resolve-source-plugin-toggle-request';
+import type { SourcePluginUsageConflict } from '../model/source-plugin-usage-conflict';
 import {
   getSourcePluginActivationState,
   isSourcePluginEnableSwitchDisabled
@@ -14,6 +15,50 @@ import {
   useRemoveSourcePlugin,
   useToggleSourcePlugin
 } from '../model/use-source-plugin-actions';
+
+function SourcePluginUsageConflictModal({
+  conflict,
+  onOpenChange
+}: {
+  conflict: SourcePluginUsageConflict | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useI18n();
+  const navigate = useNavigate();
+
+  return (
+    <Modal
+      open={Boolean(conflict)}
+      onOpenChange={onOpenChange}
+      title={t('manageSourcePlugins.usageConflictTitle')}
+      description={
+        conflict
+          ? t(
+              conflict.operation === 'disable'
+                ? 'manageSourcePlugins.disableUsageConflict'
+                : 'manageSourcePlugins.removeUsageConflict',
+              { count: conflict.blockingJobCount }
+            )
+          : undefined
+      }
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            {t('common.close')}
+          </Button>
+          <Button
+            onClick={() => {
+              onOpenChange(false);
+              navigate('/activity');
+            }}
+          >
+            {t('manageSourcePlugins.goToTasks')}
+          </Button>
+        </div>
+      }
+    />
+  );
+}
 
 export function SourcePluginEnableSwitch({
   plugin,
@@ -25,7 +70,8 @@ export function SourcePluginEnableSwitch({
   const { t } = useI18n();
   const navigate = useNavigate();
   const [approvalOpen, setApprovalOpen] = useState(false);
-  const toggle = useToggleSourcePlugin();
+  const [usageConflict, setUsageConflict] = useState<SourcePluginUsageConflict | null>(null);
+  const toggle = useToggleSourcePlugin(setUsageConflict);
   const owns = toggle.variables?.plugin.id === plugin.id;
 
   const handleCheckedChange = (enabled: boolean) => {
@@ -73,6 +119,12 @@ export function SourcePluginEnableSwitch({
           </div>
         }
       />
+      <SourcePluginUsageConflictModal
+        conflict={usageConflict}
+        onOpenChange={(open) => {
+          if (!open) setUsageConflict(null);
+        }}
+      />
     </>
   );
 }
@@ -100,7 +152,14 @@ export function ActivateLatestSourcePluginButton({ plugin }: { plugin: SourcePlu
 export function RemoveSourcePluginButton({ pluginId }: { pluginId: string }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const remove = useRemoveSourcePlugin(() => setOpen(false));
+  const [usageConflict, setUsageConflict] = useState<SourcePluginUsageConflict | null>(null);
+  const remove = useRemoveSourcePlugin(
+    () => setOpen(false),
+    (conflict) => {
+      setOpen(false);
+      setUsageConflict(conflict);
+    }
+  );
   return (
     <>
       <Button variant="danger" leadingIcon={<Trash2 size={17} />} onClick={() => setOpen(true)}>
@@ -114,6 +173,12 @@ export function RemoveSourcePluginButton({ pluginId }: { pluginId: string }) {
         danger
         actionState={remove.status}
         onConfirm={() => remove.mutate(pluginId)}
+      />
+      <SourcePluginUsageConflictModal
+        conflict={usageConflict}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setUsageConflict(null);
+        }}
       />
     </>
   );

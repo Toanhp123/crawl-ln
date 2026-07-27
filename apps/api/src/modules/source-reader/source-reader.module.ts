@@ -15,7 +15,9 @@ import { PluginHealthCheckService } from './application/admin/services/plugin-he
 import { PluginHealthService } from './application/admin/services/plugin-health.service.js';
 import { PluginInstallationService } from './application/admin/services/plugin-installation.service.js';
 import { PluginStudioService } from './application/admin/services/plugin-studio.service.js';
+import { SourcePluginUsageGuardService } from './application/admin/services/source-plugin-usage-guard.service.js';
 import { SourceReaderInvalidationService } from './application/admin/services/source-reader-invalidation.service.js';
+import type { SourcePluginUsageQueryPort } from './application/ports/source-plugin-usage.port.js';
 import { SourceReaderMaintenanceService } from './application/admin/services/source-reader-maintenance.service.js';
 import { StandardAuthenticationService } from './application/admin/services/standard-authentication.service.js';
 import {
@@ -123,6 +125,7 @@ interface SourceReaderModuleOptions {
   environment: Environment;
   clock: { now(): Date };
   logger: { error(message: string, metadata?: Record<string, unknown>): void };
+  sourcePluginUsage?: SourcePluginUsageQueryPort;
 }
 
 export function createSourceReaderModule(options: SourceReaderModuleOptions) {
@@ -316,6 +319,10 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   }) satisfies SourceReaderApi;
 
   const authorization = new SourceReaderAuthorizationPolicy();
+  const pluginUsage = new SourcePluginUsageGuardService(
+    options.sourcePluginUsage ?? { listPotentialUsages: async () => [] },
+    pluginStore
+  );
   const studioSupervisor = new ExternalProcessSupervisor({
     startupTimeoutMs: processStartTimeoutMs,
     cancelGraceMs: 100,
@@ -378,13 +385,14 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
       ),
       listPermissions: new ListPluginPermissionsUseCase(authorization, pluginStore),
       enable: new EnablePluginUseCase(authorization, pluginActivation, invalidation),
-      disable: new DisablePluginUseCase(authorization, pluginActivation, invalidation),
+      disable: new DisablePluginUseCase(authorization, pluginActivation, invalidation, pluginUsage),
       remove: new RemovePluginUseCase(
         authorization,
         pluginActivation,
         pluginStore,
         installer,
-        invalidation
+        invalidation,
+        pluginUsage
       ),
       test: new TestPluginUseCase(authorization, healthCheck),
       health: new GetPluginHealthUseCase(authorization, diagnostics),

@@ -30,6 +30,20 @@ export function getPublicErrorDescription(error: unknown): string {
   return error.requestId ? `${code} · Request ID: ${error.requestId}` : code;
 }
 
+export function getApiErrorDetails(
+  error: unknown,
+  expected: { status: number; code: ApiErrorCode }
+): unknown | null {
+  if (
+    !(error instanceof ApiError) ||
+    error.status !== expected.status ||
+    error.code !== expected.code
+  ) {
+    return null;
+  }
+  return error.details;
+}
+
 export function getErrorMessage(error: unknown, fallback = ''): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;

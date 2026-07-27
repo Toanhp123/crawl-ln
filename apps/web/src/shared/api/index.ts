@@ -13,6 +13,7 @@ export {
 } from './invalidation';
 export {
   ApiError,
+  getApiErrorDetails,
   getErrorMessage,
   getPublicErrorDescription,
   readApiError,

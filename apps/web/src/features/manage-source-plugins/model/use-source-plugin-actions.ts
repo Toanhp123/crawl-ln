@@ -5,8 +5,14 @@ import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import { activateLatestSourcePlugin, removeSourcePlugin } from '../api/manage-source-plugins';
 import { createPluginToggleAction } from './create-plugin-toggle-action';
+import {
+  getSourcePluginUsageConflict,
+  type SourcePluginUsageConflict
+} from './source-plugin-usage-conflict';
 
-export function useToggleSourcePlugin() {
+export function useToggleSourcePlugin(
+  onUsageConflict?: (conflict: SourcePluginUsageConflict) => void
+) {
   const client = useQueryClient();
   const { t } = useI18n();
   const action = createPluginToggleAction();
@@ -22,16 +28,25 @@ export function useToggleSourcePlugin() {
         kind: 'success',
         title: t(input.enabled ? 'manageSourcePlugins.enabled' : 'manageSourcePlugins.disabled')
       }),
-    onError: (error) =>
+    onError: (error) => {
+      const conflict = getSourcePluginUsageConflict(error);
+      if (conflict && onUsageConflict) {
+        onUsageConflict(conflict);
+        return;
+      }
       toast({
         kind: 'error',
         title: t('manageSourcePlugins.failed'),
         description: getPublicErrorDescription(error)
-      })
+      });
+    }
   });
 }
 
-export function useRemoveSourcePlugin(onRemoved?: () => void) {
+export function useRemoveSourcePlugin(
+  onRemoved?: () => void,
+  onUsageConflict?: (conflict: SourcePluginUsageConflict) => void
+) {
   const client = useQueryClient();
   const { t } = useI18n();
   return useMutation({
@@ -40,12 +55,18 @@ export function useRemoveSourcePlugin(onRemoved?: () => void) {
       toast({ kind: 'success', title: t('manageSourcePlugins.removed') });
       onRemoved?.();
     },
-    onError: (error) =>
+    onError: (error) => {
+      const conflict = getSourcePluginUsageConflict(error);
+      if (conflict && onUsageConflict) {
+        onUsageConflict(conflict);
+        return;
+      }
       toast({
         kind: 'error',
         title: t('manageSourcePlugins.failed'),
         description: getPublicErrorDescription(error)
-      }),
+      });
+    },
     onSettled: () => sourcePluginInvalidation.invalidateAll(client)
   });
 }

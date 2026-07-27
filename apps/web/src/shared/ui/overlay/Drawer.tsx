@@ -23,6 +23,7 @@ export function Drawer({
   className?: string;
 }) {
   const { t } = useI18n();
+  const contentDescriptionProps = description ? {} : { 'aria-describedby': undefined };
   const panel =
     side === 'bottom'
       ? 'inset-x-0 bottom-0 h-[min(88svh,var(--bottom-sheet-height))] rounded-t-[var(--sheet-radius)] shadow-[var(--elevation-3)]'
@@ -33,6 +34,7 @@ export function Drawer({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[hsl(var(--color-overlay)/0.65)] backdrop-blur-sm" />
         <Dialog.Content
+          {...contentDescriptionProps}
           className={cn(
             'fixed z-50 flex flex-col overflow-hidden border border-border bg-surface outline-none',
             panel,

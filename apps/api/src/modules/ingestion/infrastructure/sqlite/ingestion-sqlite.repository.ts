@@ -306,6 +306,20 @@ export class IngestionSqliteRepository implements IngestionRepository {
     return rows.map(mapIngestionJobRow);
   }
 
+  async findAllByStatuses(statuses: readonly IngestionJobStatus[]): Promise<IngestionJob[]> {
+    if (statuses.length === 0) return [];
+    const placeholders = statuses.map(() => '?').join(',');
+    const rows = this.database.connection
+      .prepare(
+        `SELECT *
+           FROM ingestion_jobs
+          WHERE status IN (${placeholders})
+          ORDER BY created_at DESC, id DESC`
+      )
+      .all(...statuses) as Record<string, unknown>[];
+    return rows.map(mapIngestionJobRow);
+  }
+
   async countActive(): Promise<number> {
     const row = this.database.connection
       .prepare(

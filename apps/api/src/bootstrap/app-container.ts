@@ -5,7 +5,10 @@ import { CURRENT_BACKUP_SCHEMA_VERSION } from '../modules/backup/domain/backup.m
 import { BackupController } from '../modules/backup/presentation/backup.controller.js';
 import { RestoreSessionController } from '../modules/backup/presentation/restore-session.controller.js';
 import { createExportModule } from '../modules/export/export.module.js';
-import { createIngestionModule } from '../modules/ingestion/ingestion.module.js';
+import {
+  createIngestionModule,
+  createIngestionSourcePluginUsageQuery
+} from '../modules/ingestion/ingestion.module.js';
 import { IngestionController } from '../modules/ingestion/presentation/ingestion.controller.js';
 import { createLibraryModule } from '../modules/library/library.module.js';
 import { LibraryController } from '../modules/library/presentation/library.controller.js';
@@ -50,7 +53,17 @@ export function createAppContainer(environment: Environment) {
   const realtime = new InMemoryRealtimeEventBroker(clock);
   const realtimeAdapter = new ApplicationEventToRealtimeAdapter(events, realtime);
   const library = createLibraryModule(database);
-  const sourceReader = createSourceReaderModule({ database, environment, clock, logger });
+  const sourcePluginUsage = createIngestionSourcePluginUsageQuery({
+    database,
+    library: library.api.queries
+  });
+  const sourceReader = createSourceReaderModule({
+    database,
+    environment,
+    clock,
+    logger,
+    sourcePluginUsage
+  });
   const ingestion = createIngestionModule({
     database,
     library: library.api,

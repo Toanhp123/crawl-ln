@@ -44,6 +44,11 @@ interface PluginActivationAdministration {
   quarantine(pluginId: string, version: string, reason: string): Promise<void>;
 }
 
+interface PluginUsageAdministration {
+  assertCanDisable(pluginId: string): Promise<void>;
+  assertCanRemove(pluginId: string): Promise<void>;
+}
+
 export class InstallSourcePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
@@ -142,10 +147,14 @@ export class DisablePluginUseCase {
   constructor(
     private readonly authorization: SourceReaderAuthorizationPolicy,
     private readonly activation: Pick<PluginActivationAdministration, 'disable'>,
-    private readonly invalidation?: SourceReaderInvalidationPort
+    private readonly invalidation?: SourceReaderInvalidationPort,
+    private readonly usage: Pick<PluginUsageAdministration, 'assertCanDisable'> = {
+      assertCanDisable: async () => undefined
+    }
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
+    await this.usage.assertCanDisable(input.pluginId);
     await this.activation.disable(input.pluginId);
     await this.invalidation?.invalidate({ type: 'plugin-disabled', pluginId: input.pluginId });
   }
@@ -157,11 +166,15 @@ export class RemovePluginUseCase {
     private readonly activation: Pick<PluginActivationAdministration, 'disable'>,
     private readonly store: Pick<PluginAdministrationStore, 'findLatestVersion' | 'remove'>,
     private readonly packages: PluginPackageRemover,
-    private readonly invalidation?: SourceReaderInvalidationPort
+    private readonly invalidation?: SourceReaderInvalidationPort,
+    private readonly usage: Pick<PluginUsageAdministration, 'assertCanRemove'> = {
+      assertCanRemove: async () => undefined
+    }
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
     if (await this.store.findLatestVersion(input.pluginId)) {
+      await this.usage.assertCanRemove(input.pluginId);
       await this.activation.disable(input.pluginId);
       await this.packages.removeInstalled(input.pluginId);
     }

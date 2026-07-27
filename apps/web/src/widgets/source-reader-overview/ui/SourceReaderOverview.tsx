@@ -1,4 +1,4 @@
-import { KeyRound, Network, Plus, ShieldQuestion } from 'lucide-react';
+import { ChevronRight, KeyRound, Network, Plus, ShieldQuestion } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSourceAuthChallenges } from '@/entities/source-auth-challenge';
@@ -91,10 +91,14 @@ export function SourceReaderOverview() {
                     <SourcePluginEnableSwitch plugin={plugin} compact />
                     <Button
                       size="sm"
-                      variant="secondary"
+                      variant="ghost"
                       onClick={() => navigate(`/sources/${encodeURIComponent(plugin.id)}`)}
                     >
-                      {t('common.details')}
+                      <ChevronRight
+                        size={20}
+                        className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
+                        aria-hidden="true"
+                      />
                     </Button>
                   </div>
                 }

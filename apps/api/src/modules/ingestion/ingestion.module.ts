@@ -1,4 +1,4 @@
-import type { LibraryApi } from '../library/public/library.api.js';
+import type { LibraryApi, LibraryQueries } from '../library/public/library.api.js';
 import { CreateIngestionJobCommandHandler } from './application/commands/create-ingestion-job.command.js';
 import {
   CancelJobCommandHandler,
@@ -10,6 +10,7 @@ import {
 import type { IngestionIdGeneratorPort } from './application/ports/id-generator.port.js';
 import type { IngestionSourceReaderPort } from './application/ports/source-reader.port.js';
 import { IngestionQueriesService } from './application/queries/ingestion-queries.service.js';
+import { IngestionSourcePluginUsageQueryService } from './application/queries/source-plugin-usage.query.js';
 import { AnalyzeNovelWorkflow } from './application/services/analyze-novel.workflow.js';
 import { AnalyzeSourcePreviewService } from './application/services/analyze-source-preview.service.js';
 import { ChapterFetchService } from './application/services/chapter-fetch.service.js';
@@ -54,6 +55,16 @@ interface CompleteIngestionModule extends IngestionModuleBase {
   outbox: IngestionSqliteOutboxSource;
   start(): Promise<void>;
   stop(): Promise<void>;
+}
+
+export function createIngestionSourcePluginUsageQuery(options: {
+  database: SqliteDatabase;
+  library: LibraryQueries;
+}) {
+  return new IngestionSourcePluginUsageQueryService(
+    new IngestionSqliteRepository(options.database),
+    options.library
+  );
 }
 
 export function createIngestionModule(): IngestionModuleBase;

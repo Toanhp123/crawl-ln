@@ -12,6 +12,22 @@ test('BottomSheet explicitly disables aria-describedby when no description is re
   assert.match(source, /description\s*\?\s*\(\s*<Dialog\.Description/);
 });
 
+test('shared dialog overlays disable aria-describedby when no description is rendered', async () => {
+  const sources = await Promise.all(
+    ['Drawer.tsx', 'Modal.tsx'].map((file) =>
+      readFile(`apps/web/src/shared/ui/overlay/${file}`, 'utf8')
+    )
+  );
+
+  for (const source of sources) {
+    assert.match(
+      source,
+      /const contentDescriptionProps = description\s*\?\s*\{\}\s*:\s*\{\s*'aria-describedby': undefined\s*\}/
+    );
+    assert.match(source, /<Dialog\.Content\s+\{\.\.\.contentDescriptionProps\}/);
+  }
+});
+
 test('About panel uses full-height divided setting rows instead of compressed flex lines', async () => {
   const source = await readFile('apps/web/src/pages/settings/ui/SettingsPage.tsx', 'utf8');
   const aboutPanel = source.match(/\{panel === 'about'[\s\S]*?\) : null\}/)?.[0];

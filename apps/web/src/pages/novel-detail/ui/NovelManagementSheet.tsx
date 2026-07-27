@@ -3,7 +3,7 @@ import { useState, type ComponentProps } from 'react';
 import { AutoUpdateControl } from '@/features/update-auto-update';
 import { ExportNovelControl } from '@/features/export-novel';
 import { useI18n } from '@/shared/i18n';
-import { BottomSheet, Button, Stack, Text, type ActionState } from '@/shared/ui';
+import { Button, Drawer, Stack, Text, type ActionState } from '@/shared/ui';
 import type { Novel } from '@/entities/novel';
 
 export function NovelManagementSheet({
@@ -35,7 +35,7 @@ export function NovelManagementSheet({
       >
         {t('reader.manageNovel')}
       </Button>
-      <BottomSheet
+      <Drawer
         open={open}
         onOpenChange={setOpen}
         title={t('reader.manageNovel')}
@@ -60,7 +60,7 @@ export function NovelManagementSheet({
           <AutoUpdateControl novel={novel} />
           <ExportNovelControl novelId={novel.id} />
         </Stack>
-      </BottomSheet>
+      </Drawer>
     </>
   );
 }

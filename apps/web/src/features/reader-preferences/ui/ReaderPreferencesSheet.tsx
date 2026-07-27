@@ -1,6 +1,6 @@
 import { Minus, Plus, RotateCcw, SunMedium } from 'lucide-react';
 import { useI18n } from '../../../shared/i18n';
-import { BottomSheet, Button, IconButton, SegmentedControl, Switch } from '../../../shared/ui';
+import { Button, Drawer, IconButton, SegmentedControl, Switch } from '../../../shared/ui';
 import { useReaderPreferences } from '../model/ReaderPreferencesProvider';
 import { defaultReaderPreferences, type ReaderPreferences } from '../model/preferences';
 
@@ -17,7 +17,7 @@ export function ReaderPreferencesSheet({
     setPreferences((current) => ({ ...current, [key]: value }));
 
   return (
-    <BottomSheet
+    <Drawer
       open={open}
       onOpenChange={onOpenChange}
       title={t('settings.reader')}
@@ -200,6 +200,6 @@ export function ReaderPreferencesSheet({
           <Button onClick={() => onOpenChange(false)}>{t('common.close')}</Button>
         </div>
       </div>
-    </BottomSheet>
+    </Drawer>
   );
 }

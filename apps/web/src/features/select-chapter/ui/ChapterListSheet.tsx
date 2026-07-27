@@ -1,7 +1,7 @@
 import type { Chapter } from '../../../entities/chapter';
 import { ChapterList } from '../../../entities/chapter';
 import { useI18n } from '../../../shared/i18n';
-import { BottomSheet } from '../../../shared/ui';
+import { Drawer } from '../../../shared/ui';
 
 export function ChapterListSheet({
   open,
@@ -20,7 +20,7 @@ export function ChapterListSheet({
 }) {
   const { t } = useI18n();
   return (
-    <BottomSheet
+    <Drawer
       open={open}
       onOpenChange={onOpenChange}
       title={t('reader.chapters')}
@@ -35,6 +35,6 @@ export function ChapterListSheet({
           onOpenChange(false);
         }}
       />
-    </BottomSheet>
+    </Drawer>
   );
 }

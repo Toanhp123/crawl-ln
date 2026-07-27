@@ -19,12 +19,12 @@ import { BackupLibraryPanel } from '@/features/backup-library';
 import { APP_BUILD, APP_VERSION } from '@/shared/config';
 import { useI18n } from '@/shared/i18n';
 import {
-  BottomSheet,
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
   Chip,
+  Drawer,
   IconTile,
   ListRow,
   Page,
@@ -125,7 +125,7 @@ export function SettingsPage() {
         </div>
       </Section>
 
-      <BottomSheet
+      <Drawer
         open={panel !== null}
         onOpenChange={(open) => !open && setPanel(null)}
         title={panel ? t(`settings.panel.${panel}`) : ''}
@@ -167,7 +167,7 @@ export function SettingsPage() {
             />
           </Card>
         ) : null}
-      </BottomSheet>
+      </Drawer>
 
       <ReaderPreferencesSheet open={readerOpen} onOpenChange={setReaderOpen} />
     </Page>

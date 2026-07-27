@@ -1,7 +1,7 @@
 import { ChevronDown, Clipboard, Link2, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../../../shared/i18n';
-import { BottomSheet, Button, Input, Text } from '../../../shared/ui';
+import { Button, Input, Modal, Text } from '../../../shared/ui';
 import { readClipboardText } from '../lib/read-clipboard';
 import { useAddNovelOverlay } from '../model/add-novel-overlay-context';
 import { canCloseAddNovelOverlay } from '../model/can-close-add-novel-overlay';
@@ -40,7 +40,7 @@ export function AddNovelOverlay() {
   };
 
   return (
-    <BottomSheet
+    <Modal
       open={overlay.isOpen}
       onOpenChange={(open) => !open && close()}
       title={t('addNovel.title')}
@@ -125,6 +125,6 @@ export function AddNovelOverlay() {
           {t('addNovel.submit')}
         </Button>
       </form>
-    </BottomSheet>
+    </Modal>
   );
 }

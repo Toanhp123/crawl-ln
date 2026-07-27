@@ -1,6 +1,6 @@
 import { ArrowDownAZ, BookOpenCheck, CalendarPlus, Clock3, LibraryBig } from 'lucide-react';
 import { useI18n } from '@/shared/i18n';
-import { BottomSheet, Button, SegmentedControl, Text } from '@/shared/ui';
+import { Button, Drawer, SegmentedControl, Text } from '@/shared/ui';
 import type { LibraryFilter, LibrarySort } from '../model/use-library-page';
 
 export function LibraryControlsSheet({
@@ -20,7 +20,7 @@ export function LibraryControlsSheet({
 }) {
   const { t } = useI18n();
   return (
-    <BottomSheet
+    <Drawer
       open={open}
       onOpenChange={onOpenChange}
       title={t('library.controls')}
@@ -68,6 +68,6 @@ export function LibraryControlsSheet({
           {t('common.done')}
         </Button>
       </div>
-    </BottomSheet>
+    </Drawer>
   );
 }

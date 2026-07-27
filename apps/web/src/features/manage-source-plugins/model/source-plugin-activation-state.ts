@@ -21,3 +21,19 @@ export function getSourcePluginActivationState(plugin: SourcePlugin): SourcePlug
     canActivateLatest: hasUpgrade && !blockedByPermissions
   };
 }
+
+export function isSourcePluginEnableSwitchDisabled(
+  plugin: SourcePlugin,
+  {
+    compact,
+    togglePending,
+    toggleOwnsPlugin
+  }: { compact: boolean; togglePending: boolean; toggleOwnsPlugin: boolean }
+) {
+  const activation = getSourcePluginActivationState(plugin);
+  const canOpenPermissionReview = compact && !plugin.enabled && activation.blockedByPermissions;
+  return (
+    (togglePending && !toggleOwnsPlugin) ||
+    (!plugin.enabled && !activation.canEnable && !canOpenPermissionReview)
+  );
+}

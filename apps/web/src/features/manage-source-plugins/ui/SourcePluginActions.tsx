@@ -5,7 +5,10 @@ import type { SourcePlugin } from '../../../entities/source-plugin';
 import { useI18n } from '../../../shared/i18n';
 import { Button, ConfirmDialog, Modal, Switch } from '../../../shared/ui';
 import { resolveSourcePluginToggleRequest } from '../model/resolve-source-plugin-toggle-request';
-import { getSourcePluginActivationState } from '../model/source-plugin-activation-state';
+import {
+  getSourcePluginActivationState,
+  isSourcePluginEnableSwitchDisabled
+} from '../model/source-plugin-activation-state';
 import {
   useActivateLatestSourcePlugin,
   useRemoveSourcePlugin,
@@ -23,9 +26,7 @@ export function SourcePluginEnableSwitch({
   const navigate = useNavigate();
   const [approvalOpen, setApprovalOpen] = useState(false);
   const toggle = useToggleSourcePlugin();
-  const activation = getSourcePluginActivationState(plugin);
   const owns = toggle.variables?.plugin.id === plugin.id;
-  const approvalRequired = !plugin.enabled && activation.blockedByPermissions;
 
   const handleCheckedChange = (enabled: boolean) => {
     const request = resolveSourcePluginToggleRequest(plugin, enabled);
@@ -44,10 +45,11 @@ export function SourcePluginEnableSwitch({
         aria-label={t('manageSourcePlugins.toggle', { name: plugin.name })}
         className={compact ? 'w-auto border-0 p-0 hover:bg-transparent' : undefined}
         actionState={owns ? toggle.status : 'idle'}
-        disabled={
-          (toggle.isPending && !owns) ||
-          (!plugin.enabled && !activation.canEnable && !approvalRequired)
-        }
+        disabled={isSourcePluginEnableSwitchDisabled(plugin, {
+          compact,
+          togglePending: toggle.isPending,
+          toggleOwnsPlugin: owns
+        })}
         onCheckedChange={handleCheckedChange}
       />
       <Modal

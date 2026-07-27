@@ -136,6 +136,37 @@ test('activation state gates pending approval and exposes the exact latest targe
   });
 });
 
+test('pending approval disables the detail switch but keeps the compact review shortcut', async () => {
+  const plugins = await import('../../apps/web/src/features/manage-source-plugins/index.ts');
+  const pending = inactivePlugin();
+  const approved = inactivePlugin({ status: 'installed', permissionsPending: false });
+
+  assert.equal(
+    plugins.isSourcePluginEnableSwitchDisabled(pending, {
+      compact: false,
+      togglePending: false,
+      toggleOwnsPlugin: false
+    }),
+    true
+  );
+  assert.equal(
+    plugins.isSourcePluginEnableSwitchDisabled(pending, {
+      compact: true,
+      togglePending: false,
+      toggleOwnsPlugin: false
+    }),
+    false
+  );
+  assert.equal(
+    plugins.isSourcePluginEnableSwitchDisabled(approved, {
+      compact: false,
+      togglePending: false,
+      toggleOwnsPlugin: false
+    }),
+    false
+  );
+});
+
 test('initial enable action sends the latest reviewed version', async () => {
   const plugins = await import('../../apps/web/src/features/manage-source-plugins/index.ts');
   const entities = await import('../../apps/web/src/entities/source-plugin/index.ts');

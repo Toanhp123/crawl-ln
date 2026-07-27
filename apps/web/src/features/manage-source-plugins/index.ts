@@ -12,6 +12,7 @@ export {
 } from './model/create-plugin-toggle-action';
 export {
   getSourcePluginActivationState,
+  isSourcePluginEnableSwitchDisabled,
   type SourcePluginActivationState
 } from './model/source-plugin-activation-state';
 export {

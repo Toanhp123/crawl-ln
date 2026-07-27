@@ -13,3 +13,11 @@ export {
   type SourcePluginWorkspaceStatus
 } from './model/source-plugin-workspace-controller';
 export { useSourcePluginWorkspace } from './model/use-source-plugin-workspace';
+
+export {
+  createSourcePluginStudioFile,
+  deleteSourcePluginStudioFile,
+  duplicateSourcePluginStudioFile,
+  renameSourcePluginStudioFile,
+  validateSourcePluginStudioFilePath
+} from './model/source-plugin-workspace-files';

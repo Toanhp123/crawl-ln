@@ -1,6 +1,10 @@
-import { Braces, Download, FlaskConical, Hammer, PackageCheck } from 'lucide-react';
-import type { SourcePluginProject } from '../../../entities/source-plugin-project';
+import { ArrowLeft, Braces, Download, FlaskConical, Hammer, PackageCheck } from 'lucide-react';
+import type {
+  SourcePluginProject,
+  SourcePluginStudioManifestState
+} from '../../../entities/source-plugin-project';
 import type { SourcePluginWorkspaceStatus } from '../../../features/edit-source-plugin-project';
+import type { SourcePluginStudioDiagnosticSummary } from '../model/source-plugin-studio-diagnostics';
 import { useI18n } from '../../../shared/i18n';
 import { ActionBar, Badge, Button, IconTile, Toolbar, type ActionState } from '../../../shared/ui';
 
@@ -12,6 +16,7 @@ function statusTone(status: SourcePluginWorkspaceStatus) {
 
 export function PluginStudioToolbar({
   project,
+  manifest,
   workspaceStatus,
   buildCurrent,
   busy,
@@ -19,12 +24,16 @@ export function PluginStudioToolbar({
   testState,
   exportState,
   installState,
+  closeState,
+  diagnosticSummary,
+  onClose,
   onBuild,
   onTest,
   onExport,
   onInstall
 }: {
   project: SourcePluginProject;
+  manifest: SourcePluginStudioManifestState;
   workspaceStatus: SourcePluginWorkspaceStatus;
   buildCurrent: boolean;
   busy: boolean;
@@ -32,12 +41,17 @@ export function PluginStudioToolbar({
   testState: ActionState;
   exportState: ActionState;
   installState: ActionState;
+  closeState: ActionState;
+  diagnosticSummary: SourcePluginStudioDiagnosticSummary;
+  onClose: () => void;
   onBuild: () => void;
   onTest: () => void;
   onExport: () => void;
   onInstall: () => void;
 }) {
   const { t } = useI18n();
+  const metadata = manifest.metadata;
+  const actionDisabled = busy || !manifest.valid;
   return (
     <Toolbar
       className="flex-wrap"
@@ -46,15 +60,25 @@ export function PluginStudioToolbar({
           <Braces size={18} />
         </IconTile>
       }
-      title={project.name}
-      description={`${project.pluginId}@${project.version} - ${t('pluginStudio.revision', { revision: project.revision })}`}
+      title={metadata?.name ?? project.name}
+      description={`${metadata?.pluginId ?? project.pluginId}@${metadata?.version ?? project.version} - ${t('pluginStudio.revision', { revision: project.revision })}`}
       actions={
         <ActionBar className="w-full sm:w-auto">
           <Button
             size="sm"
+            variant="ghost"
+            actionState={closeState}
+            disabled={busy}
+            leadingIcon={<ArrowLeft size={16} />}
+            onClick={onClose}
+          >
+            {t('pluginStudio.backToProjects')}
+          </Button>
+          <Button
+            size="sm"
             variant="secondary"
             actionState={buildState}
-            disabled={busy}
+            disabled={actionDisabled}
             leadingIcon={<Hammer size={16} />}
             onClick={onBuild}
           >
@@ -64,7 +88,7 @@ export function PluginStudioToolbar({
             size="sm"
             variant="secondary"
             actionState={testState}
-            disabled={busy}
+            disabled={actionDisabled}
             leadingIcon={<FlaskConical size={16} />}
             onClick={onTest}
           >
@@ -74,7 +98,7 @@ export function PluginStudioToolbar({
             size="sm"
             variant="secondary"
             actionState={exportState}
-            disabled={busy || !buildCurrent}
+            disabled={actionDisabled || !buildCurrent}
             leadingIcon={<Download size={16} />}
             onClick={onExport}
           >
@@ -83,7 +107,7 @@ export function PluginStudioToolbar({
           <Button
             size="sm"
             actionState={installState}
-            disabled={busy || !buildCurrent}
+            disabled={actionDisabled || !buildCurrent}
             leadingIcon={<PackageCheck size={16} />}
             onClick={onInstall}
           >
@@ -95,6 +119,23 @@ export function PluginStudioToolbar({
       <div className="mt-1 flex flex-wrap gap-2">
         <Badge tone={statusTone(workspaceStatus)}>
           {t(`editSourcePluginProject.${workspaceStatus}`)}
+        </Badge>
+        <Badge tone={manifest.valid ? 'success' : 'danger'}>
+          {t(manifest.valid ? 'pluginStudio.manifestValid' : 'pluginStudio.manifestInvalid')}
+        </Badge>
+        <Badge
+          tone={
+            diagnosticSummary.errors > 0
+              ? 'danger'
+              : diagnosticSummary.warnings > 0
+                ? 'warning'
+                : 'success'
+          }
+        >
+          {t('pluginStudio.diagnosticSummary', {
+            errors: diagnosticSummary.errors,
+            warnings: diagnosticSummary.warnings
+          })}
         </Badge>
         <Badge tone={buildCurrent ? 'success' : 'warning'}>
           {t(buildCurrent ? 'pluginStudio.buildCurrent' : 'pluginStudio.buildStale')}

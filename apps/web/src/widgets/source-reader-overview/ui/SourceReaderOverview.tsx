@@ -92,6 +92,7 @@ export function SourceReaderOverview() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      aria-label={t('common.details')}
                       onClick={() => navigate(`/sources/${encodeURIComponent(plugin.id)}`)}
                     >
                       <ChevronRight

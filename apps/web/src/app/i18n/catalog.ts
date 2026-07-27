@@ -16,6 +16,7 @@ import { configureLanguageCatalogs } from '@/features/configure-language';
 import { crawlNovelCatalogs } from '@/features/crawl-novel';
 import { createSourcePluginProjectCatalogs } from '@/features/create-source-plugin-project';
 import { deleteNovelCatalogs } from '@/features/delete-novel';
+import { deleteSourcePluginProjectCatalogs } from '@/features/delete-source-plugin-project';
 import { editSourcePluginProjectCatalogs } from '@/features/edit-source-plugin-project';
 import { exportNovelCatalogs } from '@/features/export-novel';
 import { exportSourcePluginProjectCatalogs } from '@/features/export-source-plugin-project';
@@ -62,6 +63,7 @@ const sliceCatalogs = [
   crawlNovelCatalogs,
   createSourcePluginProjectCatalogs,
   deleteNovelCatalogs,
+  deleteSourcePluginProjectCatalogs,
   editSourcePluginProjectCatalogs,
   exportNovelCatalogs,
   exportSourcePluginProjectCatalogs,

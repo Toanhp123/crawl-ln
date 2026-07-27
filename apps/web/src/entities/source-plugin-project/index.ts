@@ -11,3 +11,11 @@ export type {
   SourcePluginStudioCapability,
   SourcePluginStudioSelectors
 } from './model/types';
+
+export {
+  parseSourcePluginStudioManifest,
+  sourcePluginStudioCapabilities,
+  updateSourcePluginStudioManifest,
+  type SourcePluginStudioManifestMetadata,
+  type SourcePluginStudioManifestState
+} from './model/source-plugin-studio-manifest';

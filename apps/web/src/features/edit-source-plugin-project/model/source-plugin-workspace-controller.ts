@@ -1,4 +1,14 @@
-import type { SourcePluginProject } from '../../../entities/source-plugin-project';
+import {
+  parseSourcePluginStudioManifest,
+  type SourcePluginProject,
+  type SourcePluginStudioCapability
+} from '../../../entities/source-plugin-project';
+import {
+  createSourcePluginStudioFile,
+  deleteSourcePluginStudioFile,
+  duplicateSourcePluginStudioFile,
+  renameSourcePluginStudioFile
+} from './source-plugin-workspace-files';
 
 export type SourcePluginWorkspaceStatus =
   'clean' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error';
@@ -13,6 +23,11 @@ export interface SourcePluginWorkspaceSnapshot {
 export interface SaveSourcePluginWorkspaceInput {
   projectId: string;
   expectedRevision: number;
+  name?: string;
+  pluginId?: string;
+  version?: string;
+  hosts?: string[];
+  capabilities?: SourcePluginStudioCapability[];
   files: Record<string, string>;
 }
 
@@ -92,12 +107,14 @@ export function createSourcePluginWorkspaceController({
     const versionAtStart = editVersion;
     const files = { ...snapshot.project.files };
     const expectedRevision = snapshot.project.revision;
+    const manifest = parseSourcePluginStudioManifest(files['manifest.json'] ?? '');
     setSnapshot({ ...snapshot, status: 'saving', error: undefined });
 
     try {
       const saved = await save({
         projectId: snapshot.project.id,
         expectedRevision,
+        ...(manifest.valid && manifest.metadata ? manifest.metadata : {}),
         files
       });
       savedVersion = versionAtStart;
@@ -152,6 +169,65 @@ export function createSourcePluginWorkspaceController({
           ...snapshot.project,
           files: { ...snapshot.project.files, [path]: content }
         },
+        status: autosaveBlocked ? 'conflict' : 'dirty',
+        error: autosaveBlocked ? snapshot.error : undefined
+      });
+      if (!autosaveBlocked) scheduleSave();
+    },
+    createFile(path: string) {
+      const files = createSourcePluginStudioFile(snapshot.project.files, path);
+      editVersion += 1;
+      setSnapshot({
+        ...snapshot,
+        project: { ...snapshot.project, files },
+        selectedFile: path.trim(),
+        status: autosaveBlocked ? 'conflict' : 'dirty',
+        error: autosaveBlocked ? snapshot.error : undefined
+      });
+      if (!autosaveBlocked) scheduleSave();
+    },
+    renameFile(currentPath: string, nextPath: string) {
+      const validatedPath = nextPath.trim();
+      const files = renameSourcePluginStudioFile(
+        snapshot.project.files,
+        currentPath,
+        validatedPath
+      );
+      if (files === snapshot.project.files) return;
+      editVersion += 1;
+      setSnapshot({
+        ...snapshot,
+        project: { ...snapshot.project, files },
+        selectedFile: snapshot.selectedFile === currentPath ? validatedPath : snapshot.selectedFile,
+        status: autosaveBlocked ? 'conflict' : 'dirty',
+        error: autosaveBlocked ? snapshot.error : undefined
+      });
+      if (!autosaveBlocked) scheduleSave();
+    },
+    duplicateFile(path: string) {
+      const duplicated = duplicateSourcePluginStudioFile(snapshot.project.files, path);
+      editVersion += 1;
+      setSnapshot({
+        ...snapshot,
+        project: { ...snapshot.project, files: duplicated.files },
+        selectedFile: duplicated.path,
+        status: autosaveBlocked ? 'conflict' : 'dirty',
+        error: autosaveBlocked ? snapshot.error : undefined
+      });
+      if (!autosaveBlocked) scheduleSave();
+      return duplicated.path;
+    },
+    deleteFile(path: string) {
+      const files = deleteSourcePluginStudioFile(snapshot.project.files, path);
+      const remaining = Object.keys(files).sort();
+      editVersion += 1;
+      setSnapshot({
+        ...snapshot,
+        project: { ...snapshot.project, files },
+        selectedFile:
+          snapshot.selectedFile === path
+            ? ((Object.hasOwn(files, 'src/index.ts') ? 'src/index.ts' : remaining[0]) ?? '')
+            : snapshot.selectedFile,
         status: autosaveBlocked ? 'conflict' : 'dirty',
         error: autosaveBlocked ? snapshot.error : undefined
       });

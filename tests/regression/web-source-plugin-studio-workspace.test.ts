@@ -7,6 +7,7 @@ import {
 } from '../../apps/web/src/features/edit-source-plugin-project/index.ts';
 import { runSourcePluginStudioAction } from '../../apps/web/src/widgets/source-plugin-studio/model/run-source-plugin-studio-action.ts';
 import { runSourcePluginStudioBuild } from '../../apps/web/src/widgets/source-plugin-studio/model/run-source-plugin-studio-build.ts';
+import { runSourcePluginStudioClose } from '../../apps/web/src/widgets/source-plugin-studio/model/run-source-plugin-studio-close.ts';
 
 function project(overrides: Partial<SourcePluginProject> = {}): SourcePluginProject {
   return {
@@ -379,4 +380,35 @@ test('workspace reports unload risk while edits are not safely persisted', () =>
   assert.equal(hasUnsavedSourcePluginWorkspaceChanges('saving'), true);
   assert.equal(hasUnsavedSourcePluginWorkspaceChanges('conflict'), true);
   assert.equal(hasUnsavedSourcePluginWorkspaceChanges('error'), true);
+});
+
+test('studio close flushes the draft before leaving the workbench', async () => {
+  const events: string[] = [];
+
+  await runSourcePluginStudioClose({
+    flush: async () => {
+      events.push('flush');
+      return project({ revision: 2 });
+    },
+    close: () => events.push('close')
+  });
+
+  assert.deepEqual(events, ['flush', 'close']);
+});
+
+test('studio close keeps the workbench open when flushing fails', async () => {
+  let closed = false;
+
+  await assert.rejects(() =>
+    runSourcePluginStudioClose({
+      flush: async () => {
+        throw new Error('save failed');
+      },
+      close: () => {
+        closed = true;
+      }
+    })
+  );
+
+  assert.equal(closed, false);
 });

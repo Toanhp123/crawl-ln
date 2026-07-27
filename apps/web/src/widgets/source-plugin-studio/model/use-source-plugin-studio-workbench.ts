@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import type { SourcePluginProject } from '../../../entities/source-plugin-project';
+import {
+  parseSourcePluginStudioManifest,
+  type SourcePluginProject
+} from '../../../entities/source-plugin-project';
 import { useBuildSourcePluginProject } from '../../../features/build-source-plugin-project';
 import { useExportSourcePluginProject } from '../../../features/export-source-plugin-project';
 import { useInstallSourcePluginProject } from '../../../features/install-source-plugin-project';
@@ -8,13 +11,17 @@ import { useSourcePluginWorkspace } from '../../../features/edit-source-plugin-p
 import { useI18n } from '../../../shared/i18n';
 import { runSourcePluginStudioAction } from './run-source-plugin-studio-action';
 import { runSourcePluginStudioBuild } from './run-source-plugin-studio-build';
+import { runSourcePluginStudioClose } from './run-source-plugin-studio-close';
 
 export interface SourcePluginStudioOutput {
   titleKey: string;
   value: unknown;
 }
 
-export function useSourcePluginStudioWorkbench(initialProject: SourcePluginProject) {
+export function useSourcePluginStudioWorkbench(
+  initialProject: SourcePluginProject,
+  onClose: () => void
+) {
   const { t } = useI18n();
   const workspace = useSourcePluginWorkspace(initialProject);
   const build = useBuildSourcePluginProject();
@@ -28,6 +35,11 @@ export function useSourcePluginStudioWorkbench(initialProject: SourcePluginProje
     value: t('pluginStudio.ready')
   });
   const [reloading, setReloading] = useState(false);
+  const manifest = parseSourcePluginStudioManifest(workspace.project.files['manifest.json'] ?? '');
+
+  const requireValidManifest = () => {
+    if (!manifest.valid) throw new Error(manifest.error ?? 'manifest.json is invalid');
+  };
 
   const execute = async <T>(titleKey: string, operation: () => Promise<T>) => {
     setActiveAction(titleKey);
@@ -46,25 +58,28 @@ export function useSourcePluginStudioWorkbench(initialProject: SourcePluginProje
   };
 
   const runBuild = () =>
-    execute('buildSourcePluginProject.action', () =>
-      runSourcePluginStudioBuild({
+    execute('buildSourcePluginProject.action', () => {
+      requireValidManifest();
+      return runSourcePluginStudioBuild({
         pauseAutosave: workspace.pauseAutosave,
         flush: workspace.flush,
         build: (project) => build.mutateAsync(project.id),
         applyBuild: workspace.applyBuild
-      })
-    );
+      });
+    });
 
   const runTest = () =>
-    execute('testSourcePluginProject.action', () =>
-      runSourcePluginStudioAction({
+    execute('testSourcePluginProject.action', () => {
+      requireValidManifest();
+      return runSourcePluginStudioAction({
         flush: workspace.flush,
         action: (project) => test.mutateAsync(project.id)
-      })
-    );
+      });
+    });
 
   const runExport = () =>
     execute('exportSourcePluginProject.action', async () => {
+      requireValidManifest();
       const artifact = await runSourcePluginStudioAction({
         flush: workspace.flush,
         action: (project) => exportProject.mutateAsync(project.id)
@@ -73,11 +88,17 @@ export function useSourcePluginStudioWorkbench(initialProject: SourcePluginProje
     });
 
   const runInstall = () =>
-    execute('installSourcePluginProject.action', () =>
-      runSourcePluginStudioAction({
+    execute('installSourcePluginProject.action', () => {
+      requireValidManifest();
+      return runSourcePluginStudioAction({
         flush: workspace.flush,
         action: (project) => install.mutateAsync(project.id)
-      })
+      });
+    });
+
+  const closeProject = () =>
+    execute('pluginStudio.backToProjects', () =>
+      runSourcePluginStudioClose({ flush: workspace.flush, close: onClose })
     );
 
   const reloadFromServer = async () => {
@@ -102,20 +123,24 @@ export function useSourcePluginStudioWorkbench(initialProject: SourcePluginProje
 
   return {
     workspace,
+    manifest,
     output,
     actionError,
     activeAction,
     reloading,
-    buildCurrent,
+    buildCurrent: buildCurrent && manifest.valid,
     busy: Boolean(activeAction) || workspace.status === 'saving' || reloading,
     buildState: build.status,
     testState: test.status,
     exportState: exportProject.status,
     installState: install.status,
+    closeState:
+      activeAction === 'pluginStudio.backToProjects' ? ('pending' as const) : ('idle' as const),
     runBuild,
     runTest,
     runExport,
     runInstall,
+    closeProject,
     reloadFromServer
   };
 }

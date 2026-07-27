@@ -110,6 +110,11 @@ test('Plugin Studio clients preserve draft, build, test and install contracts', 
               createdAt: '2026-01-01T00:00:00.000Z',
               updatedAt: '2026-01-01T00:00:00.000Z'
             };
+
+    if (init?.method === 'DELETE') {
+      return new Response(null, { status: 204 });
+    }
+
     return new Response(JSON.stringify({ data, error: null }), {
       status: path.endsWith('/install') ? 202 : path.endsWith('/projects') ? 201 : 200,
       headers: { 'content-type': 'application/json' }
@@ -118,15 +123,24 @@ test('Plugin Studio clients preserve draft, build, test and install contracts', 
 
   try {
     const entity = await import('../../apps/web/src/entities/source-plugin-project/index.ts');
-    const [createProject, editProject, buildProject, testProject, exportProject, installProject] =
-      await Promise.all([
-        import('../../apps/web/src/features/create-source-plugin-project/index.ts'),
-        import('../../apps/web/src/features/edit-source-plugin-project/index.ts'),
-        import('../../apps/web/src/features/build-source-plugin-project/index.ts'),
-        import('../../apps/web/src/features/test-source-plugin-project/index.ts'),
-        import('../../apps/web/src/features/export-source-plugin-project/index.ts'),
-        import('../../apps/web/src/features/install-source-plugin-project/index.ts')
-      ]);
+    const [
+      createProject,
+      deleteProject,
+      editProject,
+      buildProject,
+      testProject,
+      exportProject,
+      installProject
+    ] = await Promise.all([
+      import('../../apps/web/src/features/create-source-plugin-project/index.ts'),
+      import('../../apps/web/src/features/delete-source-plugin-project/index.ts'),
+      import('../../apps/web/src/features/edit-source-plugin-project/index.ts'),
+      import('../../apps/web/src/features/build-source-plugin-project/index.ts'),
+      import('../../apps/web/src/features/test-source-plugin-project/index.ts'),
+      import('../../apps/web/src/features/export-source-plugin-project/index.ts'),
+      import('../../apps/web/src/features/install-source-plugin-project/index.ts')
+    ]);
+    await entity.listSourcePluginProjects();
     await createProject.createSourcePluginProject({
       name: 'Demo Reader',
       pluginId: 'demo-reader',
@@ -144,6 +158,7 @@ test('Plugin Studio clients preserve draft, build, test and install contracts', 
     await testProject.testSourcePluginProject('project/1');
     const artifact = await exportProject.exportSourcePluginProject('project/1');
     await installProject.installSourcePluginProject('project/1');
+    await deleteProject.deleteSourcePluginProject('project/1');
     assert.equal(artifact.filename, 'demo-reader.source-plugin');
     assert.deepEqual([...artifact.content], [1, 2, 3]);
   } finally {
@@ -153,13 +168,15 @@ test('Plugin Studio clients preserve draft, build, test and install contracts', 
   assert.deepEqual(
     requests.map(({ path, init }) => ({ path, method: init?.method })),
     [
+      { path: '/api/source-reader/studio/projects', method: undefined },
       { path: '/api/source-reader/studio/projects', method: 'POST' },
       { path: '/api/source-reader/studio/projects/project%2F1', method: undefined },
       { path: '/api/source-reader/studio/projects/project%2F1', method: 'PATCH' },
       { path: '/api/source-reader/studio/projects/project%2F1/build', method: 'POST' },
       { path: '/api/source-reader/studio/projects/project%2F1/test', method: 'POST' },
       { path: '/api/source-reader/studio/projects/project%2F1/export', method: undefined },
-      { path: '/api/source-reader/studio/projects/project%2F1/install', method: 'POST' }
+      { path: '/api/source-reader/studio/projects/project%2F1/install', method: 'POST' },
+      { path: '/api/source-reader/studio/projects/project%2F1', method: 'DELETE' }
     ]
   );
 });
@@ -198,7 +215,11 @@ test('Plugin Studio is a separate lazy route and uses Monaco with revision-aware
   assert.match(router, /SourcePluginStudioPage/);
   assert.match(preload, /sourcePluginStudio/);
   assert.match(studio, /CreateSourcePluginProjectForm/);
+  assert.match(studio, /PluginStudioProjectLibrary/);
   assert.match(studio, /PluginStudioWorkbench/);
+  assert.match(studio, /useSearchParams/);
+  assert.match(studio, /useSourcePluginProjects/);
+  assert.match(studio, /useSourcePluginProject/);
   assert.match(editor, /@monaco-editor\/react/);
   assert.match(workspace, /expectedRevision/);
 });
@@ -354,6 +375,81 @@ test('the create-project form takes its visible default name from i18n', async (
 
     assert.match(html, /value="Localized Source"/);
     assert.doesNotMatch(html, /value="My Source"/);
+  } finally {
+    restoreLanguage();
+  }
+});
+
+test('the Studio project library exposes reopen and delete actions', async () => {
+  const restoreLanguage = useTestLanguage('en');
+  try {
+    const [{ QueryClient, QueryClientProvider }, { I18nProvider }, { PluginStudioProjectLibrary }] =
+      await Promise.all([
+        import('@tanstack/react-query'),
+        import('../../apps/web/src/shared/i18n/index.ts'),
+        import('../../apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectLibrary.tsx')
+      ]);
+    const labels = {
+      'pluginStudio.projectsTitle': 'Saved projects',
+      'pluginStudio.projectsDescription': 'Continue an existing workspace.',
+      'pluginStudio.openProject': 'Open project',
+      'pluginStudio.updatedAt': 'Updated {date}',
+      'deleteSourcePluginProject.action': 'Delete',
+      'deleteSourcePluginProject.confirmTitle': 'Delete project?',
+      'deleteSourcePluginProject.confirmDescription': 'This draft will be removed.'
+    };
+    const projects = [
+      {
+        id: 'project-1',
+        name: 'Demo Reader',
+        pluginId: 'demo-reader',
+        version: '1.0.0',
+        hosts: ['example.com'],
+        capabilities: ['metadata' as const],
+        selectors: { title: 'title' },
+        files: { 'src/index.ts': 'export default {}' },
+        revision: 2,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z'
+      },
+      {
+        id: 'project-2',
+        name: 'Second Reader',
+        pluginId: 'second-reader',
+        version: '2.0.0',
+        hosts: ['second.example.com'],
+        capabilities: ['chapter-content' as const],
+        selectors: { chapterContent: 'article' },
+        files: { 'src/index.ts': 'export default {}' },
+        revision: 1,
+        createdAt: '2026-01-03T00:00:00.000Z',
+        updatedAt: '2026-01-04T00:00:00.000Z'
+      }
+    ];
+    const client = new QueryClient();
+    const html = renderToStaticMarkup(
+      createElement(
+        QueryClientProvider,
+        { client },
+        createElement(
+          I18nProvider,
+          { catalogs: { en: labels, vi: labels } },
+          createElement(PluginStudioProjectLibrary, {
+            projects,
+            onOpen: () => undefined,
+            onDeleted: () => undefined
+          })
+        )
+      )
+    );
+
+    assert.match(html, /Saved projects/);
+    assert.match(html, /Demo Reader/);
+    assert.match(html, /demo-reader@1\.0\.0/);
+    assert.match(html, /Second Reader/);
+    assert.match(html, /second-reader@2\.0\.0/);
+    assert.equal((html.match(/Open project/g) ?? []).length, 2);
+    assert.equal((html.match(/Delete/g) ?? []).length, 2);
   } finally {
     restoreLanguage();
   }

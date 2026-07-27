@@ -58,24 +58,22 @@ export function SourceReaderOverview() {
           icon={<ShieldQuestion size={16} />}
         />
       </div>
-      <Section
-        title={t('sources.plugins.summary')}
-        action={
+      <Section title={t('sources.plugins.summary')}>
+        <Panel tone="inset" className="flex items-center gap-2">
+          <SearchInput
+            className="min-w-0 flex-1"
+            value={search}
+            onChange={setSearch}
+            placeholder={t('sources.plugins.search')}
+          />
           <Button
+            className="shrink-0"
             size="sm"
             leadingIcon={<Plus size={16} />}
             onClick={() => navigate('/sources/new')}
           >
             {t('sources.plugins.install')}
           </Button>
-        }
-      >
-        <Panel tone="inset">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder={t('sources.plugins.search')}
-          />
         </Panel>
         <ErrorBanner error={plugins.error} />
         {plugins.isLoading ? (
@@ -90,10 +88,10 @@ export function SourceReaderOverview() {
                 plugin={plugin}
                 trailing={
                   <div className="flex items-center gap-2">
-                    <SourcePluginEnableSwitch plugin={plugin} />
+                    <SourcePluginEnableSwitch plugin={plugin} compact />
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="secondary"
                       onClick={() => navigate(`/sources/${encodeURIComponent(plugin.id)}`)}
                     >
                       {t('common.details')}

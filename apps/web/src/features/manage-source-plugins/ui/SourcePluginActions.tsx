@@ -1,8 +1,10 @@
 import { ArrowUpCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { SourcePlugin } from '../../../entities/source-plugin';
 import { useI18n } from '../../../shared/i18n';
-import { Button, ConfirmDialog, Switch } from '../../../shared/ui';
+import { Button, ConfirmDialog, Modal, Switch } from '../../../shared/ui';
+import { resolveSourcePluginToggleRequest } from '../model/resolve-source-plugin-toggle-request';
 import { getSourcePluginActivationState } from '../model/source-plugin-activation-state';
 import {
   useActivateLatestSourcePlugin,
@@ -10,21 +12,66 @@ import {
   useToggleSourcePlugin
 } from '../model/use-source-plugin-actions';
 
-export function SourcePluginEnableSwitch({ plugin }: { plugin: SourcePlugin }) {
+export function SourcePluginEnableSwitch({
+  plugin,
+  compact = false
+}: {
+  plugin: SourcePlugin;
+  compact?: boolean;
+}) {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const [approvalOpen, setApprovalOpen] = useState(false);
   const toggle = useToggleSourcePlugin();
   const activation = getSourcePluginActivationState(plugin);
   const owns = toggle.variables?.plugin.id === plugin.id;
   const approvalRequired = !plugin.enabled && activation.blockedByPermissions;
+
+  const handleCheckedChange = (enabled: boolean) => {
+    const request = resolveSourcePluginToggleRequest(plugin, enabled);
+    if (request.kind === 'review-permissions') {
+      setApprovalOpen(true);
+      return;
+    }
+    toggle.mutate({ plugin, enabled: request.enabled });
+  };
+
   return (
-    <Switch
-      checked={plugin.enabled}
-      label={t('manageSourcePlugins.toggle', { name: plugin.name })}
-      description={approvalRequired ? t('manageSourcePlugins.approvalRequired') : undefined}
-      actionState={owns ? toggle.status : 'idle'}
-      disabled={(toggle.isPending && !owns) || (!plugin.enabled && !activation.canEnable)}
-      onCheckedChange={(enabled) => toggle.mutate({ plugin, enabled })}
-    />
+    <>
+      <Switch
+        checked={plugin.enabled}
+        label={compact ? undefined : t('manageSourcePlugins.toggle', { name: plugin.name })}
+        aria-label={t('manageSourcePlugins.toggle', { name: plugin.name })}
+        className={compact ? 'w-auto border-0 p-0 hover:bg-transparent' : undefined}
+        actionState={owns ? toggle.status : 'idle'}
+        disabled={
+          (toggle.isPending && !owns) ||
+          (!plugin.enabled && !activation.canEnable && !approvalRequired)
+        }
+        onCheckedChange={handleCheckedChange}
+      />
+      <Modal
+        open={approvalOpen}
+        onOpenChange={setApprovalOpen}
+        title={t('manageSourcePlugins.approvalTitle')}
+        description={t('manageSourcePlugins.approvalRequired')}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setApprovalOpen(false)}>
+              {t('common.close')}
+            </Button>
+            <Button
+              onClick={() => {
+                setApprovalOpen(false);
+                navigate(`/sources/${encodeURIComponent(plugin.id)}`);
+              }}
+            >
+              {t('manageSourcePlugins.reviewPermissions')}
+            </Button>
+          </div>
+        }
+      />
+    </>
   );
 }
 

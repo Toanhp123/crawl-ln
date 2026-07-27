@@ -2,8 +2,10 @@ import type { Catalog } from '../../../shared/i18n';
 export const manageSourcePluginsCatalogs = {
   en: {
     'manageSourcePlugins.toggle': 'Enable {name}',
+    'manageSourcePlugins.approvalTitle': 'Permission approval required',
     'manageSourcePlugins.approvalRequired':
       'Approve permissions for the latest version before enabling this plugin.',
+    'manageSourcePlugins.reviewPermissions': 'Review permissions',
     'manageSourcePlugins.enabled': 'Plugin enabled',
     'manageSourcePlugins.disabled': 'Plugin disabled',
     'manageSourcePlugins.activateLatest': 'Activate latest',
@@ -15,8 +17,10 @@ export const manageSourcePluginsCatalogs = {
   },
   vi: {
     'manageSourcePlugins.toggle': 'Bật {name}',
+    'manageSourcePlugins.approvalTitle': 'Cần phê duyệt quyền',
     'manageSourcePlugins.approvalRequired':
       'Hãy phê duyệt quyền cho phiên bản mới nhất trước khi bật plugin.',
+    'manageSourcePlugins.reviewPermissions': 'Xem và phê duyệt quyền',
     'manageSourcePlugins.enabled': 'Đã bật plugin',
     'manageSourcePlugins.disabled': 'Đã tắt plugin',
     'manageSourcePlugins.activateLatest': 'Kích hoạt bản mới nhất',

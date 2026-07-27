@@ -379,7 +379,13 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
       listPermissions: new ListPluginPermissionsUseCase(authorization, pluginStore),
       enable: new EnablePluginUseCase(authorization, pluginActivation, invalidation),
       disable: new DisablePluginUseCase(authorization, pluginActivation, invalidation),
-      remove: new RemovePluginUseCase(authorization, pluginActivation, pluginStore, invalidation),
+      remove: new RemovePluginUseCase(
+        authorization,
+        pluginActivation,
+        pluginStore,
+        installer,
+        invalidation
+      ),
       test: new TestPluginUseCase(authorization, healthCheck),
       health: new GetPluginHealthUseCase(authorization, diagnostics),
       diagnostics: new GetPluginDiagnosticsUseCase(authorization, diagnostics)

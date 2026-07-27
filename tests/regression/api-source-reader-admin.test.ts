@@ -20,6 +20,7 @@ test('removing a plugin unregisters its active runtime before deleting persisten
       },
       remove: async () => void calls.push('remove')
     } as never,
+    { removeInstalled: async () => undefined },
     { invalidate: async () => void calls.push('invalidate') }
   );
 
@@ -40,6 +41,7 @@ test('removing an unpersisted built-in id does not unregister its runtime', asyn
       },
       remove: async () => void calls.push('remove')
     } as never,
+    { removeInstalled: async () => undefined },
     { invalidate: async () => void calls.push('invalidate') }
   );
 

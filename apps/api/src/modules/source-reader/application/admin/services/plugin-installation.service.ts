@@ -28,6 +28,8 @@ function errorCode(error: unknown): string {
   return 'INSTALL_FAILED';
 }
 
+const sourcePluginIdPattern = /^[a-z0-9][a-z0-9-]*$/;
+
 export class PluginInstallationService {
   constructor(
     private readonly verifier: PluginPackageVerifierPort,
@@ -37,6 +39,22 @@ export class PluginInstallationService {
     private readonly clock: { now(): Date },
     private readonly compatibility?: PluginCompatibilityService
   ) {}
+
+  async removeInstalled(pluginId: string): Promise<void> {
+    if (!sourcePluginIdPattern.test(pluginId)) {
+      throw new Error(`Invalid source plugin id: ${pluginId}`);
+    }
+    await this.removeInstalledPath(join(this.pluginRoot, 'installed', pluginId));
+  }
+
+  private removeInstalledPath(path: string): Promise<void> {
+    return rm(path, {
+      recursive: true,
+      force: true,
+      maxRetries: 3,
+      retryDelay: 100
+    });
+  }
 
   async install(input: { bytes: Uint8Array; originalName: string }) {
     const installationId = this.ids.randomId();
@@ -70,6 +88,9 @@ export class PluginInstallationService {
         verified.manifest.id,
         verified.manifest.version
       );
+      if (!(await this.store.findVersion(verified.manifest.id, verified.manifest.version))) {
+        await this.removeInstalledPath(versionRoot);
+      }
       stagingPath = `${versionRoot}.staging-${installationId}`;
       await mkdir(dirname(stagingPath), { recursive: true });
       await mkdir(stagingPath, { recursive: false });

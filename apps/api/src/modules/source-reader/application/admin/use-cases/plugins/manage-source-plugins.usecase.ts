@@ -26,6 +26,10 @@ interface PluginInstaller {
   install(input: { bytes: Uint8Array; originalName: string }): Promise<Record<string, unknown>>;
 }
 
+interface PluginPackageRemover {
+  removeInstalled(pluginId: string): Promise<void>;
+}
+
 interface PluginHealthCheckAdministration {
   runPluginHealthCheck(pluginId: string): Promise<unknown>;
 }
@@ -152,12 +156,14 @@ export class RemovePluginUseCase {
     private readonly authorization: SourceReaderAuthorizationPolicy,
     private readonly activation: Pick<PluginActivationAdministration, 'disable'>,
     private readonly store: Pick<PluginAdministrationStore, 'findLatestVersion' | 'remove'>,
+    private readonly packages: PluginPackageRemover,
     private readonly invalidation?: SourceReaderInvalidationPort
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
     if (await this.store.findLatestVersion(input.pluginId)) {
       await this.activation.disable(input.pluginId);
+      await this.packages.removeInstalled(input.pluginId);
     }
     await this.store.remove(input.pluginId);
     await this.invalidation?.invalidate({ type: 'plugin-disabled', pluginId: input.pluginId });

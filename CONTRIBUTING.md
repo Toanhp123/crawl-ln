@@ -5,10 +5,11 @@ Thank you for improving Novel Tool. Keep changes focused, explain the user-visib
 ## Workflow
 
 1. Fork the repository and create a short-lived branch from `main`.
-2. Install dependencies with `npm run setup`.
-3. Make the smallest change that solves the problem.
-4. Run the focused tests while iterating, then run `npm run check` and `npm test` before opening a pull request.
-5. Describe configuration changes, migration needs, and manual verification steps in the pull request.
+2. Prepare dependencies without an unnecessary production build using `npm run setup -- --skip-build`.
+3. Run the development servers with `npm run dev`.
+4. Make the smallest change that solves the problem.
+5. Run the focused tests while iterating, then run `npm run check` and `npm test` before opening a pull request.
+6. Describe configuration changes, migration needs, and manual verification steps in the pull request.
 
 ## Quality Bar
 

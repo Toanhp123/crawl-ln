@@ -1,4 +1,4 @@
-# Novel Tool 3.0.0
+# Novel Tool 1.0.0
 
 Novel Tool is a mobile-first application for analyzing novel sources, crawling and storing chapters, reading, searching, and exporting light novels. It is an npm workspace that runs the API and web application together.
 
@@ -15,11 +15,12 @@ From a clean checkout or release archive:
 
 ```bash
 npm run setup
-cp apps/api/.env.example apps/api/.env
-npm run dev
+npm start
 ```
 
-The development URLs are:
+`setup` installs dependencies, creates `apps/api/.env` when it is missing, validates the toolchain, and builds the production artifact. Existing environment configuration is preserved.
+
+The default URLs are:
 
 - Web: `http://127.0.0.1:5173`
 - API health: `http://127.0.0.1:3000/health`
@@ -30,10 +31,10 @@ See [Getting Started](docs/GETTING_STARTED.md) for platform-neutral setup and fi
 
 | Command | Purpose |
 | --- | --- |
-| `npm run setup` | Install dependencies and validate the local toolchain. |
+| `npm run setup` | Install dependencies, create local configuration when missing, validate the toolchain, and build `dist/`. |
 | `npm run dev` | Run the API and Vite development server together. |
 | `npm run build` | Create a production artifact under `dist/`. |
-| `npm run start` | Serve the API and SPA from the production artifact. |
+| `npm start` | Serve the API and SPA from the production artifact. |
 | `npm run check` | Run formatting, TypeScript, architecture, documentation, and boundary checks. |
 | `npm test` | Run the core reader-engine, plugin, contract, regression, and integration suites. |
 | `npm run format` | Apply the repository formatter. |
@@ -50,12 +51,12 @@ npm test -- --suite e2e
 
 ```bash
 npm run build
-npm run start
+npm start
 ```
 
-The production process serves `/health`, `/api/*`, static assets, and the SPA from one host and port. Configure the bind address, port, storage, CORS, and remote access token through environment variables; see [Configuration](docs/CONFIGURATION.md).
+`npm run setup` already creates the first production build. Run `npm run build` again after changing source code. The production process serves `/health`, `/api/*`, static assets, and the SPA from one host and port. Configure the bind address, port, storage, CORS, and remote access token through environment variables; see [Configuration](docs/CONFIGURATION.md).
 
-The full build also creates the first-party package at `dist/plugins/novelcool-2.0.0.source-plugin`. It is not installed or enabled automatically. Open `/sources/new`, choose **Install package**, upload the artifact, review its permissions, approve the requested hosts, and enable the exact version. See [Plugin Development](docs/PLUGIN_DEVELOPMENT.md) for the package contract and lifecycle.
+The full build also creates the first-party package at `dist/plugins/novelcool-1.0.0.source-plugin`. It is not installed or enabled automatically. Open `/sources/new`, choose **Install package**, upload the artifact, review its permissions, approve the requested hosts, and enable the exact version. See [Plugin Development](docs/PLUGIN_DEVELOPMENT.md) for the package contract and lifecycle.
 
 ## Data Cleanup
 

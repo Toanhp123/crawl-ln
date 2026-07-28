@@ -1,6 +1,6 @@
 # Configuration
 
-Copy `apps/api/.env.example` to `apps/api/.env` for local development. Values are read by the API at startup; restart the process after changing them.
+`npm run setup` creates `apps/api/.env` from `apps/api/.env.example` when it is missing and preserves an existing file. Values are read by the API at startup; restart the process after changing them.
 
 ## Server and Storage
 

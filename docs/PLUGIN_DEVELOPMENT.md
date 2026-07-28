@@ -13,7 +13,7 @@ Minimal manifest shape:
   "id": "example-source",
   "name": "Example Source",
   "version": "1.0.0",
-  "engines": { "sourceReader": "^3.0.0" },
+  "engines": { "sourceReader": "^1.0.0" },
   "capabilities": ["identify", "metadata", "chapter-list", "chapter-content"],
   "contracts": {
     "identify": 1,
@@ -75,6 +75,6 @@ External activation is explicit: `Install -> Approve -> Enable`. The management 
 
 ## First-party Example
 
-`npm run build` creates `dist/plugins/novelcool-2.0.0.source-plugin`. Upload it from `/sources/new`, approve `novelcool.com` and `*.novelcool.com`, then enable version `2.0.0` from `/sources`.
+`npm run build` creates `dist/plugins/novelcool-1.0.0.source-plugin`. Upload it from `/sources/new`, approve `novelcool.com` and `*.novelcool.com`, then enable version `1.0.0` from `/sources`.
 
 Publish a new version instead of mutating an installed archive. A changed archive fails integrity verification and can quarantine the affected version.

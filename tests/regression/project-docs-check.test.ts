@@ -125,12 +125,15 @@ test('documentation check ignores generated artifact snapshots', async () => {
 
 test('public documentation and CI use the supported command interface', async () => {
   const { readFile } = await import('node:fs/promises');
-  const [readme, docsIndex, workflow, playwright] = await Promise.all([
+  const [readme, docsIndex, gettingStarted, contributing, workflow, playwright] =
+    await Promise.all([
     readFile('README.md', 'utf8'),
     readFile('docs/README.md', 'utf8'),
+    readFile('docs/GETTING_STARTED.md', 'utf8'),
+    readFile('CONTRIBUTING.md', 'utf8'),
     readFile('.github/workflows/ci.yml', 'utf8'),
     readFile('playwright.config.ts', 'utf8')
-  ]);
+    ]);
 
   for (const command of ['setup', 'dev', 'build', 'start', 'check', 'test', 'format', 'clean']) {
     assert.match(readme, new RegExp(`npm (?:run )?${command}`));
@@ -146,6 +149,12 @@ test('public documentation and CI use the supported command interface', async ()
     ['roll', 'back'].join('')
   ];
   assert.doesNotMatch(readme, new RegExp(removedAliases.join('|'), 'i'));
+  for (const guide of [readme, gettingStarted]) {
+    assert.ok(guide.indexOf('npm run setup') < guide.indexOf('npm start'));
+    assert.doesNotMatch(guide, /cp apps\/api\/\.env\.example|Copy-Item apps\/api\/\.env\.example/i);
+  }
+  assert.match(contributing, /npm run setup -- --skip-build/);
+  assert.match(contributing, /npm run dev/);
 
   const removedRunbooks = [['V3', 'CUTOVER'].join('_'), ['V3', 'ROLLBACK'].join('_')];
   assert.doesNotMatch(docsIndex, new RegExp(removedRunbooks.join('|')));
@@ -174,7 +183,7 @@ test('NovelCool documentation publishes the external plugin installation boundar
     readFile('docs/PLUGIN_DEVELOPMENT.md', 'utf8')
   ]);
 
-  assert.match(readme, /dist\/plugins\/novelcool-2\.0\.0\.source-plugin/);
+  assert.match(readme, /dist\/plugins\/novelcool-1\.0\.0\.source-plugin/);
   assert.match(sourceReaderDocs, /manual(?:ly)? install/i);
   assert.match(sourceReaderDocs, /local-unverified/i);
   assert.match(sourceReaderDocs, /isolated/i);
@@ -202,8 +211,8 @@ test('public docs keep release history without publishing internal acceptance ru
   ]);
 
   assert.doesNotMatch(index, /E2E_TEST_CHECKLIST|MOBILE_UX_ACCEPTANCE|PERFORMANCE_BASELINE/i);
-  assert.match(changelog, /Phase 2C Backup and Restore/);
-  assert.equal((changelog.match(/Phase 2C Backup and Restore/g) ?? []).length, 1);
+  assert.equal((changelog.match(/^## 1\.0\.0 - 2026-07-29$/gm) ?? []).length, 1);
+  assert.doesNotMatch(changelog, /^## [23]\./gm);
 });
 
 test('README and changelog publish the current route and release boundaries', async () => {
@@ -228,7 +237,6 @@ test('README and changelog publish the current route and release boundaries', as
   assert.match(readme, /\/library\/:novelId\/read\/:chapterIndex/);
   assert.match(readme, /legacy.*(?:crawl|tasks).*redirect/i);
   assert.equal((changelog.match(/^# Changelog$/gm) ?? []).length, 1);
-  assert.equal((changelog.match(/^## 2\.9\.4 - Final Logic Cleanup$/gm) ?? []).length, 1);
-  assert.ok(changelog.indexOf('## Unreleased') < changelog.indexOf('## 3.0.0'));
-  assert.ok(changelog.indexOf('## 3.0.0') < changelog.indexOf('## 2.9.6'));
+  assert.equal((changelog.match(/^## 1\.0\.0 - 2026-07-29$/gm) ?? []).length, 1);
+  assert.ok(changelog.indexOf('## Unreleased') < changelog.indexOf('## 1.0.0'));
 });

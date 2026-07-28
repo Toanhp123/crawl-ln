@@ -104,7 +104,7 @@ export async function checkDocumentation(projectRoot = process.cwd()) {
     if (!isHistoricalChangelog && RETIRED_PATTERNS.some((pattern) => pattern.test(content))) {
       errors.push(`Current documentation uses retired source-profile terminology: ${path}`);
     }
-    if (TERMUX_PATTERN.test(content)) {
+    if (!isHistoricalChangelog && TERMUX_PATTERN.test(content)) {
       errors.push(`Public documentation must not contain Termux-specific guidance: ${path}`);
     }
 

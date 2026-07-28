@@ -59,7 +59,11 @@ test('documentation check accepts canonical current docs and ignores historical 
       await write(root, `docs/${guide}`, `# ${guide}\n\nPublic guidance.\n`);
     }
     await write(root, '.internal/docs/private.md', '[Missing](nowhere.md)\n');
-    await write(root, 'CHANGELOG.md', '# Changelog\n\nOld source profile support was removed.\n');
+    await write(
+      root,
+      'CHANGELOG.md',
+      '# Changelog\n\nOld source profile and Termux support were removed.\n'
+    );
 
     const { checkDocumentation } = await import('../../scripts/lib/documentation.mjs');
     const result = await checkDocumentation(root);
@@ -119,14 +123,13 @@ test('documentation check ignores generated artifact snapshots', async () => {
   }
 });
 
-test('active documentation and CI use only the eight-command interface', async () => {
+test('public documentation and CI use the supported command interface', async () => {
   const { readFile } = await import('node:fs/promises');
-  const [readme, docsIndex, workflow, playwright, termux] = await Promise.all([
+  const [readme, docsIndex, workflow, playwright] = await Promise.all([
     readFile('README.md', 'utf8'),
     readFile('docs/README.md', 'utf8'),
     readFile('.github/workflows/ci.yml', 'utf8'),
-    readFile('playwright.config.ts', 'utf8'),
-    readFile('docs/TERMUX_ACCEPTANCE.md', 'utf8')
+    readFile('playwright.config.ts', 'utf8')
   ]);
 
   for (const command of ['setup', 'dev', 'build', 'start', 'check', 'test', 'format', 'clean']) {
@@ -146,7 +149,11 @@ test('active documentation and CI use only the eight-command interface', async (
 
   const removedRunbooks = [['V3', 'CUTOVER'].join('_'), ['V3', 'ROLLBACK'].join('_')];
   assert.doesNotMatch(docsIndex, new RegExp(removedRunbooks.join('|')));
-  assert.match(docsIndex, /TERMUX_ACCEPTANCE\.md/);
+  assert.match(docsIndex, /GETTING_STARTED\.md/);
+  assert.match(docsIndex, /CONFIGURATION\.md/);
+  assert.match(docsIndex, /PLUGIN_DEVELOPMENT\.md/);
+  assert.match(docsIndex, /SECURITY\.md/);
+  assert.doesNotMatch(docsIndex, /ARCHITECTURE|SOURCE_READER|TERMUX|frontend\/|backend\//i);
 
   assert.match(workflow, /npm run setup/);
   assert.match(workflow, /npm run check/);
@@ -159,17 +166,12 @@ test('active documentation and CI use only the eight-command interface', async (
   }
 
   assert.match(playwright, /npm run dev -- --target web/);
-  assert.match(termux, /npm run setup/);
-  assert.match(termux, /npm run check/);
-  assert.match(termux, /npm test/);
-  assert.match(termux, /npm run build/);
-  assert.match(termux, /npm run dev/);
 });
 
 test('NovelCool documentation publishes the external plugin installation boundary', async () => {
   const [readme, sourceReaderDocs] = await Promise.all([
     readFile('README.md', 'utf8'),
-    readFile('docs/SOURCE_READER.md', 'utf8')
+    readFile('docs/PLUGIN_DEVELOPMENT.md', 'utf8')
   ]);
 
   assert.match(readme, /dist\/plugins\/novelcool-2\.0\.0\.source-plugin/);
@@ -183,56 +185,23 @@ test('NovelCool documentation publishes the external plugin installation boundar
   assert.match(sourceReaderDocs, /discovers? plugin workspaces without provider-specific code/i);
 });
 
-test('frontend docs publish the shared theme and Settings control contract', async () => {
-  const [index, contract] = await Promise.all([
-    readFile('docs/README.md', 'utf8'),
-    readFile('docs/frontend/SHARED_THEME_CONTRACT.md', 'utf8')
+test('public documentation does not expose maintainer-only implementation material', async () => {
+  const [readme, index] = await Promise.all([
+    readFile('README.md', 'utf8'),
+    readFile('docs/README.md', 'utf8')
   ]);
-  assert.match(index, /SHARED_THEME_CONTRACT\.md/);
-  for (const requirement of [
-    '44 CSS pixels',
-    'SettingsChoiceGroup',
-    'SettingsOptionList',
-    'SegmentedControl',
-    'shared/ui',
-    'shared/theme',
-    'compact',
-    'comfortable',
-    'prefers-reduced-motion'
-  ]) {
-    assert.match(contract, new RegExp(requirement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  for (const content of [readme, index]) {
+    assert.doesNotMatch(content, /\.internal\/|ARCHITECTURE\.md|FSD\.md|SHARED_THEME_CONTRACT|TERMUX/i);
   }
-  assert.match(contract, /must not define a shared control height inside a feature/i);
 });
 
-test('Phase 2C architecture and E2E acceptance documentation remain complete', async () => {
-  const [architecture, e2e, changelog] = await Promise.all([
-    readFile('docs/ARCHITECTURE.md', 'utf8'),
-    readFile('docs/E2E_TEST_CHECKLIST.md', 'utf8'),
+test('public docs keep release history without publishing internal acceptance runbooks', async () => {
+  const [index, changelog] = await Promise.all([
+    readFile('docs/README.md', 'utf8'),
     readFile('CHANGELOG.md', 'utf8')
   ]);
 
-  for (const requirement of [
-    'backup-control.sqlite',
-    'backup-temp',
-    'operation',
-    'session',
-    'globally',
-    'Merge Restore',
-    'Replace Restore',
-    '.rollback',
-    'backup` resource',
-    'never resumed automatically'
-  ]) {
-    assert.match(
-      architecture,
-      new RegExp(requirement.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'), 'i')
-    );
-  }
-  const matrix = e2e.match(/^\d+\. /gm) ?? [];
-  assert.ok(matrix.length >= 18);
-  assert.match(e2e, /THAY THẾ DỮ LIỆU/);
-  assert.match(e2e, /reload exactly once/i);
+  assert.doesNotMatch(index, /E2E_TEST_CHECKLIST|MOBILE_UX_ACCEPTANCE|PERFORMANCE_BASELINE/i);
   assert.match(changelog, /Phase 2C Backup and Restore/);
   assert.equal((changelog.match(/Phase 2C Backup and Restore/g) ?? []).length, 1);
 });

@@ -103,6 +103,8 @@ test('installs, approves and enables the generated NovelCool external plugin', a
   });
 
   await page.goto('/sources/new');
+  await page.getByRole('button', { name: 'Install package', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Install package' })).toBeVisible();
   await page.getByLabel('Plugin package', { exact: true }).setInputFiles(artifact);
   await page.getByRole('button', { name: 'Install plugin', exact: true }).click();
   await expect(page).toHaveURL(/\/sources\?section=plugins/);

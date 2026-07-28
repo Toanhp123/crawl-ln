@@ -4,6 +4,7 @@ import * as monaco from 'monaco-editor';
 import { useI18n } from '../../../shared/i18n';
 import { useAppTheme } from '../../../shared/theme';
 import { sourcePluginCodeEditorAriaLabel } from '../model/source-plugin-code-editor-accessibility';
+import { sourcePluginStudioClipboardService } from '../model/source-plugin-studio-clipboard';
 import { configureSourcePluginStudioMonaco } from '../model/configure-source-plugin-studio-monaco';
 import { sourcePluginStudioModelUri } from '../model/use-source-plugin-studio-diagnostics';
 import './source-plugin-studio-monaco-environment';
@@ -46,7 +47,7 @@ export function PluginCodeEditor({
     configured = true;
   }
   return (
-    <div className="min-h-0 bg-surface">
+    <div className="h-full min-h-0 bg-surface">
       <Editor
         height="100%"
         path={sourcePluginStudioModelUri(projectId, path).toString()}
@@ -57,6 +58,7 @@ export function PluginCodeEditor({
           editorRef.current = editor;
         }}
         onChange={(nextValue) => onChange(nextValue ?? '')}
+        overrideServices={{ clipboardService: sourcePluginStudioClipboardService }}
         options={{
           minimap: { enabled: false },
           fontSize: 14,

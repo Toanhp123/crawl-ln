@@ -152,21 +152,38 @@ test('workspace preserves invalid manifest drafts without overwriting database m
 });
 
 test('workbench renders manifest metadata and guards plugin actions', async () => {
-  const [workbench, toolbar, library, model] = await Promise.all([
+  const [workbench, inspector, toolbar, library, model] = await Promise.all([
     readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioWorkbench.tsx', 'utf8'),
+    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioInspector.tsx', 'utf8'),
     readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioToolbar.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectLibrary.tsx', 'utf8'),
+    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectTable.tsx', 'utf8'),
     readFile(
       'apps/web/src/widgets/source-plugin-studio/model/use-source-plugin-studio-workbench.ts',
       'utf8'
     )
   ]);
 
-  assert.match(workbench, /PluginStudioManifestEditor/);
+  assert.match(workbench, /PluginStudioInspector/);
+  assert.match(inspector, /PluginStudioManifestEditor/);
   assert.match(workbench, /updateFile\('manifest\.json'/);
   assert.match(toolbar, /actionDisabled = busy \|\| !manifest\.valid/);
   assert.match(toolbar, /metadata\?\.pluginId/);
   assert.match(library, /parseSourcePluginStudioManifest/);
   assert.match(model, /requireValidManifest/);
   assert.match(model, /buildCurrent: buildCurrent && manifest\.valid/);
+});
+
+test('Studio metadata and diagnostics use shared UI theme contracts', async () => {
+  const [manifestEditor, diagnostics] = await Promise.all([
+    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioManifestEditor.tsx', 'utf8'),
+    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioDiagnostics.tsx', 'utf8')
+  ]);
+
+  assert.match(manifestEditor, /Field/);
+  assert.match(manifestEditor, /FilterChip/);
+  assert.match(manifestEditor, /Input/);
+  assert.doesNotMatch(
+    `${manifestEditor}\n${diagnostics}`,
+    /text-foreground|bg-background|text-muted-foreground|hover:bg-muted/
+  );
 });

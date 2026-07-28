@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   summarizeSourcePluginStudioDiagnostics,
+  summarizeSourcePluginStudioDiagnosticsByPath,
   type SourcePluginStudioDiagnostic
 } from '../../apps/web/src/widgets/source-plugin-studio/model/source-plugin-studio-diagnostics.ts';
 
@@ -17,6 +18,13 @@ test('Studio diagnostics summarize errors and warnings across files', () => {
     errors: 2,
     warnings: 1,
     total: 3
+  });
+});
+
+test('Studio diagnostics summarize counts per file for the explorer', () => {
+  assert.deepEqual(summarizeSourcePluginStudioDiagnosticsByPath(diagnostics), {
+    'src/index.ts': { errors: 1, warnings: 0, total: 1 },
+    'src/parser.ts': { errors: 1, warnings: 1, total: 2 }
   });
 });
 
@@ -50,5 +58,20 @@ test('Studio workbench exposes diagnostics and opens their source locations', as
   assert.match(workbench, /selectFile\(diagnostic\.path\)/);
   assert.match(workbench, /line:\s*diagnostic\.line/);
   assert.match(panel, /diagnostic\.line/);
+  assert.match(panel, /pluginStudio\.noDiagnostics/);
   assert.match(toolbar, /diagnosticSummary/);
+});
+
+test('Studio inspector exposes accessible Metadata and Diagnostics tabs', async () => {
+  const source = await readFile(
+    'apps/web/src/widgets/source-plugin-studio/ui/PluginStudioInspector.tsx',
+    'utf8'
+  );
+  assert.match(source, /role="tablist"/);
+  assert.match(source, /role="tab"/);
+  assert.match(source, /aria-selected/);
+  assert.match(source, /aria-controls/);
+  assert.match(source, /role="tabpanel"/);
+  assert.match(source, /PluginStudioManifestEditor/);
+  assert.match(source, /PluginStudioDiagnostics/);
 });

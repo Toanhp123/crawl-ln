@@ -1,12 +1,24 @@
+import {
+  AlertTriangle,
+  Copy,
+  FilePlus2,
+  FolderPlus,
+  Lock,
+  Pencil,
+  Trash2,
+  CircleX
+} from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../../../shared/i18n';
 import { cn } from '../../../shared/lib/cn';
-import { Button, Text } from '../../../shared/ui';
+import { IconButton, Text } from '../../../shared/ui';
+import type { SourcePluginStudioDiagnosticsByPath } from '../model/source-plugin-studio-diagnostics';
 
 export function PluginProjectFileTree({
   files,
   selectedFile,
   disabled,
+  diagnosticsByPath = {},
   onSelect,
   onCreateFile,
   onCreateFolder,
@@ -17,6 +29,7 @@ export function PluginProjectFileTree({
   files: string[];
   selectedFile: string;
   disabled?: boolean;
+  diagnosticsByPath?: SourcePluginStudioDiagnosticsByPath;
   onSelect: (path: string) => void;
   onCreateFile: (path: string) => void;
   onCreateFolder: (path: string) => void;
@@ -64,72 +77,120 @@ export function PluginProjectFileTree({
   const protectedSelection = !selectedFile || selectedFile === 'manifest.json';
 
   return (
-    <aside className="min-w-0 border-b border-border bg-surface2 p-2 md:border-b-0 md:border-r">
-      <div className="flex items-center justify-between gap-2 px-2 py-2">
-        <Text as="h3" variant="caption" tone="muted" className="font-bold uppercase">
-          {t('pluginStudio.projectFiles')}
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <Text as="h3" variant="caption" tone="muted" className="font-bold uppercase tracking-wide">
+          {t('pluginStudio.fileExplorer')}
         </Text>
-        <div className="flex gap-1">
-          <Button size="sm" variant="ghost" disabled={disabled} onClick={createFile}>
-            {t('pluginStudio.newFile')}
-          </Button>
-          <Button size="sm" variant="ghost" disabled={disabled} onClick={createFolder}>
-            {t('pluginStudio.newFolder')}
-          </Button>
+        <div className="flex items-center gap-0.5">
+          <IconButton
+            variant="ghost"
+            aria-label={t('pluginStudio.newFile')}
+            title={t('pluginStudio.newFile')}
+            disabled={disabled}
+            onClick={createFile}
+          >
+            <FilePlus2 size={16} />
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            aria-label={t('pluginStudio.newFolder')}
+            title={t('pluginStudio.newFolder')}
+            disabled={disabled}
+            onClick={createFolder}
+          >
+            <FolderPlus size={16} />
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            aria-label={t('pluginStudio.renameFile')}
+            title={t('pluginStudio.renameFile')}
+            disabled={disabled || protectedSelection}
+            onClick={rename}
+          >
+            <Pencil size={16} />
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            aria-label={t('pluginStudio.duplicateFile')}
+            title={t('pluginStudio.duplicateFile')}
+            disabled={disabled || protectedSelection}
+            onClick={() => run(() => onDuplicate(selectedFile))}
+          >
+            <Copy size={16} />
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            aria-label={t('pluginStudio.deleteFile')}
+            title={t('pluginStudio.deleteFile')}
+            disabled={disabled || protectedSelection}
+            onClick={remove}
+          >
+            <Trash2 size={16} />
+          </IconButton>
         </div>
       </div>
+
       <nav
         aria-label={t('pluginStudio.projectFiles')}
-        className="flex gap-1 overflow-x-auto md:block md:space-y-1 md:overflow-visible"
+        className="min-h-0 flex-1 space-y-0.5 overflow-auto p-2"
       >
-        {files.map((file) => (
-          <Button
-            key={file}
-            size="sm"
-            variant="ghost"
-            aria-current={selectedFile === file ? 'page' : undefined}
-            onClick={() => onSelect(file)}
-            className={cn(
-              'shrink-0 justify-start font-mono text-xs md:w-full',
-              selectedFile === file &&
-                'border-primary-state-border bg-primary-selected text-primary'
-            )}
-          >
-            {file}
-          </Button>
-        ))}
+        {files.map((file) => {
+          const diagnostic = diagnosticsByPath[file];
+          const protectedFile = file === 'manifest.json';
+          return (
+            <button
+              key={file}
+              type="button"
+              aria-current={selectedFile === file ? 'page' : undefined}
+              onClick={() => onSelect(file)}
+              className={cn(
+                'flex w-full min-w-0 items-center gap-2 rounded-[var(--radius-md)] border border-transparent px-2 py-1.5 text-left font-mono text-xs text-secondary transition-colors hover:bg-surface hover:text-text focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]',
+                selectedFile === file &&
+                  'border-primary-state-border bg-primary-selected text-primary'
+              )}
+            >
+              {protectedFile ? (
+                <Lock size={14} className="shrink-0" aria-label={t('pluginStudio.lockedFile')} />
+              ) : (
+                <span className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              )}
+              <span className="min-w-0 flex-1 truncate" title={file}>
+                {file}
+              </span>
+              {diagnostic?.errors ? (
+                <span
+                  className="inline-flex shrink-0 items-center gap-0.5 text-danger"
+                  aria-label={t('pluginStudio.fileErrorCount', { count: diagnostic.errors })}
+                >
+                  <CircleX size={12} aria-hidden="true" />
+                  {diagnostic.errors}
+                </span>
+              ) : null}
+              {diagnostic?.warnings ? (
+                <span
+                  className="inline-flex shrink-0 items-center gap-0.5 text-warning"
+                  aria-label={t('pluginStudio.fileWarningCount', { count: diagnostic.warnings })}
+                >
+                  <AlertTriangle size={12} aria-hidden="true" />
+                  {diagnostic.warnings}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
       </nav>
-      <div className="mt-2 grid grid-cols-3 gap-1 border-t border-border pt-2">
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={disabled || protectedSelection}
-          onClick={rename}
-        >
-          {t('pluginStudio.renameFile')}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={disabled || protectedSelection}
-          onClick={() => run(() => onDuplicate(selectedFile))}
-        >
-          {t('pluginStudio.duplicateFile')}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={disabled || protectedSelection}
-          onClick={remove}
-        >
-          {t('pluginStudio.deleteFile')}
-        </Button>
-      </div>
+
       {error ? (
-        <Text variant="caption" tone="danger" className="mt-2 px-2" role="alert">
+        <Text
+          variant="caption"
+          tone="danger"
+          className="border-t border-border px-3 py-2"
+          role="alert"
+        >
           {error}
         </Text>
       ) : null}
-    </aside>
+    </div>
   );
 }

@@ -62,6 +62,11 @@ test('file tree exposes create, rename, duplicate and delete actions', async () 
   assert.match(tree, /onRename/);
   assert.match(tree, /onDuplicate/);
   assert.match(tree, /onDelete/);
+  assert.match(tree, /IconButton/);
+  assert.match(tree, /aria-label/);
+  assert.match(tree, /diagnosticsByPath/);
+  assert.match(tree, /manifest\.json/);
+  assert.match(tree, /Lock/);
   assert.match(workbench, /createFile/);
   assert.match(workbench, /renameFile/);
   assert.match(workbench, /duplicateFile/);

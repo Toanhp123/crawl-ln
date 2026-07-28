@@ -214,9 +214,10 @@ test('Plugin Studio is a separate lazy route and uses Monaco with revision-aware
   ]);
   assert.match(router, /SourcePluginStudioPage/);
   assert.match(preload, /sourcePluginStudio/);
-  assert.match(studio, /CreateSourcePluginProjectForm/);
-  assert.match(studio, /PluginStudioProjectLibrary/);
+  assert.match(studio, /PluginStudioDashboard/);
   assert.match(studio, /PluginStudioWorkbench/);
+  assert.doesNotMatch(studio, /CreateSourcePluginProjectForm/);
+  assert.doesNotMatch(studio, /PluginStudioProjectLibrary/);
   assert.match(studio, /useSearchParams/);
   assert.match(studio, /useSourcePluginProjects/);
   assert.match(studio, /useSourcePluginProject/);
@@ -380,20 +381,24 @@ test('the create-project form takes its visible default name from i18n', async (
   }
 });
 
-test('the Studio project library exposes reopen and delete actions', async () => {
+test('the Studio project table exposes reopen and delete actions', async () => {
   const restoreLanguage = useTestLanguage('en');
   try {
-    const [{ QueryClient, QueryClientProvider }, { I18nProvider }, { PluginStudioProjectLibrary }] =
+    const [{ QueryClient, QueryClientProvider }, { I18nProvider }, { PluginStudioProjectTable }] =
       await Promise.all([
         import('@tanstack/react-query'),
         import('../../apps/web/src/shared/i18n/index.ts'),
-        import('../../apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectLibrary.tsx')
+        import('../../apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectTable.tsx')
       ]);
     const labels = {
-      'pluginStudio.projectsTitle': 'Saved projects',
-      'pluginStudio.projectsDescription': 'Continue an existing workspace.',
-      'pluginStudio.openProject': 'Open project',
-      'pluginStudio.updatedAt': 'Updated {date}',
+      'pluginStudio.columnName': 'Name',
+      'pluginStudio.columnPluginId': 'Plugin ID',
+      'pluginStudio.columnVersion': 'Version',
+      'pluginStudio.columnDomains': 'Domains',
+      'pluginStudio.columnCapabilities': 'Capabilities',
+      'pluginStudio.columnUpdated': 'Last updated',
+      'pluginStudio.columnActions': 'Actions',
+      'pluginStudio.invalidManifestShort': 'Invalid manifest',
       'deleteSourcePluginProject.action': 'Delete',
       'deleteSourcePluginProject.confirmTitle': 'Delete project?',
       'deleteSourcePluginProject.confirmDescription': 'This draft will be removed.'
@@ -434,21 +439,22 @@ test('the Studio project library exposes reopen and delete actions', async () =>
         createElement(
           I18nProvider,
           { catalogs: { en: labels, vi: labels } },
-          createElement(PluginStudioProjectLibrary, {
+          createElement(PluginStudioProjectTable, {
             projects,
             onOpen: () => undefined,
-            onDeleted: () => undefined
+            onDeleted: () => undefined,
+            onCreate: () => undefined
           })
         )
       )
     );
 
-    assert.match(html, /Saved projects/);
+    assert.match(html, /<table/);
+    assert.match(html, /Plugin ID/);
     assert.match(html, /Demo Reader/);
-    assert.match(html, /demo-reader@1\.0\.0/);
+    assert.match(html, /demo-reader/);
     assert.match(html, /Second Reader/);
-    assert.match(html, /second-reader@2\.0\.0/);
-    assert.equal((html.match(/Open project/g) ?? []).length, 2);
+    assert.match(html, /second-reader/);
     assert.equal((html.match(/Delete/g) ?? []).length, 2);
   } finally {
     restoreLanguage();

@@ -5,7 +5,13 @@ import { Button, ErrorBanner, Field, InlineNotice, Input, Panel } from '../../..
 import { MAX_SOURCE_PLUGIN_BYTES } from '../api/install-source-plugin';
 import { useInstallSourcePlugin } from '../model/use-install-source-plugin';
 
-export function InstallSourcePluginForm({ onInstalled }: { onInstalled?: () => void }) {
+export function InstallSourcePluginForm({
+  onInstalled,
+  surface = 'panel'
+}: {
+  onInstalled?: () => void;
+  surface?: 'panel' | 'plain';
+}) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File>();
@@ -16,9 +22,11 @@ export function InstallSourcePluginForm({ onInstalled }: { onInstalled?: () => v
   });
   const tooLarge = Boolean(file && file.size > MAX_SOURCE_PLUGIN_BYTES);
 
-  return (
-    <Panel tone="default" padding="lg" className="space-y-4">
-      <InlineNotice>{t('installSourcePlugin.description')}</InlineNotice>
+  const content = (
+    <>
+      {surface === 'panel' ? (
+        <InlineNotice>{t('installSourcePlugin.description')}</InlineNotice>
+      ) : null}
       <Field label={t('installSourcePlugin.file')}>
         <Input
           ref={inputRef}
@@ -37,6 +45,14 @@ export function InstallSourcePluginForm({ onInstalled }: { onInstalled?: () => v
       >
         {t('installSourcePlugin.install')}
       </Button>
+    </>
+  );
+
+  return surface === 'panel' ? (
+    <Panel tone="default" padding="lg" className="space-y-4">
+      {content}
     </Panel>
+  ) : (
+    <div className="space-y-4">{content}</div>
   );
 }

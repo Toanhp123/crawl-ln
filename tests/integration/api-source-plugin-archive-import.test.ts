@@ -13,7 +13,7 @@ interface ApiBody<T = unknown> {
   error: { code: string; message: string } | null;
 }
 
-function pluginManifest(id: string) {
+function pluginManifest(id: string, permissionHosts = [`${id}.example`]) {
   return {
     id,
     name: `Archive ${id}`,
@@ -23,13 +23,13 @@ function pluginManifest(id: string) {
     contracts: { identify: 1 },
     matchers: [{ hosts: [`${id}.example`], include: ['/**'], priority: 100 }],
     runtime: { preferredMode: 'isolated' },
-    permissions: { network: { hosts: [`${id}.example`] } }
+    permissions: { network: { hosts: permissionHosts } }
   };
 }
 
-async function sourceArchive(id: string): Promise<Uint8Array> {
+async function sourceArchive(id: string, permissionHosts = [`${id}.example`]): Promise<Uint8Array> {
   const zip = new JSZip();
-  zip.file('manifest.json', JSON.stringify(pluginManifest(id)));
+  zip.file('manifest.json', JSON.stringify(pluginManifest(id, permissionHosts)));
   zip.file('src/index.ts', 'export default {}');
   zip.file('tests/smoke.test.ts', 'export {}');
   return zip.generateAsync({ type: 'uint8array', platform: 'UNIX', compression: 'DEFLATE' });
@@ -150,6 +150,29 @@ test('source plugin archive HTTP workflows keep install and project import side 
   assert.equal(imported.data.revision, 1);
   const pluginsAfterImport = await fetch(`${baseUrl}/plugins`);
   assert.equal((await readBody<unknown[]>(pluginsAfterImport)).data.length, 1);
+
+  const wildcardImportBytes = await sourceArchive('wildcard-import', [
+    'wildcard-import.example',
+    '*.wildcard-import.example'
+  ]);
+  const wildcardPreviewResponse = await postArchive(
+    baseUrl,
+    '/plugins/import/inspect',
+    wildcardImportBytes
+  );
+  const wildcardPreview = await readBody<{ checksum: string }>(wildcardPreviewResponse);
+  const wildcardImportResponse = await postArchive(
+    baseUrl,
+    '/studio/projects/import',
+    wildcardImportBytes,
+    {
+      expectedChecksum: wildcardPreview.data.checksum,
+      resolutionJson: JSON.stringify({ type: 'create-copy' })
+    }
+  );
+  assert.equal(wildcardImportResponse.status, 201);
+  const wildcardImported = await readBody<{ pluginId: string }>(wildcardImportResponse);
+  assert.equal(wildcardImported.data.pluginId, 'wildcard-import');
 
   const mismatchBytes = await sourceArchive('checksum-mismatch');
   const inspectMismatch = await postArchive(baseUrl, '/plugins/import/inspect', mismatchBytes);

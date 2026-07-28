@@ -168,6 +168,7 @@ export class SourcePluginArchiveInspector implements SourcePluginArchiveInspecto
     if (capabilities.length === 0) {
       throw new Error('Plugin Studio source requires at least one reader capability');
     }
+    const sourceHosts = [...new Set(manifest.matchers.flatMap((matcher) => matcher.hosts))];
 
     const files = Object.keys(sourceFiles).sort();
     return {
@@ -189,7 +190,7 @@ export class SourcePluginArchiveInspector implements SourcePluginArchiveInspecto
         id: manifest.id,
         name: manifest.name,
         version: manifest.version,
-        hosts: [...manifest.permissions.network.hosts],
+        hosts: sourceHosts,
         capabilities,
         selectors: {},
         files: sourceFiles

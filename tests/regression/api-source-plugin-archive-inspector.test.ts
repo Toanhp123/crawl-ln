@@ -6,7 +6,7 @@ import { SourcePluginArchiveInspector } from '../../apps/api/src/modules/source-
 import { SourcePluginPackageVerifier } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/source-plugin-package.verifier.ts';
 import { StaticTrustStore } from '../../apps/api/src/modules/source-reader/infrastructure/plugins/package-loader/static-trust.store.ts';
 
-function manifest(id = 'fixture-plugin') {
+function manifest(id = 'fixture-plugin', permissionHosts = ['fixture.example']) {
   return {
     id,
     name: 'Fixture Plugin',
@@ -16,7 +16,7 @@ function manifest(id = 'fixture-plugin') {
     contracts: { identify: 1, metadata: 1 },
     matchers: [{ hosts: ['fixture.example'], include: ['/**'], priority: 100 }],
     runtime: { preferredMode: 'isolated' },
-    permissions: { network: { hosts: ['fixture.example'] } }
+    permissions: { network: { hosts: permissionHosts } }
   };
 }
 
@@ -135,6 +135,20 @@ test('archive inspector recognizes npm workspaces but imports only Studio files'
     'src/index.ts',
     'tests/smoke.test.ts'
   ]);
+});
+
+test('archive inspector keeps wildcard network permissions out of Studio project hosts', async () => {
+  const sourceManifest = manifest('wildcard-fixture', ['fixture.example', '*.fixture.example']);
+  const inspected = await inspector().inspect({
+    bytes: await archive({
+      'manifest.json': JSON.stringify(sourceManifest),
+      'src/index.ts': 'export default {}'
+    }),
+    originalName: 'wildcard-fixture.zip'
+  });
+
+  assert.deepEqual(inspected.preview.hosts, ['fixture.example', '*.fixture.example']);
+  assert.deepEqual(inspected.source?.hosts, ['fixture.example']);
 });
 
 test('archive inspector rejects multiple candidate plugin roots', async () => {

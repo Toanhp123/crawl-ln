@@ -111,11 +111,35 @@ export interface SourceReaderManagementApi {
       { actor: SourceReaderActor; projectId: string },
       { bytes: Uint8Array; fileName: string }
     >;
+    importProject: SourceReaderExecutor<
+      {
+        actor: SourceReaderActor;
+        bytes: Uint8Array;
+        originalName: string;
+        expectedChecksum: string;
+        resolution:
+          { type: 'create-copy' } | { type: 'update'; projectId: string; expectedRevision: number };
+      },
+      unknown
+    >;
   };
   plugins: {
     list: SourceReaderExecutor<{ actor: SourceReaderActor }, unknown[]>;
     install: SourceReaderExecutor<
       { actor: SourceReaderActor; bytes: Uint8Array; originalName: string },
+      Record<string, unknown>
+    >;
+    inspectArchive: SourceReaderExecutor<
+      { actor: SourceReaderActor; bytes: Uint8Array; originalName: string },
+      unknown
+    >;
+    installArchive: SourceReaderExecutor<
+      {
+        actor: SourceReaderActor;
+        bytes: Uint8Array;
+        originalName: string;
+        expectedChecksum: string;
+      },
       Record<string, unknown>
     >;
     approvePermissions: SourceReaderExecutor<{

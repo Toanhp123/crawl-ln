@@ -15,11 +15,17 @@ import { PluginHealthCheckService } from './application/admin/services/plugin-he
 import { PluginHealthService } from './application/admin/services/plugin-health.service.js';
 import { PluginInstallationService } from './application/admin/services/plugin-installation.service.js';
 import { PluginStudioService } from './application/admin/services/plugin-studio.service.js';
+import { SourcePluginArchiveService } from './application/admin/services/source-plugin-archive.service.js';
 import { SourcePluginUsageGuardService } from './application/admin/services/source-plugin-usage-guard.service.js';
 import { SourceReaderInvalidationService } from './application/admin/services/source-reader-invalidation.service.js';
 import type { SourcePluginUsageQueryPort } from './application/ports/source-plugin-usage.port.js';
 import { SourceReaderMaintenanceService } from './application/admin/services/source-reader-maintenance.service.js';
 import { StandardAuthenticationService } from './application/admin/services/standard-authentication.service.js';
+import {
+  ImportSourcePluginProjectUseCase,
+  InspectSourcePluginArchiveUseCase,
+  InstallSourcePluginArchiveUseCase
+} from './application/admin/use-cases/plugins/manage-source-plugin-archives.usecase.js';
 import {
   CancelAuthChallengeUseCase,
   GetAuthChallengeUseCase,
@@ -92,6 +98,7 @@ import {
   ExternalPluginLoader,
   inspectInstalledPluginPackage
 } from './infrastructure/plugins/package-loader/external-plugin.loader.js';
+import { SourcePluginArchiveInspector } from './infrastructure/plugins/archive/source-plugin-archive.inspector.js';
 import { SourcePluginPackageVerifier } from './infrastructure/plugins/package-loader/source-plugin-package.verifier.js';
 import { SourcePluginStudioBuilder } from './infrastructure/plugins/studio/source-plugin-studio.builder.js';
 import { StaticTrustStore } from './infrastructure/plugins/package-loader/static-trust.store.js';
@@ -328,17 +335,26 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
     cancelGraceMs: 100,
     structuredLogger
   });
+  const drafts = new SqlitePluginStudioDraftRepository(database);
+  const studioBuilder = new SourcePluginStudioBuilder({
+    outputDirectory: join(pluginRoot, 'studio-staging'),
+    sdkVersion: '^3.0.0'
+  });
   const studio = new PluginStudioService({
-    drafts: new SqlitePluginStudioDraftRepository(database),
-    builder: new SourcePluginStudioBuilder({
-      outputDirectory: join(pluginRoot, 'studio-staging'),
-      sdkVersion: '^3.0.0'
-    }),
+    drafts,
+    builder: studioBuilder,
     verifier: packageVerifier,
     installer,
     testSupervisor: studioSupervisor,
     ids,
     clock
+  });
+  const archives = new SourcePluginArchiveService({
+    inspector: new SourcePluginArchiveInspector(packageVerifier),
+    builder: studioBuilder,
+    drafts,
+    studio,
+    installer
   });
   const diagnostics = new PluginDiagnosticsService(
     pluginStore,
@@ -371,11 +387,14 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
       build: new BuildPluginStudioProjectUseCase(authorization, studio),
       test: new TestPluginStudioProjectUseCase(authorization, studio),
       install: new InstallPluginStudioProjectUseCase(authorization, studio),
-      export: new ExportPluginStudioProjectUseCase(authorization, studio)
+      export: new ExportPluginStudioProjectUseCase(authorization, studio),
+      importProject: new ImportSourcePluginProjectUseCase(authorization, archives)
     },
     plugins: {
       list: new ListPluginsUseCase(authorization, pluginStore),
       install: new InstallSourcePluginUseCase(authorization, installer),
+      inspectArchive: new InspectSourcePluginArchiveUseCase(authorization, archives),
+      installArchive: new InstallSourcePluginArchiveUseCase(authorization, archives),
       approvePermissions: new ApprovePluginPermissionsUseCase(authorization, pluginStore, clock),
       denyPermissions: new DenyPluginPermissionsUseCase(
         authorization,

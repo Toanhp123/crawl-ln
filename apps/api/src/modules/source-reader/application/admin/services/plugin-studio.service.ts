@@ -59,6 +59,22 @@ export interface UpdatePluginStudioProjectInput {
   files?: Record<string, string>;
 }
 
+export type ImportPluginStudioProjectResolution =
+  { type: 'create-copy' } | { type: 'update'; projectId: string; expectedRevision: number };
+
+export interface ImportPluginStudioProjectInput {
+  source: {
+    id: string;
+    name: string;
+    version: string;
+    hosts: string[];
+    capabilities: SourceDataCapability[];
+    selectors: SourcePluginStudioSelectors;
+    files: Record<string, string>;
+  };
+  resolution: ImportPluginStudioProjectResolution;
+}
+
 const supportedCapabilities = new Set<SourceDataCapability>([
   'identify',
   'metadata',
@@ -184,6 +200,60 @@ export class PluginStudioService {
       if (error instanceof Error && 'kind' in error && error.kind === 'conflict') throw error;
       throw error;
     }
+  }
+
+  async importProject(input: ImportPluginStudioProjectInput) {
+    const imported = {
+      name: input.source.name.trim(),
+      pluginId: input.source.id.trim(),
+      version: input.source.version.trim(),
+      hosts: normalizedHosts(input.source.hosts),
+      capabilities: normalizedCapabilities(input.source.capabilities),
+      selectors: { ...input.source.selectors },
+      files: { ...input.source.files }
+    };
+    if (!imported.name) throw new PluginStudioFailure('validation', 'Plugin name is required');
+
+    if (input.resolution.type === 'create-copy') {
+      const timestamp = this.options.clock.now().toISOString();
+      return publicDraft(
+        await this.options.drafts.create({
+          id: this.options.ids.randomId(),
+          ...imported,
+          revision: 1,
+          createdAt: timestamp,
+          updatedAt: timestamp
+        })
+      );
+    }
+
+    const current = await this.requireDraft(input.resolution.projectId);
+    const currentRevision = current.revision ?? 1;
+    if (input.resolution.expectedRevision !== currentRevision) {
+      throw new PluginStudioFailure('conflict', 'Plugin Studio revision is stale', {
+        expectedRevision: input.resolution.expectedRevision,
+        currentRevision
+      });
+    }
+    if (current.pluginId !== imported.pluginId) {
+      throw new PluginStudioFailure(
+        'validation',
+        'Imported plugin id does not match the selected Studio project'
+      );
+    }
+    return publicDraft(
+      await this.options.drafts.update(
+        current.id,
+        {
+          ...imported,
+          revision: currentRevision + 1,
+          artifactChecksum: undefined,
+          builtRevision: undefined,
+          updatedAt: this.options.clock.now().toISOString()
+        },
+        currentRevision
+      )
+    );
   }
 
   async remove(id: string): Promise<void> {

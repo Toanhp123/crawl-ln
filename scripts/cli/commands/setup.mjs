@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { parseOptions } from '../lib/arguments.mjs';
+import { ensureApiEnvironment } from '../lib/api-environment.mjs';
 import { probeBrowserCapability } from '../lib/browser-capability.mjs';
 import { CommandFailure, CommandInterrupted } from '../lib/errors.mjs';
 import {
@@ -13,13 +14,14 @@ import { detectPlatform, validateRuntimeEnvironment } from '../lib/platform.mjs'
 import { runChild } from '../lib/process-runner.mjs';
 import { projectRoot } from '../lib/repository.mjs';
 
-const setupHelp = `Usage: npm run setup -- [--browser]
+const setupHelp = `Usage: npm run setup -- [--browser] [--skip-build]
 
-Validate the runtime and portable lockfile, run a clean npm install, and probe the build toolchain.
+Install dependencies, initialize local configuration, validate the toolchain, and build the app.
 
 Options:
-  --browser  Install or validate the optional Chromium capability
-  --help     Show this help`;
+  --browser     Install or validate the optional Chromium capability
+  --skip-build  Prepare dependencies and configuration without building dist/
+  --help        Show this help`;
 
 function moduleValue(module) {
   return module.default ?? module;
@@ -99,7 +101,12 @@ const defaultDependencies = {
     }),
   probeNative: () => probeBuildToolchain(),
   probeBrowser: ({ platformInfo, signal }) =>
-    probeBrowserCapability({ install: true, platformInfo, signal })
+    probeBrowserCapability({ install: true, platformInfo, signal }),
+  ensureEnvironment: () => ensureApiEnvironment({ root: projectRoot }),
+  async buildApplication() {
+    const { buildFullApplication } = await import('./build.mjs');
+    return buildFullApplication();
+  }
 };
 
 async function runStage(name, stdout, operation) {
@@ -116,6 +123,7 @@ async function runStage(name, stdout, operation) {
 
 export async function runSetup({
   browser = false,
+  build = true,
   signal,
   stdout = console.log,
   dependencies = {}
@@ -123,6 +131,10 @@ export async function runSetup({
   const services = { ...defaultDependencies, ...dependencies };
   await runStage('validate-runtime', stdout, () => services.runtime());
   const platformInfo = await runStage('detect-platform', stdout, () => services.platform());
+  const environmentStatus = await runStage('ensure-env', stdout, () =>
+    services.ensureEnvironment({ signal, platformInfo })
+  );
+  stdout(`[setup-result] api environment ${environmentStatus}: apps/api/.env`);
   const { lock, nativePackages } = await runStage('validate-lockfile', stdout, async () => {
     const value = await services.readLockfile();
     services.validateLockfile(value);
@@ -139,6 +151,11 @@ export async function runSetup({
       services.probeBrowser({ signal, platformInfo, lock, nativePackages })
     );
   }
+  if (build) {
+    await runStage('build', stdout, () =>
+      services.buildApplication({ signal, platformInfo, lock, nativePackages })
+    );
+  }
 }
 
 export const setupCommand = {
@@ -146,7 +163,8 @@ export const setupCommand = {
   summary: 'Install dependencies and validate native capabilities',
   async execute(argv, context = {}) {
     const { help, values } = parseOptions('setup', argv, {
-      browser: { type: 'boolean' }
+      browser: { type: 'boolean' },
+      'skip-build': { type: 'boolean' }
     });
     if (help) {
       (context.stdout ?? console.log)(setupHelp);
@@ -154,8 +172,10 @@ export const setupCommand = {
     }
     await runSetup({
       browser: values.browser === true,
+      build: values['skip-build'] !== true,
       signal: context.signal,
-      stdout: context.stdout ?? console.log
+      stdout: context.stdout ?? console.log,
+      dependencies: context.dependencies
     });
   }
 };

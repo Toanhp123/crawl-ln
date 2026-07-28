@@ -209,6 +209,7 @@ test('setup help does not require installed third-party packages', async () => {
   const lines: string[] = [];
   await setupCommand.execute(['--help'], { stdout: (line: string) => lines.push(line) });
   assert.match(lines.join('\n'), /--browser/);
+  assert.match(lines.join('\n'), /--skip-build/);
 });
 
 test('setup creates the API environment from the tracked template', async () => {
@@ -264,9 +265,13 @@ test('setup pipeline runs stages in the documented order', async () => {
       selectHost() {
         return { rolldown: 'r', lightningcss: 'l', esbuild: 'e' };
       },
+      async ensureEnvironment() {
+        return 'created';
+      },
       async install() {},
       async probeNative() {},
-      async probeBrowser() {}
+      async probeBrowser() {},
+      async buildApplication() {}
     }
   });
   assert.deepEqual(
@@ -274,10 +279,54 @@ test('setup pipeline runs stages in the documented order', async () => {
     [
       '[setup] validate-runtime',
       '[setup] detect-platform',
+      '[setup] ensure-env',
       '[setup] validate-lockfile',
       '[setup] install',
       '[setup] probe-native',
-      '[setup] probe-browser'
+      '[setup] probe-browser',
+      '[setup] build'
+    ]
+  );
+});
+
+test('setup command skips only the production build when requested', async () => {
+  const { setupCommand } = await import('../../scripts/cli/commands/setup.mjs');
+  const trace: string[] = [];
+  await setupCommand.execute(['--skip-build'], {
+    stdout: (line: string) => trace.push(line),
+    dependencies: {
+      async runtime() {},
+      platform() {
+        return { platform: 'linux', arch: 'x64', libc: 'glibc', support: 'first-class' };
+      },
+      async readLockfile() {
+        return { lockfileVersion: 3, packages: {} };
+      },
+      validateLockfile() {},
+      selectHost() {
+        return { rolldown: 'r', lightningcss: 'l', esbuild: 'e' };
+      },
+      async ensureEnvironment() {
+        return 'existing';
+      },
+      async install() {},
+      async probeNative() {},
+      async probeBrowser() {},
+      async buildApplication() {
+        throw new Error('build must not run');
+      }
+    }
+  });
+
+  assert.deepEqual(
+    trace.filter((line) => line.startsWith('[setup]')),
+    [
+      '[setup] validate-runtime',
+      '[setup] detect-platform',
+      '[setup] ensure-env',
+      '[setup] validate-lockfile',
+      '[setup] install',
+      '[setup] probe-native'
     ]
   );
 });

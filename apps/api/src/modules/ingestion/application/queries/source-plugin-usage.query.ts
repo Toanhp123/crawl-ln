@@ -2,7 +2,7 @@ import type { LibraryQueries } from '../../../library/public/library.api.js';
 import type { IngestionJobStatus } from '../../domain/ingestion.models.js';
 import type { IngestionRepository } from '../../domain/repositories/ingestion.repository.js';
 
-export type IngestionSourcePluginUsageOperation = 'disable' | 'remove';
+export type IngestionSourcePluginUsageOperation = 'deny' | 'disable' | 'remove';
 
 export interface IngestionSourcePluginUsageRecord {
   jobId: string;

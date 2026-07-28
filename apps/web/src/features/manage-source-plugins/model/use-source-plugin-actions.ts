@@ -1,14 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { sourcePluginInvalidation, type SourcePlugin } from '../../../entities/source-plugin';
+import {
+  getSourcePluginUsageConflict,
+  sourcePluginInvalidation,
+  type SourcePlugin,
+  type SourcePluginUsageConflict
+} from '../../../entities/source-plugin';
 import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import { activateLatestSourcePlugin, removeSourcePlugin } from '../api/manage-source-plugins';
 import { createPluginToggleAction } from './create-plugin-toggle-action';
-import {
-  getSourcePluginUsageConflict,
-  type SourcePluginUsageConflict
-} from './source-plugin-usage-conflict';
 
 export function useToggleSourcePlugin(
   onUsageConflict?: (conflict: SourcePluginUsageConflict) => void

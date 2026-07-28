@@ -1,4 +1,4 @@
-export type SourcePluginUsageOperation = 'disable' | 'remove';
+export type SourcePluginUsageOperation = 'deny' | 'disable' | 'remove';
 
 export interface SourcePluginUsageRecord {
   jobId: string;

@@ -67,18 +67,24 @@ function service(captured: string[][]) {
   );
 }
 
-test('disable usage excludes paused jobs while remove usage includes them', async () => {
+test('disable usage excludes paused jobs while deny and remove usage include them', async () => {
   const captured: string[][] = [];
   const query = service(captured);
 
   const disable = await query.listPotentialUsages('disable');
+  const deny = await query.listPotentialUsages('deny');
   const remove = await query.listPotentialUsages('remove');
 
   assert.deepEqual(captured[0], ['queued', 'running', 'pausing', 'resuming']);
   assert.deepEqual(captured[1], ['queued', 'running', 'pausing', 'paused', 'resuming']);
+  assert.deepEqual(captured[2], ['queued', 'running', 'pausing', 'paused', 'resuming']);
   assert.equal(
     disable.some((usage) => usage.status === 'paused'),
     false
+  );
+  assert.equal(
+    deny.some((usage) => usage.status === 'paused'),
+    true
   );
   assert.equal(
     remove.some((usage) => usage.status === 'paused'),

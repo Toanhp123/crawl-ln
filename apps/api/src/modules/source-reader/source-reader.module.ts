@@ -381,7 +381,8 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
         authorization,
         pluginStore,
         pluginActivation,
-        invalidation
+        invalidation,
+        pluginUsage
       ),
       listPermissions: new ListPluginPermissionsUseCase(authorization, pluginStore),
       enable: new EnablePluginUseCase(authorization, pluginActivation, invalidation),

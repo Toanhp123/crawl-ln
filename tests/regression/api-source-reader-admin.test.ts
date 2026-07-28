@@ -83,12 +83,13 @@ test('denying permissions for the active version unregisters its runtime', async
       denyPermissions: async () => void calls.push('deny')
     } as never,
     { disable: async () => void calls.push('disable') },
-    { invalidate: async () => void calls.push('invalidate') }
+    { invalidate: async () => void calls.push('invalidate') },
+    { assertCanDeny: async () => void calls.push('guard') }
   );
 
   await useCase.execute({ actor, pluginId: 'contract-plugin', version: '1.0.0' });
 
-  assert.deepEqual(calls, ['authorize', 'load-active', 'deny', 'disable', 'invalidate']);
+  assert.deepEqual(calls, ['authorize', 'load-active', 'guard', 'deny', 'disable', 'invalidate']);
 });
 
 test('denying permissions for an inactive version leaves the active runtime running', async () => {
@@ -103,7 +104,8 @@ test('denying permissions for an inactive version leaves the active runtime runn
       denyPermissions: async () => void calls.push('deny')
     } as never,
     { disable: async () => void calls.push('disable') },
-    { invalidate: async () => void calls.push('invalidate') }
+    { invalidate: async () => void calls.push('invalidate') },
+    { assertCanDeny: async () => void calls.push('guard') }
   );
 
   await useCase.execute({ actor, pluginId: 'contract-plugin', version: '1.0.0' });

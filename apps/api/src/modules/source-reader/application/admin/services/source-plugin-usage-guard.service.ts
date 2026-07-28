@@ -24,11 +24,20 @@ class SourcePluginUsageConflictError extends Error {
   readonly kind = 'conflict' as const;
 
   constructor(readonly details: SourcePluginUsageConflictDetails) {
-    const action = details.operation === 'disable' ? 'disabled' : 'removed';
+    const subject =
+      details.operation === 'deny'
+        ? `Permissions for plugin ${details.pluginId}`
+        : `Plugin ${details.pluginId}`;
+    const action =
+      details.operation === 'disable'
+        ? 'disabled'
+        : details.operation === 'remove'
+          ? 'removed'
+          : 'denied';
     const jobs = details.blockingJobCount === 1 ? 'crawl job' : 'crawl jobs';
     super(
       [
-        `Plugin ${details.pluginId} cannot be ${action} while`,
+        `${subject} cannot be ${action} while`,
         `${details.blockingJobCount} ${jobs} still depend on it`
       ].join(' ')
     );
@@ -71,6 +80,12 @@ export class SourcePluginUsageGuardService {
     const active = await this.plugins.findActive(pluginId);
     if (!active) return;
     await this.assertUnused(pluginId, 'disable', [active]);
+  }
+
+  async assertCanDeny(pluginId: string, version: string): Promise<void> {
+    const active = await this.plugins.findActive(pluginId);
+    if (!active || active.version !== version) return;
+    await this.assertUnused(pluginId, 'deny', [active]);
   }
 
   async assertCanRemove(pluginId: string): Promise<void> {

@@ -45,6 +45,7 @@ interface PluginActivationAdministration {
 }
 
 interface PluginUsageAdministration {
+  assertCanDeny(pluginId: string, version: string): Promise<void>;
   assertCanDisable(pluginId: string): Promise<void>;
   assertCanRemove(pluginId: string): Promise<void>;
 }
@@ -99,11 +100,17 @@ export class DenyPluginPermissionsUseCase {
     private readonly authorization: SourceReaderAuthorizationPolicy,
     private readonly store: Pick<PluginAdministrationStore, 'denyPermissions' | 'findActive'>,
     private readonly activation: Pick<PluginActivationAdministration, 'disable'>,
-    private readonly invalidation?: SourceReaderInvalidationPort
+    private readonly invalidation?: SourceReaderInvalidationPort,
+    private readonly usage: Pick<PluginUsageAdministration, 'assertCanDeny'> = {
+      assertCanDeny: async () => undefined
+    }
   ) {}
   async execute(input: { actor: SourceReaderActor; pluginId: string; version: string }) {
     this.authorization.requireRole(input.actor, 'source-admin');
     const active = await this.store.findActive(input.pluginId);
+    if (active?.version === input.version) {
+      await this.usage.assertCanDeny(input.pluginId, input.version);
+    }
     await this.store.denyPermissions({ pluginId: input.pluginId, pluginVersion: input.version });
     if (active?.version !== input.version) return;
     await this.activation.disable(input.pluginId);

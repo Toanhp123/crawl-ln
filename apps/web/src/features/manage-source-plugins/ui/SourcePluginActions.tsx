@@ -1,11 +1,10 @@
 import { ArrowUpCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { SourcePlugin } from '../../../entities/source-plugin';
+import type { SourcePlugin, SourcePluginUsageConflict } from '../../../entities/source-plugin';
 import { useI18n } from '../../../shared/i18n';
 import { Button, ConfirmDialog, Modal, Switch } from '../../../shared/ui';
 import { resolveSourcePluginToggleRequest } from '../model/resolve-source-plugin-toggle-request';
-import type { SourcePluginUsageConflict } from '../model/source-plugin-usage-conflict';
 import {
   getSourcePluginActivationState,
   isSourcePluginEnableSwitchDisabled

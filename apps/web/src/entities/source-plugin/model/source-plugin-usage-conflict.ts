@@ -1,6 +1,6 @@
 import { getApiErrorDetails } from '../../../shared/api';
 
-export type SourcePluginUsageConflictOperation = 'disable' | 'remove';
+export type SourcePluginUsageConflictOperation = 'deny' | 'disable' | 'remove';
 
 export interface SourcePluginUsageConflict {
   operation: SourcePluginUsageConflictOperation;
@@ -21,7 +21,7 @@ export function getSourcePluginUsageConflict(error: unknown): SourcePluginUsageC
   const blockingJobCount = details.blockingJobCount;
   const blockingJobs = details.blockingJobs;
   if (
-    (operation !== 'disable' && operation !== 'remove') ||
+    (operation !== 'deny' && operation !== 'disable' && operation !== 'remove') ||
     typeof pluginId !== 'string' ||
     typeof blockingJobCount !== 'number' ||
     !Array.isArray(blockingJobs)

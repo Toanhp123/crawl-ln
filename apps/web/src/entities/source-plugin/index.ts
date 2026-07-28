@@ -15,6 +15,11 @@ export {
 } from './api/source-plugin-queries';
 export { sourcePluginCatalogs } from './i18n/catalog';
 export { sourcePluginTone } from './model/source-plugin';
+export {
+  getSourcePluginUsageConflict,
+  type SourcePluginUsageConflict,
+  type SourcePluginUsageConflictOperation
+} from './model/source-plugin-usage-conflict';
 export type {
   SourcePlugin,
   SourcePluginDiagnostics,

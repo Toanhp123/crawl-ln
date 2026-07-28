@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { SourcePluginUsageGuardService } from '../../apps/api/src/modules/source-reader/application/admin/services/source-plugin-usage-guard.service.ts';
 import {
+  DenyPluginPermissionsUseCase,
   DisablePluginUseCase,
   RemovePluginUseCase
 } from '../../apps/api/src/modules/source-reader/application/admin/use-cases/plugins/manage-source-plugins.usecase.ts';
@@ -100,6 +101,57 @@ test('disable proceeds when only paused jobs are returned outside the disable sc
 
   await useCase.execute({ actor, pluginId: 'novelcool' });
   assert.deepEqual(calls, ['authorize', 'usage:disable', 'disable', 'invalidate']);
+});
+
+test('deny is rejected before permissions or runtime change when an unfinished task uses the active version', async () => {
+  const calls: string[] = [];
+  const guard = new SourcePluginUsageGuardService(
+    {
+      listPotentialUsages: async (operation) => {
+        calls.push(`usage:${operation}`);
+        return [
+          {
+            jobId: 'job-paused',
+            novelId: 'novel-1',
+            status: 'paused',
+            sourceUrls: ['https://novelcool.com/chapter/Chapter-1/1001/']
+          }
+        ];
+      }
+    },
+    {
+      findActive: async () => storedPlugin(),
+      findLatestVersion: async () => storedPlugin()
+    }
+  );
+  const useCase = new DenyPluginPermissionsUseCase(
+    { requireRole: () => calls.push('authorize') } as never,
+    {
+      findActive: async () => {
+        calls.push('load-active');
+        return storedPlugin();
+      },
+      denyPermissions: async () => void calls.push('deny')
+    },
+    { disable: async () => void calls.push('disable') },
+    { invalidate: async () => void calls.push('invalidate') },
+    guard
+  );
+
+  await assert.rejects(
+    () => useCase.execute({ actor, pluginId: 'novelcool', version: '2.0.0' }),
+    (error: unknown) => {
+      const conflict = error as {
+        kind?: string;
+        details?: { operation?: string; blockingJobs?: unknown[] };
+      };
+      assert.equal(conflict.kind, 'conflict');
+      assert.equal(conflict.details?.operation, 'deny');
+      assert.equal(conflict.details?.blockingJobs?.length, 1);
+      return true;
+    }
+  );
+  assert.deepEqual(calls, ['authorize', 'load-active', 'usage:deny']);
 });
 
 test('remove is rejected before runtime and filesystem changes when a paused job still depends on the plugin', async () => {

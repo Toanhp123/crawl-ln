@@ -13,7 +13,7 @@ const manifest = {
   id: 'novelcool',
   name: 'NovelCool',
   version: '2.0.0',
-  engines: { sourceReader: '^3.0.0' },
+  engines: { sourceReader: '^1.0.0' },
   capabilities: ['chapter-content'],
   contracts: { 'chapter-content': 1 },
   matchers: [{ hosts: ['novelcool.com'], include: ['/chapter/**'], priority: 100 }],

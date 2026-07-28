@@ -74,7 +74,7 @@ const readySession = {
   attemptsRemaining: 5,
   inventory: {
     createdAt: '2026-07-25T00:00:00.000Z',
-    appVersion: '3.0.0',
+    appVersion: '1.0.0',
     schemaVersion: 2,
     archiveSizeBytes: 10,
     encrypted: false,

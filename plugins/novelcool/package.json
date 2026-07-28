@@ -1,7 +1,7 @@
 {
   "name": "@novel-tool/source-plugin-novelcool",
   "private": true,
-  "version": "2.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js",

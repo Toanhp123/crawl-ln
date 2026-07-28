@@ -11,21 +11,21 @@ const publishableWorkspaces = [
   'packages/reader-engine/package.json'
 ];
 
-test('all publishable workspaces and displayed build metadata use 3.0.0', async () => {
+test('all publishable workspaces and displayed build metadata use 1.0.0', async () => {
   for (const file of publishableWorkspaces) {
     const packageJson = JSON.parse(await readFile(file, 'utf8')) as { version?: string };
-    assert.equal(packageJson.version, '3.0.0', file);
+    assert.equal(packageJson.version, '1.0.0', file);
   }
 
   const source = await readFile(
     'apps/api/src/modules/source-reader/domain/plugin/source-reader-host-compatibility.ts',
     'utf8'
   );
-  assert.match(source, /runtimeVersion:\s*['"]3\.0\.0['"]/);
+  assert.match(source, /runtimeVersion:\s*['"]1\.0\.0['"]/);
   const appContainer = await readFile('apps/api/src/bootstrap/app-container.ts', 'utf8');
   const environment = await readFile('apps/api/src/platform/config/environment.ts', 'utf8');
-  assert.match(appContainer, /appVersion\s*\?\?\s*['"]3\.0\.0['"]/);
-  assert.match(environment, /APP_VERSION\s*\?\?\s*['"]3\.0\.0['"]/);
+  assert.match(appContainer, /appVersion\s*\?\?\s*['"]1\.0\.0['"]/);
+  assert.match(environment, /APP_VERSION\s*\?\?\s*['"]1\.0\.0['"]/);
 });
 
 test('Source Plugin SDK capability and sandbox protocol contracts remain version 1', async () => {
@@ -60,10 +60,10 @@ test('first-party NovelCool plugin has the external runtime boundary version', a
     permissions?: { network?: { hosts?: string[] } };
   };
 
-  assert.equal(packageJson.version, '2.0.0');
+  assert.equal(packageJson.version, '1.0.0');
   assert.equal(manifest.id, 'novelcool');
-  assert.equal(manifest.version, '2.0.0');
-  assert.equal(manifest.engines?.sourceReader, '^3.0.0');
+  assert.equal(manifest.version, '1.0.0');
+  assert.equal(manifest.engines?.sourceReader, '^1.0.0');
   assert.equal(manifest.runtime?.preferredMode, 'isolated');
   assert.deepEqual(manifest.permissions?.network?.hosts, ['novelcool.com', '*.novelcool.com']);
 });

@@ -110,7 +110,7 @@ test('generated NovelCool package installs, activates in isolation, invokes, and
     cancelGraceMs: 20,
     now: () => clock.now().getTime()
   });
-  t.after(() => supervisor.stop('novelcool', '2.0.0', 'application-stop'));
+  t.after(() => supervisor.stop('novelcool', '1.0.0', 'application-stop'));
   const registrationFactory = new ExternalPluginRegistrationFactory({
     supervisor,
     timeoutMs: 10_000,
@@ -229,15 +229,15 @@ test('generated NovelCool package installs, activates in isolation, invokes, and
       await writeFile(join(outDir, 'index.html'), '<div id="root"></div>');
     }
   });
-  const artifactPath = join(distRoot, 'plugins', 'novelcool-2.0.0.source-plugin');
+  const artifactPath = join(distRoot, 'plugins', 'novelcool-1.0.0.source-plugin');
   const bytes = await readFile(artifactPath);
   const installed = await management.install.execute({
     actor,
     bytes,
-    originalName: 'novelcool-2.0.0.source-plugin'
+    originalName: 'novelcool-1.0.0.source-plugin'
   });
   assert.equal(installed.pluginId, 'novelcool');
-  assert.equal(installed.version, '2.0.0');
+  assert.equal(installed.version, '1.0.0');
   assert.equal(installed.status, 'pending-approval');
 
   const [pending] = (await management.list.execute({ actor })) as Array<{
@@ -247,30 +247,30 @@ test('generated NovelCool package installs, activates in isolation, invokes, and
     permissionsPending: boolean;
     enabled: boolean;
   }>;
-  assert.equal(pending?.latestVersion, '2.0.0');
+  assert.equal(pending?.latestVersion, '1.0.0');
   assert.equal(pending && 'activeVersion' in pending, false);
   assert.equal(pending?.permissionsPending, true);
   assert.equal(pending?.enabled, false);
   await assert.rejects(
-    () => management.enable.execute({ actor, pluginId: 'novelcool', version: '2.0.0' }),
+    () => management.enable.execute({ actor, pluginId: 'novelcool', version: '1.0.0' }),
     (error: unknown) =>
       error instanceof SourceReaderError && error.code === 'PLUGIN_PERMISSION_DENIED'
   );
 
-  await management.approve.execute({ actor, pluginId: 'novelcool', version: '2.0.0' });
+  await management.approve.execute({ actor, pluginId: 'novelcool', version: '1.0.0' });
   const [approved] = (await management.list.execute({ actor })) as Array<{
     latestVersion?: string;
     activeVersion?: string;
     permissionsPending: boolean;
   }>;
-  assert.equal(approved?.latestVersion, '2.0.0');
+  assert.equal(approved?.latestVersion, '1.0.0');
   assert.equal(approved && 'activeVersion' in approved, false);
   assert.equal(approved?.permissionsPending, false);
-  await management.enable.execute({ actor, pluginId: 'novelcool', version: '2.0.0' });
+  await management.enable.execute({ actor, pluginId: 'novelcool', version: '1.0.0' });
 
   const metadata = await facade.readMetadata({ url: novelUrl });
   assert.equal(metadata.data.title, 'Fixture Novel');
-  assert.equal(metadata.source.pluginVersion, '2.0.0');
+  assert.equal(metadata.source.pluginVersion, '1.0.0');
   const chapterList = await facade.readChapterList({ url: novelUrl, limit: 200 });
   assert.equal(chapterList.data.items.length, 200);
   assert.equal(chapterList.data.hasMore, true);
@@ -286,8 +286,8 @@ test('generated NovelCool package installs, activates in isolation, invokes, and
     enabled: boolean;
   }>;
   const novelcool = plugins.find((item) => item.pluginId === 'novelcool');
-  assert.equal(novelcool?.latestVersion, '2.0.0');
-  assert.equal(novelcool?.activeVersion, '2.0.0');
+  assert.equal(novelcool?.latestVersion, '1.0.0');
+  assert.equal(novelcool?.activeVersion, '1.0.0');
   assert.equal(novelcool?.trustLevel, 'local-unverified');
   assert.equal(novelcool?.status, 'active');
   assert.equal(novelcool?.enabled, true);

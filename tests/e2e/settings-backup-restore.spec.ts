@@ -321,7 +321,7 @@ const planFingerprint = `sha256-plan-v1:${'c'.repeat(64)}` as const;
 function restoreInventory() {
   return {
     createdAt: '2026-07-25T00:00:00.000Z',
-    appVersion: '3.0.0-e2e',
+    appVersion: '1.0.0-e2e',
     schemaVersion: 2,
     archiveSizeBytes: 17 * 1024 * 1024,
     encrypted: false,

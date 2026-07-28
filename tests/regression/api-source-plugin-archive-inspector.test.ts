@@ -11,7 +11,7 @@ function manifest(id = 'fixture-plugin', permissionHosts = ['fixture.example']) 
     id,
     name: 'Fixture Plugin',
     version: '1.2.3',
-    engines: { sourceReader: '^3.0.0' },
+    engines: { sourceReader: '^1.0.0' },
     capabilities: ['identify', 'metadata'],
     contracts: { identify: 1, metadata: 1 },
     matchers: [{ hosts: ['fixture.example'], include: ['/**'], priority: 100 }],

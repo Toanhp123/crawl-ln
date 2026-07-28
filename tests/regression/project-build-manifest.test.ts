@@ -33,7 +33,7 @@ test('manifest accepts only a complete current-version build with safe relative 
       await import('../../scripts/cli/lib/build-manifest.mjs');
     await writeBuildManifest(root, {
       formatVersion: 1,
-      applicationVersion: '3.0.0',
+      applicationVersion: '1.0.0',
       buildId: 'test-build',
       complete: true,
       serverEntry: 'server/server.js',
@@ -43,13 +43,13 @@ test('manifest accepts only a complete current-version build with safe relative 
         '@novel-tool/source-plugin-sdk': 'server/node_modules/@novel-tool/source-plugin-sdk'
       }
     });
-    assert.equal((await readStartableBuild(root, '3.0.0')).manifest.complete, true);
+    assert.equal((await readStartableBuild(root, '1.0.0')).manifest.complete, true);
     await assert.rejects(() => readStartableBuild(root, '4.0.0'), /application version 4\.0\.0/);
     const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
     assert.doesNotMatch(JSON.stringify(manifest), /backup-control\.sqlite|backup-temp/);
     manifest.serverEntry = '../escape.js';
     await writeFile(join(root, 'manifest.json'), JSON.stringify(manifest));
-    await assert.rejects(() => readStartableBuild(root, '3.0.0'), /safe relative path/);
+    await assert.rejects(() => readStartableBuild(root, '1.0.0'), /safe relative path/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

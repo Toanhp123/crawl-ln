@@ -18,7 +18,7 @@ function pluginManifest(id: string, permissionHosts = [`${id}.example`]) {
     id,
     name: `Archive ${id}`,
     version: '1.0.0',
-    engines: { sourceReader: '^3.0.0' },
+    engines: { sourceReader: '^1.0.0' },
     capabilities: ['identify'],
     contracts: { identify: 1 },
     matchers: [{ hosts: [`${id}.example`], include: ['/**'], priority: 100 }],

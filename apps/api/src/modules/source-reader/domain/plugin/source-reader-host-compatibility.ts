@@ -27,7 +27,7 @@ export interface SourceReaderHostCompatibility {
 }
 
 export const SOURCE_READER_HOST_COMPATIBILITY: SourceReaderHostCompatibility = {
-  runtimeVersion: '3.0.0',
+  runtimeVersion: '1.0.0',
   sandboxProtocolVersion: 1,
   capabilityContracts: {
     identify: [1],

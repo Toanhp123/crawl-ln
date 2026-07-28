@@ -120,7 +120,7 @@ test('canonical web declares its reader-engine workspace dependency', async () =
   const packageJson = JSON.parse(await readFile('apps/web/package.json', 'utf8')) as {
     dependencies?: Record<string, string>;
   };
-  assert.equal(packageJson.dependencies?.['@novel-tool/reader-engine'], '3.0.0');
+  assert.equal(packageJson.dependencies?.['@novel-tool/reader-engine'], '1.0.0');
 });
 
 test('reader preference normalization rejects invalid stored values and clamps brightness', async () => {

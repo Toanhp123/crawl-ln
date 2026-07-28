@@ -12,7 +12,7 @@ test('installs, approves and enables the generated NovelCool external plugin', a
   const archive = await createSourcePluginArchiveFixture({
     id: 'novelcool',
     name: 'NovelCool',
-    version: '2.0.0',
+    version: '1.0.0',
     hosts: ['novelcool.com'],
     capabilities: ['identify', 'metadata', 'chapter-list', 'chapter-content']
   });
@@ -26,8 +26,8 @@ test('installs, approves and enables the generated NovelCool external plugin', a
   const descriptor = () => ({
     id: 'novelcool',
     name: 'NovelCool',
-    latestVersion: '2.0.0',
-    ...(enabled ? { activeVersion: '2.0.0' } : {}),
+    latestVersion: '1.0.0',
+    ...(enabled ? { activeVersion: '1.0.0' } : {}),
     trustLevel: 'local-unverified',
     status: enabled ? 'active' : 'installed',
     enabled,
@@ -50,7 +50,7 @@ test('installs, approves and enables the generated NovelCool external plugin', a
         kind: 'studio-source',
         pluginId: 'novelcool',
         name: 'NovelCool',
-        version: '2.0.0',
+        version: '1.0.0',
         hosts: ['novelcool.com'],
         capabilities: ['identify', 'metadata', 'chapter-list', 'chapter-content'],
         files: ['manifest.json', 'src/index.ts'],
@@ -76,10 +76,10 @@ test('installs, approves and enables the generated NovelCool external plugin', a
     if (path === '/api/source-reader/plugins/novelcool' && method === 'GET') {
       return json(route, {
         pluginId: 'novelcool',
-        ...(enabled ? { activeVersion: '2.0.0' } : {}),
+        ...(enabled ? { activeVersion: '1.0.0' } : {}),
         status: enabled ? 'active' : 'installed',
         lifecycleState: enabled ? 'running' : 'installed',
-        runtimeVersion: '3.0.0',
+        runtimeVersion: '1.0.0',
         sandboxProtocolVersion: 1,
         compatibilityIssues: [],
         policy: { processStartTimeoutMs: 10_000, violationThreshold: 3 }
@@ -90,7 +90,7 @@ test('installs, approves and enables the generated NovelCool external plugin', a
         pluginId: 'novelcool',
         status: enabled ? 'active' : 'installed',
         lifecycleState: enabled ? 'running' : 'installed',
-        runtimeVersion: '3.0.0',
+        runtimeVersion: '1.0.0',
         sandboxProtocolVersion: 1,
         compatibilityIssues: [],
         policy: { processStartTimeoutMs: 10_000, violationThreshold: 3 },
@@ -110,15 +110,15 @@ test('installs, approves and enables the generated NovelCool external plugin', a
       ]);
     }
     if (path === '/api/source-reader/plugins/novelcool/permissions/approve' && method === 'POST') {
-      expect(request.postDataJSON()).toEqual({ version: '2.0.0' });
+      expect(request.postDataJSON()).toEqual({ version: '1.0.0' });
       approved = true;
       return route.fulfill({ status: 204, body: '' });
     }
     if (path === '/api/source-reader/plugins/novelcool/enable' && method === 'POST') {
       expect(approved).toBe(true);
-      expect(request.postDataJSON()).toEqual({ version: '2.0.0' });
+      expect(request.postDataJSON()).toEqual({ version: '1.0.0' });
       enabled = true;
-      return json(route, { pluginId: 'novelcool', version: '2.0.0', status: 'active' });
+      return json(route, { pluginId: 'novelcool', version: '1.0.0', status: 'active' });
     }
     return json(route, []);
   });
@@ -149,7 +149,7 @@ test('installs, approves and enables the generated NovelCool external plugin', a
 
   await page.getByRole('button', { name: 'Details', exact: true }).click();
   await expect(page.getByText('Local, unverified', { exact: true })).toBeVisible();
-  await expect(page.getByText('2.0.0', { exact: true })).toBeVisible();
+  await expect(page.getByText('1.0.0', { exact: true })).toBeVisible();
   const toggle = page.getByRole('switch', { name: /^Enable NovelCool/ });
   const testPlugin = page.getByRole('button', { name: 'Test plugin', exact: true });
   await expect(toggle).toBeDisabled();

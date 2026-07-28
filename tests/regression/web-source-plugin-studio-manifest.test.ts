@@ -14,7 +14,7 @@ function manifest(overrides: Record<string, unknown> = {}) {
       id: 'demo-reader',
       name: 'Demo Reader',
       version: '1.0.0',
-      engines: { sourceReader: '^3.0.0' },
+      engines: { sourceReader: '^1.0.0' },
       capabilities: ['metadata'],
       contracts: { metadata: 1 },
       matchers: [{ hosts: ['example.com'], include: ['/**'], priority: 100 }],

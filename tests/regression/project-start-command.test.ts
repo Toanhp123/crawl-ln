@@ -12,7 +12,7 @@ test('start rejects a partial build before importing server code', async () => {
       join(root, 'manifest.json'),
       JSON.stringify({
         formatVersion: 1,
-        applicationVersion: '3.0.0',
+        applicationVersion: '1.0.0',
         buildId: 'partial',
         complete: false,
         serverEntry: 'server/server.js',
@@ -26,7 +26,7 @@ test('start rejects a partial build before importing server code', async () => {
       () =>
         startBuiltApplication({
           distRoot: root,
-          applicationVersion: '3.0.0',
+          applicationVersion: '1.0.0',
           importServer: async () => {
             imported = true;
             return {} as never;
@@ -71,7 +71,7 @@ test('start imports the validated server in-process, passes public assets, and c
     const { writeBuildManifest } = await import('../../scripts/cli/lib/build-manifest.mjs');
     await writeBuildManifest(root, {
       formatVersion: 1,
-      applicationVersion: '3.0.0',
+      applicationVersion: '1.0.0',
       buildId: 'start-test',
       complete: true,
       serverEntry: 'server/server.js',
@@ -85,7 +85,7 @@ test('start imports the validated server in-process, passes public assets, and c
     const lines: string[] = [];
     const started = startBuiltApplication({
       distRoot: root,
-      applicationVersion: '3.0.0',
+      applicationVersion: '1.0.0',
       signal: controller.signal,
       stdout: (line: string) => lines.push(line)
     });

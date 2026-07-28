@@ -111,7 +111,7 @@ export function createAppContainer(environment: Environment) {
     ids,
     logger,
     realtime,
-    appVersion: environment.appVersion ?? '3.0.0',
+    appVersion: environment.appVersion ?? '1.0.0',
     schemaVersion: CURRENT_BACKUP_SCHEMA_VERSION,
     primaryMigrations,
     maintenance: new BackupMaintenanceCoordinator(ingestion.maintenance, [

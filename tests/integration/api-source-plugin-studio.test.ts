@@ -19,7 +19,7 @@ test('plugin studio creates a valid SDK scaffold and package', async (t) => {
   t.after(() => rm(storage, { recursive: true, force: true }));
   const builder = new SourcePluginStudioBuilder({
     outputDirectory: storage,
-    sdkVersion: '^3.0.0'
+    sdkVersion: '^1.0.0'
   });
 
   const result = await builder.build({
@@ -59,7 +59,7 @@ test('plugin studio rejects imports outside the SDK and draft source tree', asyn
   t.after(() => rm(storage, { recursive: true, force: true }));
   const builder = new SourcePluginStudioBuilder({
     outputDirectory: storage,
-    sdkVersion: '^3.0.0'
+    sdkVersion: '^1.0.0'
   });
   const manifest = builder.createScaffold({
     id: 'unsafe-reader',
@@ -144,7 +144,7 @@ test('plugin studio service keeps revisions coherent and installs the rebuilt pa
   const repository = new SqlitePluginStudioDraftRepository(database);
   const builder = new SourcePluginStudioBuilder({
     outputDirectory: storage,
-    sdkVersion: '^3.0.0'
+    sdkVersion: '^1.0.0'
   });
   const verifier = new SourcePluginPackageVerifier(new StaticTrustStore([]));
   let installedBytes = 0;

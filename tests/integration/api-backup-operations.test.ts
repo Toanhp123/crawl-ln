@@ -547,7 +547,7 @@ test('backup executor observes cancellation at every cooperative boundary and le
 });
 
 test('archive cancellation callback is exercised during JSZip payload generation', async () => {
-  const archive = new JsZipBackupArchive({ appVersion: '3.0.0', schemaVersion: 1 });
+  const archive = new JsZipBackupArchive({ appVersion: '1.0.0', schemaVersion: 1 });
   let archiving = false;
   let callbacksAfterArchiving = 0;
   await assert.rejects(
@@ -590,7 +590,7 @@ test('artifact created by the operation executor opens through the unchanged arc
     clock: { now: () => new Date('2026-07-25T00:00:00.000Z') },
     ids: { randomId: () => 'artifact-compatible' }
   });
-  const archive = new JsZipBackupArchive({ appVersion: '3.0.0', schemaVersion: 1 });
+  const archive = new JsZipBackupArchive({ appVersion: '1.0.0', schemaVersion: 1 });
   const executor = new CreateBackupOperationExecutor(
     {
       async execute(input, hooks) {

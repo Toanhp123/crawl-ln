@@ -104,11 +104,11 @@ test('unified build stages server, runtime packages, public assets, and a comple
       await writeFile(join(outDir, 'assets/app.js'), 'console.log(\"app\")');
     }
   });
-  const built = await readStartableBuild(distRoot, '3.0.0');
+  const built = await readStartableBuild(distRoot, '1.0.0');
   assert.equal(built.manifest.complete, true);
   assert.equal(await exists(built.serverEntry), true);
   assert.equal(await exists(join(built.publicDirectory, 'index.html')), true);
-  assert.equal(await exists(join(distRoot, 'plugins', 'novelcool-2.0.0.source-plugin')), true);
+  assert.equal(await exists(join(distRoot, 'plugins', 'novelcool-1.0.0.source-plugin')), true);
   assert.equal(
     await exists(
       join(

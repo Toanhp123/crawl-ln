@@ -1,6 +1,6 @@
 {
   "name": "@novel-tool/web",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
-    "@novel-tool/reader-engine": "3.0.0",
+    "@novel-tool/reader-engine": "1.0.0",
     "@radix-ui/react-dialog": "1.1.1",
     "@radix-ui/react-slot": "1.1.0",
     "@radix-ui/react-toast": "1.2.1",

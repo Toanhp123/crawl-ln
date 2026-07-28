@@ -39,7 +39,7 @@ test('first-party packager emits a verifier-approved three-file NovelCool artifa
     verifier
   });
 
-  assert.equal(result.artifactPath, join(outputDirectory, 'novelcool-2.0.0.source-plugin'));
+  assert.equal(result.artifactPath, join(outputDirectory, 'novelcool-1.0.0.source-plugin'));
   assert.deepEqual(new Uint8Array(await readFile(result.artifactPath)), result.bytes);
   const archive = await archiveContents(result.bytes);
   assert.deepEqual(archive.names, ['checksums.json', 'dist/index.js', 'manifest.json']);
@@ -53,7 +53,7 @@ test('first-party packager emits a verifier-approved three-file NovelCool artifa
   assert.equal(result.verified.trustLevel, 'local-unverified');
   assert.equal(result.verified.executionMode, 'isolated');
   assert.equal(result.verified.manifest.id, 'novelcool');
-  assert.equal(result.verified.manifest.version, '2.0.0');
+  assert.equal(result.verified.manifest.version, '1.0.0');
   assert.doesNotMatch(
     Buffer.from(archive.contents.get('dist/index.js')!).toString('utf8'),
     /(?:from\s+|import\()\s*['"](?![./])/

@@ -92,7 +92,7 @@ test('restore session rows round-trip privacy-safe JSON and nullable booleans', 
       encrypted: true,
       inventory: {
         createdAt: baseNow.toISOString(),
-        appVersion: '3.0.0',
+        appVersion: '1.0.0',
         schemaVersion: 2,
         archiveSizeBytes: 10,
         encrypted: true,

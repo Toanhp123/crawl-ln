@@ -42,7 +42,7 @@ export async function createInspectionArchiveFixture(
     }
   };
   const creator = new JsZipBackupArchive({
-    appVersion: '3.0.0-test',
+    appVersion: '1.0.0-test',
     schemaVersion: options.schemaVersion ?? 2
   });
   const artifact = await creator.create(snapshot, options.password);

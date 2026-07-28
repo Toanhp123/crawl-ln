@@ -31,7 +31,7 @@ function manifest(id: string): SourcePluginManifest {
     id,
     name: 'Imported Plugin',
     version: '2.0.0',
-    engines: { sourceReader: '^3.0.0' },
+    engines: { sourceReader: '^1.0.0' },
     capabilities: ['identify', 'metadata'],
     contracts: { identify: 1, metadata: 1 },
     matchers: [{ hosts: ['import.example'], include: ['/**'], priority: 100 }],

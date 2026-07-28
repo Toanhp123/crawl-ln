@@ -16,7 +16,7 @@ function manifest(version: string, host: string, capability: 'metadata' | 'chapt
     id: 'fixture-source',
     name: 'Fixture Source',
     version,
-    engines: { sourceReader: '^3.0.0' },
+    engines: { sourceReader: '^1.0.0' },
     capabilities: [capability],
     contracts: { [capability]: 1 },
     matchers: [{ hosts: [host], priority: 10 }],

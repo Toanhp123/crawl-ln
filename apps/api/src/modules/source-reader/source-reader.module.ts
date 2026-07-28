@@ -347,7 +347,7 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   const drafts = new SqlitePluginStudioDraftRepository(database);
   const studioBuilder = new SourcePluginStudioBuilder({
     outputDirectory: join(pluginRoot, 'studio-staging'),
-    sdkVersion: '^3.0.0'
+    sdkVersion: '^1.0.0'
   });
   const studio = new PluginStudioService({
     drafts,

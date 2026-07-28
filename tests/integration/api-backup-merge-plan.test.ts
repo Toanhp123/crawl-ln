@@ -78,7 +78,7 @@ async function setup(context: Parameters<typeof createBackupControlFixture>[0]) 
   });
 
   const sourceCoordinator = new BackupContributorCoordinator(contributors(source));
-  const creator = new JsZipBackupArchive({ appVersion: '3.0.0-test', schemaVersion: 2 });
+  const creator = new JsZipBackupArchive({ appVersion: '1.0.0-test', schemaVersion: 2 });
   const artifact = await creator.create({
     database: await readFile(sourceFixture.databasePath),
     contributors: await sourceCoordinator.exportAll(),

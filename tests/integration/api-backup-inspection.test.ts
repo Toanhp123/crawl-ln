@@ -41,7 +41,7 @@ async function setup(
     clock: { now: () => now },
     ids: { randomId: () => `restore-${++id}` }
   });
-  const archive = new JsZipBackupArchive({ appVersion: '3.0.0-test', schemaVersion: 2 });
+  const archive = new JsZipBackupArchive({ appVersion: '1.0.0-test', schemaVersion: 2 });
   const inspection = new RestoreInspectionService(
     control.repository,
     files,
@@ -83,7 +83,7 @@ test('complete rejects incomplete uploads before inspection starts', async (cont
   const inspection = new RestoreInspectionService(
     control.repository,
     files,
-    new JsZipBackupArchive({ appVersion: '3.0.0-test', schemaVersion: 2 }),
+    new JsZipBackupArchive({ appVersion: '1.0.0-test', schemaVersion: 2 }),
     preparation,
     new BackupSchemaMigrator(createPrimaryMigrationRegistry()),
     new BackupInventoryReader(),
@@ -221,7 +221,7 @@ test('archive safety rejects traversal before extraction', async () => {
   const outer = new JSZip();
   outer.file('../manifest.json', '{}');
   const content = await outer.generateAsync({ type: 'nodebuffer' });
-  const archive = new JsZipBackupArchive({ appVersion: '3.0.0-test', schemaVersion: 2 });
+  const archive = new JsZipBackupArchive({ appVersion: '1.0.0-test', schemaVersion: 2 });
   await assert.rejects(
     () => archive.readManifest(content),
     (error: unknown) => error instanceof Error && 'kind' in error && error.kind === 'bad_request'

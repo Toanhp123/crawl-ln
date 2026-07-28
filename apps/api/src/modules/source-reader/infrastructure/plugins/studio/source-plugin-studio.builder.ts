@@ -88,7 +88,7 @@ function manifestFor(input: SourcePluginStudioBuildInput): SourcePluginManifest 
     name: input.name,
     version: input.version,
     description: `Source plugin created with Novel Tool Plugin Studio`,
-    engines: { sourceReader: '^3.0.0' },
+    engines: { sourceReader: '^1.0.0' },
     capabilities,
     contracts: Object.fromEntries(capabilities.map((capability) => [capability, 1])),
     matchers: [{ hosts: input.hosts, include: ['/**'], priority: 100 }],

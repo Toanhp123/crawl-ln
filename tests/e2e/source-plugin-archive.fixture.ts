@@ -29,7 +29,7 @@ export async function createSourcePluginArchiveFixture({
     id,
     name,
     version,
-    engines: { sourceReader: '^3.0.0' },
+    engines: { sourceReader: '^1.0.0' },
     capabilities,
     contracts: Object.fromEntries(capabilities.map((capability) => [capability, 1])),
     matchers: [{ hosts, include: ['/**'], priority: 100 }],

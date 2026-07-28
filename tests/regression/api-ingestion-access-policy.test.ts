@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { join } from 'node:path';
 import test from 'node:test';
 import { SourceRequestGateService } from '../../apps/api/src/modules/source-reader/application/services/source-request-gate.service.ts';
+import { activePluginTrustedHosts } from '../../apps/api/src/modules/source-reader/application/services/active-plugin-trusted-hosts.ts';
 import { SourceReaderError } from '../../apps/api/src/modules/source-reader/domain/errors/source-reader.error.ts';
 import { InMemorySourceRateLimiterService } from '../../apps/api/src/modules/source-reader/infrastructure/network/in-memory-source-rate-limiter.service.ts';
 import {
@@ -11,6 +12,29 @@ import {
   RobotsTxtAccessPolicyAdapter
 } from '../../apps/api/src/modules/source-reader/infrastructure/network/robots-txt-access-policy.adapter.ts';
 import { createEnvironment } from '../../apps/api/src/platform/config/environment.ts';
+
+test('active plugin trusted hosts include only enabled plugin network permissions', () => {
+  const registrations = new Map([
+    [
+      'enabled',
+      {
+        enabled: true,
+        plugin: {
+          manifest: { permissions: { network: { hosts: ['first.example', '*.second.example'] } } }
+        }
+      }
+    ],
+    [
+      'disabled',
+      {
+        enabled: false,
+        plugin: { manifest: { permissions: { network: { hosts: ['disabled.example'] } } } }
+      }
+    ]
+  ]);
+
+  assert.deepEqual(activePluginTrustedHosts(registrations), ['first.example', '*.second.example']);
+});
 
 async function readTree(directory: string): Promise<string> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -22,17 +46,15 @@ async function readTree(directory: string): Promise<string> {
   return parts.join('\n');
 }
 
-test('api environment exposes crawler policy settings', () => {
+test('api environment exposes crawler delay settings', () => {
   const environment = createEnvironment({
-    SOURCE_ALLOWLIST: 'NovelCool.com, www.Example.com',
     CRAWLER_DELAY_MS: '1250'
   });
 
-  assert.deepEqual(environment.sourceAllowlist, ['novelcool.com', 'www.example.com']);
   assert.equal(environment.crawlerDelayMs, 1_250);
 });
 
-test('source reader access policy denies hosts outside the source allowlist', async () => {
+test('source reader access policy denies hosts outside active plugin trust', async () => {
   let requests = 0;
   const policy = new RobotsTxtAccessPolicyAdapter({
     http: {
@@ -41,7 +63,7 @@ test('source reader access policy denies hosts outside the source allowlist', as
         return 'User-agent: *\nAllow: /';
       }
     },
-    sourceAllowlist: ['example.com'],
+    trustedHosts: () => ['example.com'],
     defaultCrawlDelayMs: 600,
     requestTimeoutMs: 5_000
   });
@@ -50,9 +72,41 @@ test('source reader access policy denies hosts outside the source allowlist', as
 
   assert.deepEqual(decision, {
     allowed: false,
-    reason: 'Source not allowlisted: untrusted.test'
+    reason: 'Source not trusted by an active plugin: untrusted.test'
   });
   assert.equal(requests, 0);
+});
+
+test('source reader access policy resolves trusted plugin hosts for every request', async () => {
+  let trustedHosts: readonly string[] = ['first.example', '*.second.example'];
+  const policy = new RobotsTxtAccessPolicyAdapter({
+    http: {
+      get: async () => 'User-agent: *\nAllow: /'
+    },
+    trustedHosts: () => trustedHosts,
+    defaultCrawlDelayMs: 600,
+    requestTimeoutMs: 5_000
+  });
+
+  assert.deepEqual(await policy.check('https://first.example/novel'), {
+    allowed: true,
+    crawlDelayMs: 600
+  });
+  assert.deepEqual(await policy.check('https://cdn.second.example/chapter'), {
+    allowed: true,
+    crawlDelayMs: 600
+  });
+
+  trustedHosts = ['second.example'];
+
+  assert.deepEqual(await policy.check('https://first.example/novel'), {
+    allowed: false,
+    reason: 'Source not trusted by an active plugin: first.example'
+  });
+  assert.deepEqual(await policy.check('https://second.example/novel'), {
+    allowed: true,
+    crawlDelayMs: 600
+  });
 });
 
 test('source reader access policy honors the longest robots rule and crawl delay', async () => {
@@ -63,7 +117,7 @@ test('source reader access policy honors the longest robots rule and crawl delay
           '\n'
         )
     },
-    sourceAllowlist: ['example.com'],
+    trustedHosts: () => ['example.com'],
     defaultCrawlDelayMs: 600,
     requestTimeoutMs: 5_000
   });
@@ -88,7 +142,7 @@ test('source reader access policy refetches robots rules after cache expiry', as
         return 'User-agent: *\nAllow: /';
       }
     },
-    sourceAllowlist: ['example.com'],
+    trustedHosts: () => ['example.com'],
     defaultCrawlDelayMs: 600,
     requestTimeoutMs: 5_000,
     now: () => now,
@@ -120,7 +174,7 @@ test('source reader access policy follows safe robots redirects before deciding 
     throw new Error('robots redirect server did not bind');
   const policy = new RobotsTxtAccessPolicyAdapter({
     http: new AxiosRobotsTextClient(),
-    sourceAllowlist: ['127.0.0.1'],
+    trustedHosts: () => ['127.0.0.1'],
     defaultCrawlDelayMs: 0,
     requestTimeoutMs: 5_000
   });
@@ -149,7 +203,7 @@ test('source reader access policy shares one initial robots load per host', asyn
         return 'User-agent: *\nDisallow: /private';
       }
     },
-    sourceAllowlist: ['example.com'],
+    trustedHosts: () => ['example.com'],
     defaultCrawlDelayMs: 0,
     requestTimeoutMs: 5_000
   });
@@ -182,7 +236,7 @@ test('source reader access policy caches robots lookup failures as retryable den
         throw new Error('robots unavailable');
       }
     },
-    sourceAllowlist: ['example.com'],
+    trustedHosts: () => ['example.com'],
     defaultCrawlDelayMs: 0,
     requestTimeoutMs: 5_000
   });
@@ -219,7 +273,7 @@ test('source request gate cancels an in-flight robots lookup before rate limitin
         });
       }
     },
-    sourceAllowlist: ['example.com'],
+    trustedHosts: () => ['example.com'],
     defaultCrawlDelayMs: 0,
     requestTimeoutMs: 5_000
   });
@@ -264,7 +318,7 @@ test('source reader access policy replaces an aborted shared robots load for a n
         });
       }
     },
-    sourceAllowlist: ['example.com'],
+    trustedHosts: () => ['example.com'],
     defaultCrawlDelayMs: 0,
     requestTimeoutMs: 5_000
   });

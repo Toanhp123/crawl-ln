@@ -5,6 +5,38 @@ import type {
   SourcePluginManifest
 } from '../../domain/plugin/source-plugin.js';
 
+export interface PluginInstallationCommitInput {
+  version: {
+    pluginId: string;
+    name: string;
+    version: string;
+    trustLevel: PluginTrustLevel;
+    status: PluginStatus;
+    packagePath: string;
+    checksum: string;
+    signatureStatus: 'built-in' | 'valid' | 'unsigned' | 'invalid';
+    manifestJson: string;
+    sdkRange: string;
+    installedAt: string;
+    compatibilityIssuesJson?: string;
+    activatedExtensionsJson?: string;
+    sandboxProtocolVersion?: number;
+  };
+  permissions: Array<{ permission: string; scopeJson: string }>;
+  installation: {
+    id: string;
+    pluginId: string;
+    pluginVersion: string;
+    originalPackagePath: string;
+    stagingPath?: string;
+    status: string;
+    errorCode?: string;
+    createdAt: string;
+    completedAt: string;
+  };
+  quarantineReason?: string;
+}
+
 export interface StoredPluginVersion {
   pluginId: string;
   version: string;
@@ -47,6 +79,7 @@ export interface PluginStorePort {
     activatedExtensionsJson?: string;
     sandboxProtocolVersion?: number;
   }): Promise<void>;
+  commitInstallation(input: PluginInstallationCommitInput): Promise<void>;
   replaceRequestedPermissions(input: {
     pluginId: string;
     pluginVersion: string;

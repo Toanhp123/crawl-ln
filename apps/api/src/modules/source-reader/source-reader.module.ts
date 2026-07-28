@@ -7,6 +7,7 @@ import { AuthChallengeService } from './application/admin/services/auth-challeng
 import { AuthenticationOrchestratorService } from './application/admin/services/authentication-orchestrator.service.js';
 import { ExternalPluginRegistrationFactory } from './application/admin/services/external-plugin-registration.factory.js';
 import { ExternalPluginRevalidationService } from './application/admin/services/external-plugin-revalidation.service.js';
+import { ActivePluginReplacementService } from './application/admin/services/active-plugin-replacement.service.js';
 import { NetworkRouteTester } from './application/admin/services/network-route-tester.service.js';
 import { PluginActivationService } from './application/admin/services/plugin-activation.service.js';
 import { PluginCompatibilityService } from './application/admin/services/plugin-compatibility.service.js';
@@ -73,6 +74,7 @@ import {
   UpdatePluginStudioProjectUseCase
 } from './application/admin/use-cases/studio/manage-plugin-studio.usecase.js';
 import { CandidateResolver } from './application/services/candidate-resolver.js';
+import { activePluginTrustedHosts } from './application/services/active-plugin-trusted-hosts.js';
 import { HealthFallbackPolicy } from './application/services/health-fallback.policy.js';
 import { InvocationCoordinator } from './application/services/invocation-coordinator.js';
 import { PaginationCoordinator } from './application/services/pagination-coordinator.js';
@@ -183,14 +185,6 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
     new StaticTrustStore(environment.sourceReaderTrustedKeys ?? [])
   );
   const pluginRoot = environment.sourceReaderPluginDir ?? './apps/api/storage/source-plugins';
-  const installer = new PluginInstallationService(
-    packageVerifier,
-    pluginStore,
-    pluginRoot,
-    ids,
-    clock,
-    compatibility
-  );
   const pluginActivation = new PluginActivationService(
     pluginStore,
     registry,
@@ -212,7 +206,7 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   const requestGate = new SourceRequestGateService(
     new RobotsTxtAccessPolicyAdapter({
       http: new AxiosRobotsTextClient(),
-      sourceAllowlist: environment.sourceAllowlist,
+      trustedHosts: () => activePluginTrustedHosts(registry.snapshot()),
       defaultCrawlDelayMs: environment.crawlerDelayMs,
       requestTimeoutMs,
       now: () => clock.now().getTime()
@@ -329,6 +323,21 @@ export function createSourceReaderModule(options: SourceReaderModuleOptions) {
   const pluginUsage = new SourcePluginUsageGuardService(
     options.sourcePluginUsage ?? { listPotentialUsages: async () => [] },
     pluginStore
+  );
+  const replacement = new ActivePluginReplacementService(
+    pluginStore,
+    pluginUsage,
+    pluginActivation,
+    invalidation
+  );
+  const installer = new PluginInstallationService(
+    packageVerifier,
+    pluginStore,
+    pluginRoot,
+    ids,
+    clock,
+    compatibility,
+    replacement
   );
   const studioSupervisor = new ExternalProcessSupervisor({
     startupTimeoutMs: processStartTimeoutMs,

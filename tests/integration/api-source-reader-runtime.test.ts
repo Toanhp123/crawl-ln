@@ -123,7 +123,6 @@ test('source-reader starts without NovelCool and requires an installed external 
       outboxIntervalMs: 1_000,
       crawlerDelayMs: 0,
       maxExportSourceBytes: 128 * 1024 * 1024,
-      sourceAllowlist: [],
       sourceReaderMasterKey: Buffer.alloc(32, 1),
       sourceReaderPluginDir: join(storageDirectory, 'plugins')
     },

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { SourcePluginUsageGuardService } from '../../apps/api/src/modules/source-reader/application/admin/services/source-plugin-usage-guard.service.ts';
+import { ActivePluginReplacementService } from '../../apps/api/src/modules/source-reader/application/admin/services/active-plugin-replacement.service.ts';
 import {
   DenyPluginPermissionsUseCase,
   DisablePluginUseCase,
@@ -221,4 +222,56 @@ test('usage guard ignores jobs whose chapter URLs do not match the plugin manife
   );
 
   await assert.doesNotReject(() => guard.assertCanDisable('novelcool'));
+});
+
+test('replacing the active version uses the disable guard and can restore the previous runtime', async () => {
+  const calls: string[] = [];
+  const replacement = new ActivePluginReplacementService(
+    { findActive: async () => storedPlugin() },
+    { assertCanDisable: async () => void calls.push('guard') },
+    {
+      disable: async () => void calls.push('disable'),
+      activate: async () => {
+        calls.push('activate');
+        return {};
+      }
+    },
+    { invalidate: async (event) => void calls.push(`invalidate:${event.type}`) }
+  );
+
+  const suspended = await replacement.beforeReplace({
+    pluginId: 'novelcool',
+    version: '2.0.0'
+  });
+  await suspended?.restore();
+
+  assert.deepEqual(calls, [
+    'guard',
+    'disable',
+    'invalidate:plugin-disabled',
+    'activate',
+    'invalidate:plugin-activated'
+  ]);
+});
+
+test('replacing an inactive version leaves the running plugin untouched', async () => {
+  const calls: string[] = [];
+  const replacement = new ActivePluginReplacementService(
+    { findActive: async () => storedPlugin('1.0.0') },
+    { assertCanDisable: async () => void calls.push('guard') },
+    {
+      disable: async () => void calls.push('disable'),
+      activate: async () => {
+        calls.push('activate');
+        return {};
+      }
+    },
+    { invalidate: async () => void calls.push('invalidate') }
+  );
+
+  assert.equal(
+    await replacement.beforeReplace({ pluginId: 'novelcool', version: '2.0.0' }),
+    undefined
+  );
+  assert.deepEqual(calls, []);
 });

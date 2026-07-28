@@ -9,10 +9,9 @@ npm run setup -- --browser
 cp apps/api/.env.example apps/api/.env
 ```
 
-Khi kiểm thử crawl thật, chỉ dùng nguồn bạn được phép truy cập. Đặt allowlist rõ ràng, giới hạn số chương và concurrency thấp:
+Khi kiểm thử crawl thật, chỉ dùng nguồn bạn được phép truy cập. Plugin phải khai báo host trong quyền mạng, được approve và enable trước khi crawl. Giới hạn số chương và concurrency thấp:
 
 ```env
-SOURCE_ALLOWLIST=your-allowed-domain.example
 MAX_CHAPTERS_PER_RUN=5
 CRAWLER_CONCURRENCY=1
 CRAWLER_DELAY_MS=1200

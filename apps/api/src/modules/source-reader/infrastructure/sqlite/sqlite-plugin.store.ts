@@ -1,5 +1,6 @@
 import type { SqliteDatabase } from '../../../../platform/database/sqlite-database.js';
 import type {
+  PluginInstallationCommitInput,
   PluginStorePort,
   StoredPluginVersion
 } from '../../application/ports/plugin-store.port.js';
@@ -47,130 +48,32 @@ export class SqlitePluginStore implements PluginStorePort {
   constructor(private readonly database: SqliteDatabase) {}
 
   async recordInstallation(input: Parameters<PluginStorePort['recordInstallation']>[0]) {
-    this.database.connection
-      .prepare(
-        `
-        INSERT INTO source_reader_installations(
-          id, plugin_id, plugin_version, original_package_path, staging_path,
-          status, error_code, created_at, completed_at
-        ) VALUES(?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(id) ${sqliteUpsertUpdate}
-          plugin_id=excluded.plugin_id,
-          plugin_version=excluded.plugin_version,
-          original_package_path=excluded.original_package_path,
-          staging_path=excluded.staging_path,
-          status=excluded.status,
-          error_code=excluded.error_code,
-          completed_at=excluded.completed_at
-      `
-      )
-      .run(
-        input.id,
-        input.pluginId ?? null,
-        input.pluginVersion ?? null,
-        input.originalPackagePath,
-        input.stagingPath ?? null,
-        input.status,
-        input.errorCode ?? null,
-        input.createdAt,
-        input.completedAt ?? null
-      );
+    this.recordInstallationSync(input);
   }
 
   async upsertPluginVersion(input: Parameters<PluginStorePort['upsertPluginVersion']>[0]) {
+    this.database.transactionSync(() => this.upsertPluginVersionSync(input));
+  }
+
+  async commitInstallation(input: PluginInstallationCommitInput): Promise<void> {
     this.database.transactionSync(() => {
-      this.database.connection
-        .prepare(
-          `
-          INSERT INTO source_reader_plugins(
-            id, name, trust_level, status, active_version, enabled, installed_at, updated_at
-          ) VALUES(?,?,?,?,NULL,0,?,?)
-          ON CONFLICT(id) ${sqliteUpsertUpdate}
-            name=excluded.name,
-            trust_level=CASE
-              WHEN source_reader_plugins.active_version IS NULL THEN excluded.trust_level
-              ELSE source_reader_plugins.trust_level
-            END,
-            status=CASE
-              WHEN source_reader_plugins.active_version IS NULL THEN excluded.status
-              ELSE source_reader_plugins.status
-            END,
-            updated_at=excluded.updated_at
-        `
-        )
-        .run(
-          input.pluginId,
-          input.name,
-          input.trustLevel,
-          input.status,
-          input.installedAt,
-          input.installedAt
-        );
-      this.database.connection
-        .prepare(
-          `
-          INSERT INTO source_reader_plugin_versions(
-            plugin_id, version, trust_level, status, package_path, checksum,
-            signature_status, manifest_json, sdk_range, installed_at,
-            compatibility_issues_json, activated_extensions_json, sandbox_protocol_version
-          ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
-          ON CONFLICT(plugin_id, version) ${sqliteUpsertUpdate}
-            trust_level=excluded.trust_level,
-            status=CASE
-              WHEN source_reader_plugin_versions.status='active' THEN 'active'
-              ELSE excluded.status
-            END,
-            package_path=excluded.package_path,
-            checksum=excluded.checksum,
-            signature_status=excluded.signature_status,
-            manifest_json=excluded.manifest_json,
-            sdk_range=excluded.sdk_range,
-            compatibility_issues_json=excluded.compatibility_issues_json,
-            activated_extensions_json=excluded.activated_extensions_json,
-            sandbox_protocol_version=excluded.sandbox_protocol_version
-        `
-        )
-        .run(
-          input.pluginId,
-          input.version,
-          input.trustLevel,
-          input.status,
-          input.packagePath,
-          input.checksum,
-          input.signatureStatus,
-          input.manifestJson,
-          input.sdkRange,
-          input.installedAt,
-          input.compatibilityIssuesJson ?? '[]',
-          input.activatedExtensionsJson ?? '{}',
-          input.sandboxProtocolVersion ?? null
-        );
+      this.upsertPluginVersionSync(input.version);
+      this.replaceRequestedPermissionsSync({
+        pluginId: input.version.pluginId,
+        pluginVersion: input.version.version,
+        permissions: input.permissions
+      });
+      if (input.quarantineReason) {
+        this.quarantineSync(input.version.pluginId, input.version.version, input.quarantineReason);
+      }
+      this.recordInstallationSync(input.installation);
     });
   }
 
   async replaceRequestedPermissions(
     input: Parameters<PluginStorePort['replaceRequestedPermissions']>[0]
   ) {
-    this.database.transactionSync(() => {
-      this.database.connection
-        .prepare(
-          'DELETE FROM source_reader_plugin_permissions WHERE plugin_id=? AND plugin_version=?'
-        )
-        .run(input.pluginId, input.pluginVersion);
-      const insert = this.database.connection.prepare(
-        `INSERT INTO source_reader_plugin_permissions(
-          plugin_id, plugin_version, permission, scope_json, status
-        ) VALUES(?,?,?,?, 'pending')`
-      );
-      for (const permission of input.permissions) {
-        insert.run(
-          input.pluginId,
-          input.pluginVersion,
-          permission.permission,
-          permission.scopeJson
-        );
-      }
-    });
+    this.database.transactionSync(() => this.replaceRequestedPermissionsSync(input));
   }
 
   async approvePermissions(input: Parameters<PluginStorePort['approvePermissions']>[0]) {
@@ -557,24 +460,144 @@ export class SqlitePluginStore implements PluginStorePort {
   }
 
   async quarantine(pluginId: string, version: string, reason: string): Promise<void> {
-    this.database.transactionSync(() => {
-      const result = this.database.connection
-        .prepare(
-          `UPDATE source_reader_plugin_versions
-           SET status='quarantined', quarantine_reason=?
-           WHERE plugin_id=? AND version=?`
-        )
-        .run(reason, pluginId, version);
-      if (Number(result.changes) !== 1) {
-        throw new Error(`Plugin version ${pluginId}@${version} does not exist`);
-      }
-      this.database.connection
-        .prepare(
-          `UPDATE source_reader_plugins
-           SET active_version=NULL, enabled=0, status='quarantined', updated_at=?
-           WHERE id=? AND active_version=?`
-        )
-        .run(new Date().toISOString(), pluginId, version);
-    });
+    this.database.transactionSync(() => this.quarantineSync(pluginId, version, reason));
+  }
+
+  private recordInstallationSync(input: Parameters<PluginStorePort['recordInstallation']>[0]) {
+    this.database.connection
+      .prepare(
+        `
+        INSERT INTO source_reader_installations(
+          id, plugin_id, plugin_version, original_package_path, staging_path,
+          status, error_code, created_at, completed_at
+        ) VALUES(?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(id) ${sqliteUpsertUpdate}
+          plugin_id=excluded.plugin_id,
+          plugin_version=excluded.plugin_version,
+          original_package_path=excluded.original_package_path,
+          staging_path=excluded.staging_path,
+          status=excluded.status,
+          error_code=excluded.error_code,
+          completed_at=excluded.completed_at
+      `
+      )
+      .run(
+        input.id,
+        input.pluginId ?? null,
+        input.pluginVersion ?? null,
+        input.originalPackagePath,
+        input.stagingPath ?? null,
+        input.status,
+        input.errorCode ?? null,
+        input.createdAt,
+        input.completedAt ?? null
+      );
+  }
+
+  private upsertPluginVersionSync(input: Parameters<PluginStorePort['upsertPluginVersion']>[0]) {
+    this.database.connection
+      .prepare(
+        `
+        INSERT INTO source_reader_plugins(
+          id, name, trust_level, status, active_version, enabled, installed_at, updated_at
+        ) VALUES(?,?,?,?,NULL,0,?,?)
+        ON CONFLICT(id) ${sqliteUpsertUpdate}
+          name=excluded.name,
+          trust_level=CASE
+            WHEN source_reader_plugins.active_version IS NULL THEN excluded.trust_level
+            ELSE source_reader_plugins.trust_level
+          END,
+          status=CASE
+            WHEN source_reader_plugins.active_version IS NULL THEN excluded.status
+            ELSE source_reader_plugins.status
+          END,
+          updated_at=excluded.updated_at
+      `
+      )
+      .run(
+        input.pluginId,
+        input.name,
+        input.trustLevel,
+        input.status,
+        input.installedAt,
+        input.installedAt
+      );
+    this.database.connection
+      .prepare(
+        `
+        INSERT INTO source_reader_plugin_versions(
+          plugin_id, version, trust_level, status, package_path, checksum,
+          signature_status, manifest_json, sdk_range, installed_at,
+          compatibility_issues_json, activated_extensions_json, sandbox_protocol_version
+        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(plugin_id, version) ${sqliteUpsertUpdate}
+          trust_level=excluded.trust_level,
+          status=CASE
+            WHEN source_reader_plugin_versions.status='active' THEN 'active'
+            ELSE excluded.status
+          END,
+          package_path=excluded.package_path,
+          checksum=excluded.checksum,
+          signature_status=excluded.signature_status,
+          manifest_json=excluded.manifest_json,
+          sdk_range=excluded.sdk_range,
+          compatibility_issues_json=excluded.compatibility_issues_json,
+          activated_extensions_json=excluded.activated_extensions_json,
+          sandbox_protocol_version=excluded.sandbox_protocol_version
+      `
+      )
+      .run(
+        input.pluginId,
+        input.version,
+        input.trustLevel,
+        input.status,
+        input.packagePath,
+        input.checksum,
+        input.signatureStatus,
+        input.manifestJson,
+        input.sdkRange,
+        input.installedAt,
+        input.compatibilityIssuesJson ?? '[]',
+        input.activatedExtensionsJson ?? '{}',
+        input.sandboxProtocolVersion ?? null
+      );
+  }
+
+  private replaceRequestedPermissionsSync(
+    input: Parameters<PluginStorePort['replaceRequestedPermissions']>[0]
+  ) {
+    this.database.connection
+      .prepare(
+        'DELETE FROM source_reader_plugin_permissions WHERE plugin_id=? AND plugin_version=?'
+      )
+      .run(input.pluginId, input.pluginVersion);
+    const insert = this.database.connection.prepare(
+      `INSERT INTO source_reader_plugin_permissions(
+        plugin_id, plugin_version, permission, scope_json, status
+      ) VALUES(?,?,?,?, 'pending')`
+    );
+    for (const permission of input.permissions) {
+      insert.run(input.pluginId, input.pluginVersion, permission.permission, permission.scopeJson);
+    }
+  }
+
+  private quarantineSync(pluginId: string, version: string, reason: string): void {
+    const result = this.database.connection
+      .prepare(
+        `UPDATE source_reader_plugin_versions
+         SET status='quarantined', quarantine_reason=?
+         WHERE plugin_id=? AND version=?`
+      )
+      .run(reason, pluginId, version);
+    if (Number(result.changes) !== 1) {
+      throw new Error(`Plugin version ${pluginId}@${version} does not exist`);
+    }
+    this.database.connection
+      .prepare(
+        `UPDATE source_reader_plugins
+         SET active_version=NULL, enabled=0, status='quarantined', updated_at=?
+         WHERE id=? AND active_version=?`
+      )
+      .run(new Date().toISOString(), pluginId, version);
   }
 }

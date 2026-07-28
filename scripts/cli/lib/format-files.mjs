@@ -14,6 +14,7 @@ const SKIPPED_DIRECTORIES = new Set([
   'playwright-report',
   'test-results'
 ]);
+const SKIPPED_DIRECTORY_PATHS = new Set(['apps/api/storage']);
 
 const TARGETS = {
   api: [{ path: 'apps/api', extensions: ['.ts', '.mjs', '.json'] }],
@@ -51,9 +52,15 @@ async function exists(path) {
 
 async function collectDirectory(directory, extensions, files) {
   if (!(await exists(directory))) return;
+  if (SKIPPED_DIRECTORY_PATHS.has(relative(projectRoot, directory).replaceAll('\\', '/'))) return;
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.isDirectory() && SKIPPED_DIRECTORIES.has(entry.name)) continue;
     const target = join(directory, entry.name);
+    const relativeTarget = relative(projectRoot, target).replaceAll('\\', '/');
+    if (
+      entry.isDirectory() &&
+      (SKIPPED_DIRECTORIES.has(entry.name) || SKIPPED_DIRECTORY_PATHS.has(relativeTarget))
+    )
+      continue;
     if (entry.isDirectory()) {
       await collectDirectory(target, extensions, files);
     } else if (entry.isFile() && extensions.has(extname(entry.name))) {

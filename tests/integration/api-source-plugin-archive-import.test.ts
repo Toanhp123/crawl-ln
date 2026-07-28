@@ -134,6 +134,16 @@ test('source plugin archive HTTP workflows keep install and project import side 
     await readBody<Array<{ pluginId: string; status: string }>>(pluginsAfterInstall);
   assert.equal(installedList.data.length, 1);
   assert.equal(installedList.data[0]?.status, 'pending-approval');
+
+  const reinstallResponse = await postArchive(baseUrl, '/plugins/import/install', installBytes, {
+    expectedChecksum: installPreview.data.checksum
+  });
+  assert.equal(reinstallResponse.status, 202);
+  const reinstalled = await readBody<{ pluginId: string; status: string }>(reinstallResponse);
+  assert.equal(reinstalled.error, null);
+  assert.equal(reinstalled.data.pluginId, 'installable');
+  assert.equal(reinstalled.data.status, 'pending-approval');
+
   const projectsAfterInstall = await fetch(`${baseUrl}/studio/projects`);
   assert.equal((await readBody<unknown[]>(projectsAfterInstall)).data.length, 0);
 

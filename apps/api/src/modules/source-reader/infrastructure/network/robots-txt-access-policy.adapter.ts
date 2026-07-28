@@ -38,7 +38,7 @@ export interface RobotsTextClient {
 
 interface RobotsTxtAccessPolicyOptions {
   http: RobotsTextClient;
-  sourceAllowlist: readonly string[];
+  trustedHosts: () => readonly string[];
   defaultCrawlDelayMs: number;
   requestTimeoutMs: number;
   now?: () => number;
@@ -55,7 +55,10 @@ function comparableHost(input: string): string {
 }
 
 function hostMatches(host: string, allowedHost: string): boolean {
-  const normalizedAllowed = allowedHost.toLowerCase().replace(/^www\./, '');
+  const normalizedAllowed = allowedHost
+    .toLowerCase()
+    .replace(/^\*\./, '')
+    .replace(/^www\./, '');
   return host === normalizedAllowed || host.endsWith(`.${normalizedAllowed}`);
 }
 
@@ -206,10 +209,10 @@ export class RobotsTxtAccessPolicyAdapter implements SourceAccessPolicyPort {
   ): Promise<{ allowed: boolean; reason?: string; crawlDelayMs?: number; retryable?: boolean }> {
     const parsed = new URL(url);
     const host = normalizedHost(url);
-    const allowlisted = this.options.sourceAllowlist.some((candidate) =>
-      hostMatches(host, candidate)
-    );
-    if (!allowlisted) return { allowed: false, reason: `Source not allowlisted: ${host}` };
+    const trusted = this.options.trustedHosts().some((candidate) => hostMatches(host, candidate));
+    if (!trusted) {
+      return { allowed: false, reason: `Source not trusted by an active plugin: ${host}` };
+    }
 
     const entry = await this.getRules(parsed.origin, host, signal);
     if (entry.result.kind === 'unavailable') {

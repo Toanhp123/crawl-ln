@@ -30,7 +30,6 @@ export interface Environment {
   outboxIntervalMs: number;
   crawlerDelayMs: number;
   maxExportSourceBytes: number;
-  sourceAllowlist: string[];
   apiRemoteToken?: string;
   requestTimeoutMs?: number;
   sourceReaderCursorKey?: string;
@@ -58,13 +57,6 @@ function boolEnv(source: NodeJS.ProcessEnv, name: string, fallback: boolean): bo
 function numberEnv(source: NodeJS.ProcessEnv, name: string, fallback: number): number {
   const value = Number(source[name]);
   return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
-function lowerListEnv(source: NodeJS.ProcessEnv, name: string): string[] {
-  return (source[name] ?? '')
-    .split(',')
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
 }
 
 function resolveApiPath(value: string): string {
@@ -126,7 +118,6 @@ export function createEnvironment(source: NodeJS.ProcessEnv = process.env): Envi
     outboxIntervalMs: parsed.OUTBOX_INTERVAL_MS,
     crawlerDelayMs: numberEnv(source, 'CRAWLER_DELAY_MS', 600),
     maxExportSourceBytes: numberEnv(source, 'MAX_EXPORT_SOURCE_BYTES', 128 * 1024 * 1024),
-    sourceAllowlist: lowerListEnv(source, 'SOURCE_ALLOWLIST'),
     apiRemoteToken,
     requestTimeoutMs: numberEnv(source, 'REQUEST_TIMEOUT_MS', 15_000),
     sourceReaderCursorKey:

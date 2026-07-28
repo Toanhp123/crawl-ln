@@ -113,7 +113,6 @@ Các giá trị thường dùng nằm trong `apps/api/.env.example`:
 ```env
 PORT=3000
 STORAGE_DIR=./storage
-SOURCE_ALLOWLIST=novelcool.com,www.novelcool.com
 SOURCE_READER_CURSOR_KEY=replace-with-a-private-key
 SOURCE_READER_MASTER_KEY=<base64-for-exactly-32-bytes>
 SOURCE_READER_MEMORY_CACHE_ENTRIES=500

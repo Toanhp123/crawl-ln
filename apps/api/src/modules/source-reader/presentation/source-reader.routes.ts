@@ -35,6 +35,11 @@ export function createSourceReaderRoutes(presentation: SourceReaderPresentation)
 
   router.get('/studio/projects', asyncHandler(admin.listStudioProjects));
   router.post('/studio/projects', asyncHandler(admin.createStudioProject));
+  router.post(
+    '/studio/projects/import',
+    upload.single('plugin'),
+    asyncHandler(admin.importStudioProject)
+  );
   router.get('/studio/projects/:projectId', asyncHandler(admin.getStudioProject));
   router.patch('/studio/projects/:projectId', asyncHandler(admin.updateStudioProject));
   router.delete('/studio/projects/:projectId', asyncHandler(admin.removeStudioProject));
@@ -44,8 +49,18 @@ export function createSourceReaderRoutes(presentation: SourceReaderPresentation)
   router.get('/studio/projects/:projectId/export', asyncHandler(admin.exportStudioProject));
 
   router.get('/plugins', asyncHandler(admin.listPlugins));
-  router.get('/plugins/:pluginId', asyncHandler(admin.pluginDiagnostics));
   router.post('/plugins/install', upload.single('plugin'), asyncHandler(admin.installPlugin));
+  router.post(
+    '/plugins/import/inspect',
+    upload.single('plugin'),
+    asyncHandler(admin.inspectPluginArchive)
+  );
+  router.post(
+    '/plugins/import/install',
+    upload.single('plugin'),
+    asyncHandler(admin.installPluginArchive)
+  );
+  router.get('/plugins/:pluginId', asyncHandler(admin.pluginDiagnostics));
   router.post('/plugins/:pluginId/enable', asyncHandler(admin.enablePlugin));
   router.post('/plugins/:pluginId/disable', asyncHandler(admin.disablePlugin));
   router.delete('/plugins/:pluginId', asyncHandler(admin.removePlugin));

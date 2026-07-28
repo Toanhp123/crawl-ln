@@ -59,6 +59,30 @@ export const networkProfileUpdateSchema = z
 
 export const pluginVersionSchema = z.object({ version: z.string().min(1).max(100) });
 
+export const sourcePluginArchiveConfirmSchema = z
+  .object({
+    expectedChecksum: z.string().regex(/^[a-f0-9]{64}$/)
+  })
+  .strict();
+
+export const sourcePluginProjectImportFormSchema = z
+  .object({
+    expectedChecksum: z.string().regex(/^[a-f0-9]{64}$/),
+    resolutionJson: z.string().min(1)
+  })
+  .strict();
+
+export const sourcePluginProjectImportResolutionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('create-copy') }).strict(),
+  z
+    .object({
+      type: z.literal('update'),
+      projectId: z.string().min(1),
+      expectedRevision: z.number().int().positive()
+    })
+    .strict()
+]);
+
 const pluginStudioCapabilitySchema = z.enum([
   'identify',
   'metadata',
@@ -137,4 +161,36 @@ export const authChallengeResponseSchema = z.object({
 
 export function parseBody<T extends z.ZodTypeAny>(request: Request, schema: T): z.infer<T> {
   return schema.parse(request.body);
+}
+
+export function parseJsonField<T extends z.ZodTypeAny>(
+  request: Request,
+  field: string,
+  schema: T
+): z.infer<T> {
+  const value = request.body?.[field];
+  if (typeof value !== 'string') {
+    throw new z.ZodError([
+      {
+        code: z.ZodIssueCode.invalid_type,
+        expected: 'string',
+        received: typeof value,
+        path: [field],
+        message: `${field} must be a JSON string`
+      }
+    ]);
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value) as unknown;
+  } catch {
+    throw new z.ZodError([
+      {
+        code: z.ZodIssueCode.custom,
+        path: [field],
+        message: `${field} must contain valid JSON`
+      }
+    ]);
+  }
+  return schema.parse(parsed);
 }

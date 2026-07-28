@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { accepted, created, noContent, ok } from '../../../platform/http/api-response.js';
 import { requireSourceReaderActor } from '../application/admin/require-source-reader-actor.js';
 import { requireSourcePluginPackage } from '../application/admin/require-source-plugin-package.js';
-import { parseBody } from './source-reader.schemas.js';
+import { parseBody, parseJsonField } from './source-reader.schemas.js';
 import type { SourceReaderManagementApi } from '../public/source-reader.api.js';
 import {
   authChallengeResponseSchema,
@@ -13,7 +13,10 @@ import {
   networkProfileUpdateSchema,
   pluginStudioCreateSchema,
   pluginStudioUpdateSchema,
-  pluginVersionSchema
+  pluginVersionSchema,
+  sourcePluginArchiveConfirmSchema,
+  sourcePluginProjectImportFormSchema,
+  sourcePluginProjectImportResolutionSchema
 } from './source-reader.schemas.js';
 import type { SourceReaderRequest } from './source-reader.middleware.js';
 
@@ -105,6 +108,20 @@ export class SourceReaderAdminController {
       .send(Buffer.from(artifact.bytes));
   };
 
+  importStudioProject = async (req: SourceReaderRequest, res: Response) => {
+    const pluginPackage = requireSourcePluginPackage(req.file);
+    const { expectedChecksum } = parseBody(req, sourcePluginProjectImportFormSchema);
+    return created(
+      res,
+      await this.management.studio.importProject.execute({
+        actor: requireActor(req),
+        ...pluginPackage,
+        expectedChecksum,
+        resolution: parseJsonField(req, 'resolutionJson', sourcePluginProjectImportResolutionSchema)
+      })
+    );
+  };
+
   listPlugins = async (req: SourceReaderRequest, res: Response) =>
     ok(
       res,
@@ -120,6 +137,30 @@ export class SourceReaderAdminController {
       await this.management.plugins.install.execute({
         actor: requireActor(req),
         ...pluginPackage
+      })
+    );
+  };
+
+  inspectPluginArchive = async (req: SourceReaderRequest, res: Response) => {
+    const pluginPackage = requireSourcePluginPackage(req.file);
+    return ok(
+      res,
+      await this.management.plugins.inspectArchive.execute({
+        actor: requireActor(req),
+        ...pluginPackage
+      })
+    );
+  };
+
+  installPluginArchive = async (req: SourceReaderRequest, res: Response) => {
+    const pluginPackage = requireSourcePluginPackage(req.file);
+    const { expectedChecksum } = parseBody(req, sourcePluginArchiveConfirmSchema);
+    return accepted(
+      res,
+      await this.management.plugins.installArchive.execute({
+        actor: requireActor(req),
+        ...pluginPackage,
+        expectedChecksum
       })
     );
   };

@@ -9,6 +9,7 @@ export * from './forms/Field';
 export * from './forms/SearchInput';
 export * from './forms/SegmentedControl';
 export * from './forms/Switch';
+export * from './forms/FilePicker';
 
 export * from './layout/AppViewport';
 export * from './layout/Card';

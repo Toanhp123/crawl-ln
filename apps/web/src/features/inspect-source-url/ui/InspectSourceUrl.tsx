@@ -1,6 +1,5 @@
 import { Play, StepForward } from 'lucide-react';
 import type { ChangeEvent } from 'react';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import {
   Button,
@@ -145,7 +144,7 @@ export function InspectSourceUrl() {
       >
         {t('inspectSourceUrl.run')}
       </Button>
-      {mutation.error ? <ErrorBanner error={getPublicErrorDescription(mutation.error)} /> : null}
+      {mutation.error ? <ErrorBanner error={mutation.error} /> : null}
       {mutation.data ? (
         <div className="space-y-3">
           <SourceReaderResultView result={mutation.data} rawLabel={t('inspectSourceUrl.raw')} />

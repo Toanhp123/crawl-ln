@@ -12,7 +12,6 @@ import {
   sourcePluginProjectInvalidation,
   type SourcePluginProject
 } from '../../../entities/source-plugin-project';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import {
@@ -28,7 +27,7 @@ export function invalidateImportedSourcePluginProject(client: QueryClient) {
 
 export function useImportSourcePluginProject(onImported: (project: SourcePluginProject) => void) {
   const client = useQueryClient();
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   const selectedFile = useRef<File>();
   const [file, setFile] = useState<File>();
   const [preview, setPreview] = useState<SourcePluginArchivePreview>();
@@ -49,7 +48,7 @@ export function useImportSourcePluginProject(onImported: (project: SourcePluginP
       if (selectedFile.current !== inspectedFile) return;
       setPreview(undefined);
       setResolution(undefined);
-      setError(getPublicErrorDescription(inspectError));
+      setError(errorMessage(inspectError));
       setStep('choose');
     }
   });
@@ -62,12 +61,12 @@ export function useImportSourcePluginProject(onImported: (project: SourcePluginP
       onImported(project);
     },
     onError(importError) {
-      setError(getPublicErrorDescription(importError));
+      setError(errorMessage(importError));
       setStep('preview');
       toast({
         kind: 'error',
         title: t('importSourcePluginProject.failed'),
-        description: getPublicErrorDescription(importError)
+        description: errorMessage(importError)
       });
     }
   });

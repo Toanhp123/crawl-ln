@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourceNetworkProfileInvalidation } from '../../../entities/source-network-profile';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import {
@@ -11,14 +10,14 @@ import {
 } from '../api/manage-source-network-profile';
 import type { NetworkProfileCreateInput, NetworkProfileUpdateInput } from './network-profile-form';
 function useFeedback() {
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   return {
     ok: (key: string) => toast({ kind: 'success', title: t(key) }),
     fail: (error: unknown) =>
       toast({
         kind: 'error',
         title: t('manageSourceNetworkProfile.failed'),
-        description: getPublicErrorDescription(error)
+        description: errorMessage(error)
       })
   };
 }

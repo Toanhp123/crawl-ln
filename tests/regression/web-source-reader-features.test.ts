@@ -376,26 +376,24 @@ test('credential and proxy secrets are feature-local and cleared after use or cl
   assert.doesNotMatch(entitySource, /CredentialSecret|proxyPassword|cookie-import|bearer-token/);
 });
 
-test('feature errors expose only public code and request ID, never submitted or response secrets', async () => {
-  const { ApiError, getPublicErrorDescription } =
-    await import('../../apps/web/src/shared/api/index.ts');
-  const error = new ApiError('server echoed token=top-secret', {
+test('feature errors expose backend messages without diagnostic or response secrets', async () => {
+  const { ApiError } = await import('../../apps/web/src/shared/api/index.ts');
+  const error = new ApiError('Plugin is unavailable right now.', {
     status: 400,
     code: 'AUTHENTICATION_FAILED',
     details: { password: 'top-secret', requestId: 'request-details' },
     requestId: 'request-header'
   });
-  const description = getPublicErrorDescription(error);
-  assert.match(description, /AUTHENTICATION_FAILED/);
-  assert.match(description, /request-header/);
-  assert.doesNotMatch(description, /top-secret|password|token|server echoed/);
+  assert.equal(error.message, 'Plugin is unavailable right now.');
+  assert.doesNotMatch(error.message, /AUTHENTICATION_FAILED|request-header|top-secret|password/);
 
   const source = (
     await Promise.all(slices.map((slice) => readTree(join(featureRoot, slice))))
   ).join('\n');
   assert.doesNotMatch(source, /toast\([^)]*(password|cookie|token|proxyPassword)/s);
   assert.doesNotMatch(source, /error\.details|JSON\.stringify\(error/);
-  assert.match(source, /getPublicErrorDescription/);
+  assert.doesNotMatch(source, /getPublicErrorDescription/);
+  assert.match(source, /errorMessage\(/);
 });
 
 test('Task 8 public APIs expose administration actions, hooks, catalogs, and reusable UI', async () => {

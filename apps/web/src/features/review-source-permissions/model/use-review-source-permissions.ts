@@ -4,7 +4,6 @@ import {
   sourcePluginInvalidation,
   type SourcePluginUsageConflict
 } from '../../../entities/source-plugin';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import { reviewSourcePermissions } from '../api/review-source-permissions';
@@ -15,7 +14,7 @@ export function useReviewSourcePermissions(
   onUsageConflict?: (conflict: SourcePluginUsageConflict) => void
 ) {
   const client = useQueryClient();
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   return useMutation({
     mutationFn: (approved: boolean) => reviewSourcePermissions(pluginId, version, approved),
     onSuccess: (_data, approved) =>
@@ -32,7 +31,7 @@ export function useReviewSourcePermissions(
       toast({
         kind: 'error',
         title: t('reviewSourcePermissions.failed'),
-        description: getPublicErrorDescription(error)
+        description: errorMessage(error)
       });
     },
     onSettled: () => sourcePluginInvalidation.invalidateAll(client)

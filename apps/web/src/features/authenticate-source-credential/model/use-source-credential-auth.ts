@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourceAuthChallengeInvalidation } from '../../../entities/source-auth-challenge';
 import { sourceCredentialInvalidation } from '../../../entities/source-credential';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import {
@@ -13,7 +12,7 @@ import {
 
 export function useSourceCredentialAuth(credentialId: string) {
   const client = useQueryClient();
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   const invalidate = () =>
     Promise.all([
       sourceCredentialInvalidation.invalidateAll(client),
@@ -23,7 +22,7 @@ export function useSourceCredentialAuth(credentialId: string) {
     toast({
       kind: 'error',
       title: t('authenticateSourceCredential.failed'),
-      description: getPublicErrorDescription(error)
+      description: errorMessage(error)
     });
   const login = useMutation({
     mutationFn: (input: CredentialAuthenticationInput) =>

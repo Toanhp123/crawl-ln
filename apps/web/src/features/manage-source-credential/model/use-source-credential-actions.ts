@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourceCredentialInvalidation } from '../../../entities/source-credential';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import {
@@ -11,7 +10,7 @@ import {
 import type { CredentialCreateInput } from './credential-form';
 
 function useCredentialFeedback() {
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   return {
     success(key: string) {
       toast({ kind: 'success', title: t(key) });
@@ -20,7 +19,7 @@ function useCredentialFeedback() {
       toast({
         kind: 'error',
         title: t('manageSourceCredential.failed'),
-        description: getPublicErrorDescription(error)
+        description: errorMessage(error)
       });
     }
   };

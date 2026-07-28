@@ -15,7 +15,6 @@ export {
   ApiError,
   getApiErrorDetails,
   getErrorMessage,
-  getPublicErrorDescription,
   readApiError,
   type ApiErrorCode
 } from './errors';

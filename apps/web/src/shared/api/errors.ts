@@ -24,12 +24,6 @@ export class ApiError extends Error {
   }
 }
 
-export function getPublicErrorDescription(error: unknown): string {
-  if (!(error instanceof ApiError)) return 'REQUEST_FAILED';
-  const code = error.code || 'REQUEST_FAILED';
-  return error.requestId ? `${code} · Request ID: ${error.requestId}` : code;
-}
-
 export function getApiErrorDetails(
   error: unknown,
   expected: { status: number; code: ApiErrorCode }

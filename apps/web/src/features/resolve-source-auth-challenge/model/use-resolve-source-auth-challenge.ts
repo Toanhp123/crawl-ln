@@ -2,7 +2,6 @@ import type { SourceReaderAuthChallengeResponse } from '@novel-tool/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourceAuthChallengeInvalidation } from '../../../entities/source-auth-challenge';
 import { sourceCredentialInvalidation } from '../../../entities/source-credential';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import {
@@ -11,7 +10,7 @@ import {
 } from '../api/resolve-source-auth-challenge';
 export function useResolveSourceAuthChallenge(challengeId: string, clearSecret?: () => void) {
   const client = useQueryClient();
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   const invalidate = () =>
     Promise.all([
       sourceAuthChallengeInvalidation.invalidateAll(client),
@@ -21,7 +20,7 @@ export function useResolveSourceAuthChallenge(challengeId: string, clearSecret?:
     toast({
       kind: 'error',
       title: t('resolveSourceAuthChallenge.failed'),
-      description: getPublicErrorDescription(error)
+      description: errorMessage(error)
     });
   const respond = useMutation({
     mutationFn: (response: SourceReaderAuthChallengeResponse) =>

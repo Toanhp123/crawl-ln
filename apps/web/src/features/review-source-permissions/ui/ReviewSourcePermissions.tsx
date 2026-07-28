@@ -4,7 +4,6 @@ import {
   useSourcePluginPermissions,
   type SourcePluginUsageConflict
 } from '../../../entities/source-plugin';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import {
   Button,
@@ -31,7 +30,7 @@ export function ReviewSourcePermissions({
   const query = useSourcePluginPermissions(pluginId);
   const action = useReviewSourcePermissions(pluginId, version, setUsageConflict);
   if (query.isLoading) return <LoadingState />;
-  if (query.error) return <ErrorBanner error={getPublicErrorDescription(query.error)} />;
+  if (query.error) return <ErrorBanner error={query.error} />;
   return (
     <>
       <Panel tone="default" className="space-y-3">

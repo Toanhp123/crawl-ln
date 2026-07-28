@@ -9,7 +9,6 @@ import {
   MAX_SOURCE_PLUGIN_ARCHIVE_BYTES
 } from '../../../entities/source-plugin-archive';
 import { sourcePluginInvalidation } from '../../../entities/source-plugin';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import { installSourcePluginArchive } from '../api/install-source-plugin';
@@ -18,7 +17,7 @@ export type SourcePluginInstallStep = 'choose' | 'preview' | 'installing' | 'res
 
 export function useSourcePluginInstallFlow(onInstalled?: () => void) {
   const client = useQueryClient();
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   const selectedFile = useRef<File>();
   const [file, setFile] = useState<File>();
   const [preview, setPreview] = useState<SourcePluginArchivePreview>();
@@ -37,7 +36,7 @@ export function useSourcePluginInstallFlow(onInstalled?: () => void) {
     onError(inspectError, inspectedFile) {
       if (selectedFile.current !== inspectedFile) return;
       setPreview(undefined);
-      setError(getPublicErrorDescription(inspectError));
+      setError(errorMessage(inspectError));
       setStep('choose');
     }
   });
@@ -57,12 +56,12 @@ export function useSourcePluginInstallFlow(onInstalled?: () => void) {
       onInstalled?.();
     },
     onError(installError) {
-      setError(getPublicErrorDescription(installError));
+      setError(errorMessage(installError));
       setStep('preview');
       toast({
         kind: 'error',
         title: t('installSourcePlugin.failed'),
-        description: getPublicErrorDescription(installError)
+        description: errorMessage(installError)
       });
     }
   });

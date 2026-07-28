@@ -5,7 +5,6 @@ import {
   type SourcePlugin,
   type SourcePluginUsageConflict
 } from '../../../entities/source-plugin';
-import { getPublicErrorDescription } from '../../../shared/api';
 import { useI18n } from '../../../shared/i18n';
 import { toast } from '../../../shared/ui';
 import { activateLatestSourcePlugin, removeSourcePlugin } from '../api/manage-source-plugins';
@@ -15,7 +14,7 @@ export function useToggleSourcePlugin(
   onUsageConflict?: (conflict: SourcePluginUsageConflict) => void
 ) {
   const client = useQueryClient();
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   const action = createPluginToggleAction();
   return useMutation({
     mutationFn: ({ plugin, enabled }: { plugin: SourcePlugin; enabled: boolean }) =>
@@ -38,7 +37,7 @@ export function useToggleSourcePlugin(
       toast({
         kind: 'error',
         title: t('manageSourcePlugins.failed'),
-        description: getPublicErrorDescription(error)
+        description: errorMessage(error)
       });
     }
   });
@@ -49,7 +48,7 @@ export function useRemoveSourcePlugin(
   onUsageConflict?: (conflict: SourcePluginUsageConflict) => void
 ) {
   const client = useQueryClient();
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   return useMutation({
     mutationFn: removeSourcePlugin,
     onSuccess: () => {
@@ -65,7 +64,7 @@ export function useRemoveSourcePlugin(
       toast({
         kind: 'error',
         title: t('manageSourcePlugins.failed'),
-        description: getPublicErrorDescription(error)
+        description: errorMessage(error)
       });
     },
     onSettled: () => sourcePluginInvalidation.invalidateAll(client)
@@ -74,7 +73,7 @@ export function useRemoveSourcePlugin(
 
 export function useActivateLatestSourcePlugin() {
   const client = useQueryClient();
-  const { t } = useI18n();
+  const { errorMessage, t } = useI18n();
   return useMutation({
     mutationFn: ({ pluginId, version }: { pluginId: string; version: string }) =>
       activateLatestSourcePlugin(pluginId, version),
@@ -83,7 +82,7 @@ export function useActivateLatestSourcePlugin() {
       toast({
         kind: 'error',
         title: t('manageSourcePlugins.failed'),
-        description: getPublicErrorDescription(error)
+        description: errorMessage(error)
       }),
     onSettled: () => sourcePluginInvalidation.invalidateAll(client)
   });

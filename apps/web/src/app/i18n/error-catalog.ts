@@ -27,10 +27,12 @@ function errorKey(error: unknown): string {
 }
 
 export function interpretAppError(error: unknown): string | undefined {
+  if (error instanceof ApiError) {
+    const message = error.message.trim();
+    if (message) return message;
+  }
+
   const catalog = appCatalogs[preferredLanguage()];
   const message = catalog[errorKey(error)] ?? catalog[fallbackKey];
-  if (!message) return undefined;
-  return error instanceof ApiError && error.requestId
-    ? `${message} · Request ID: ${error.requestId}`
-    : message;
+  return message || undefined;
 }

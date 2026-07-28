@@ -178,3 +178,11 @@ test('app i18n merges shell and public slice catalogs with typed error translati
   assert.match(errors, /VALIDATION_ERROR/);
   assert.match(errors, /common\.requestFailed/);
 });
+
+test('error interpreter prefers backend messages and hides diagnostics', async () => {
+  const errors = await readFile('apps/web/src/app/i18n/error-catalog.ts', 'utf8');
+
+  assert.match(errors, /error\.message\.trim\(\)/);
+  assert.doesNotMatch(errors, /Request ID/);
+  assert.doesNotMatch(errors, /error\.requestId/);
+});

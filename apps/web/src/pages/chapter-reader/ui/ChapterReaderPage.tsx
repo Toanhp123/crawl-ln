@@ -132,6 +132,7 @@ export function ChapterReaderPage() {
     hasNext: controller.hasNext,
     loadingPrevious: controller.loadingPrevious,
     loadingNext: controller.loadingNext,
+    chromeVisible: chrome,
     setActiveIndex: controller.setActiveIndex,
     loadPrevious: controller.loadPrevious,
     loadNext: controller.loadNext,

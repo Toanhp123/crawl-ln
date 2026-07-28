@@ -75,7 +75,11 @@ export function useReaderController({
   const navigateCallback = useRef(onNavigate);
   const lastReportedIndex = useRef<number | null>(null);
   const snapshotRef = useRef(snapshot);
-  const startedSessionRef = useRef<{ novelId: string; identitySignature: string } | null>(null);
+  const startedSessionRef = useRef<{
+    novelId: string;
+    initialIndex: number;
+    identitySignature: string;
+  } | null>(null);
   snapshotRef.current = snapshot;
 
   useEffect(() => {
@@ -99,15 +103,19 @@ export function useReaderController({
       return;
     }
     const startedSession = startedSessionRef.current;
-    if (
-      startedSession?.novelId === novelId &&
-      startedSession.identitySignature === identitySignature &&
-      isReaderUrlOnlySync(snapshotRef.current, initialIndex)
-    ) {
-      return;
+    if (startedSession?.novelId === novelId) {
+      const sameRouteSession = startedSession.initialIndex === initialIndex;
+      const urlCaughtUpWithSession = isReaderUrlOnlySync(snapshotRef.current, initialIndex);
+      if (sameRouteSession || urlCaughtUpWithSession) {
+        if (startedSession.identitySignature !== identitySignature) {
+          session.updateIdentities(identities);
+        }
+        startedSessionRef.current = { novelId, initialIndex, identitySignature };
+        return;
+      }
     }
     lastReportedIndex.current = null;
-    startedSessionRef.current = { novelId, identitySignature };
+    startedSessionRef.current = { novelId, initialIndex, identitySignature };
     void session.start(novelId, identities, initialIndex).catch(() => undefined);
   }, [enabled, identitySignature, identities, initialIndex, novelId, session]);
 

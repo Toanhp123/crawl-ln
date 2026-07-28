@@ -66,6 +66,15 @@ test('reader scroll orchestration uses one frame loop and history replacement', 
   assert.doesNotMatch(source, /model\.openChapter\(index, true\)/);
 });
 
+test('reader chrome follows scroll direction instead of requiring the top of the chapter', async () => {
+  const source = await readFile(
+    'apps/web/src/pages/chapter-reader/model/use-reader-scroll-coordinator.ts',
+    'utf8'
+  );
+  assert.match(source, /updateReaderChromeScrollState/);
+  assert.doesNotMatch(source, /onChromeChange\(scrollTop < 72\)/);
+});
+
 test('reader preserves scroll anchoring navigation wake lock and auto-hiding chrome', async () => {
   const source = await readTree('apps/web/src/pages/chapter-reader');
   assert.match(source, /captureReadingAnchor/);

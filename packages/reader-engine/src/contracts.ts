@@ -40,6 +40,7 @@ export interface ReaderSession<TChapter extends ReaderChapterIdentity> {
     chapters: readonly ReaderChapterIdentity[],
     activeIndex: number
   ): Promise<void>;
+  updateIdentities(chapters: readonly ReaderChapterIdentity[]): void;
   loadPrevious(): Promise<boolean>;
   loadNext(): Promise<boolean>;
   setActiveIndex(index: number): void;

@@ -27,6 +27,24 @@ function uniqueSortedIdentities(
   return [...byId.values()].sort((left, right) => left.index - right.index);
 }
 
+function identitiesEqual(
+  left: readonly ReaderChapterIdentity[],
+  right: readonly ReaderChapterIdentity[]
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((identity, index) => {
+      const other = right[index];
+      return (
+        other !== undefined &&
+        identity.id === other.id &&
+        identity.index === other.index &&
+        identity.contentVersion === other.contentVersion
+      );
+    })
+  );
+}
+
 export function createReaderSession<TChapter extends ReaderChapterIdentity>(
   options: CreateReaderSessionOptions<TChapter>
 ): ReaderSession<TChapter> {
@@ -218,6 +236,17 @@ export function createReaderSession<TChapter extends ReaderChapterIdentity>(
 
   return {
     start,
+    updateIdentities(nextIdentities) {
+      const next = uniqueSortedIdentities([...chapterWindow.chapters, ...nextIdentities]);
+      if (identitiesEqual(identities, next)) return;
+      identities = next;
+      emit();
+      const active = chapterWindow.chapters.find((chapter) => chapter.index === activeIndex);
+      if (active) {
+        prefetch(adjacentTo(active, -1));
+        prefetch(adjacentTo(active, 1));
+      }
+    },
     loadPrevious: () => loadDirection('previous'),
     loadNext: () => loadDirection('next'),
     setActiveIndex(nextActiveIndex) {

@@ -6,6 +6,10 @@ import {
   useRef,
   useState
 } from 'react';
+import {
+  createReaderChromeScrollState,
+  updateReaderChromeScrollState
+} from './reader-chrome-scroll';
 
 interface LoadedChapter {
   index: number;
@@ -28,6 +32,7 @@ interface ReaderScrollCoordinatorOptions {
   hasNext: boolean;
   loadingPrevious: boolean;
   loadingNext: boolean;
+  chromeVisible: boolean;
   setActiveIndex: (index: number) => void;
   loadPrevious: () => Promise<boolean>;
   loadNext: () => Promise<boolean>;
@@ -112,6 +117,7 @@ export function useReaderScrollCoordinator({
   hasNext,
   loadingPrevious,
   loadingNext,
+  chromeVisible,
   setActiveIndex,
   loadPrevious,
   loadNext,
@@ -126,6 +132,7 @@ export function useReaderScrollCoordinator({
   const [progress, setProgress] = useState(EMPTY_PROGRESS);
   const activeIndexRef = useRef(activeIndex);
   const progressRef = useRef(progress);
+  const chromeVisibleRef = useRef(chromeVisible);
   const callbacksRef = useRef({ chapterPosition, onChromeChange, onPersist });
   const prependRef = useRef<{
     firstIndex: number;
@@ -134,6 +141,7 @@ export function useReaderScrollCoordinator({
   } | null>(null);
   activeIndexRef.current = activeIndex;
   progressRef.current = progress;
+  chromeVisibleRef.current = chromeVisible;
   callbacksRef.current = { chapterPosition, onChromeChange, onPersist };
 
   useLayoutEffect(() => {
@@ -155,12 +163,23 @@ export function useReaderScrollCoordinator({
     if (!viewport || !root) return;
     let frame = 0;
     let persistTimer = 0;
+    let chromeScrollState = createReaderChromeScrollState(
+      viewport.scrollTop,
+      chromeVisibleRef.current
+    );
 
     const update = () => {
       frame = 0;
       if (!interactiveRef.current) return;
       const scrollTop = viewport.scrollTop;
-      callbacksRef.current.onChromeChange(scrollTop < 72);
+      chromeScrollState = updateReaderChromeScrollState(
+        { ...chromeScrollState, visible: chromeVisibleRef.current },
+        scrollTop
+      );
+      if (chromeScrollState.visible !== chromeVisibleRef.current) {
+        chromeVisibleRef.current = chromeScrollState.visible;
+        callbacksRef.current.onChromeChange(chromeScrollState.visible);
+      }
 
       const chapter = chapterAtProbe(root, viewport);
       const index = Number(chapter?.dataset.readerChapter);

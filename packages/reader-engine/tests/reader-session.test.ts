@@ -114,6 +114,40 @@ test('reader session loads adjacent chapters once without evicting earlier chapt
   assert.equal(snapshot.hasNext, false);
 });
 
+test('reader session refreshes identities without resetting loaded chapters or active position', async () => {
+  const calls: number[] = [];
+  const session = createReaderSession<Chapter>({
+    loader: {
+      async load(_novelId, index) {
+        calls.push(index);
+        return chapter(index);
+      }
+    },
+    cache: new MemoryReaderChapterCache<Chapter>(10)
+  });
+
+  await session.start('novel-1', identities(1, 3), 1);
+  await session.loadNext();
+  session.setActiveIndex(2);
+
+  session.updateIdentities(identities(1, 5));
+
+  assert.deepEqual(
+    session.snapshot().chapters.map((item) => item.index),
+    [1, 2]
+  );
+  assert.equal(session.snapshot().activeIndex, 2);
+  assert.equal(session.snapshot().loading, 'idle');
+  assert.equal(session.snapshot().hasNext, true);
+
+  await session.loadNext();
+  assert.deepEqual(
+    session.snapshot().chapters.map((item) => item.index),
+    [1, 2, 3]
+  );
+  assert.equal(calls.filter((index) => index === 1).length, 1);
+});
+
 test('reader session exposes loading snapshots, subscriptions, cancellation, and retry', async () => {
   let attempts = 0;
   const snapshots: ReaderSessionSnapshot<Chapter>[] = [];

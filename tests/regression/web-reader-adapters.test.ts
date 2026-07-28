@@ -24,6 +24,7 @@ test('web reader controller delegates window and loading behavior to reader-engi
   assert.match(source, /onActiveIndexChange/);
   assert.match(source, /onNavigate/);
   assert.match(source, /session\.subscribe/);
+  assert.match(source, /session\.updateIdentities\(identities\)/);
   assert.match(source, /lastReportedIndex\.current\s*=\s*null/);
   assert.doesNotMatch(source, /function trimAroundActive|class ReaderChapterSource/);
   assert.doesNotMatch(source, /react-router|useNavigate|useLocation/);

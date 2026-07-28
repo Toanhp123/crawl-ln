@@ -20,11 +20,12 @@ export function SettingsOptionList<T extends string>({
   disabled = false
 }: {
   ariaLabel: string;
-  value: T;
+  value?: T;
   items: Array<SettingsOptionItem<T>>;
   onChange: (value: T) => void;
   disabled?: boolean;
 }) {
+  const firstEnabledIndex = items.findIndex((item) => !item.disabled);
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const direction: RadioDirection | 0 =
       event.key === 'ArrowRight' || event.key === 'ArrowDown'
@@ -62,7 +63,11 @@ export function SettingsOptionList<T extends string>({
             role="radio"
             aria-checked={selected}
             disabled={itemDisabled}
-            tabIndex={selected && !itemDisabled ? 0 : -1}
+            tabIndex={
+              !itemDisabled && (selected || (value === undefined && index === firstEnabledIndex))
+                ? 0
+                : -1
+            }
             leading={item.icon}
             title={item.label}
             description={item.description}

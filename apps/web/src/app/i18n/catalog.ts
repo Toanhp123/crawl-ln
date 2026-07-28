@@ -21,6 +21,7 @@ import { editSourcePluginProjectCatalogs } from '@/features/edit-source-plugin-p
 import { exportNovelCatalogs } from '@/features/export-novel';
 import { exportSourcePluginProjectCatalogs } from '@/features/export-source-plugin-project';
 import { inspectSourceUrlCatalogs } from '@/features/inspect-source-url';
+import { importSourcePluginProjectCatalogs } from '@/features/import-source-plugin-project';
 import { installSourcePluginCatalogs } from '@/features/install-source-plugin';
 import { installSourcePluginProjectCatalogs } from '@/features/install-source-plugin-project';
 import { manageSourceCredentialCatalogs } from '@/features/manage-source-credential';
@@ -68,6 +69,7 @@ const sliceCatalogs = [
   exportNovelCatalogs,
   exportSourcePluginProjectCatalogs,
   inspectSourceUrlCatalogs,
+  importSourcePluginProjectCatalogs,
   installSourcePluginCatalogs,
   installSourcePluginProjectCatalogs,
   manageSourceCredentialCatalogs,

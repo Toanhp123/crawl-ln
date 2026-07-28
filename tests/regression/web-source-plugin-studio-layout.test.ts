@@ -63,6 +63,10 @@ test('Studio dashboard uses a project table and modal-triggered creation and ins
   assert.match(table, /DataTableHeaderCell/);
   assert.match(createModal, /<Modal/);
   assert.match(createModal, /useCreateSourcePluginProjectDraft/);
+  assert.match(createModal, /SegmentedControl/);
+  assert.match(createModal, /ImportSourcePluginProjectForm/);
+  assert.match(createModal, /create-blank/);
+  assert.match(createModal, /import-project/);
   assert.match(installModal, /InstallSourcePluginForm/);
   assert.doesNotMatch(page, /InstallSourcePluginForm/);
 });

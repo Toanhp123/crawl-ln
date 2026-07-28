@@ -201,6 +201,92 @@ test('installing a Studio project invalidates both project and installed-plugin 
   assert.equal(client.getQueryState(pluginEntity.sourcePluginKeys.list())?.isInvalidated, true);
 });
 
+test('Studio project import submits an explicit resolution and invalidates only project queries', async () => {
+  const requests: Array<{ path: string; init?: RequestInit }> = [];
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    requests.push({
+      path: new URL(String(input), 'http://novel-tool.test').pathname,
+      init
+    });
+    return new Response(
+      JSON.stringify({
+        data: {
+          id: 'project-1',
+          name: 'Imported Reader',
+          pluginId: 'imported-reader',
+          version: '1.0.0',
+          hosts: ['example.com'],
+          capabilities: ['metadata'],
+          selectors: {},
+          files: { 'manifest.json': '{}', 'src/index.ts': 'export default {}' },
+          revision: 1,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z'
+        },
+        error: null
+      }),
+      { status: 201, headers: { 'content-type': 'application/json' } }
+    );
+  }) as typeof fetch;
+
+  try {
+    const [{ QueryClient }, projectEntity, pluginEntity, importProject] = await Promise.all([
+      import('@tanstack/react-query'),
+      import('../../apps/web/src/entities/source-plugin-project/index.ts'),
+      import('../../apps/web/src/entities/source-plugin/index.ts'),
+      import('../../apps/web/src/features/import-source-plugin-project/index.ts')
+    ]);
+    const file = new File([Uint8Array.of(1, 2, 3)], 'source.zip', {
+      type: 'application/zip'
+    });
+    const project = await importProject.importSourcePluginProject({
+      file,
+      expectedChecksum: 'b'.repeat(64),
+      resolution: { type: 'create-copy' }
+    });
+    const client = new QueryClient();
+    client.setQueryData(projectEntity.sourcePluginProjectKeys.list(), ['draft']);
+    client.setQueryData(pluginEntity.sourcePluginKeys.list(), ['installed']);
+
+    await importProject.invalidateImportedSourcePluginProject(client);
+
+    assert.equal(project.pluginId, 'imported-reader');
+    assert.equal(
+      client.getQueryState(projectEntity.sourcePluginProjectKeys.list())?.isInvalidated,
+      true
+    );
+    assert.equal(client.getQueryState(pluginEntity.sourcePluginKeys.list())?.isInvalidated, false);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+
+  assert.equal(requests.length, 1);
+  const request = requests[0];
+  assert.equal(request?.path, '/api/source-reader/studio/projects/import');
+  assert.equal(request?.init?.method, 'POST');
+  assert.equal(new Headers(request?.init?.headers).get('content-type'), null);
+  assert.equal((request?.init?.body as FormData).get('plugin') instanceof File, true);
+  assert.deepEqual(JSON.parse(String((request?.init?.body as FormData).get('resolutionJson'))), {
+    type: 'create-copy'
+  });
+  assert.equal((request?.init?.body as FormData).get('expectedChecksum'), 'b'.repeat(64));
+
+  const graph = await collectStaticWebDependencies(
+    'apps/web/src/features/import-source-plugin-project/index.ts'
+  );
+  assert.equal(
+    [...graph.files].some((file) =>
+      /features[\\/]install-source-plugin(?:-project)?[\\/]/.test(file)
+    ),
+    false
+  );
+  assert.equal(
+    [...graph.files].some((file) => /features[\\/]build-source-plugin-project[\\/]/.test(file)),
+    false
+  );
+});
+
 test('Plugin Studio is a separate lazy route and uses Monaco with revision-aware saves', async () => {
   const [router, preload, studio, editor, workspace] = await Promise.all([
     readFile('apps/web/src/app/router/AppRouter.tsx', 'utf8'),
@@ -350,6 +436,24 @@ test('the capability picker exposes both selected and unselected toggle states',
   } finally {
     restoreLanguage();
   }
+});
+
+test('an explicit import resolution remains keyboard reachable before any choice is selected', async () => {
+  const { SettingsOptionList } = await import('../../apps/web/src/shared/ui/index.ts');
+  const html = renderToStaticMarkup(
+    createElement(SettingsOptionList, {
+      ariaLabel: 'Import resolution',
+      value: undefined,
+      items: [
+        { id: 'create-copy', label: 'Create a separate project' },
+        { id: 'update:project-1', label: 'Update existing project' }
+      ],
+      onChange: () => undefined
+    })
+  );
+
+  assert.equal((html.match(/tabindex="0"/g) ?? []).length, 1);
+  assert.equal((html.match(/aria-checked="true"/g) ?? []).length, 0);
 });
 
 test('the create-project form takes its visible default name from i18n', async () => {

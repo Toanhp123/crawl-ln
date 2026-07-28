@@ -579,6 +579,31 @@ export interface SourceReaderPluginInstallResult {
   [key: string]: unknown;
 }
 
+export type SourcePluginArchiveKind = 'built-package' | 'studio-source' | 'npm-workspace';
+
+export interface SourcePluginArchiveProjectConflict {
+  id: string;
+  name: string;
+  version: string;
+  revision: number;
+}
+
+export interface SourcePluginArchivePreview {
+  checksum: string;
+  kind: SourcePluginArchiveKind;
+  pluginId: string;
+  name: string;
+  version: string;
+  hosts: string[];
+  capabilities: string[];
+  files: string[];
+  ignoredFiles: string[];
+  conflicts: SourcePluginArchiveProjectConflict[];
+}
+
+export type SourcePluginProjectImportResolution =
+  { type: 'create-copy' } | { type: 'update'; projectId: string; expectedRevision: number };
+
 export interface SourceReaderPluginActivationResult {
   pluginId: string;
   version: string;

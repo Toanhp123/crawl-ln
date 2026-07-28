@@ -40,11 +40,35 @@ function sha256(value: string | Uint8Array): string {
 function safePath(path: string): boolean {
   return (
     path.length > 0 &&
+    !path.includes('\0') &&
+    !/^[a-zA-Z]:\//.test(path) &&
     !path.startsWith('/') &&
     !path.includes('\\') &&
-    !path.split('/').some((segment) => segment === '' || segment === '..') &&
+    !path.split('/').some((segment) => segment === '' || segment === '.' || segment === '..') &&
     /^(manifest\.json|src\/[A-Za-z0-9._/-]+|tests\/[A-Za-z0-9._/-]+)$/.test(path)
   );
+}
+
+export function assertSourcePluginStudioFiles(files: Record<string, string>): void {
+  const entries = Object.entries(files);
+  if (entries.length === 0 || entries.length > MAX_SOURCE_FILES) {
+    throw new Error('Plugin Studio source file limit exceeded');
+  }
+  let bytes = 0;
+  for (const [path, content] of entries) {
+    if (!safePath(path)) throw new Error(`Unsafe plugin source path: ${path}`);
+    if (content.includes('\0') || Buffer.from(content, 'utf8').toString('utf8') !== content) {
+      throw new Error(`Plugin Studio source file is not valid UTF-8 text: ${path}`);
+    }
+    bytes += Buffer.byteLength(content);
+  }
+  if (bytes > MAX_SOURCE_BYTES) throw new Error('Plugin Studio source size limit exceeded');
+  if (!Object.prototype.hasOwnProperty.call(files, 'manifest.json')) {
+    throw new Error('Plugin Studio requires manifest.json');
+  }
+  if (!Object.prototype.hasOwnProperty.call(files, 'src/index.ts')) {
+    throw new Error('Plugin Studio requires src/index.ts');
+  }
 }
 
 function within(parent: string, candidate: string): boolean {
@@ -285,17 +309,6 @@ export class SourcePluginStudioBuilder implements PluginStudioBuilderPort {
   }
 
   private assertFiles(files: Record<string, string>): void {
-    const entries = Object.entries(files);
-    if (entries.length === 0 || entries.length > MAX_SOURCE_FILES) {
-      throw new Error('Plugin Studio source file limit exceeded');
-    }
-    let bytes = 0;
-    for (const [path, content] of entries) {
-      if (!safePath(path)) throw new Error(`Unsafe plugin source path: ${path}`);
-      bytes += Buffer.byteLength(content);
-    }
-    if (bytes > MAX_SOURCE_BYTES) throw new Error('Plugin Studio source size limit exceeded');
-    if (!files['manifest.json']) throw new Error('Plugin Studio requires manifest.json');
-    if (!files['src/index.ts']) throw new Error('Plugin Studio requires src/index.ts');
+    assertSourcePluginStudioFiles(files);
   }
 }

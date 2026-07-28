@@ -212,18 +212,32 @@ test('setup help does not require installed third-party packages', async () => {
   assert.match(lines.join('\n'), /--skip-build/);
 });
 
-test('setup creates the API environment from the tracked template', async () => {
+test('setup creates the API environment with unique 32-byte secrets', async () => {
   const root = await mkdtemp(join(tmpdir(), 'novel-tool-setup-env-'));
   try {
     const apiRoot = join(root, 'apps', 'api');
-    const template = 'HOST=127.0.0.1\nPORT=3000\n';
+    const template = [
+      'HOST=127.0.0.1',
+      'SOURCE_READER_CURSOR_KEY=replace-with-a-private-key',
+      '# SOURCE_READER_MASTER_KEY=',
+      ''
+    ].join('\n');
     await mkdir(apiRoot, { recursive: true });
     await writeFile(join(apiRoot, '.env.example'), template);
 
     const { ensureApiEnvironment } = await import('../../scripts/cli/lib/api-environment.mjs');
 
     assert.equal(await ensureApiEnvironment({ root }), 'created');
-    assert.equal(await readFile(join(apiRoot, '.env'), 'utf8'), template);
+    const environment = await readFile(join(apiRoot, '.env'), 'utf8');
+    const cursorKey = environment.match(/^SOURCE_READER_CURSOR_KEY=(.+)$/m)?.[1];
+    const masterKey = environment.match(/^SOURCE_READER_MASTER_KEY=(.+)$/m)?.[1];
+
+    assert.match(environment, /^HOST=127\.0\.0\.1$/m);
+    assert.ok(cursorKey);
+    assert.ok(masterKey);
+    assert.equal(Buffer.from(cursorKey, 'base64url').length, 32);
+    assert.equal(Buffer.from(masterKey, 'base64').length, 32);
+    assert.notEqual(cursorKey, 'replace-with-a-private-key');
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -240,7 +254,15 @@ test('setup preserves an existing API environment byte for byte', async () => {
 
     const { ensureApiEnvironment } = await import('../../scripts/cli/lib/api-environment.mjs');
 
-    assert.equal(await ensureApiEnvironment({ root }), 'existing');
+    assert.equal(
+      await ensureApiEnvironment({
+        root,
+        randomBytesFn() {
+          throw new Error('secret generation must not run for an existing environment');
+        }
+      }),
+      'existing'
+    );
     assert.equal(await readFile(join(apiRoot, '.env'), 'utf8'), existing);
   } finally {
     await rm(root, { recursive: true, force: true });

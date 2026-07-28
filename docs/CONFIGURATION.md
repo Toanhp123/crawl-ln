@@ -1,6 +1,6 @@
 # Configuration
 
-`npm run setup` creates `apps/api/.env` from `apps/api/.env.example` when it is missing and preserves an existing file. Values are read by the API at startup; restart the process after changing them.
+`npm run setup` creates `apps/api/.env` from `apps/api/.env.example` when it is missing and preserves an existing file. During first-time creation it generates unique values for `SOURCE_READER_CURSOR_KEY` and `SOURCE_READER_MASTER_KEY`; generated secrets are never printed. Values are read by the API at startup; restart the process after changing them.
 
 ## Server and Storage
 
@@ -17,8 +17,8 @@ API_CORS_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
 ## Source Reader Runtime
 
 ```env
-SOURCE_READER_CURSOR_KEY=replace-with-a-private-key
-# SOURCE_READER_MASTER_KEY=<base64-for-exactly-32-bytes>
+SOURCE_READER_CURSOR_KEY=<generated-by-npm-run-setup>
+SOURCE_READER_MASTER_KEY=<generated-base64-for-exactly-32-bytes>
 # SOURCE_READER_PLUGIN_DIR=./storage/source-plugins
 # SOURCE_READER_BROWSER_EXECUTABLE=/absolute/path/to/chromium
 SOURCE_READER_NETWORK_DIAGNOSTIC_URL=https://example.com/

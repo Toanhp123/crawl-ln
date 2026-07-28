@@ -57,7 +57,7 @@ The inspector receives the uploaded bytes and returns a preview without mutating
 - `npm-workspace`: contains a `package.json` plus a supported Studio source layout. `package.json` is metadata only; the server never runs npm scripts or installs dependencies.
 - `unsupported`: every other layout, including ambiguous archives with multiple candidate plugin roots.
 
-The preview includes kind, manifest metadata, normalized source files, ignored files, archive checksum, and duplicate project warnings. Source imports must still satisfy the Studio builder policy: only SDK imports and safe relative imports are allowed.
+The preview includes kind, manifest metadata, normalized source files, ignored files, archive checksum, and duplicate project warnings. Import validates archive and source structure without compiling. When the project is built later, the Studio builder still enforces SDK-only and safe-relative import policy.
 
 ## Install Package Flow
 

@@ -1,15 +1,12 @@
 import { createHash, verify as verifySignature } from 'node:crypto';
-import JSZip from 'jszip';
 import type {
   PluginPackageVerifierPort,
   VerifiedPluginPackage
 } from '../../../application/ports/plugin-package-verifier.port.js';
 import type { TrustStorePort } from '../../../application/ports/trust-store.port.js';
 import { parseSourcePluginManifest } from '../../../domain/plugin/source-plugin-manifest.schema.js';
+import { loadSafeSourcePluginArchive } from '../archive/source-plugin-archive-safety.js';
 
-const MAX_PACKAGE_BYTES = 20 * 1024 * 1024;
-const MAX_FILES = 500;
-const MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024;
 const REQUIRED_FILES = ['manifest.json', 'dist/index.js', 'checksums.json'] as const;
 const UNCHECKED_FILES = new Set(['checksums.json', 'signature.json']);
 const SHA256_HEX = /^[a-f0-9]{64}$/;
@@ -17,16 +14,12 @@ const SHA256_HEX = /^[a-f0-9]{64}$/;
 function safePath(path: string): boolean {
   return (
     path.length > 0 &&
+    !path.includes('\0') &&
     !path.startsWith('/') &&
     !path.includes('\\') &&
-    !path.split('/').some((segment) => segment === '..' || segment === '')
+    !/^[a-zA-Z]:\//.test(path) &&
+    !path.split('/').some((segment) => segment === '..' || segment === '' || segment === '.')
   );
-}
-
-function unixMode(value: number | string | null | undefined): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') return Number.parseInt(value, 8);
-  return 0;
 }
 
 function forbiddenExecutableMagic(content: Uint8Array): boolean {
@@ -40,23 +33,6 @@ function forbiddenExecutableMagic(content: Uint8Array): boolean {
     }
   }
   return content.length >= 2 && content[0] === 0x4d && content[1] === 0x5a;
-}
-
-function assertArchiveEntryPolicy(entry: JSZip.JSZipObject): void {
-  const originalPath = entry.unsafeOriginalName ?? entry.name;
-  if (!safePath(originalPath) || !safePath(entry.name)) {
-    throw new Error(`Unsafe package path: ${originalPath}`);
-  }
-  const mode = unixMode(entry.unixPermissions);
-  if ((mode & 0o170000) === 0o120000) {
-    throw new Error(`Symbolic links are forbidden in plugin packages: ${entry.name}`);
-  }
-  if ((mode & 0o111) !== 0) {
-    throw new Error(`Executable permission bits are forbidden: ${entry.name}`);
-  }
-  if (entry.name.toLowerCase().endsWith('.node')) {
-    throw new Error(`Native addons are forbidden: ${entry.name}`);
-  }
 }
 
 function text(files: Map<string, Uint8Array>, path: string): string {
@@ -114,31 +90,22 @@ export class SourcePluginPackageVerifier implements PluginPackageVerifierPort {
   constructor(private readonly trustStore: TrustStorePort) {}
 
   async verify(bytes: Uint8Array): Promise<VerifiedPluginPackage> {
-    if (bytes.byteLength > MAX_PACKAGE_BYTES) {
-      throw new Error('Plugin package exceeds size limit');
-    }
-
-    const zip = await JSZip.loadAsync(bytes, { checkCRC32: true });
-    const entries = Object.values(zip.files).filter((entry) => !entry.dir);
-    if (entries.length > MAX_FILES) throw new Error('Plugin package contains too many files');
-
-    for (const entry of entries) assertArchiveEntryPolicy(entry);
+    const archive = await loadSafeSourcePluginArchive(bytes);
+    const entryPaths = new Set(archive.entries.map((entry) => entry.path));
     for (const file of REQUIRED_FILES) {
-      if (!zip.file(file)) throw new Error(`Missing ${file}`);
+      if (!entryPaths.has(file)) throw new Error(`Missing ${file}`);
     }
 
     const files = new Map<string, Uint8Array>();
-    let uncompressedBytes = 0;
-    for (const entry of entries) {
-      const content = await entry.async('uint8array');
-      uncompressedBytes += content.byteLength;
-      if (uncompressedBytes > MAX_UNCOMPRESSED_BYTES) {
-        throw new Error('Plugin package expands beyond limit');
+    for (const entry of archive.entries) {
+      if (entry.path.toLowerCase().endsWith('.node')) {
+        throw new Error(`Native addons are forbidden: ${entry.path}`);
       }
+      const content = await entry.read();
       if (forbiddenExecutableMagic(content)) {
-        throw new Error(`Executable binary content is forbidden: ${entry.name}`);
+        throw new Error(`Executable binary content is forbidden: ${entry.path}`);
       }
-      files.set(entry.name, content);
+      files.set(entry.path, content);
     }
 
     const manifest = parseSourcePluginManifest(

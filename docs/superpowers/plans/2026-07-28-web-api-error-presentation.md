@@ -28,10 +28,12 @@
 ### Task 1: Preserve Backend Messages in the Global Error Interpreter
 
 **Files:**
+
 - Modify: `apps/web/src/app/i18n/error-catalog.ts`
 - Test: `tests/regression/web-app-shell.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ApiError.message`, `ApiError.code`, and `ApiError.requestId`.
 - Produces: `interpretAppError(error: unknown): string | undefined` that returns a non-empty API message unchanged and never includes diagnostic fields.
 
@@ -51,7 +53,10 @@ test('error interpreter prefers backend messages and hides diagnostics', async (
   });
 
   assert.equal(interpretAppError(error), 'Plugin is used by an active crawl task.');
-  assert.doesNotMatch(interpretAppError(error) ?? '', /SOURCE_PLUGIN_IN_USE|request-1|job-1|secret/);
+  assert.doesNotMatch(
+    interpretAppError(error) ?? '',
+    /SOURCE_PLUGIN_IN_USE|request-1|job-1|secret/
+  );
 });
 ```
 
@@ -81,6 +86,7 @@ git commit -m "fix(web): prefer backend error messages"
 ### Task 2: Remove Technical Error Formatting from Feature Slices
 
 **Files:**
+
 - Modify: `apps/web/src/shared/api/errors.ts`
 - Modify: `apps/web/src/shared/api/index.ts`
 - Modify: `apps/web/src/features/test-source-plugin/model/use-test-source-plugin.ts`
@@ -99,6 +105,7 @@ git commit -m "fix(web): prefer backend error messages"
 - Test: `tests/regression/web-source-reader-features.test.ts`
 
 **Interfaces:**
+
 - Consumes: `useI18n().errorMessage(error, fallbackKey)` from each feature's existing i18n context.
 - Produces: feature toasts, banners, and form errors containing only the safe user-facing message.
 
@@ -122,13 +129,13 @@ Expected: FAIL because the feature slices still import and call `getPublicErrorD
 For every hook/component already calling `useI18n`, change the destructuring to include `errorMessage` and replace:
 
 ```ts
-getPublicErrorDescription(error)
+getPublicErrorDescription(error);
 ```
 
 with:
 
 ```ts
-errorMessage(error)
+errorMessage(error);
 ```
 
 Keep existing titles, conflict branching, retry actions, and mutation state unchanged. For `InspectSourceUrl` and `ReviewSourcePermissions`, pass the raw error into `ErrorBanner` when possible so the shared boundary performs the same interpretation.
@@ -153,9 +160,11 @@ git commit -m "fix(web): route feature errors through i18n"
 ### Task 3: Verify the Cross-Cutting Error Contract
 
 **Files:**
+
 - Test only: existing web regression suites and shared API consumers.
 
 **Interfaces:**
+
 - Consumes: the completed shared interpreter and feature migration.
 - Produces: evidence that message-first error presentation does not break typed conflict handling or unrelated error flows.
 

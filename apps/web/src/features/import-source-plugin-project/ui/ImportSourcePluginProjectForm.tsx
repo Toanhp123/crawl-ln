@@ -4,7 +4,6 @@ import { useI18n } from '../../../shared/i18n';
 import {
   Button,
   Chip,
-  Field,
   FilePicker,
   InlineNotice,
   LoadingState,
@@ -44,8 +43,12 @@ export function ImportSourcePluginProjectForm({
   return (
     <div className="space-y-5">
       <InlineNotice>{t('importSourcePluginProject.description')}</InlineNotice>
-      <Field label={t('importSourcePluginProject.file')}>
+      <div className="space-y-2.5">
+        <Text as="div" variant="label" tone="secondary">
+          {t('importSourcePluginProject.file')}
+        </Text>
         <FilePicker
+          inputLabel={t('importSourcePluginProject.file')}
           value={flow.file}
           accept=".zip,.source-plugin,application/zip"
           disabled={flow.step === 'importing'}
@@ -56,7 +59,7 @@ export function ImportSourcePluginProjectForm({
           removeLabel={t('importSourcePluginProject.remove')}
           onChange={flow.chooseFile}
         />
-      </Field>
+      </div>
 
       {flow.inspectionPending ? (
         <LoadingState

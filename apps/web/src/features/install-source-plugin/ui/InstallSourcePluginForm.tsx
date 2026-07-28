@@ -3,7 +3,6 @@ import { useI18n } from '../../../shared/i18n';
 import {
   Button,
   Chip,
-  Field,
   FilePicker,
   InlineNotice,
   LoadingState,
@@ -29,8 +28,12 @@ export function InstallSourcePluginForm({
       {surface === 'panel' ? (
         <InlineNotice>{t('installSourcePlugin.description')}</InlineNotice>
       ) : null}
-      <Field label={t('installSourcePlugin.file')}>
+      <div className="space-y-2.5">
+        <Text as="div" variant="label" tone="secondary">
+          {t('installSourcePlugin.file')}
+        </Text>
         <FilePicker
+          inputLabel={t('installSourcePlugin.file')}
           value={flow.file}
           accept=".zip,.source-plugin,application/zip"
           disabled={flow.step === 'installing'}
@@ -41,7 +44,7 @@ export function InstallSourcePluginForm({
           removeLabel={t('installSourcePlugin.remove')}
           onChange={flow.chooseFile}
         />
-      </Field>
+      </div>
       {flow.inspectionPending ? (
         <LoadingState
           title={t('installSourcePlugin.inspecting')}

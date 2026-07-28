@@ -1,11 +1,7 @@
-import { access } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import { expect, test, type Route } from '@playwright/test';
 import { installE2eRuntime } from './runtime.fixture';
+import { createSourcePluginArchiveFixture } from './source-plugin-archive.fixture';
 
-const artifact = resolve(
-  process.env.NOVELCOOL_PLUGIN_ARTIFACT ?? 'dist/plugins/novelcool-2.0.0.source-plugin'
-);
 const ok = (data: unknown) => ({ data, error: null });
 
 async function json(route: Route, data: unknown, status = 200) {
@@ -13,7 +9,14 @@ async function json(route: Route, data: unknown, status = 200) {
 }
 
 test('installs, approves and enables the generated NovelCool external plugin', async ({ page }) => {
-  await access(artifact);
+  const archive = await createSourcePluginArchiveFixture({
+    id: 'novelcool',
+    name: 'NovelCool',
+    version: '2.0.0',
+    hosts: ['novelcool.com'],
+    capabilities: ['identify', 'metadata', 'chapter-list', 'chapter-content']
+  });
+  const checksum = 'c'.repeat(64);
   await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await installE2eRuntime(page);
 
@@ -39,13 +42,31 @@ test('installs, approves and enables the generated NovelCool external plugin', a
     const path = new URL(request.url()).pathname;
     const method = request.method();
 
-    if (path === '/api/source-reader/plugins/install' && method === 'POST') {
+    if (path === '/api/source-reader/plugins/import/inspect' && method === 'POST') {
       expect(request.headers()['content-type']).toContain('multipart/form-data');
-      expect(request.postDataBuffer()?.includes(Buffer.from('novelcool-2.0.0.source-plugin'))).toBe(
-        true
-      );
+      expect(request.postDataBuffer()?.includes(Buffer.from(archive.fileName))).toBe(true);
+      return json(route, {
+        checksum,
+        kind: 'studio-source',
+        pluginId: 'novelcool',
+        name: 'NovelCool',
+        version: '2.0.0',
+        hosts: ['novelcool.com'],
+        capabilities: ['identify', 'metadata', 'chapter-list', 'chapter-content'],
+        files: ['manifest.json', 'src/index.ts'],
+        ignoredFiles: ['README.md'],
+        conflicts: []
+      });
+    }
+    if (path === '/api/source-reader/plugins/import/install' && method === 'POST') {
+      const body = request.postDataBuffer();
+      expect(body?.includes(Buffer.from(archive.fileName))).toBe(true);
+      expect(body?.includes(Buffer.from(checksum))).toBe(true);
       installed = true;
       return json(route, { ...descriptor(), status: 'pending-approval' }, 202);
+    }
+    if (path === '/api/source-reader/plugins/install' && method === 'POST') {
+      throw new Error('Source archive install must not use the legacy package endpoint');
     }
     if (path === '/api/source-reader/plugins' && method === 'GET') {
       const installedDescriptor = descriptor();
@@ -103,12 +124,28 @@ test('installs, approves and enables the generated NovelCool external plugin', a
   });
 
   await page.goto('/sources/new');
+  await expect(page.getByText('No saved Studio projects', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Install package', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Install package' })).toBeVisible();
-  await page.getByLabel('Plugin package', { exact: true }).setInputFiles(artifact);
-  await page.getByRole('button', { name: 'Install plugin', exact: true }).click();
+  await page.getByLabel('Plugin package', { exact: true }).setInputFiles({
+    name: archive.fileName,
+    mimeType: 'application/zip',
+    buffer: archive.buffer
+  });
+  await expect(page.getByText('Plugin Studio source', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(
+      'This source archive will be built temporarily for installation. No Studio project will be created.',
+      { exact: true }
+    )
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Confirm installation', exact: true }).click();
   await expect(page).toHaveURL(/\/sources\?section=plugins/);
   await expect(page.getByRole('button', { name: 'Details', exact: true })).toBeVisible();
+
+  await page.goto('/sources/new');
+  await expect(page.getByText('No saved Studio projects', { exact: true })).toBeVisible();
+  await page.goto('/sources?section=plugins');
 
   await page.getByRole('button', { name: 'Details', exact: true }).click();
   await expect(page.getByText('Local, unverified', { exact: true })).toBeVisible();

@@ -37,6 +37,23 @@ signature.json          # optional; required when claiming signed trust
 
 The manifest contains the plugin id, version, engine range, contract versions, capabilities, matchers, runtime preference, permissions, and optional authentication/network requirements. Package paths, stack traces, and raw installation details are never returned by the public API.
 
+## Plugin archive workflows
+
+The web console accepts `.source-plugin` and `.zip` archives. The extension is only a file-picker hint; the backend safely inspects the archive contents and classifies a verified built package, Plugin Studio source, or a supported npm workspace. npm metadata may be inspected, but the host never runs package scripts or installs archive dependencies.
+
+The two user actions have intentionally separate side effects:
+
+```text
+Install package: validate -> direct install or temporary build -> pending approval; no Studio project.
+Import project: validate -> create/update Studio project -> open editor; no build/install.
+```
+
+Both flows first call `POST /plugins/import/inspect`, display the normalized metadata and warnings, and retain the original file. Confirmation re-uploads that file with the preview checksum. A changed archive is rejected with `409 CONFLICT` instead of applying a stale preview.
+
+`Install package` sends confirmation to `POST /plugins/import/install`. A built package goes through the package verifier directly. A source archive is compiled in temporary storage by the existing Studio builder, verified, installed as `pending-approval`, and then cleaned up. It never creates or updates a Studio draft, and approval and enable remain manual actions.
+
+`New project -> Import project` sends confirmation to `POST /studio/projects/import`. It accepts source layouts only, validates and persists the normalized `manifest.json`, `src/**`, and `tests/**` files, then opens the returned project. If the plugin ID already exists, the operator must explicitly create a separate copy or update a named project at its current revision. This flow never builds, installs, approves, or enables a plugin.
+
 ## Contract and extension versions
 
 Every capability declares a contract version. The host rejects unsupported versions before execution. Optional extension values are wrapped with their own version and validated by the host; unknown optional extensions may be ignored, while unknown required extensions fail with `PLUGIN_CONTRACT_INCOMPATIBLE`.
@@ -51,7 +68,7 @@ Activation is an explicit manual `Install -> Approve -> Enable` sequence. Approv
 
 ## First-party NovelCool installation
 
-A full `npm run build` produces `dist/plugins/novelcool-2.0.0.source-plugin`. Build, setup, and start never install, update, approve, or activate that package. To use NovelCool, manually install it from the `/sources` Plugins page: choose **Install plugin**, upload the generated package, open the installed NovelCool version, approve its requested network access to `novelcool.com` and `*.novelcool.com`, and then enable version `2.0.0`.
+A full `npm run build` produces `dist/plugins/novelcool-2.0.0.source-plugin`. Build, setup, and start never install, update, approve, or activate that package. To manually install NovelCool, open Plugin Studio at `/sources/new`, choose **Install package**, upload the generated package, review the archive preview, and confirm installation. Then open the installed NovelCool version from `/sources`, approve its requested network access to `novelcool.com` and `*.novelcool.com`, and enable version `2.0.0`.
 
 The first-party artifact is unsigned, so the production verifier reports `local-unverified`: it was built locally and passed package integrity checks, but it is not trusted release-signed software. NovelCool execution is always `isolated` in the supervised child process; approval does not permit in-process execution.
 
@@ -125,6 +142,9 @@ Requests may include `credentialProfileId`, `networkProfileId`, `freshOnly`, and
 
 - `GET /plugins`
 - `POST /plugins/install`
+- `POST /plugins/import/inspect`
+- `POST /plugins/import/install`
+- `POST /studio/projects/import`
 - `POST /plugins/:pluginId/enable`
 - `POST /plugins/:pluginId/disable`
 - `DELETE /plugins/:pluginId`

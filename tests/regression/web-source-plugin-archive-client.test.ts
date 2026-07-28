@@ -117,6 +117,7 @@ test('install form exposes the shared drop picker before an archive is inspected
   );
 
   assert.match(html, /type="file"/);
+  assert.match(html, /aria-label="Plugin package"/);
   assert.match(html, /or drop it here/);
   assert.match(html, /No file selected/);
   assert.doesNotMatch(html, /Install plugin/);

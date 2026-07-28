@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { installE2eRuntime } from './runtime.fixture';
+import { createSourcePluginArchiveFixture } from './source-plugin-archive.fixture';
 
 const ok = (data: unknown) => ({ data, error: null });
 
@@ -37,6 +38,7 @@ async function fulfill(route: Route, data: unknown, status = 200) {
 
 async function mockStudio(page: Page) {
   let project = createProject();
+  let projects: ReturnType<typeof createProject>[] = [];
 
   await page.route('**/api/source-reader/studio/projects**', async (route) => {
     const request = route.request();
@@ -44,9 +46,17 @@ async function mockStudio(page: Page) {
     const method = request.method();
 
     if (path === '/api/source-reader/studio/projects' && method === 'GET') {
-      return fulfill(route, []);
+      return fulfill(route, projects);
     }
     if (path === '/api/source-reader/studio/projects' && method === 'POST') {
+      projects = [project];
+      return fulfill(route, project, 201);
+    }
+    if (path === '/api/source-reader/studio/projects/import' && method === 'POST') {
+      const body = request.postDataBuffer();
+      expect(body?.includes(Buffer.from('source-plugin-project-source.zip'))).toBe(true);
+      expect(body?.includes(Buffer.from('"type":"create-copy"'))).toBe(true);
+      projects = [project];
       return fulfill(route, project, 201);
     }
     if (path.endsWith('/studio-demo') && method === 'GET') {
@@ -64,6 +74,10 @@ async function mockStudio(page: Page) {
     }
     return fulfill(route, project);
   });
+
+  return {
+    projectCount: () => projects.length
+  };
 }
 
 test.describe('desktop Studio workspace', () => {
@@ -220,6 +234,104 @@ test('mobile Studio switches one visible workspace panel at a time', async ({ pa
   await expect(page.locator('[data-studio-region="editor"]')).toBeHidden();
   await expect(page.locator('[data-studio-region="files"]')).toHaveCount(1);
   await expect(page.locator('[data-studio-region="editor"]')).toHaveCount(1);
+});
+
+test.describe('source archive project import', () => {
+  test.use({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    hasTouch: false,
+    isMobile: false
+  });
+
+  test('imports source files into Studio without changing installed plugins', async ({ page }) => {
+    const archive = await createSourcePluginArchiveFixture({
+      id: 'source-plugin-project',
+      name: 'Source Plugin Project'
+    });
+    const checksum = 'd'.repeat(64);
+    let installMutations = 0;
+    let pluginListReads = 0;
+    const existingPlugin = {
+      id: 'existing-reader',
+      name: 'Existing Reader',
+      latestVersion: '1.0.0',
+      activeVersion: '1.0.0',
+      trustLevel: 'local-verified',
+      status: 'active',
+      enabled: true,
+      capabilities: ['identify'],
+      domains: ['existing.example'],
+      permissionsPending: false,
+      health: { status: 'healthy' }
+    };
+
+    await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
+    await installE2eRuntime(page);
+    await page.route('**/api/source-reader/**', (route) => fulfill(route, []));
+    const studio = await mockStudio(page);
+    await page.route('**/api/source-reader/plugins**', async (route) => {
+      const request = route.request();
+      const path = new URL(request.url()).pathname;
+      const method = request.method();
+      if (path === '/api/source-reader/plugins/import/inspect' && method === 'POST') {
+        return fulfill(route, {
+          checksum,
+          kind: 'studio-source',
+          pluginId: archive.manifest.id,
+          name: archive.manifest.name,
+          version: archive.manifest.version,
+          hosts: archive.manifest.permissions.network.hosts,
+          capabilities: archive.manifest.capabilities,
+          files: ['manifest.json', 'src/index.ts'],
+          ignoredFiles: ['README.md'],
+          conflicts: []
+        });
+      }
+      if (path === '/api/source-reader/plugins' && method === 'GET') {
+        pluginListReads += 1;
+        return fulfill(route, [existingPlugin]);
+      }
+      if (method === 'POST') installMutations += 1;
+      return fulfill(route, []);
+    });
+
+    await page.goto('/sources?section=plugins');
+    await expect(page.getByText('Existing Reader', { exact: true })).toBeVisible();
+
+    await page.goto('/sources/new');
+    await page.getByRole('button', { name: 'New project', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'New project' });
+    await dialog.getByRole('radio', { name: 'Import project', exact: true }).click();
+    await dialog.getByLabel('Source archive', { exact: true }).setInputFiles({
+      name: archive.fileName,
+      mimeType: 'application/zip',
+      buffer: archive.buffer
+    });
+
+    await expect(dialog.getByText('Plugin Studio source', { exact: true })).toBeVisible();
+    await expect(
+      dialog.getByText(
+        'Import validates and saves source files only. It does not build or install the plugin.',
+        { exact: true }
+      )
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole('radio', { name: /^Create a separate Studio project/ })
+    ).toBeChecked();
+    await dialog.getByRole('button', { name: 'Import project', exact: true }).click();
+
+    await expect(page).toHaveURL(/project=studio-demo/);
+    await expect(page.getByRole('button', { name: /manifest\.json$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'src\/index.ts', exact: true })).toBeVisible();
+    expect(studio.projectCount()).toBe(1);
+    expect(installMutations).toBe(0);
+
+    await page.goto('/sources?section=plugins');
+    await expect(page.getByText('Existing Reader', { exact: true })).toBeVisible();
+    await expect(page.getByText('Source Plugin Project', { exact: true })).toHaveCount(0);
+    expect(pluginListReads).toBeGreaterThanOrEqual(2);
+  });
 });
 
 test.describe('WebKit-style clipboard behavior', () => {

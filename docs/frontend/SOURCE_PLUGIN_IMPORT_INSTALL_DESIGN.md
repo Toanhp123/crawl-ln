@@ -33,9 +33,11 @@ The existing package verifier remains the final gate for built artifacts. The ex
 
 ## Shared File Picker
 
-Add a shared `FilePicker` control under `apps/web/src/shared/ui` with one responsibility: selecting a single local file.
+The shared `FilePicker` control under `apps/web/src/shared/ui` has one responsibility: selecting a single local file.
 
 The control supports click-to-select and drag/drop, exposes the selected file name and size, forwards `accept`, supports disabled/error states, and never performs domain validation. Feature slices provide limits, accepted labels, and validation messages.
+
+Its hidden file input has a feature-provided accessible name, so install and import forms remain addressable by their domain labels without nesting HTML labels or relying on test-only selectors.
 
 ## Archive Classification
 
@@ -110,3 +112,14 @@ The HTTP layer exposes inspect/install/import endpoints under the source-reader 
 - Import use-case tests prove validation-only behavior, duplicate warning/update/copy decisions, revision conflicts, and no install side effects.
 - Web regression tests cover both modal flows and preview confirmation.
 - E2E covers install-package and import-project journeys on desktop and mobile.
+
+## Implemented acceptance contract
+
+The shipped UI and API preserve this operator-visible split:
+
+```text
+Install package: validate -> direct install or temporary build -> pending approval; no Studio project.
+Import project: validate -> create/update Studio project -> open editor; no build/install.
+```
+
+The installation acceptance uploads a generated source ZIP, verifies the temporary-build preview, confirms with the inspected checksum, observes a `pending-approval` plugin, and verifies the Studio project list remains unchanged. The project-import acceptance uploads the same supported source layout, confirms `create-copy`, opens `manifest.json` and `src/index.ts` in Studio, and verifies the installed-plugin list remains unchanged.

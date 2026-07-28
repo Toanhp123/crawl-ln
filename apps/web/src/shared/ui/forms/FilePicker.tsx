@@ -5,6 +5,7 @@ import { Button } from '../actions/Button';
 
 export interface FilePickerProps {
   id?: string;
+  inputLabel: string;
   value?: File;
   accept?: string;
   disabled?: boolean;
@@ -26,6 +27,7 @@ function formatFileSize(bytes: number): string {
 
 export function FilePicker({
   id,
+  inputLabel,
   value,
   accept,
   disabled = false,
@@ -74,6 +76,7 @@ export function FilePicker({
         ref={inputRef}
         id={inputId}
         type="file"
+        aria-label={inputLabel}
         className="peer sr-only"
         accept={accept}
         disabled={disabled}

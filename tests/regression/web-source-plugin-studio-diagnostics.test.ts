@@ -50,9 +50,18 @@ test('Monaco Studio configuration registers SDK typings and strict compiler opti
 
 test('Studio workbench exposes diagnostics and opens their source locations', async () => {
   const [workbench, panel, toolbar] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioWorkbench.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioDiagnostics.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioToolbar.tsx', 'utf8')
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioWorkbench.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/inspector/PluginStudioDiagnostics.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioToolbar.tsx',
+      'utf8'
+    )
   ]);
   assert.match(workbench, /useSourcePluginStudioDiagnostics/);
   assert.match(workbench, /selectFile\(diagnostic\.path\)/);
@@ -64,14 +73,15 @@ test('Studio workbench exposes diagnostics and opens their source locations', as
 
 test('Studio inspector exposes accessible Metadata and Diagnostics tabs', async () => {
   const source = await readFile(
-    'apps/web/src/widgets/source-plugin-studio/ui/PluginStudioInspector.tsx',
+    'apps/web/src/widgets/source-plugin-studio/ui/workbench/inspector/PluginStudioInspector.tsx',
     'utf8'
   );
   assert.match(source, /role="tablist"/);
   assert.match(source, /role="tab"/);
   assert.match(source, /aria-selected/);
   assert.match(source, /aria-controls/);
-  assert.match(source, /role="tabpanel"/);
+  assert.match(source, /role=\{variant === 'tabs' \? 'tabpanel' : undefined\}/);
+  assert.match(source, /variant\?: 'tabs' \| 'panel'/);
   assert.match(source, /PluginStudioManifestEditor/);
   assert.match(source, /PluginStudioDiagnostics/);
 });

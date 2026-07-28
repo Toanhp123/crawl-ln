@@ -1,6 +1,6 @@
 import { AlertTriangle, CircleCheck, CircleX } from 'lucide-react';
-import type { SourcePluginStudioDiagnostic } from '../model/source-plugin-studio-diagnostics';
-import { useI18n } from '../../../shared/i18n';
+import type { SourcePluginStudioDiagnostic } from '../../../model/source-plugin-studio-diagnostics';
+import { useI18n } from '../../../../../shared/i18n';
 
 export function PluginStudioDiagnostics({
   diagnostics,

@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react';
-import type { SourcePluginProject } from '../../../entities/source-plugin-project';
-import { useI18n } from '../../../shared/i18n';
-import { Button, ErrorBanner, InlineNotice } from '../../../shared/ui';
-import { useSourcePluginStudioWorkbench } from '../model/use-source-plugin-studio-workbench';
-import { useSourcePluginStudioDiagnostics } from '../model/use-source-plugin-studio-diagnostics';
-import type { PluginStudioPanel } from '../model/source-plugin-studio-layout';
-import { summarizeSourcePluginStudioDiagnosticsByPath } from '../model/source-plugin-studio-diagnostics';
-import { PluginStudioEditorPane } from './PluginStudioEditorPane';
-import { PluginStudioInspector, type PluginStudioInspectorTab } from './PluginStudioInspector';
-import { PluginStudioProjectSidebar } from './PluginStudioProjectSidebar';
+import type { SourcePluginProject } from '../../../../entities/source-plugin-project';
+import { useI18n } from '../../../../shared/i18n';
+import { Button, ErrorBanner, InlineNotice } from '../../../../shared/ui';
+import { useSourcePluginStudioWorkbench } from '../../model/use-source-plugin-studio-workbench';
+import { useSourcePluginStudioDiagnostics } from '../../model/use-source-plugin-studio-diagnostics';
+import type { PluginStudioPanel } from '../../model/source-plugin-studio-layout';
+import {
+  summarizeSourcePluginStudioDiagnosticsByPath,
+  type SourcePluginStudioDiagnostic
+} from '../../model/source-plugin-studio-diagnostics';
+import { PluginStudioEditorPane } from './editor/PluginStudioEditorPane';
+import { PluginStudioExplorer } from './PluginStudioExplorer';
+import { PluginStudioInspector } from './inspector/PluginStudioInspector';
 import { PluginStudioToolbar } from './PluginStudioToolbar';
-import { PluginStudioWorkspaceShell } from './PluginStudioWorkspaceShell';
+import { PluginStudioWorkspace } from './PluginStudioWorkspace';
 
 export function PluginStudioWorkbench({
   project,
@@ -36,10 +39,31 @@ export function PluginStudioWorkbench({
   );
 
   const [activePanel, setActivePanel] = useState<PluginStudioPanel>('editor');
-  const [inspectorTab, setInspectorTab] = useState<PluginStudioInspectorTab>('metadata');
-  const [filesCollapsed, setFilesCollapsed] = useState(false);
-  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
   const disabled = model.busy || model.workspace.status === 'conflict';
+  const openManifest = () => {
+    model.workspace.selectFile('manifest.json');
+    setActivePanel('editor');
+  };
+  const openDiagnostic = (diagnostic: SourcePluginStudioDiagnostic) => {
+    model.workspace.selectFile(diagnostic.path);
+    setDiagnosticLocation({
+      line: diagnostic.line,
+      column: diagnostic.column,
+      token: Date.now()
+    });
+    setActivePanel('editor');
+  };
+  const inspectorProps = {
+    projectId: model.workspace.project.id,
+    manifestSource: model.workspace.project.files['manifest.json'] ?? '',
+    manifest: model.manifest,
+    disabled,
+    diagnostics: diagnostics.diagnostics,
+    diagnosticSummary: diagnostics.summary,
+    onManifestChange: (source: string) => model.workspace.updateFile('manifest.json', source),
+    onOpenManifest: openManifest,
+    onOpenDiagnostic: openDiagnostic
+  };
   const notice =
     model.workspace.status === 'conflict' ? (
       <div className="border-b border-border bg-surface p-3">
@@ -67,26 +91,17 @@ export function PluginStudioWorkbench({
     ) : undefined;
 
   return (
-    <PluginStudioWorkspaceShell
+    <PluginStudioWorkspace
       activePanel={activePanel}
       onActivePanelChange={setActivePanel}
       diagnosticSummary={diagnostics.summary}
-      filesCollapsed={filesCollapsed}
-      inspectorCollapsed={inspectorCollapsed}
-      filesRailLabel={t('pluginStudio.fileExplorer')}
-      metadataRailLabel={t('pluginStudio.metadataTab')}
-      diagnosticsRailLabel={t('pluginStudio.diagnosticsTab')}
-      onExpandFiles={() => setFilesCollapsed(false)}
-      onExpandMetadata={() => {
-        setInspectorTab('metadata');
-        setInspectorCollapsed(false);
+      activityBarLabel={t('pluginStudio.activityBar')}
+      activityLabels={{
+        files: t('pluginStudio.fileExplorer'),
+        metadata: t('pluginStudio.metadataTab'),
+        diagnostics: t('pluginStudio.diagnosticsTab')
       }}
-      onExpandDiagnostics={() => {
-        setInspectorTab('diagnostics');
-        setInspectorCollapsed(false);
-      }}
-      resizeFilesLabel={t('pluginStudio.resizeFiles')}
-      resizeInspectorLabel={t('pluginStudio.resizeInspector')}
+      resizeSidebarLabel={t('pluginStudio.resizeSidebar')}
       toolbar={
         <PluginStudioToolbar
           project={model.workspace.project}
@@ -108,17 +123,12 @@ export function PluginStudioWorkbench({
         />
       }
       notice={notice}
-      sidebar={
-        <PluginStudioProjectSidebar
-          project={model.workspace.project}
-          manifest={model.manifest}
-          workspaceStatus={model.workspace.status}
+      filesSidebar={
+        <PluginStudioExplorer
           files={files}
           selectedFile={model.workspace.selectedFile}
           disabled={disabled}
           diagnosticsByPath={diagnosticsByPath}
-          collapseLabel={t('pluginStudio.collapseFiles')}
-          onCollapse={() => setFilesCollapsed(true)}
           onSelect={(path) => {
             model.workspace.selectFile(path);
             setActivePanel('editor');
@@ -142,6 +152,12 @@ export function PluginStudioWorkbench({
           onDelete={model.workspace.deleteFile}
         />
       }
+      metadataSidebar={
+        <PluginStudioInspector {...inspectorProps} activeTab="metadata" variant="panel" />
+      }
+      diagnosticsSidebar={
+        <PluginStudioInspector {...inspectorProps} activeTab="diagnostics" variant="panel" />
+      }
       editor={
         <PluginStudioEditorPane
           projectId={model.workspace.project.id}
@@ -154,34 +170,7 @@ export function PluginStudioWorkbench({
           activeAction={model.activeAction}
         />
       }
-      inspector={
-        <PluginStudioInspector
-          projectId={model.workspace.project.id}
-          activeTab={inspectorTab}
-          onTabChange={setInspectorTab}
-          manifestSource={model.workspace.project.files['manifest.json'] ?? ''}
-          manifest={model.manifest}
-          disabled={disabled}
-          diagnostics={diagnostics.diagnostics}
-          diagnosticSummary={diagnostics.summary}
-          collapseLabel={t('pluginStudio.collapseDetails')}
-          onCollapse={() => setInspectorCollapsed(true)}
-          onManifestChange={(source) => model.workspace.updateFile('manifest.json', source)}
-          onOpenManifest={() => {
-            model.workspace.selectFile('manifest.json');
-            setActivePanel('editor');
-          }}
-          onOpenDiagnostic={(diagnostic) => {
-            model.workspace.selectFile(diagnostic.path);
-            setDiagnosticLocation({
-              line: diagnostic.line,
-              column: diagnostic.column,
-              token: Date.now()
-            });
-            setActivePanel('editor');
-          }}
-        />
-      }
+      inspector={<PluginStudioInspector {...inspectorProps} />}
     />
   );
 }

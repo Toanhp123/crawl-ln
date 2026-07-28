@@ -206,7 +206,10 @@ test('Plugin Studio is a separate lazy route and uses Monaco with revision-aware
     readFile('apps/web/src/app/router/AppRouter.tsx', 'utf8'),
     readFile('apps/web/src/app/router/route-preload.ts', 'utf8'),
     readFile('apps/web/src/widgets/source-plugin-studio/ui/SourcePluginStudio.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginCodeEditor.tsx', 'utf8'),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/editor/PluginCodeEditor.tsx',
+      'utf8'
+    ),
     readFile(
       'apps/web/src/features/edit-source-plugin-project/model/source-plugin-workspace-controller.ts',
       'utf8'
@@ -283,12 +286,12 @@ test('the Monaco editor accessible name includes the active file', async () => {
   assert.equal(label, 'Editing src/index.ts');
 });
 
-test('the project file tree exposes the selected file to assistive technology', async () => {
+test('the project explorer exposes the selected file to assistive technology', async () => {
   const restoreLanguage = useTestLanguage('en');
   try {
-    const [{ I18nProvider }, { PluginProjectFileTree }] = await Promise.all([
+    const [{ I18nProvider }, { PluginStudioExplorer }] = await Promise.all([
       import('../../apps/web/src/shared/i18n/index.ts'),
-      import('../../apps/web/src/widgets/source-plugin-studio/ui/PluginProjectFileTree.tsx')
+      import('../../apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioExplorer.tsx')
     ]);
     const html = renderToStaticMarkup(
       createElement(
@@ -299,10 +302,15 @@ test('the project file tree exposes the selected file to assistive technology', 
             vi: { 'pluginStudio.projectFiles': 'Project files' }
           }
         },
-        createElement(PluginProjectFileTree, {
+        createElement(PluginStudioExplorer, {
           files: ['manifest.json', 'src/index.ts'],
           selectedFile: 'src/index.ts',
-          onSelect: () => undefined
+          onSelect: () => undefined,
+          onCreateFile: () => undefined,
+          onCreateFolder: () => undefined,
+          onRename: () => undefined,
+          onDuplicate: () => undefined,
+          onDelete: () => undefined
         })
       )
     );
@@ -388,7 +396,7 @@ test('the Studio project table exposes reopen and delete actions', async () => {
       await Promise.all([
         import('@tanstack/react-query'),
         import('../../apps/web/src/shared/i18n/index.ts'),
-        import('../../apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectTable.tsx')
+        import('../../apps/web/src/widgets/source-plugin-studio/ui/dashboard/PluginStudioProjectTable.tsx')
       ]);
     const labels = {
       'pluginStudio.columnName': 'Name',

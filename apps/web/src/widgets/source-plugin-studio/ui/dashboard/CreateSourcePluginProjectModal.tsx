@@ -1,10 +1,10 @@
-import type { SourcePluginProject } from '../../../entities/source-plugin-project';
+import type { SourcePluginProject } from '../../../../entities/source-plugin-project';
 import {
   CreateSourcePluginProjectFields,
   useCreateSourcePluginProjectDraft
-} from '../../../features/create-source-plugin-project';
-import { useI18n } from '../../../shared/i18n';
-import { ActionBar, Button, ErrorBanner, Modal } from '../../../shared/ui';
+} from '../../../../features/create-source-plugin-project';
+import { useI18n } from '../../../../shared/i18n';
+import { ActionBar, Button, ErrorBanner, Modal } from '../../../../shared/ui';
 
 const FORM_ID = 'create-source-plugin-project-form';
 

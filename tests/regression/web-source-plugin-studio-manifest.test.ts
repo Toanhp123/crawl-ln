@@ -153,10 +153,22 @@ test('workspace preserves invalid manifest drafts without overwriting database m
 
 test('workbench renders manifest metadata and guards plugin actions', async () => {
   const [workbench, inspector, toolbar, library, model] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioWorkbench.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioInspector.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioToolbar.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectTable.tsx', 'utf8'),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioWorkbench.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/inspector/PluginStudioInspector.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioToolbar.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/dashboard/PluginStudioProjectTable.tsx',
+      'utf8'
+    ),
     readFile(
       'apps/web/src/widgets/source-plugin-studio/model/use-source-plugin-studio-workbench.ts',
       'utf8'
@@ -175,8 +187,14 @@ test('workbench renders manifest metadata and guards plugin actions', async () =
 
 test('Studio metadata and diagnostics use shared UI theme contracts', async () => {
   const [manifestEditor, diagnostics] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioManifestEditor.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioDiagnostics.tsx', 'utf8')
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/inspector/PluginStudioManifestEditor.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/inspector/PluginStudioDiagnostics.tsx',
+      'utf8'
+    )
   ]);
 
   assert.match(manifestEditor, /Field/);

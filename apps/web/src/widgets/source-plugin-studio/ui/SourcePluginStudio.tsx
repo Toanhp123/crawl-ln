@@ -7,10 +7,10 @@ import {
 } from '../../../entities/source-plugin-project';
 import { useI18n } from '../../../shared/i18n';
 import { Button, ErrorBanner, LoadingState, Page, Panel, Stack } from '../../../shared/ui';
-import { PluginStudioDashboard } from './PluginStudioDashboard';
+import { PluginStudioDashboard } from './dashboard/PluginStudioDashboard';
 
 const PluginStudioWorkbench = lazy(() =>
-  import('./PluginStudioWorkbench').then((module) => ({
+  import('./workbench/PluginStudioWorkbench').then((module) => ({
     default: module.PluginStudioWorkbench
   }))
 );

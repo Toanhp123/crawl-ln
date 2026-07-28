@@ -54,8 +54,14 @@ test('delete removes a file while keeping manifest.json protected', () => {
 
 test('file tree exposes create, rename, duplicate and delete actions', async () => {
   const [tree, workbench] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginProjectFileTree.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioWorkbench.tsx', 'utf8')
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioExplorer.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioWorkbench.tsx',
+      'utf8'
+    )
   ]);
   assert.match(tree, /onCreateFile/);
   assert.match(tree, /onCreateFolder/);

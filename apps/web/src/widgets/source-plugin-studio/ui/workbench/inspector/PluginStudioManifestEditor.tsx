@@ -1,11 +1,11 @@
-import type { SourcePluginStudioCapability } from '../../../entities/source-plugin-project';
+import type { SourcePluginStudioCapability } from '../../../../../entities/source-plugin-project';
 import {
   sourcePluginStudioCapabilities,
   type SourcePluginStudioManifestState,
   updateSourcePluginStudioManifest
-} from '../../../entities/source-plugin-project';
-import { useI18n } from '../../../shared/i18n';
-import { Button, Field, FilterChip, InlineNotice, Input, Text } from '../../../shared/ui';
+} from '../../../../../entities/source-plugin-project';
+import { useI18n } from '../../../../../shared/i18n';
+import { Button, Field, FilterChip, InlineNotice, Input, Text } from '../../../../../shared/ui';
 
 export function PluginStudioManifestEditor({
   source,
@@ -46,9 +46,6 @@ export function PluginStudioManifestEditor({
 
   return (
     <fieldset className="bg-surface p-3" disabled={disabled}>
-      <Text as="legend" variant="label" className="px-1">
-        {t('pluginStudio.manifestMetadata')}
-      </Text>
       <div className="grid gap-4 pt-2">
         <Field label={t('pluginStudio.pluginName')}>
           <Input

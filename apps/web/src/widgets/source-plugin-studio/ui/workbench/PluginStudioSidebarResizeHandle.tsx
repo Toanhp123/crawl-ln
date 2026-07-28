@@ -1,8 +1,8 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
-import { cn } from '../../../shared/lib/cn';
-import { PLUGIN_STUDIO_LAYOUT } from '../model/source-plugin-studio-layout';
+import { cn } from '../../../../shared/lib/cn';
+import { PLUGIN_STUDIO_LAYOUT } from '../../model/source-plugin-studio-layout';
 
-export function PluginStudioResizeHandle({
+export function PluginStudioSidebarResizeHandle({
   label,
   edge,
   disabled = false,

@@ -1,6 +1,6 @@
-import { InstallSourcePluginForm } from '../../../features/install-source-plugin';
-import { useI18n } from '../../../shared/i18n';
-import { Modal } from '../../../shared/ui';
+import { InstallSourcePluginForm } from '../../../../features/install-source-plugin';
+import { useI18n } from '../../../../shared/i18n';
+import { Modal } from '../../../../shared/ui';
 
 export function InstallSourcePluginModal({
   open,

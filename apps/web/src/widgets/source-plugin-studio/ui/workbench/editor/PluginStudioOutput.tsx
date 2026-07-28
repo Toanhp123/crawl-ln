@@ -1,9 +1,9 @@
 import { Check, ChevronDown, ChevronUp, Copy, SquareTerminal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { useI18n } from '../../../shared/i18n';
-import { IconButton, Panel, Text } from '../../../shared/ui';
-import { sourcePluginStudioClipboardService } from '../model/source-plugin-studio-clipboard';
-import type { SourcePluginStudioOutput } from '../model/use-source-plugin-studio-workbench';
+import { useI18n } from '../../../../../shared/i18n';
+import { IconButton, Panel, Text } from '../../../../../shared/ui';
+import { sourcePluginStudioClipboardService } from '../../../model/source-plugin-studio-clipboard';
+import type { SourcePluginStudioOutput } from '../../../model/use-source-plugin-studio-workbench';
 
 function printable(value: unknown): string {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -37,7 +37,7 @@ export function PluginStudioOutput({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div data-studio-output-content className="flex h-full min-h-0 flex-col">
       <div className="flex min-h-11 items-center gap-2 border-b border-border px-3">
         <button
           type="button"

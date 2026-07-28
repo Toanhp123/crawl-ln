@@ -2,11 +2,11 @@ import { ArrowLeft, Download, FlaskConical, Hammer, PackageCheck } from 'lucide-
 import type {
   SourcePluginProject,
   SourcePluginStudioManifestState
-} from '../../../entities/source-plugin-project';
-import type { SourcePluginWorkspaceStatus } from '../../../features/edit-source-plugin-project';
-import { useI18n } from '../../../shared/i18n';
-import { ActionBar, Badge, Button, type ActionState } from '../../../shared/ui';
-import type { SourcePluginStudioDiagnosticSummary } from '../model/source-plugin-studio-diagnostics';
+} from '../../../../entities/source-plugin-project';
+import type { SourcePluginWorkspaceStatus } from '../../../../features/edit-source-plugin-project';
+import { useI18n } from '../../../../shared/i18n';
+import { ActionBar, Badge, Button, type ActionState } from '../../../../shared/ui';
+import type { SourcePluginStudioDiagnosticSummary } from '../../model/source-plugin-studio-diagnostics';
 
 function statusTone(status: SourcePluginWorkspaceStatus) {
   if (status === 'conflict' || status === 'error') return 'danger' as const;
@@ -100,7 +100,7 @@ export function PluginStudioToolbar({
         </div>
       </div>
 
-      <ActionBar className="w-full justify-end overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0 lg:w-auto">
+      <ActionBar className="w-full grid-flow-col auto-cols-max grid-cols-none justify-start overflow-x-auto pb-0.5 sm:justify-end sm:overflow-visible sm:pb-0 lg:w-auto">
         <Badge className="hidden sm:inline-flex" tone={diagnosticTone(diagnosticSummary)}>
           {t('pluginStudio.diagnosticSummary', {
             errors: diagnosticSummary.errors,

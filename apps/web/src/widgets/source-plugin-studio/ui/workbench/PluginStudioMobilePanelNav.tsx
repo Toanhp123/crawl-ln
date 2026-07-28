@@ -1,8 +1,8 @@
 import { Code2, Files, SlidersHorizontal } from 'lucide-react';
-import { useI18n } from '../../../shared/i18n';
-import { cn } from '../../../shared/lib/cn';
-import type { SourcePluginStudioDiagnosticSummary } from '../model/source-plugin-studio-diagnostics';
-import type { PluginStudioPanel } from '../model/source-plugin-studio-layout';
+import { useI18n } from '../../../../shared/i18n';
+import { cn } from '../../../../shared/lib/cn';
+import type { SourcePluginStudioDiagnosticSummary } from '../../model/source-plugin-studio-diagnostics';
+import type { PluginStudioPanel } from '../../model/source-plugin-studio-layout';
 
 const panels = [
   { id: 'files', labelKey: 'pluginStudio.filesPanel', icon: Files },

@@ -74,7 +74,7 @@ test.describe('desktop Studio workspace', () => {
     isMobile: false
   });
 
-  test('creates a project, opens the three-region workspace and returns to dashboard', async ({
+  test('creates a project, switches the activity sidebar and returns to dashboard', async ({
     page
   }) => {
     await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
@@ -91,29 +91,45 @@ test.describe('desktop Studio workspace', () => {
     await page.getByRole('button', { name: 'Create workspace', exact: true }).click();
 
     await expect(page).toHaveURL(/project=studio-demo/);
-    await expect(page.locator('[data-studio-region="files"]')).toBeVisible();
+    const activityBar = page.locator('[data-studio-activity-bar]');
+    const sidebar = page.locator('[data-studio-region="sidebar"]');
+    await expect(activityBar).toBeVisible();
+    await expect(sidebar).toBeVisible();
+    await expect(sidebar).toHaveAttribute('data-studio-sidebar-panel', 'files');
+    const filesTab = activityBar.getByRole('tab', { name: 'File Explorer', exact: true });
+    await expect(filesTab).toHaveClass(/text-primary/);
+    await expect(filesTab).not.toHaveClass(/bg-primary-subtle/);
+    const editor = page.locator('[data-studio-region="editor"]');
+    await expect(editor).toBeVisible();
+    await expect(page.locator('[data-studio-region="inspector"]')).toHaveCount(0);
+
+    const editorLeft = await editor.evaluate((element) => element.getBoundingClientRect().left);
+    await page
+      .getByRole('separator', { name: 'Resize Studio sidebar', exact: true })
+      .press('ArrowRight');
+    await expect
+      .poll(() => editor.evaluate((element) => element.getBoundingClientRect().left))
+      .toBe(editorLeft);
+
+    await activityBar.getByRole('tab', { name: 'File Explorer', exact: true }).click();
+    await expect(sidebar).toBeHidden();
+    await expect(
+      activityBar.getByRole('tab', { name: 'File Explorer', exact: true })
+    ).toHaveAttribute('aria-selected', 'false');
+
+    await activityBar.getByRole('tab', { name: 'Metadata', exact: true }).click();
+    await expect(sidebar).toBeVisible();
+    await expect(sidebar).toHaveAttribute('data-studio-sidebar-panel', 'metadata');
+    await expect(sidebar.getByRole('heading', { name: 'Metadata', exact: true })).toBeVisible();
+
+    await activityBar.getByRole('tab', { name: 'Metadata', exact: true }).click();
+    await expect(sidebar).toBeHidden();
+    await expect(sidebar).toHaveAttribute('data-studio-sidebar-panel', 'metadata');
+
+    await activityBar.getByRole('tab', { name: 'Diagnostics', exact: true }).click();
+    await expect(sidebar).toBeVisible();
+    await expect(sidebar).toHaveAttribute('data-studio-sidebar-panel', 'diagnostics');
     await expect(page.locator('[data-studio-region="editor"]')).toBeVisible();
-    await expect(page.locator('[data-studio-region="inspector"]')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Collapse file explorer', exact: true }).click();
-    await expect(page.locator('[data-studio-region="files"]')).toHaveAttribute(
-      'data-collapsed',
-      'true'
-    );
-    await page.getByRole('button', { name: 'File Explorer', exact: true }).click();
-    await expect(page.locator('[data-studio-region="files"]')).not.toHaveAttribute(
-      'data-collapsed'
-    );
-
-    await page.getByRole('button', { name: 'Collapse details panel', exact: true }).click();
-    await expect(page.locator('[data-studio-region="inspector"]')).toHaveAttribute(
-      'data-collapsed',
-      'true'
-    );
-    await page.getByRole('button', { name: 'Diagnostics', exact: true }).last().click();
-    await expect(page.locator('[data-studio-region="inspector"]')).not.toHaveAttribute(
-      'data-collapsed'
-    );
 
     const outputToggle = page.getByRole('button', { name: 'Studio output', exact: true });
     await expect(outputToggle).toHaveAttribute('aria-expanded', 'false');
@@ -130,13 +146,23 @@ test.describe('desktop Studio workspace', () => {
     await expect
       .poll(() => outputDock.evaluate((element) => element.getBoundingClientRect().height))
       .toBeGreaterThan(outputHeight);
+    const outputContent = page.locator('[data-studio-output-content]');
+    await expect
+      .poll(async () => {
+        const dockBox = await outputDock.boundingBox();
+        const contentBox = await outputContent.boundingBox();
+        return Math.abs(
+          (dockBox?.y ?? 0) +
+            (dockBox?.height ?? 0) -
+            ((contentBox?.y ?? 0) + (contentBox?.height ?? 0))
+        );
+      })
+      .toBeLessThanOrEqual(1);
     await page.getByRole('button', { name: 'Clear output', exact: true }).click();
     await expect(
       page.getByText('Output cleared. New operation output will appear here.')
     ).toBeVisible();
 
-    await page.getByRole('tab', { name: /Diagnostics/ }).click();
-    await expect(page.getByRole('tabpanel', { name: /Diagnostics/ })).toBeVisible();
     await page.getByRole('button', { name: 'Projects', exact: true }).click();
     await expect(page).not.toHaveURL(/project=/);
 
@@ -146,11 +172,24 @@ test.describe('desktop Studio workspace', () => {
 });
 
 test('mobile Studio switches one visible workspace panel at a time', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 480 });
   await page.addInitScript(() => localStorage.setItem('novel-tool-language', 'en'));
   await mockStudio(page);
   await installE2eRuntime(page);
 
   await page.goto('/sources/new?project=studio-demo');
+  const studioLayout = page.locator('[data-studio-layout-mode]');
+  const studioBox = await studioLayout.boundingBox();
+  expect(studioBox?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(480);
+  const commandBar = page.locator('[data-studio-command-bar]');
+  const actionButtons = ['Build', 'Test sandbox', 'Export package', 'Install build'].map((name) =>
+    commandBar.getByRole('button', { name, exact: true })
+  );
+  const actionRows = await Promise.all(
+    actionButtons.map(async (button) => (await button.boundingBox())?.y ?? Number.NaN)
+  );
+  expect(Math.max(...actionRows) - Math.min(...actionRows)).toBeLessThanOrEqual(1);
+
   await expect(page.locator('[data-studio-region="editor"]')).toBeVisible();
   await expect(page.locator('[data-studio-region="files"]')).toBeHidden();
   await expect(page.locator('[data-studio-region="inspector"]')).toBeHidden();
@@ -165,6 +204,15 @@ test('mobile Studio switches one visible workspace panel at a time', async ({ pa
   await page.getByRole('button', { name: 'src/index.ts', exact: true }).click();
   await expect(page.locator('[data-studio-region="editor"]')).toBeVisible();
   await expect(page.locator('[data-studio-region="files"]')).toBeHidden();
+
+  const outputToggle = page.getByRole('button', { name: 'Studio output', exact: true });
+  await outputToggle.click();
+  const outputDock = page.locator('[data-studio-output-dock]');
+  const viewport = page.viewportSize();
+  const outputBox = await outputDock.boundingBox();
+  expect(outputBox?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
+    (viewport?.height ?? 0) * 0.45
+  );
 
   await page.getByRole('tab', { name: /Details/ }).click();
   await expect(page.locator('[data-studio-region="inspector"]')).toBeVisible();
@@ -193,6 +241,11 @@ test.describe('WebKit-style clipboard behavior', () => {
 
     await page.goto('/sources/new?project=studio-demo');
     await expect(page.locator('[data-studio-region="editor"]')).toBeVisible();
+    await page
+      .locator('[data-studio-activity-bar]')
+      .getByRole('tab', { name: 'File Explorer', exact: true })
+      .click();
+    await expect(page.locator('[data-studio-region="sidebar"]')).toBeHidden();
     const editor = page.locator('.monaco-editor');
     await expect(editor).toBeVisible();
     await editor.click({ position: { x: 24, y: 24 } });

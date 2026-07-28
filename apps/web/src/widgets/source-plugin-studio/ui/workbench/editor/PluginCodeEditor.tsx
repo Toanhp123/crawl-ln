@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import { useI18n } from '../../../shared/i18n';
-import { useAppTheme } from '../../../shared/theme';
-import { sourcePluginCodeEditorAriaLabel } from '../model/source-plugin-code-editor-accessibility';
-import { sourcePluginStudioClipboardService } from '../model/source-plugin-studio-clipboard';
-import { configureSourcePluginStudioMonaco } from '../model/configure-source-plugin-studio-monaco';
-import { sourcePluginStudioModelUri } from '../model/use-source-plugin-studio-diagnostics';
+import { useI18n } from '../../../../../shared/i18n';
+import { useAppTheme } from '../../../../../shared/theme';
+import { sourcePluginCodeEditorAriaLabel } from '../../../model/source-plugin-code-editor-accessibility';
+import { sourcePluginStudioClipboardService } from '../../../model/source-plugin-studio-clipboard';
+import { configureSourcePluginStudioMonaco } from '../../../model/configure-source-plugin-studio-monaco';
+import { sourcePluginStudioModelUri } from '../../../model/use-source-plugin-studio-diagnostics';
 import './source-plugin-studio-monaco-environment';
 
 let configured = false;

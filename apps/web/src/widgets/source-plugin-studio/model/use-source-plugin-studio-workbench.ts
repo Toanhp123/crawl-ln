@@ -9,9 +9,11 @@ import { useInstallSourcePluginProject } from '../../../features/install-source-
 import { useTestSourcePluginProject } from '../../../features/test-source-plugin-project';
 import { useSourcePluginWorkspace } from '../../../features/edit-source-plugin-project';
 import { useI18n } from '../../../shared/i18n';
-import { runSourcePluginStudioAction } from './run-source-plugin-studio-action';
-import { runSourcePluginStudioBuild } from './run-source-plugin-studio-build';
-import { runSourcePluginStudioClose } from './run-source-plugin-studio-close';
+import {
+  runSourcePluginStudioAction,
+  runSourcePluginStudioBuild,
+  runSourcePluginStudioClose
+} from './workbench-operations';
 
 export interface SourcePluginStudioOutput {
   titleKey: string;

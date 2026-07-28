@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
   PLUGIN_STUDIO_LAYOUT,
   resolvePluginStudioLayoutMode,
-  resizePluginStudioColumns
+  resizePluginStudioSidebar
 } from '../../apps/web/src/widgets/source-plugin-studio/model/source-plugin-studio-layout.ts';
 
 test('project creation exposes modal-safe fields and shared draft state', async () => {
@@ -36,19 +36,28 @@ test('project creation exposes modal-safe fields and shared draft state', async 
 test('Studio dashboard uses a project table and modal-triggered creation and install flows', async () => {
   const [studio, dashboard, table, createModal, installModal, page] = await Promise.all([
     readFile('apps/web/src/widgets/source-plugin-studio/ui/SourcePluginStudio.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioDashboard.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectTable.tsx', 'utf8'),
     readFile(
-      'apps/web/src/widgets/source-plugin-studio/ui/CreateSourcePluginProjectModal.tsx',
+      'apps/web/src/widgets/source-plugin-studio/ui/dashboard/PluginStudioDashboard.tsx',
       'utf8'
     ),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/InstallSourcePluginModal.tsx', 'utf8'),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/dashboard/PluginStudioProjectTable.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/dashboard/CreateSourcePluginProjectModal.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/dashboard/InstallSourcePluginModal.tsx',
+      'utf8'
+    ),
     readFile('apps/web/src/pages/source-plugin-studio/ui/SourcePluginStudioPage.tsx', 'utf8')
   ]);
 
   assert.match(studio, /PluginStudioDashboard/);
   assert.match(studio, /PluginStudioWorkbench/);
-  assert.match(dashboard, /PluginStudioDashboardHeader/);
+  assert.match(dashboard, /PageHeader/);
   assert.match(dashboard, /PluginStudioProjectTable/);
   assert.match(table, /DataTable/);
   assert.match(table, /DataTableHeaderCell/);
@@ -58,41 +67,36 @@ test('Studio dashboard uses a project table and modal-triggered creation and ins
   assert.doesNotMatch(page, /InstallSourcePluginForm/);
 });
 
-test('Studio layout resolves mobile, tablet and three-column desktop modes', () => {
+test('Studio layout resolves mobile, tablet and activity-sidebar desktop modes', () => {
   assert.equal(resolvePluginStudioLayoutMode(640), 'mobile');
   assert.equal(resolvePluginStudioLayoutMode(900), 'tablet');
   assert.equal(resolvePluginStudioLayoutMode(1200), 'desktop');
 });
 
-test('Studio column resizing clamps sidebars while preserving the editor minimum', () => {
-  assert.deepEqual(
-    resizePluginStudioColumns({
+test('Studio sidebar resizing clamps its width while preserving the editor minimum', () => {
+  assert.equal(
+    resizePluginStudioSidebar({
       containerWidth: 1200,
-      left: PLUGIN_STUDIO_LAYOUT.leftDefault,
-      right: PLUGIN_STUDIO_LAYOUT.rightDefault,
-      edge: 'left',
+      sidebar: PLUGIN_STUDIO_LAYOUT.sidebarDefault,
       delta: -500
     }),
-    { left: PLUGIN_STUDIO_LAYOUT.leftMin, right: PLUGIN_STUDIO_LAYOUT.rightDefault }
+    PLUGIN_STUDIO_LAYOUT.sidebarMin
   );
 
-  const expanded = resizePluginStudioColumns({
+  const expanded = resizePluginStudioSidebar({
     containerWidth: 1200,
-    left: 256,
-    right: 320,
-    edge: 'right',
-    delta: -400
+    sidebar: PLUGIN_STUDIO_LAYOUT.sidebarDefault,
+    delta: 1000
   });
-  assert.ok(expanded.right >= PLUGIN_STUDIO_LAYOUT.rightMin);
   assert.ok(
-    1200 - expanded.left - expanded.right - PLUGIN_STUDIO_LAYOUT.handle * 2 >=
+    1200 - PLUGIN_STUDIO_LAYOUT.activityBarWidth - expanded - PLUGIN_STUDIO_LAYOUT.handle >=
       PLUGIN_STUDIO_LAYOUT.centerMin
   );
 });
 
 test('Studio resize handle exposes pointer and keyboard separator behavior', async () => {
   const source = await readFile(
-    'apps/web/src/widgets/source-plugin-studio/ui/PluginStudioResizeHandle.tsx',
+    'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioSidebarResizeHandle.tsx',
     'utf8'
   );
   assert.match(source, /role="separator"/);
@@ -102,13 +106,28 @@ test('Studio resize handle exposes pointer and keyboard separator behavior', asy
   assert.match(source, /setPointerCapture/);
 });
 
-test('Studio workspace exposes command, files, editor and inspector regions', async () => {
-  const [workbench, shell, toolbar] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioWorkbench.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioWorkspaceShell.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioToolbar.tsx', 'utf8')
+test('Studio workspace exposes desktop activity sidebar and responsive panel regions', async () => {
+  const [workbench, shell, activityBar, toolbar] = await Promise.all([
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioWorkbench.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioWorkspace.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioActivityBar.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioToolbar.tsx',
+      'utf8'
+    )
   ]);
-  assert.match(workbench, /PluginStudioWorkspaceShell/);
+  assert.match(workbench, /PluginStudioWorkspace/);
+  assert.match(activityBar, /data-studio-activity-bar/);
+  assert.match(shell, /data-studio-region="sidebar"/);
   assert.match(shell, /data-studio-region="files"/);
   assert.match(shell, /data-studio-region="editor"/);
   assert.match(shell, /data-studio-region="inspector"/);
@@ -118,7 +137,7 @@ test('Studio workspace exposes command, files, editor and inspector regions', as
 
 test('Studio editor pane keeps Monaco dominant and output collapsible', async () => {
   const source = await readFile(
-    'apps/web/src/widgets/source-plugin-studio/ui/PluginStudioEditorPane.tsx',
+    'apps/web/src/widgets/source-plugin-studio/ui/workbench/editor/PluginStudioEditorPane.tsx',
     'utf8'
   );
   assert.match(source, /PluginCodeEditor/);
@@ -129,8 +148,14 @@ test('Studio editor pane keeps Monaco dominant and output collapsible', async ()
 
 test('Studio responsive navigation selects Files, Editor or Details without vertical stacking', async () => {
   const [nav, shell] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioMobilePanelNav.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioWorkspaceShell.tsx', 'utf8')
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioMobilePanelNav.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioWorkspace.tsx',
+      'utf8'
+    )
   ]);
   assert.match(nav, /files/);
   assert.match(nav, /editor/);
@@ -148,7 +173,7 @@ test('Studio responsive navigation selects Files, Editor or Details without vert
 test('Studio modals preserve the shared mobile BottomSheet surface', async () => {
   const sources = await Promise.all(
     ['CreateSourcePluginProjectModal.tsx', 'InstallSourcePluginModal.tsx'].map((file) =>
-      readFile(`apps/web/src/widgets/source-plugin-studio/ui/${file}`, 'utf8')
+      readFile(`apps/web/src/widgets/source-plugin-studio/ui/dashboard/${file}`, 'utf8')
     )
   );
   for (const source of sources) {
@@ -160,7 +185,10 @@ test('Studio modals preserve the shared mobile BottomSheet surface', async () =>
 
 test('Studio editor supplies a clipboard service without Monaco WebKit workaround logging', async () => {
   const [editor, clipboard] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginCodeEditor.tsx', 'utf8'),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/editor/PluginCodeEditor.tsx',
+      'utf8'
+    ),
     readFile(
       'apps/web/src/widgets/source-plugin-studio/model/source-plugin-studio-clipboard.ts',
       'utf8'
@@ -190,35 +218,64 @@ test('Studio editor supplies a clipboard service without Monaco WebKit workaroun
   assert.equal(await service.readText(), '');
 });
 
-test('Studio desktop sidebars collapse into VS Code-style rails', async () => {
-  const [shell, sidebar, inspector] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioWorkspaceShell.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioProjectSidebar.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioInspector.tsx', 'utf8')
+test('Studio desktop activity sidebar toggles without resizing the editor column', async () => {
+  const [shell, workbench, activityBar, sidebar, inspector] = await Promise.all([
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioWorkspace.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioWorkbench.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioActivityBar.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/PluginStudioExplorer.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/inspector/PluginStudioInspector.tsx',
+      'utf8'
+    )
   ]);
 
-  assert.match(shell, /collapsed/);
-  assert.match(shell, /PluginStudioPanelRail/);
-  assert.match(sidebar, /Collapse/);
-  assert.match(inspector, /Collapse/);
-  assert.match(sidebar, /lg:inline-flex/);
-  assert.match(inspector, /lg:inline-flex/);
+  assert.match(shell, /PluginStudioActivityBar/);
+  assert.match(shell, /data-studio-region="sidebar"/);
+  assert.doesNotMatch(workbench, /sidebarOpen/);
+  assert.match(shell, /sidebarOpen/);
+  assert.match(shell, /position: 'absolute'/);
+  assert.match(shell, /hidden=\{!sidebarOpen\}/);
+  assert.doesNotMatch(workbench, /activityPanel/);
+  assert.match(shell, /activityPanel/);
+  assert.match(activityBar, /selected \? 'text-primary hover:text-primary'/);
+  assert.doesNotMatch(activityBar, /bg-primary-subtle/);
+  assert.doesNotMatch(activityBar, /inset-y-2 left-0/);
+  assert.doesNotMatch(workbench, /filesCollapsed|inspectorCollapsed/);
+  assert.doesNotMatch(sidebar, /onCollapse|PanelLeftClose|PluginProjectFileTree/);
+  assert.doesNotMatch(inspector, /onCollapse|PanelRightClose/);
 });
 
 test('Studio output is an editor-local dock with copy, clear and resize controls', async () => {
-  const [pane, output, resize] = await Promise.all([
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioEditorPane.tsx', 'utf8'),
-    readFile('apps/web/src/widgets/source-plugin-studio/ui/PluginStudioOutput.tsx', 'utf8'),
+  const [pane, output] = await Promise.all([
     readFile(
-      'apps/web/src/widgets/source-plugin-studio/ui/PluginStudioOutputResizeHandle.tsx',
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/editor/PluginStudioEditorPane.tsx',
+      'utf8'
+    ),
+    readFile(
+      'apps/web/src/widgets/source-plugin-studio/ui/workbench/editor/PluginStudioOutput.tsx',
       'utf8'
     )
   ]);
 
   assert.match(pane, /data-studio-output-dock/);
-  assert.match(pane, /height: outputOpen \? outputHeight/);
+  assert.match(pane, /gridTemplateRows/);
+  assert.doesNotMatch(pane, /maxHeight/);
+  assert.match(output, /data-studio-output-content/);
   assert.match(pane, /PluginStudioOutputResizeHandle/);
   assert.match(output, /Copy/);
   assert.match(output, /Clear/);
-  assert.match(resize, /role="separator"/);
+  assert.match(pane, /role="separator"/);
 });

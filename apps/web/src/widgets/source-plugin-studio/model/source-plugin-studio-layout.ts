@@ -1,14 +1,15 @@
 export type PluginStudioLayoutMode = 'mobile' | 'tablet' | 'desktop';
 export type PluginStudioPanel = 'files' | 'editor' | 'details';
 export type PluginStudioInspectorTab = 'metadata' | 'diagnostics';
+export type PluginStudioActivityPanel = 'files' | PluginStudioInspectorTab;
 
 export const PLUGIN_STUDIO_LAYOUT = {
-  leftDefault: 256,
-  leftMin: 208,
-  rightDefault: 320,
-  rightMin: 272,
+  activityBarWidth: 44,
+  sidebarDefault: 288,
+  sidebarMin: 224,
+  sidebarMax: 480,
   centerMin: 448,
-  railWidth: 40,
+  desktopMin: 1024,
   handle: 8,
   keyboardStep: 16
 } as const;
@@ -18,53 +19,26 @@ const clamp = (value: number, min: number, max: number) =>
 
 export function resolvePluginStudioLayoutMode(containerWidth: number): PluginStudioLayoutMode {
   if (containerWidth < 768) return 'mobile';
-  const desktopMinimum =
-    PLUGIN_STUDIO_LAYOUT.leftMin +
-    PLUGIN_STUDIO_LAYOUT.centerMin +
-    PLUGIN_STUDIO_LAYOUT.rightMin +
-    PLUGIN_STUDIO_LAYOUT.handle * 2;
-  return containerWidth >= desktopMinimum ? 'desktop' : 'tablet';
+  return containerWidth >= PLUGIN_STUDIO_LAYOUT.desktopMin ? 'desktop' : 'tablet';
 }
 
-export function resizePluginStudioColumns({
+export function resizePluginStudioSidebar({
   containerWidth,
-  left,
-  right,
-  edge,
+  sidebar,
   delta
 }: {
   containerWidth: number;
-  left: number;
-  right: number;
-  edge: 'left' | 'right';
+  sidebar: number;
   delta: number;
-}): { left: number; right: number } {
-  const sideWidthAvailable =
-    containerWidth - PLUGIN_STUDIO_LAYOUT.centerMin - PLUGIN_STUDIO_LAYOUT.handle * 2;
-
-  if (edge === 'left') {
-    const nextRight = clamp(
-      right,
-      PLUGIN_STUDIO_LAYOUT.rightMin,
-      sideWidthAvailable - PLUGIN_STUDIO_LAYOUT.leftMin
-    );
-    const nextLeft = clamp(
-      left + delta,
-      PLUGIN_STUDIO_LAYOUT.leftMin,
-      sideWidthAvailable - nextRight
-    );
-    return { left: nextLeft, right: nextRight };
-  }
-
-  const nextLeft = clamp(
-    left,
-    PLUGIN_STUDIO_LAYOUT.leftMin,
-    sideWidthAvailable - PLUGIN_STUDIO_LAYOUT.rightMin
+}): number {
+  const available =
+    containerWidth -
+    PLUGIN_STUDIO_LAYOUT.activityBarWidth -
+    PLUGIN_STUDIO_LAYOUT.handle -
+    PLUGIN_STUDIO_LAYOUT.centerMin;
+  return clamp(
+    sidebar + delta,
+    PLUGIN_STUDIO_LAYOUT.sidebarMin,
+    Math.min(PLUGIN_STUDIO_LAYOUT.sidebarMax, Math.max(PLUGIN_STUDIO_LAYOUT.sidebarMin, available))
   );
-  const nextRight = clamp(
-    right - delta,
-    PLUGIN_STUDIO_LAYOUT.rightMin,
-    sideWidthAvailable - nextLeft
-  );
-  return { left: nextLeft, right: nextRight };
 }

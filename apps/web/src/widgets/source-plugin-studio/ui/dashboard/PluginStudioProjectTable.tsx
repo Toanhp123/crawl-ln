@@ -2,9 +2,9 @@ import { Braces } from 'lucide-react';
 import {
   parseSourcePluginStudioManifest,
   type SourcePluginProject
-} from '../../../entities/source-plugin-project';
-import { DeleteSourcePluginProjectButton } from '../../../features/delete-source-plugin-project';
-import { useI18n } from '../../../shared/i18n';
+} from '../../../../entities/source-plugin-project';
+import { DeleteSourcePluginProjectButton } from '../../../../features/delete-source-plugin-project';
+import { useI18n } from '../../../../shared/i18n';
 import {
   Badge,
   Button,
@@ -14,7 +14,7 @@ import {
   DataTableHead,
   DataTableHeaderCell,
   EmptyState
-} from '../../../shared/ui';
+} from '../../../../shared/ui';
 
 function compactValues(values: string[], limit: number) {
   return {

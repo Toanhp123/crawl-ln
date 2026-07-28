@@ -5,9 +5,11 @@ import {
   createSourcePluginWorkspaceController,
   hasUnsavedSourcePluginWorkspaceChanges
 } from '../../apps/web/src/features/edit-source-plugin-project/index.ts';
-import { runSourcePluginStudioAction } from '../../apps/web/src/widgets/source-plugin-studio/model/run-source-plugin-studio-action.ts';
-import { runSourcePluginStudioBuild } from '../../apps/web/src/widgets/source-plugin-studio/model/run-source-plugin-studio-build.ts';
-import { runSourcePluginStudioClose } from '../../apps/web/src/widgets/source-plugin-studio/model/run-source-plugin-studio-close.ts';
+import {
+  runSourcePluginStudioAction,
+  runSourcePluginStudioBuild,
+  runSourcePluginStudioClose
+} from '../../apps/web/src/widgets/source-plugin-studio/model/workbench-operations.ts';
 
 function project(overrides: Partial<SourcePluginProject> = {}): SourcePluginProject {
   return {

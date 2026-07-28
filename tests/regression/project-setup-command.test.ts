@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 const firstClass = [
@@ -206,6 +209,41 @@ test('setup help does not require installed third-party packages', async () => {
   const lines: string[] = [];
   await setupCommand.execute(['--help'], { stdout: (line: string) => lines.push(line) });
   assert.match(lines.join('\n'), /--browser/);
+});
+
+test('setup creates the API environment from the tracked template', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'novel-tool-setup-env-'));
+  try {
+    const apiRoot = join(root, 'apps', 'api');
+    const template = 'HOST=127.0.0.1\nPORT=3000\n';
+    await mkdir(apiRoot, { recursive: true });
+    await writeFile(join(apiRoot, '.env.example'), template);
+
+    const { ensureApiEnvironment } = await import('../../scripts/cli/lib/api-environment.mjs');
+
+    assert.equal(await ensureApiEnvironment({ root }), 'created');
+    assert.equal(await readFile(join(apiRoot, '.env'), 'utf8'), template);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('setup preserves an existing API environment byte for byte', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'novel-tool-setup-env-existing-'));
+  try {
+    const apiRoot = join(root, 'apps', 'api');
+    const existing = 'HOST=0.0.0.0\nAPI_REMOTE_TOKEN=keep-this-secret\n';
+    await mkdir(apiRoot, { recursive: true });
+    await writeFile(join(apiRoot, '.env.example'), 'HOST=127.0.0.1\n');
+    await writeFile(join(apiRoot, '.env'), existing);
+
+    const { ensureApiEnvironment } = await import('../../scripts/cli/lib/api-environment.mjs');
+
+    assert.equal(await ensureApiEnvironment({ root }), 'existing');
+    assert.equal(await readFile(join(apiRoot, '.env'), 'utf8'), existing);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('setup pipeline runs stages in the documented order', async () => {

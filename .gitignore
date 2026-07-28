@@ -7,6 +7,7 @@ test-results/
 .nyc_output/
 # Release evidence, migration copies and runtime logs remain outside Git.
 .artifacts/
+.internal/
 *.tsbuildinfo
 .env
 .env.*

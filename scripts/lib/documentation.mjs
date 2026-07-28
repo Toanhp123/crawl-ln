@@ -8,8 +8,23 @@ const RETIRED_PATTERNS = [
   /\bSOURCE_PROFILES_FILE\b/,
   /\bsource-profiles\.json\b/i
 ];
-const REQUIRED_ENTRYPOINTS = ['README.md', 'docs/README.md', 'docs/TERMUX_ACCEPTANCE.md'];
-const SKIPPED_DIRECTORIES = new Set(['.artifacts', '.git', 'node_modules', 'specs']);
+const REQUIRED_ENTRYPOINTS = [
+  'README.md',
+  'CONTRIBUTING.md',
+  'docs/README.md',
+  'docs/GETTING_STARTED.md',
+  'docs/CONFIGURATION.md',
+  'docs/PLUGIN_DEVELOPMENT.md',
+  'docs/SECURITY.md'
+];
+const SKIPPED_DIRECTORIES = new Set([
+  '.artifacts',
+  '.git',
+  '.internal',
+  'node_modules',
+  'specs'
+]);
+const TERMUX_PATTERN = /\bTermux\b|\bTERMUX_/i;
 
 async function exists(path) {
   try {
@@ -88,6 +103,9 @@ export async function checkDocumentation(projectRoot = process.cwd()) {
     const isHistoricalChangelog = path === 'CHANGELOG.md';
     if (!isHistoricalChangelog && RETIRED_PATTERNS.some((pattern) => pattern.test(content))) {
       errors.push(`Current documentation uses retired source-profile terminology: ${path}`);
+    }
+    if (TERMUX_PATTERN.test(content)) {
+      errors.push(`Public documentation must not contain Termux-specific guidance: ${path}`);
     }
 
     const normalized = content.replaceAll('\r\n', '\n').trim();

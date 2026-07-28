@@ -44,13 +44,21 @@ test('documentation check accepts canonical current docs and ignores historical 
   const root = await mkdtemp(join(tmpdir(), 'novel-tool-docs-valid-'));
   try {
     await write(root, 'README.md', '# Project\n\n[Docs](docs/README.md)\n');
-    await write(root, 'docs/README.md', '# Docs\n\n[Architecture](ARCHITECTURE.md)\n');
-    await write(root, 'docs/TERMUX_ACCEPTANCE.md', '# Termux acceptance\n');
+    await write(root, 'CONTRIBUTING.md', '# Contributing\n\nContributions are welcome.\n');
     await write(
       root,
-      'docs/ARCHITECTURE.md',
-      '# Architecture\n\nSource Reader plugins ingest content.\n'
+      'docs/README.md',
+      '# Docs\n\n[Getting started](GETTING_STARTED.md)\n[Configuration](CONFIGURATION.md)\n[Plugins](PLUGIN_DEVELOPMENT.md)\n[Security](SECURITY.md)\n'
     );
+    for (const guide of [
+      'GETTING_STARTED.md',
+      'CONFIGURATION.md',
+      'PLUGIN_DEVELOPMENT.md',
+      'SECURITY.md'
+    ]) {
+      await write(root, `docs/${guide}`, `# ${guide}\n\nPublic guidance.\n`);
+    }
+    await write(root, '.internal/docs/private.md', '[Missing](nowhere.md)\n');
     await write(root, 'CHANGELOG.md', '# Changelog\n\nOld source profile support was removed.\n');
 
     const { checkDocumentation } = await import('../../scripts/lib/documentation.mjs');
@@ -62,12 +70,46 @@ test('documentation check accepts canonical current docs and ignores historical 
   }
 });
 
+test('documentation check rejects Termux references in public Markdown', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'novel-tool-docs-termux-'));
+  try {
+    for (const path of [
+      'README.md',
+      'CONTRIBUTING.md',
+      'docs/README.md',
+      'docs/GETTING_STARTED.md',
+      'docs/CONFIGURATION.md',
+      'docs/PLUGIN_DEVELOPMENT.md',
+      'docs/SECURITY.md'
+    ]) {
+      await write(root, path, `# ${path}\n\nPublic guidance.\n`);
+    }
+    await write(root, 'docs/TERMUX.md', '# Mobile setup\n\nTermux is not a supported setup path.\n');
+
+    const { checkDocumentation } = await import('../../scripts/lib/documentation.mjs');
+    const result = await checkDocumentation(root);
+
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error: string) => error.includes('Termux')));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('documentation check ignores generated artifact snapshots', async () => {
   const root = await mkdtemp(join(tmpdir(), 'novel-tool-docs-artifacts-'));
   try {
     await write(root, 'README.md', '# Project\n\n[Docs](docs/README.md)\n');
+    await write(root, 'CONTRIBUTING.md', '# Contributing\n');
     await write(root, 'docs/README.md', '# Docs\n');
-    await write(root, 'docs/TERMUX_ACCEPTANCE.md', '# Termux acceptance\n');
+    for (const guide of [
+      'GETTING_STARTED.md',
+      'CONFIGURATION.md',
+      'PLUGIN_DEVELOPMENT.md',
+      'SECURITY.md'
+    ]) {
+      await write(root, `docs/${guide}`, `# ${guide}\n`);
+    }
     await write(root, '.artifacts/v3/backup/README.md', '[Missing](nowhere.md)\n');
 
     const { checkDocumentation } = await import('../../scripts/lib/documentation.mjs');

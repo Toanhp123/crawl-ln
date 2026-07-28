@@ -29,16 +29,16 @@ See [Getting Started](docs/GETTING_STARTED.md) for platform-neutral setup and fi
 
 ## Public Commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm run setup` | Install dependencies, create local configuration when missing, validate the toolchain, and build `dist/`. |
-| `npm run dev` | Run the API and Vite development server together. |
-| `npm run build` | Create a production artifact under `dist/`. |
-| `npm start` | Serve the API and SPA from the production artifact. |
-| `npm run check` | Run formatting, TypeScript, architecture, documentation, and boundary checks. |
-| `npm test` | Run the core reader-engine, plugin, contract, regression, and integration suites. |
-| `npm run format` | Apply the repository formatter. |
-| `npm run clean` | Remove build, cache, and report output. Add `-- --data` only when you intend to review data cleanup. |
+| Command          | Purpose                                                                                                   |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| `npm run setup`  | Install dependencies, create local configuration when missing, validate the toolchain, and build `dist/`. |
+| `npm run dev`    | Run the API and Vite development server together.                                                         |
+| `npm run build`  | Create a production artifact under `dist/`.                                                               |
+| `npm start`      | Serve the API and SPA from the production artifact.                                                       |
+| `npm run check`  | Run formatting, TypeScript, architecture, documentation, and boundary checks.                             |
+| `npm test`       | Run the core reader-engine, plugin, contract, regression, and integration suites.                         |
+| `npm run format` | Apply the repository formatter.                                                                           |
+| `npm run clean`  | Remove build, cache, and report output. Add `-- --data` only when you intend to review data cleanup.      |
 
 All commands support `--help` and reject unknown options. To run browser tests, install the browser capability first:
 

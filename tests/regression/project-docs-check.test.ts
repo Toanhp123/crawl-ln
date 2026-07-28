@@ -88,7 +88,11 @@ test('documentation check rejects Termux references in public Markdown', async (
     ]) {
       await write(root, path, `# ${path}\n\nPublic guidance.\n`);
     }
-    await write(root, 'docs/TERMUX.md', '# Mobile setup\n\nTermux is not a supported setup path.\n');
+    await write(
+      root,
+      'docs/TERMUX.md',
+      '# Mobile setup\n\nTermux is not a supported setup path.\n'
+    );
 
     const { checkDocumentation } = await import('../../scripts/lib/documentation.mjs');
     const result = await checkDocumentation(root);
@@ -125,15 +129,16 @@ test('documentation check ignores generated artifact snapshots', async () => {
 
 test('public documentation and CI use the supported command interface', async () => {
   const { readFile } = await import('node:fs/promises');
-  const [readme, docsIndex, gettingStarted, contributing, workflow, playwright] =
-    await Promise.all([
-    readFile('README.md', 'utf8'),
-    readFile('docs/README.md', 'utf8'),
-    readFile('docs/GETTING_STARTED.md', 'utf8'),
-    readFile('CONTRIBUTING.md', 'utf8'),
-    readFile('.github/workflows/ci.yml', 'utf8'),
-    readFile('playwright.config.ts', 'utf8')
-    ]);
+  const [readme, docsIndex, gettingStarted, contributing, workflow, playwright] = await Promise.all(
+    [
+      readFile('README.md', 'utf8'),
+      readFile('docs/README.md', 'utf8'),
+      readFile('docs/GETTING_STARTED.md', 'utf8'),
+      readFile('CONTRIBUTING.md', 'utf8'),
+      readFile('.github/workflows/ci.yml', 'utf8'),
+      readFile('playwright.config.ts', 'utf8')
+    ]
+  );
 
   for (const command of ['setup', 'dev', 'build', 'start', 'check', 'test', 'format', 'clean']) {
     assert.match(readme, new RegExp(`npm (?:run )?${command}`));
@@ -200,7 +205,10 @@ test('public documentation does not expose maintainer-only implementation materi
     readFile('docs/README.md', 'utf8')
   ]);
   for (const content of [readme, index]) {
-    assert.doesNotMatch(content, /\.internal\/|ARCHITECTURE\.md|FSD\.md|SHARED_THEME_CONTRACT|TERMUX/i);
+    assert.doesNotMatch(
+      content,
+      /\.internal\/|ARCHITECTURE\.md|FSD\.md|SHARED_THEME_CONTRACT|TERMUX/i
+    );
   }
 });
 

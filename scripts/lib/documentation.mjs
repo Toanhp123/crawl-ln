@@ -17,13 +17,7 @@ const REQUIRED_ENTRYPOINTS = [
   'docs/PLUGIN_DEVELOPMENT.md',
   'docs/SECURITY.md'
 ];
-const SKIPPED_DIRECTORIES = new Set([
-  '.artifacts',
-  '.git',
-  '.internal',
-  'node_modules',
-  'specs'
-]);
+const SKIPPED_DIRECTORIES = new Set(['.artifacts', '.git', '.internal', 'node_modules', 'specs']);
 const TERMUX_PATTERN = /\bTermux\b|\bTERMUX_/i;
 
 async function exists(path) {

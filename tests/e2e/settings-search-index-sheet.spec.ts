@@ -179,7 +179,7 @@ test('Search Index rebuild errors remain inline until the next attempt', async (
 
   const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('Could not rebuild the search index');
-  await expect(alert).toContainText('The request failed.');
+  await expect(alert).toContainText('Search service unavailable');
   await page.waitForTimeout(1_200);
   await expect(alert).toBeVisible();
   await expect(dialog.locator('dt')).toHaveCount(4);
@@ -201,7 +201,7 @@ test('Search Index initial status errors expose Retry and block rebuild', async 
 
   const dialog = await openSearchIndex(page);
   await expect(dialog.getByRole('alert')).toContainText('Unable to load Search Index status');
-  await expect(dialog.getByRole('alert')).toContainText('The request failed.');
+  await expect(dialog.getByRole('alert')).toContainText('Search status unavailable');
   await expect(dialog.getByRole('button', { name: 'Rebuild search index' })).toBeDisabled();
 
   allowSuccess = true;

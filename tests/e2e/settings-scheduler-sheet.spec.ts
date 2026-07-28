@@ -109,7 +109,7 @@ test('Scheduler mutation errors remain inline until the next attempt', async ({ 
 
   const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('Scheduler check failed');
-  await expect(alert).toContainText('The request failed.');
+  await expect(alert).toContainText('Scheduler service unavailable');
   await page.waitForTimeout(1_200);
   await expect(alert).toBeVisible();
   await expect(dialog.locator('dt')).toHaveCount(6);
@@ -131,7 +131,7 @@ test('Scheduler initial-load errors expose Retry and block Run now', async ({ pa
 
   const dialog = await openScheduler(page);
   await expect(dialog.getByRole('alert')).toContainText('Unable to load Scheduler status');
-  await expect(dialog.getByRole('alert')).toContainText('The request failed.');
+  await expect(dialog.getByRole('alert')).toContainText('Scheduler status unavailable');
   await expect(dialog.getByRole('button', { name: 'Run scheduler now' })).toBeDisabled();
 
   allowSuccess = true;

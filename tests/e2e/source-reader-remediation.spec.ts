@@ -109,7 +109,8 @@ test('remediated Sources UI shows safe quarantine and diagnostics without secret
   const toggle = page.getByRole('switch', { name: 'Enable Unsafe Demo', exact: true });
   await toggle.click();
   await expect(page.getByText('Plugin update failed', { exact: true })).toBeVisible();
-  await expect(page.getByText('PLUGIN_PACKAGE_INVALID', { exact: true })).toBeVisible();
+  await expect(page.getByText('Plugin activation failed', { exact: true })).toBeVisible();
+  await expect(page.getByText('PLUGIN_PACKAGE_INVALID', { exact: true })).toHaveCount(0);
   await expect(page.getByText(secret)).toHaveCount(0);
 
   const screenshot = await page.screenshot();
